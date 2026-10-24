@@ -12,7 +12,8 @@ No pipeline or advice code exists yet.
 
 ## How this project works
 
-The project is spec-driven, following Kiro's file layout:
+The project is spec-driven. The specs use Kiro's file layout as plain Markdown; Claude Code is the coding
+agent:
 
 - [`.kiro/steering/`](.kiro/steering/): what the product is, the technology, the repository structure
   and the quality gates;

@@ -11,9 +11,10 @@ and [design](design.md).
   - `_Requirements:_` the criteria it implements;
   - `_Test:_` the test that proves it, written first and seen failing (red → green);
   - where relevant, `_Depends on:_` and `_ADRs:_`.
-  The pre-task hook (R17.4) reads these lines.
+  `make task-check TASK=<id>` (R17.4) reads these lines; the agent runs it before every task once it
+  exists (task 9.5), and checks the same things by hand until then.
 - Property-based tests (P1–P13 in the design) are **required** tasks. No task is optional.
-- Run one task at a time and post the task report after each (`quality.md`). Never "Run all tasks".
+- Run one task at a time and post the task report after each (`quality.md`).
 - **Before the remote go-ahead (task 15)** there is no GitHub, so there are no pull requests. Each task
   still gets its own local branch. After the task report, the owner reviews it and squash-merges it into
   the local `main` (`git merge --squash`), with the task's Conventional Commits message. From task 15 on,
@@ -50,8 +51,9 @@ and [design](design.md).
     - _Requirements: R18.1, R18.3, R11.4_
     - _Test: owner approval; `scripts/checks/adr_lint` passes on it once 4.4 lands
       (`tests/unit/checks/test_adr_lint.py::test_repo_adrs_pass`)_
-  - [ ] 2.2 Hook experiment. Create a throwaway hook in Claude Code and in Kiro; record each agent's event
-    payload shape, trigger identifiers and blocking behaviour; save the payloads as fixtures for 9.1.
+  - [ ] 2.2 Claude Code hook contract: record from the official reference the events we use (`PreToolUse`,
+    `PostToolUse`, `Stop`), their JSON payloads and the exit-code contract; save example payloads as
+    fixtures for 9.1. The live confirmation is task 9.7.
     - _Requirements: R17.8_
     - _Test: the recorded payloads under `tests/fixtures/hooks/` parse in 9.1
       (`tests/contract/test_hook_events.py::test_recorded_events_parse`)_
@@ -182,7 +184,7 @@ and [design](design.md).
 
 - [ ] 9. Agent hooks
   - Branch: `feat/ef-9-agent-hooks` · Depends on: 2, 7 · ADRs: ADR-0001
-  - [ ] 9.1 `HookEvent` normaliser for Claude Code and Kiro payloads
+  - [ ] 9.1 `HookEvent` parser for Claude Code payloads
     - _Requirements: R17.1_
     - _Test: `tests/contract/test_hook_events.py::test_recorded_events_parse`_
   - [ ] 9.2 `post_edit`: format and lint the edited file
@@ -197,17 +199,18 @@ and [design](design.md).
     - _Requirements: R17.5_
     - _Test: `tests/unit/hooks/test_guard.py::test_pre_go_ahead_blocks_any_push`; property P11
       `tests/property/test_guard.py::test_guard_commands`_
-  - [ ] 9.5 `pre_task` (Kiro): dependencies, requirement IDs, test and ADR status
+  - [ ] 9.5 `make task-check TASK=<id>` (`scripts/checks/task_check.py`): dependencies, requirement IDs,
+    tests and ADR status; CLAUDE.md tells the agent to run it before each task
     - _Requirements: R17.4, R18.4_
-    - _Test: `tests/unit/hooks/test_pre_task.py::test_missing_requirements_blocks`,
-      `::test_unaccepted_adr_blocks`_
-  - [ ] 9.6 Wire `.claude/settings.json` and `.kiro/hooks/*.json`; hook-config check
+    - _Test: `tests/unit/checks/test_task_check.py::test_missing_requirements_fails`,
+      `::test_unaccepted_adr_fails`, `::test_unfinished_dependency_fails`_
+  - [ ] 9.6 Wire `.claude/settings.json`; hook-config check
     - _Requirements: R17.1, R17.6, R17.7, R17.9_
     - _Test: `tests/unit/checks/test_hook_config.py::test_configs_valid`; **AT-8**
       `tests/acceptance/test_at8_agent_hooks.py::test_at8_agent_hooks` (recorded events)_
-  - [ ] 9.7 Live check in each agent (owner and agent): a red stop, a blocked push and a blocked deploy,
-    with evidence recorded
-    - _Requirements: R20.3_
+  - [ ] 9.7 Live check in Claude Code (owner and agent): a red stop, a blocked push and a blocked deploy,
+    with the observed payloads compared against 2.2's fixtures and the evidence recorded
+    - _Requirements: R20.3, R17.8_
     - _Test: checklist evidence in `docs/reports/gate-selftest-<date>.md`_
 
 - [ ] 10. ADR-0002 (IaC) and ADR-0003 (account, region, deploy identity)

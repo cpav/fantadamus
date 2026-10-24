@@ -10,7 +10,7 @@ We go step by step. Every step ends at a gate, and **nothing moves forward on a 
 
 | Phase | Spec | What gets built | Research around it | Exit gate |
 |---|---|---|---|---|
-| 0 | `engineering-foundation` | Repository, tooling, CI, test harness, infra skeleton with the budget alarm, Kiro hooks, and a walking skeleton (a tiny fixture through bronze → silver → gold) | Tool choices, and CDK vs Terraform: one ADR each | Spec 0's acceptance tests pass, including those proving each gate blocks a bad change: the **local gate** first, the **remote gate** after the owner's go-ahead to push (Spec 0, R2.11) |
+| 0 | `engineering-foundation` | Repository, tooling, CI, test harness, infra skeleton with the budget alarm, Claude Code hooks, and a walking skeleton (a tiny fixture through bronze → silver → gold) | Tool choices, and CDK vs Terraform: one ADR each | Spec 0's acceptance tests pass, including those proving each gate blocks a bad change: the **local gate** first, the **remote gate** after the owner's go-ahead to push (Spec 0, R2.11) |
 | 1 | `data-foundation` (MVP scope) | Submit tools, validation and storage for facts collected by Claude (ADR-0005), one vertical slice at a time | The MVP reading list: which pages answer each need, recorded in the source registry | Spec 1's acceptance tests pass locally and in CI; one real round collected through Claude end to end; the quality report is clean |
 | 2 | `decision-engine` | Lineup calculations implementing [`docs/method.md`](../../docs/method.md) | Fitting team xG from betting lines; calibrating the *(start)* constants against this season's data | Spec 2's acceptance tests pass, including method §A9's six tests; a calibration report exists for at least one real round |
 | 3 | `chat-agent` (MVP scope) | The MCP server: local, then remote for the second user | Remote MCP auth; tool-call time limits | Spec 3's acceptance tests pass; both users answered from their Claude apps |
@@ -34,8 +34,8 @@ Slices are **vertical**: one source or data product end to end, never all of bro
 
 ## The gates
 
-1. **Spec gate.** The owner approves requirements.md, design.md and tasks.md in turn. Analyze Requirements
-   runs before design.
+1. **Spec gate.** The owner approves requirements.md, design.md and tasks.md in turn. An
+   Analyze-Requirements-style review runs before design.
 2. **Research gate.** Every research task ends in an ADR in `docs/adr/` (context, options, decision,
    consequences, sources). The owner approves it before any code depends on it.
 3. **Task gate (Definition of Done).** A task is done only when:
@@ -96,7 +96,7 @@ updated with the final list.
 
 - **Unit:** pure functions with no I/O: parsing, name resolution, consensus, shrinkage, regression toward a
   prior. Network access fails the test.
-- **Property-based:** Hypothesis, with properties derived from the EARS requirements (Kiro Correctness),
+- **Property-based:** Hypothesis, with properties derived from the EARS requirements (listed in each design.md),
   for example:
   - consensus p_start is always in [0, 1];
   - an official lineup always wins;
@@ -131,33 +131,28 @@ name. Because the repository is public, a fixture is committed only if its sourc
 redistribution; otherwise the test uses a synthetic fixture with the same schema, or reads from git-ignored
 `data/private/` and is skipped (with a registered reason) when that data is absent.
 
-## Agent setup (Claude Code and Kiro)
+## Agent setup (Claude Code)
 
-The project is built the way gamegusto was: **Claude Code** as the coding agent, with `make check`,
-pre-commit, CI and the protected `main` as the gates of record. The Kiro file layout is kept, so the specs
-also work natively in Kiro.
+The project is built the way gamegusto was: **Claude Code** is the only coding agent (Kiro was dropped on
+2026-10-24), with `make check`, pre-commit, CI and the protected `main` as the gates of record. The specs
+keep Kiro's file layout (`.kiro/steering/`, `.kiro/specs/`) because it works well as plain Markdown.
 
-- Feature Specs, **Requirements-First**. Not Quick Spec: it skips the approval gates.
-- Correctness property-based tests are **required**, not optional: in tasks.md they are ordinary tasks,
-  never marked optional.
-- **Supervised** working: the agent stops after every task report (in Kiro, Supervised mode; in Claude
-  Code, by agreement), so the owner can accept or reject the changes.
-- Run tasks one at a time. Never "Run all tasks".
-- When a requirement changes mid-build: requirements.md, then design.md, then Sync Files on tasks.md.
-- Hook logic lives once in `scripts/hooks/`, is tested in CI on recorded events, and is wired into both
-  agents:
+- Specs are **requirements-first**: requirements → design → tasks, each approved by the owner.
+- Correctness property-based tests are **required**, never optional.
+- **Supervised working:** the agent runs one task at a time, runs `make task-check TASK=<id>` first (once
+  it exists), and stops after every task report so the owner can review.
+- When a requirement changes mid-build: requirements.md, then design.md, then tasks.md, by hand.
+- Hook logic lives in `scripts/hooks/`, is tested in CI on recorded events, and is wired into
+  `.claude/settings.json`:
 
-  | Purpose | Claude Code (`.claude/settings.json`) | Kiro (`.kiro/hooks/`) |
-  |---|---|---|
-  | Format and lint an edited `*.py` file | `PostToolUse` on Edit/Write | File Save |
-  | Run `make check` (10-minute timeout) when the task or turn changed tracked files, otherwise report that no check was needed; a failure goes back to the agent | `Stop` | Post Task Execution, Agent Stop |
-  | Check the task's dependencies, requirement IDs, test and ADRs; if missing, stop and ask | (no pre-task event; covered by the task report) | Pre Task Execution |
-  | Block deploys (`make deploy`, `make bootstrap`, `terraform apply`) and writes to private configuration; before the remote go-ahead every push and `gh repo create`, afterwards force-pushes and pushes to `main` — unless approved | `PreToolUse` on Bash/Write | Pre Tool Use |
+  | Purpose | Claude Code event |
+  |---|---|
+  | Format and lint an edited `*.py` file | `PostToolUse` on Edit/Write |
+  | Run `make check` (10-minute timeout) when the turn changed tracked files, otherwise report that no check was needed; a failure goes back to the agent | `Stop` |
+  | Block deploys (`make deploy`, `make bootstrap`, `terraform apply`) and writes to private configuration; before the remote go-ahead every push and `gh repo create`, afterwards force-pushes and pushes to `main`, unless approved | `PreToolUse` on Bash/Write |
 
-- File hooks fire only on the agent's own edits, not on manual ones. **Pre-commit and CI are the gates of
-  record**; hooks are the fast loop.
-- Claude Code blocks with exit code 2 and the reason on stderr. Kiro's `trigger` identifiers and blocking
-  contract are not documented as of 2026-10-17; both are verified in Spec 0 and recorded in ADR-0001.
+- Hooks fire only on the agent's own actions. **Pre-commit and CI are the gates of record**; hooks are
+  the fast loop. Claude Code blocks with exit code 2 and the reason on stderr (ADR-0001).
 
 ## Task report
 
@@ -175,11 +170,8 @@ Next: task 1.5
 
 ## References
 
-- Kiro: [Specs](https://kiro.dev/docs/specs/), [Feature specs](https://kiro.dev/docs/specs/feature-specs/),
-  [Analyze Requirements](https://kiro.dev/docs/specs/analyze-requirements/),
-  [Correctness](https://kiro.dev/docs/specs/correctness/), [Best practices](https://kiro.dev/docs/specs/best-practices/),
-  [Steering](https://kiro.dev/docs/steering/), [Hooks](https://kiro.dev/docs/hooks/),
-  [Hook triggers](https://kiro.dev/docs/hooks/types/), [Autopilot and Supervised](https://kiro.dev/docs/ide/chat/autopilot/)
+- Spec format: Kiro's [feature specs](https://kiro.dev/docs/specs/feature-specs/) (EARS requirements, design, tasks), used as plain Markdown
+- Claude Code [hooks](https://docs.claude.com/en/docs/claude-code/hooks)
 - [Testing AWS CDK applications](https://docs.aws.amazon.com/cdk/v2/guide/testing.html)
 - [Adopt a test-driven development approach (CDK)](https://docs.aws.amazon.com/prescriptive-guidance/latest/best-practices-cdk-typescript-iac/development-best-practices.html)
 - [Check CDK applications or CloudFormation templates with cdk-nag rule packs](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/check-aws-cdk-applications-or-cloudformation-templates-for-best-practices-by-using-cdk-nag-rule-packs.html)

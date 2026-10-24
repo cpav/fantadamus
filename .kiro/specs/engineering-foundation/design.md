@@ -13,7 +13,7 @@ Spec 0 builds the repository's machinery and one thin pipeline that proves it wo
    because the repository is public.
 3. **GitHub as code.** The `main` ruleset, push protection and fork settings live as JSON and `gh api`
    calls, applied by `make` and checked for drift.
-4. **Agent hooks.** One Python implementation, wired into Claude Code and Kiro.
+4. **Agent hooks.** One Python implementation, wired into Claude Code.
 5. **AWS skeleton.** A Terraform bootstrap (state, IAM, budget), applied once by the owner, and a stack
    (lake and log buckets), applied as a prefix-scoped deploy role.
 6. **Walking skeleton.** The MVP's shape in miniature (ADR-0005): an MCP submit tool → contract validation
@@ -29,7 +29,7 @@ This design assumes their **proposed** outcome; if an ADR lands differently, thi
 
 | ADR | Proposed outcome | Needed before |
 |---|---|---|
-| ADR-0001 Tool choices | The toolchain in "Components" C3; commitizen for commit messages; Dependabot (uv, GitHub Actions, pre-commit ecosystems) or Renovate if Dependabot lacks pre-commit support; the hook blocking contract per agent (Claude Code: exit code 2; Kiro: verified by experiment) | Task 2 (Python project) |
+| ADR-0001 Tool choices | The toolchain in "Components" C3; commitizen for commit messages; Dependabot (uv, GitHub Actions, pre-commit ecosystems) or Renovate if Dependabot lacks pre-commit support; Claude Code's hook contract (exit code 2 blocks), confirmed live in task 9.7 | Task 2 (Python project) |
 | ADR-0002 IaC | **Terraform ≥ 1.11** with the AWS provider; `tflint`, `checkov`, `terraform test`; IAM policies as JSON templates shared with the Python evaluator (C8) | Bootstrap and infrastructure tasks |
 | ADR-0003 Account, region, deploy identity | The gamegusto account; `eu-north-1`; bootstrap by admin; `fantadamus-terraform` (assume-only, in a group) → `fantadamus-deploy` (≤ 1 h sessions) | Bootstrap task |
 
@@ -50,7 +50,7 @@ How each reference shapes this design:
 | Well-Architected DevOps Guidance: [continuous integration](https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/continuous-integration.html), [development lifecycle](https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/development-lifecycle.html), [QA.DT.1 data quality tests](https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/qa.dt.1-ensure-data-integrity-and-accuracy-with-data-quality-tests.html) | The same build locally and in CI; fast feedback; data-quality rules tested like code. The skeleton carries one quality rule end to end. |
 | GitHub, [About rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets) and the rulesets REST API | A branch ruleset with `deletion`, `non_fast_forward`, `pull_request` (squash only) and strict `required_status_checks`, and **no bypass actors**, so admins are bound too (R2.2–R2.7). |
 | MCP Python SDK, [Testing MCP servers](https://py.sdk.modelcontextprotocol.io/testing/) | An in-memory client session (`create_connected_server_and_client_session`) drives a `FastMCP` server in tests, with no network (R16.13). |
-| Kiro [hooks](https://kiro.dev/docs/hooks/) and Claude Code [hooks](https://docs.claude.com/en/docs/claude-code/hooks) | Both pass the event as JSON on stdin to a command; Claude Code blocks with exit code 2. Kiro's trigger names and blocking contract are verified in ADR-0001 (R17.8). |
+| Claude Code [hooks](https://docs.claude.com/en/docs/claude-code/hooks) | The event arrives as JSON on stdin to a command; exit code 2 blocks a `PreToolUse` call or keeps a `Stop` from ending the turn, with stderr returned to the agent (R17.8). |
 | The owner's gamegusto project (`~/Documents/gamegusto`) | The bootstrap/stack split, the deny-first deploy policy, the assume-only user, the IAM evaluator, the git conventions (requirements, "Reuse from gamegusto"). |
 
 ## Architecture
@@ -58,7 +58,7 @@ How each reference shapes this design:
 ```mermaid
 flowchart LR
   subgraph Local["Owner's machine (local gate)"]
-    A[Agent: Claude Code or Kiro] -- hooks --> H[scripts/hooks]
+    A[Agent: Claude Code] -- hooks --> H[scripts/hooks]
     Dev[Owner] --> G[git]
     A --> G
     G -- pre-commit / commit-msg / pre-push --> PC[pre-commit + scripts/checks]
@@ -103,7 +103,6 @@ flowchart LR
 
 ```
 .claude/settings.json          Claude Code hooks → scripts/hooks
-.kiro/hooks/*.json             Kiro hooks → scripts/hooks
 .github/
   workflows/ci.yml             PR gate and main
   workflows/audit.yml          weekly dependency audit
@@ -165,6 +164,7 @@ tool-versions.toml, Makefile, pyproject.toml, uv.lock, .pre-commit-config.yaml,
 | `github-apply` / `github-verify` | Applies, or compares with, the ruleset, push protection, secret scanning and fork-approval settings through `gh api` | R2.12, R10.7, R12.8 |
 | `bootstrap` | Shows `aws sts get-caller-identity` and the plan for `infra/bootstrap` under the admin profile; applies after interactive confirmation | R19.6 |
 | `deploy` | Plans `infra/stack` as `fantadamus-deploy`, shows the diff, applies after confirmation, then runs the smoke test | R19.1, R19.4 |
+| `task-check` | `TASK=<id>`: checks the task's dependencies, requirement IDs, tests and ADRs before work starts | R17.4 |
 | `selftest` | Runs the gate self-tests (`LOCAL=1` for local only) and writes the report | R20 |
 
 ### C3. Toolchain
@@ -200,7 +200,8 @@ summary line for `make check`.
 | `identities` | Loads identities from `FANTADAMUS_PRIVATE_CONFIG` or the `FANTADAMUS_CREATOR_IDENTITIES` secret (newline-separated); fails closed with instructions if absent; normalises both sides (NFKD, strip combining marks, casefold, collapse whitespace); scans staged files, a commit range or the tree; prints `path:line` only | R10.3–R10.6 |
 | `contracts` | Imports every `Contract` subclass; regenerates its JSON Schema; compares with `src/fantadamus/contracts/schemas/*.json`; on difference requires a version bump in the class and a matching changelog heading; classifies breaking changes (removed or renamed property, newly required, narrowed type or enum) and requires a major bump for them | R13 |
 | `adr_lint` | Each `docs/adr/NNNN-*.md` has a `Status:` line with a date and the sections Context, Options, Decision, Consequences and Sources (extra sections allowed), with at least one link under Sources | R18.1, R18.2 |
-| `hook_config` | Validates `.claude/settings.json` against Claude Code's hooks shape and `.kiro/hooks/*.json` against `version: "v1"` and `hooks[].{name, trigger, action}` | R17.7 |
+| `hook_config` | Validates `.claude/settings.json` against Claude Code's hooks shape | R17.7 |
+| `task_check` | `make task-check TASK=<id>`: parses `tasks.md`; the task's dependencies are checked off, its sub-tasks name `_Requirements:_` and `_Test:_`, and its listed ADRs are Accepted; otherwise fails with what's missing | R17.4, R18.4 |
 | `pr_meta` (CI only) | Reads `GITHUB_EVENT_PATH`: the title must be Conventional; the body must have Task, Requirements, Tests and ADRs fields, and every listed ADR must have `Status: Accepted`. Dependabot PRs are exempt from the body fields | R9.5, R18.4, R21.2 |
 
 ### C5. CI (`.github/workflows/`)
@@ -243,15 +244,17 @@ summary line for `make check`.
 
 ### C7. Agent hooks (`scripts/hooks/`)
 
-`event.py` normalises Claude Code and Kiro payloads into one `HookEvent` (kind, tool name, tool input,
+`event.py` parses Claude Code payloads into one `HookEvent` (kind, tool name, tool input,
 changed files, `stop_hook_active`). Each hook is a thin entry point.
 
-| Hook | Claude Code | Kiro | Logic | Requirements |
-|---|---|---|---|---|
-| `post_edit` | `PostToolUse`, matcher `Edit\|Write\|MultiEdit` | File Save `*.py` | `ruff format` and `ruff check --fix` on the edited file; reports what remains | R17.2 |
-| `stop_check` | `Stop` (timeout 600 s) | Post Task Execution, Agent Stop | If tracked files changed since the last green check (hash of `git diff HEAD` plus untracked files, stored in `.git/fantadamus-last-green`), run `make check`. On failure, exit 2 with the summary, so the agent keeps working. If it fails again while `stop_hook_active` is set, let the turn end but print the failure. With no changes, report that no check was needed | R17.3 |
-| `pre_task` | (none) | Pre Task Execution | Parse `tasks.md`: dependencies checked, `_Requirements:` and `_Test:` present, listed ADRs Accepted; otherwise block and ask | R17.4, R18.4 |
-| `guard` | `PreToolUse`, matcher `Bash\|Write\|Edit` | Pre Tool Use | Splits shell commands on `;`, `&&`, `\|\|`, `\|` and newlines, then parses each with `shlex`. **Before the go-ahead** (no `origin` remote) it blocks every `git push`, `git remote add` and `gh repo create`; **afterwards** only force-pushes (`-f`, `--force*`, `+refspec`) and pushes to `main`. Always blocks `terraform apply`, `make deploy`, `make bootstrap`, and writes under the private-configuration path | R17.5 |
+| Hook | Claude Code event | Logic | Requirements |
+|---|---|---|---|
+| `post_edit` | `PostToolUse`, matcher `Edit\|Write\|MultiEdit` | `ruff format` and `ruff check --fix` on the edited Python file; reports what remains | R17.2 |
+| `stop_check` | `Stop` (timeout 600 s) | If tracked files changed since the last green check (hash of `git diff HEAD` plus untracked files, stored in `.git/fantadamus-last-green`), run `make check`. On failure, exit 2 with the summary, so the agent keeps working. If it fails again while `stop_hook_active` is set, let the turn end but print the failure. With no changes, report that no check was needed | R17.3 |
+| `guard` | `PreToolUse`, matcher `Bash\|Write\|Edit` | Splits shell commands on `;`, `&&`, `\|\|`, `\|` and newlines, then parses each with `shlex`. **Before the go-ahead** (no `origin` remote) it blocks every `git push`, `git remote add` and `gh repo create`; **afterwards** only force-pushes (`-f`, `--force*`, `+refspec`) and pushes to `main`. Always blocks `terraform apply`, `make deploy`, `make bootstrap`, and writes under the private-configuration path | R17.5 |
+
+The task-start check (R17.4) isn't a hook, because Claude Code has no task event: it's `make task-check`
+(C4), which CLAUDE.md tells the agent to run before each task.
 
 ### C8. Infrastructure (`infra/`)
 
@@ -569,8 +572,8 @@ it's tested by running it.
 | R13 | C4 `contracts` | AT-14, P8 |
 | R14, R15 | C8, C9 | AT-6, AT-10, AT-20, AT-21 |
 | R16 | C10 | AT-7, P1–P6 |
-| R17 | C7 | AT-8, P11 |
-| R18 | C4 `adr_lint`, `pr_meta`, C7 `pre_task` | `make check`, PR checks |
+| R17 | C4 `task_check`, C7 | AT-8, P11 |
+| R18 | C4 `adr_lint`, `pr_meta`, `task_check` | `make check`, PR checks |
 | R19 | C2, C9 | AT-21, first deploy |
 | R20 | C11 | the gate self-test report |
 | R21 | C1 template, C4 `pr_meta` | PR checks |
@@ -601,7 +604,7 @@ it's tested by running it.
 | Risk | Mitigation |
 |---|---|
 | The `aws` provider's behaviour with `mock_provider` for resources using computed ARNs in policies | Policies render from templates, not data sources; resource tests assert inputs, not computed outputs |
-| Kiro's hook trigger names and blocking contract are undocumented | Verified by experiment in ADR-0001; the Claude Code path doesn't depend on them |
+| Claude Code's hook payloads could change between versions | ADR-0001 records the contract from the docs; task 9.7 confirms it live; recorded-event tests catch drift |
 | Dependabot's support for pre-commit revisions | ADR-0001 confirms; fallback to Renovate or a weekly autoupdate workflow (R11.4) |
 | `allowed_merge_methods` and the fork-approval API may differ from what's documented | `github-verify` shows drift; if an API lacks a setting, the README records it as a one-time manual step and the self-test checks the effect |
 | checkov rule IDs differ by version | The suppression list is confirmed on the first run and approved by the owner |

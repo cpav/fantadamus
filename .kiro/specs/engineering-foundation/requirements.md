@@ -6,7 +6,7 @@ Status: **Draft for owner review** · Workflow: Feature Spec, Requirements-First
 
 Spec 0 builds the repository and everything that keeps it honest: the Python project, format, lint and type
 checks, the test harness, pre-commit hooks, one `make check` command shared by local runs and CI, a GitHub
-Actions pipeline, branch protection, an infrastructure skeleton with the AWS Budgets alarm, Kiro hooks, the
+Actions pipeline, branch protection, an infrastructure skeleton with the AWS Budgets alarm, Claude Code hooks, the
 ADRs for the tool choices, and a **walking skeleton**: a three-row fixture carried through
 bronze → silver → gold on DuckDB.
 
@@ -30,7 +30,8 @@ owner says so (Q8), the exit gate has two parts:
 | 2026-10-17 | First draft. |
 | 2026-10-17 | Public repository (Q1): R2.9, R2.10, R10.7, R12.8, R12.9. Reuse of the owner's gamegusto project: R22, R14.12, the budget in the bootstrap module (R15), deploy credentials (R19.3). Owner decisions Q2–Q9. |
 | 2026-10-24 | Agent hooks shared by Claude Code and Kiro (R17 rewritten, Q5). The method arrives as `docs/method.md` (Q6). The MVP's collector mode (ADR-0005) shapes the walking skeleton. |
-| 2026-10-24 | Analyze Requirements review ([analysis-2026-10-24.md](analysis-2026-10-24.md)): all 30 findings applied. New criteria R1.8, R1.9, R2.11, R2.12, R6.7, R9.6, R10.8, R14.13, R15.7, R16.10–R16.13, R19.6, R20.5, R22.12; acceptance tests split into local and remote gates; AT-19 to AT-21 added. |
+| 2026-10-24 | Analyze-Requirements-style review ([analysis-2026-10-24.md](analysis-2026-10-24.md)): all 30 findings applied. New criteria R1.8, R1.9, R2.11, R2.12, R6.7, R9.6, R10.8, R14.13, R15.7, R16.10–R16.13, R19.6, R20.5, R22.12; acceptance tests split into local and remote gates; AT-19 to AT-21 added. |
+| 2026-10-24 | Kiro dropped; Claude Code is the only agent (owner decision). R17.1, R17.3, R17.4 (now `make task-check`), R17.7, R17.8, R20.3 and AT-8 updated. The `.kiro/` folder keeps only the steering and spec documents. |
 
 ## Glossary
 
@@ -90,13 +91,11 @@ project or vendor on 2026-10-17. ADR-0001 records the final choice, with links a
 | Owner's `gamegusto` project (`~/Documents/gamegusto`) | Proven patterns for AWS permissions, Terraform layout and git conventions in the **same AWS account** | Owner's own code | Free | Reused as described in "Reuse from gamegusto" below |
 | GitHub Actions | CI runners | GitHub Terms of Service | Free for public repositories on standard GitHub-hosted runners | Workflows triggered from forks get no secrets and, once configured, need owner approval to run |
 | AWS Budgets | Cost alarm | AWS Service Terms | Budgets without budget actions are free (to confirm in design.md) | |
-| Kiro hooks | Fast-feedback loop | Kiro terms | Included in Kiro | Hook files are `.kiro/hooks/<id>.json` with `version: "v1"` and a `hooks[]` array of `name`, `trigger`, `matcher`, `action` (`command` or `agent`), `timeout` and `enabled` ([Hooks](https://kiro.dev/docs/hooks/)). The exact trigger identifiers and the Pre Tool Use blocking contract are not documented and must be verified (R17.7) |
 | Claude Code hooks | Fast-feedback loop in the agent gamegusto was built with | Anthropic terms | Included in Claude Code | Project hooks live in `.claude/settings.json`. A command hook receives the event as JSON on stdin; exit code 2 blocks a `PreToolUse` call or keeps a `Stop` from ending the turn, and returns stderr to the agent ([Hooks reference](https://docs.claude.com/en/docs/claude-code/hooks)). To be confirmed in ADR-0001 |
 
 Other references for this spec: [Testing AWS CDK applications](https://docs.aws.amazon.com/cdk/v2/guide/testing.html);
 [cdk-nag rule packs](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/check-aws-cdk-applications-or-cloudformation-templates-for-best-practices-by-using-cdk-nag-rule-packs.html);
 [Well-Architected DevOps Guidance: continuous integration](https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/continuous-integration.html);
-[Kiro hook triggers](https://kiro.dev/docs/hooks/types/);
 [Terraform tests, including mocks and `override_data`](https://developer.hashicorp.com/terraform/language/tests);
 [IAM permissions boundaries](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html);
 [IAM quotas (managed policy size)](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html).
@@ -370,19 +369,19 @@ harness is proven before real sources arrive.
 ### Requirement 17: Agent hooks
 
 **User Story:** As the owner, I want the coding agent to get fast feedback and hit guard rails while it
-works, the same way whether it runs in Claude Code (as gamegusto was built) or in Kiro, so that problems are
-fixed in the same turn and risky actions wait for me.
+works in Claude Code (as gamegusto was built), so that problems are fixed in the same turn and risky actions
+wait for me.
 
 #### Acceptance Criteria
 
-- **R17.1** THE SYSTEM SHALL implement each hook's logic once, as a script in `scripts/hooks/` that reads the agent's JSON event on standard input. Claude Code project hooks (`.claude/settings.json`) and Kiro hooks (`.kiro/hooks/*.json`) SHALL call these scripts as thin wrappers.
+- **R17.1** THE SYSTEM SHALL implement each hook's logic once, as a script in `scripts/hooks/` that reads the agent's JSON event on standard input. Claude Code project hooks (`.claude/settings.json`) SHALL call these scripts as thin wrappers.
 - **R17.2** WHEN the agent edits a `*.py` file THE SYSTEM SHALL format and lint that file.
-- **R17.3** WHEN the agent finishes a spec task, or a turn that changed tracked files, THE SYSTEM SHALL run `make check` with a 10-minute timeout and return any failure to the agent, so that a turn can't end on a red build without saying so; WHEN a turn changed no tracked files THE SYSTEM SHALL report that no check was needed.
-- **R17.4** WHERE the agent provides a pre-task event (Kiro's Pre Task Execution) THE SYSTEM SHALL check that the task's dependencies are complete, that it names its requirement IDs and test, and that any ADR it depends on is Accepted, and IF any of these is missing THEN THE SYSTEM SHALL stop and ask the owner.
+- **R17.3** WHEN the agent finishes a turn that changed tracked files THE SYSTEM SHALL run `make check` with a 10-minute timeout and return any failure to the agent, so that a turn can't end on a red build without saying so; WHEN a turn changed no tracked files THE SYSTEM SHALL report that no check was needed.
+- **R17.4** WHEN a task starts THE SYSTEM SHALL provide `make task-check TASK=<id>`, which the agent runs first, to check that the task's dependencies are complete, that it names its requirement IDs and test, and that any ADR it depends on is Accepted, and IF any of these is missing THEN THE SYSTEM SHALL fail with what's missing, and the agent stops and asks the owner.
 - **R17.5** IF the agent attempts a deploy (`terraform apply`, `make deploy`, `make bootstrap`) or a write to private configuration THEN THE SYSTEM SHALL block the tool call and ask the owner for approval. Before the remote go-ahead (R2.11) the same applies to every `git push` and `gh repo create`; afterwards, to force-pushes and pushes to `main`.
 - **R17.6** THE SYSTEM SHALL test the hook scripts in CI by feeding them recorded agent events, asserting that a failing `make check` is returned to the agent and that every action in R17.5 is blocked.
-- **R17.7** THE SYSTEM SHALL validate `.claude/settings.json` and every `.kiro/hooks/*.json` file in `make check` against their documented formats.
-- **R17.8** THE SYSTEM SHALL record in ADR-0001 how each agent signals "block": Claude Code's exit-code contract, and Kiro's as verified empirically, since its documentation doesn't specify it.
+- **R17.7** THE SYSTEM SHALL validate `.claude/settings.json` in `make check` against Claude Code's documented hooks format.
+- **R17.8** THE SYSTEM SHALL record in ADR-0001 Claude Code's hook contract (events, payloads, and how a hook signals "block"), and SHALL confirm it with a live run in task 9.7.
 - **R17.9** THE SYSTEM SHALL also run, in pre-commit or CI, every check that a hook runs. Hooks fire only on the agent's own actions; as in gamegusto, pre-commit, CI and the protected `main` are the gates of record.
 
 ### Requirement 18: Architecture decision records
@@ -420,7 +419,7 @@ runs.
 
 - **R20.1** THE SYSTEM SHALL provide automated gate self-tests that, for each acceptance test that can be automated, introduce the bad change on a throwaway branch, assert that the gate fails, then delete the branch.
 - **R20.2** WHERE a gate is enforced by GitHub settings THE SYSTEM SHALL exercise it through a throwaway pull request and the GitHub API, and close that pull request afterwards.
-- **R20.3** WHERE a gate cannot be exercised automatically (a live run of the hooks inside Claude Code and Kiro) THE SYSTEM SHALL provide a manual procedure and record its evidence in the gate self-test report.
+- **R20.3** WHERE a gate cannot be exercised automatically (a live run of the hooks inside Claude Code) THE SYSTEM SHALL provide a manual procedure and record its evidence in the gate self-test report.
 - **R20.4** WHEN the gate self-tests run THE SYSTEM SHALL write a report to `docs/reports/` listing each gate, the bad change and the observed result.
 - **R20.5** THE SYSTEM SHALL run the gate self-tests locally, on demand, with the owner's own GitHub login; they SHALL never run in CI, whose token is read-only (R12.4).
 
@@ -472,7 +471,7 @@ deploy, task 12).
 | AT-5 | Coverage below the threshold fails `make check` and CI | R8.2, R8.3 | Both | Gate self-test |
 | AT-6 | A bucket without encryption, or one that allows non-TLS access, fails the infrastructure check; it passes once fixed, or once suppressed with a written reason and a registered, approved entry | R14.3, R14.11, R6.2, R6.3 | Local | `tests/infra` |
 | AT-7 | The walking skeleton: a payload submitted through the MCP submit tool reaches gold and is read back through the MCP read tool with its source URL; a payload from a host off the allowlist is rejected and nothing is written; the run takes under 10 s on `ubuntu-latest` and its golden-file test passes | R16.1–R16.13 | Local | `tests/acceptance`, `tests/integration` |
-| AT-8 | When the agent finishes a task, or a turn that changed files, the hook runs `make check` and a failure is returned to the agent; a turn with no changes reports that no check was needed; deploys are blocked, and before the remote go-ahead so is every push | R17.3, R17.5, R17.6 | Local | `tests/unit` on recorded agent events, plus one live run per agent recorded in the gate self-test report (R20.3) |
+| AT-8 | When the agent finishes a task, or a turn that changed files, the hook runs `make check` and a failure is returned to the agent; a turn with no changes reports that no check was needed; deploys are blocked, and before the remote go-ahead so is every push | R17.3, R17.5, R17.6 | Local | `tests/unit` on recorded agent events, plus one live run in Claude Code recorded in the gate self-test report (R20.3) |
 | AT-9 | The median of the last 10 pull-request runs is under 5 minutes, and no run exceeds 8 minutes | R12.3 | Remote | Measured from the GitHub API |
 | AT-10 | The planned bootstrap module contains the budget alarm, scoped to `Project=fantadamus` | R15.1, R15.2, R15.5, R15.6 | Local | `tests/infra` |
 | AT-11 | A direct push to `main`, and a force-push to `main`, are rejected; the live ruleset matches the committed JSON | R2.2, R2.3, R2.7, R2.12 | Remote | Gate self-test |
@@ -504,7 +503,7 @@ deploy, task 12).
 | Q2 | ~~Budget amount~~ **Resolved:** EUR 20 per month, scoped to `Project=fantadamus`. AWS Budgets works only in USD ([re:Post](https://repost.aws/questions/QU-J7u0-3ERYmcDdFeRWaxTA/is-the-currency-unit-in-aws-budgets-always-in-usd)), so the parameter is the USD equivalent when bootstrap is applied, rounded down. You still need to activate the `Project` cost-allocation tag in Billing. | R15.3, R15.6 | — |
 | Q3 | ~~Region~~ **Resolved:** `eu-north-1`. S3 Tables is available there ([AWS, Jan 2025](https://aws.amazon.com/about-aws/whats-new/2025/01/amazon-s3-tables-additional-aws-regions)); Glue Data Quality is generally available wherever Glue is. ADR-0003 still confirms Lake Formation, Athena and Iceberg materialized views, and Spec 1's design must not depend on materialized views if they're missing. | R14, R19, ADR-0003 | — |
 | Q4 | ~~Task order~~ **Resolved:** ADR-0001 right after task 1; ADR-0002, ADR-0003 and the bootstrap module before the infrastructure skeleton. | tasks.md | — |
-| Q5 | ~~AT-8 and the Kiro IDE hook~~ **Resolved:** follow gamegusto's setup. Build with Claude Code; pre-commit, CI and the protected `main` are the gates of record. Hook logic lives in tested scripts shared by Claude Code and Kiro, so AT-8 is automated. | R17, AT-8 | — |
+| Q5 | ~~AT-8 and the Kiro IDE hook~~ **Resolved:** follow gamegusto's setup. Build with Claude Code; pre-commit, CI and the protected `main` are the gates of record. Hook logic lives in tested scripts wired into Claude Code, so AT-8 is automated. (Kiro dropped 2026-10-24.) | R17, AT-8 | — |
 | Q6 | ~~Playbook and seed files~~ **Resolved:** the playbook is not used. The method was defined from scratch with the owner and delivered as `docs/method.md` on 2026-10-24, as input to Spec 2. No seed data is supplied: finding the best sources is the foundation of Spec 1 and starts with a dedicated sources discussion. Spec 0 is unaffected, because the walking skeleton uses a synthetic fixture. | Spec 1, Spec 2 | — |
 | Q7 | ~~Licence~~ **Resolved:** none; all rights reserved. | R2.1 | — |
 | Q8 | ~~Data in the public repo~~ **Resolved:** third-party and personal data stay in git-ignored `data/private/`. **Nothing is pushed to GitHub until the owner says so.** Local tasks go ahead; tasks that need the remote (CI runs, branch protection, gate self-tests through pull requests) wait for that go-ahead, which is its own task (R2.11). The exit gate is split into local and remote gates (Introduction). | R2, R12, R20 | — |

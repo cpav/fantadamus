@@ -9,10 +9,9 @@ inclusion: always
 Target layout. Directories appear as the task that needs them lands; nothing is created ahead of its spec.
 
 ```
-.kiro/
+.kiro/                 spec documents in Kiro's layout (Kiro itself isn't used)
   steering/            product.md, tech.md, structure.md, quality.md
   specs/<spec>/        requirements.md, design.md, tasks.md
-  hooks/*.json         fast-feedback hooks (not gates of record)
 .github/
   workflows/           ci.yml (PR gate), audit.yml (weekly), …
   rulesets/main.json   the `main` branch ruleset as code, applied through the GitHub API
@@ -52,7 +51,7 @@ config/                thresholds.toml (gate thresholds), sources.toml (submit-t
                        audit-allowlist.toml (dependency-audit exceptions with expiry)
 scripts/               helpers called by `make`
   checks/              one module per check (suppressions, thresholds, coverage gate, identities, …)
-  hooks/               agent-hook logic, shared by Claude Code and Kiro, tested in CI
+  hooks/               Claude Code hook logic, tested in CI
   tools/ smoke/ selftest/   tool installer, post-deploy smoke test, gate self-tests
 Makefile               `make check`, `make test-fast`, `make setup`, `make bootstrap`, `make deploy`, …
 tool-versions.toml     pinned versions and checksums of the non-Python tools
@@ -114,16 +113,17 @@ The repository may contain a `private.example.toml` with placeholder values only
 
 ## Working agreements
 
-These apply to every agent working in this repository: Kiro, Claude Code or others.
+These apply to the coding agent, Claude Code, and to the owner.
 
 - **Spec-driven.** Steering → requirements → design → tasks, with the owner's approval at each document.
-  Run Analyze Requirements before design. Research is cited in each document.
+  Run an Analyze-Requirements-style review before design. Research is cited in each document.
 - **Change order.** When a requirement changes mid-build: update requirements.md first, then design.md,
-  then Sync Files on tasks.md. Never change code ahead of its spec.
+  then tasks.md. Never change code ahead of its spec.
 - **Order of specs.** `engineering-foundation` before any pipeline code; `data-foundation` before any engine
   or agent code. No phase starts before the previous one has passed its gate.
-- **Step by step.** Supervised mode. One task at a time (never "Run all tasks"). One branch and one pull
-  request per task. Post the task report (`quality.md`) after each task, then stop.
+- **Step by step.** One task at a time, starting with `make task-check TASK=<id>` once it exists. One
+  branch and one pull request per task (local squash merges until the remote go-ahead). Post the task
+  report (`quality.md`) after each task, then stop.
 - **Git hygiene** (same as gamegusto). `main` is protected and always green. Stage specific files, never
   `git add -A`. Prefer new commits to amending pushed history. A PR body says what changed, why, how it was
   verified and the known gaps, under the Definition of Done checklist.
