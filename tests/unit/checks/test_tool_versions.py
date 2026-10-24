@@ -33,7 +33,9 @@ def _installed(tmp_path: Path) -> Path:
 
 
 def test_version_mismatch_fails(tmp_path: Path) -> None:
-    result = tool_versions.check([TERRAFORM], _installed(tmp_path), run=_runner("Terraform v1.16.2\non darwin_amd64\n"))
+    result = tool_versions.check(
+        [TERRAFORM], _installed(tmp_path), run=_runner("Terraform v1.16.2\non darwin_amd64\n")
+    )
     assert not result.ok
     assert "terraform: expected 1.17.0, found 1.16.2" in result.message
 

@@ -1,0 +1,11 @@
+---
+config:
+  # Tables and links make long lines unavoidable; prose is wrapped by convention instead.
+  MD013: false
+  # The PR template starts with an HTML comment telling the author how to write the title.
+  MD041: false
+  MD024:
+    siblings_only: true
+ignores:
+  - ".venv/**"
+  - "bin/**"

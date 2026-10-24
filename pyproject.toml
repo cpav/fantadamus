@@ -40,3 +40,30 @@ constraint-dependencies = ["libcst>=1.8.5,<1.9", "cryptography<49"]
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["src", "scripts", "tests"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+# E/W/F pycodestyle and pyflakes, I isort, N naming, UP pyupgrade, B bugbear, S bandit, C4 comprehensions,
+# SIM simplifications, PT pytest style, PGH blanket noqa/type-ignore (R6.1), RUF incl. RUF100 unused noqa (R6.4).
+select = ["E", "W", "F", "I", "N", "UP", "B", "S", "C4", "SIM", "PT", "PGH", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# Registered as S-005 in docs/quality/suppressions.md: plain assert is how pytest tests assert.
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "scripts", "tests"]
+mypy_path = "src"
+explicit_package_bases = true
+warn_unused_ignores = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+plugins = ["pydantic.mypy"]

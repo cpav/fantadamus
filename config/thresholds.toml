@@ -1,0 +1,18 @@
+# Gate thresholds and their safe direction (R6.5, R8.4).
+# "up" may only rise and "down" may only fall; scripts/checks/thresholds.py fails a change that weakens one.
+
+[coverage_line]
+value = 90
+direction = "up"
+
+[coverage_branch]
+value = 90
+direction = "up"
+
+[hypothesis_ci_examples]
+value = 500
+direction = "up"
+
+[ci_time_budget_minutes]
+value = 5
+direction = "down"

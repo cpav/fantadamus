@@ -9,7 +9,6 @@ import zipfile
 from pathlib import Path
 
 import pytest
-
 from scripts.tools import install
 
 BINARY = b"#!/bin/sh\necho 'Terraform v1.17.0'\n"
