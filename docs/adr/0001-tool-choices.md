@@ -99,6 +99,23 @@ Only the choices with a real alternative are listed; for the rest there was one 
   revisions are pinned, and gitleaks and actionlint are covered by `tool-versions.toml` instead.
 - **Every tool is free.** Nothing here needs the owner's approval as a paid service.
 
+## Amendments
+
+**2026-10-24, task 3 (Intel-Mac wheels and a dependency conflict).** Found while locking the project; for
+the owner's review with task 3:
+
+- **checkov runs isolated** through `uvx --from checkov==3.3.30 checkov`, pinned in `tool-versions.toml`
+  rather than `uv.lock`, because checkov pins `boto3==1.35.49`, which conflicts with current boto3 and
+  moto.
+- **mutmut 3.7** instead of 3.8, with `libcst<1.9`: mutmut 3.8 needs libcst 1.9, which ships no macOS
+  x86_64 wheel for Python 3.12, so installing it on the owner's Intel Mac would need a Rust toolchain.
+- **`cryptography<49`** (pulled in by moto and mcp), for the same reason: 49 and later ship no macOS
+  x86_64 wheel.
+
+These are `[tool.uv] constraint-dependencies` in `pyproject.toml`, each with a comment. They are reviewed
+whenever the dependency audit flags one of these packages, and lifted once wheels return or the owner moves
+off the Intel Mac.
+
 ## Sources
 
 - Each tool's repository and licence file, read through the GitHub API on 2026-10-24:

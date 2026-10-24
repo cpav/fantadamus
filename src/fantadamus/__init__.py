@@ -1,0 +1,1 @@
+"""Fantadamus: a Fantacalcio advisor."""

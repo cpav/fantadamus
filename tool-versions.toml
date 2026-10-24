@@ -1,0 +1,43 @@
+# Pinned non-Python tools (R1.8). `make setup` installs them into the git-ignored bin/ with
+# scripts/tools/install.py, which refuses any download whose SHA-256 doesn't match the value here.
+# Checksums come from each project's official checksum file for that release (read 2026-10-24).
+# Node.js and markdownlint-cli2 are pinned through pre-commit's own environment (task 6).
+# Our platform keys: darwin_amd64, darwin_arm64, linux_amd64. `assets` maps them to the release's names.
+
+[terraform]
+version = "1.17.0"
+url = "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{asset}.zip"
+binary = "terraform"
+version_args = ["version"]
+assets = { darwin_amd64 = "darwin_amd64", darwin_arm64 = "darwin_arm64", linux_amd64 = "linux_amd64" }
+sha256 = { darwin_amd64 = "3773397524196e4ebbf7167e2b9fb478dff1962d555d649f616ba97ca446a143", darwin_arm64 = "7472a54cca911d46c0e399a5ebbce44444912d0d4dad7495f37f1fa51e7ca6b7", linux_amd64 = "c168cab7c637a8769fdb90089ddd19de701bc6ff8aca64dc2e2185fe46f59f67" }
+
+[tflint]
+version = "0.65.0"
+url = "https://github.com/terraform-linters/tflint/releases/download/v{version}/tflint_{asset}.zip"
+binary = "tflint"
+version_args = ["--version"]
+assets = { darwin_amd64 = "darwin_amd64", darwin_arm64 = "darwin_arm64", linux_amd64 = "linux_amd64" }
+sha256 = { darwin_amd64 = "27696ea23ed77c1918945147ebfe6485a74f58560b9557ccecc77379205702c5", darwin_arm64 = "5a71c63481ba56760864298011fdb7317a9ae80a0bbaeceefa35883c7f62ac71", linux_amd64 = "d4c545ed2e29d6338604b586f34f544f380f70f243aa72f7b484713835eaec61" }
+
+[gitleaks]
+version = "8.30.1"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v{version}/gitleaks_{version}_{asset}.tar.gz"
+binary = "gitleaks"
+version_args = ["version"]
+assets = { darwin_amd64 = "darwin_x64", darwin_arm64 = "darwin_arm64", linux_amd64 = "linux_x64" }
+sha256 = { darwin_amd64 = "dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709", darwin_arm64 = "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5", linux_amd64 = "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb" }
+
+[actionlint]
+version = "1.7.12"
+url = "https://github.com/rhysd/actionlint/releases/download/v{version}/actionlint_{version}_{asset}.tar.gz"
+binary = "actionlint"
+version_args = ["-version"]
+assets = { darwin_amd64 = "darwin_amd64", darwin_arm64 = "darwin_arm64", linux_amd64 = "linux_amd64" }
+sha256 = { darwin_amd64 = "5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644", darwin_arm64 = "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f", linux_amd64 = "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8" }
+
+# checkov pins boto3 1.35, which conflicts with the project's boto3 and moto, so it runs isolated through
+# `uvx --from checkov==<version> checkov` instead of living in uv.lock (ADR-0001 amendment). No download here.
+[checkov]
+version = "3.3.30"
+runner = "uvx"

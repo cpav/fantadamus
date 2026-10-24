@@ -1,0 +1,42 @@
+[project]
+name = "fantadamus"
+version = "0.0.0"
+description = "A Fantacalcio advisor: data products, a decision engine and MCP tools."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "duckdb>=2.0,<3",
+    "mcp>=2.3,<3",
+    "pydantic>=2.14,<3",
+]
+
+[build-system]
+requires = ["uv_build>=0.11,<0.14"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "boto3>=1.40",
+    "hypothesis>=6.170,<7",
+    "moto>=5.2,<6",
+    "mutmut>=3.7,<3.8",  # 3.8 needs libcst>=1.9, which has no Intel-Mac wheel for 3.12 (ADR-0001 amendment)
+    "mypy>=2.4,<3",
+    "pip-audit>=2.10,<3",
+    "pre-commit>=4.7,<5",
+    "pytest>=9.1,<10",
+    "pytest-cov>=7.1,<8",
+    "pytest-socket>=0.8,<1",
+    "ruff>=0.17,<0.18",
+    "sqlfluff>=4.4,<5",
+    "yamllint>=1.38,<2",
+]
+
+[tool.uv]
+# libcst 1.9 ships no macOS x86_64 wheel for Python 3.12; building it needs Rust. Lift with ADR-0001's amendment.
+# cryptography 49+ likewise ships no macOS x86_64 wheel (pulled in by moto and mcp).
+constraint-dependencies = ["libcst>=1.8.5,<1.9", "cryptography<49"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
