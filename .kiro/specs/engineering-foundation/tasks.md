@@ -122,7 +122,7 @@ and [design](design.md).
   - [ ] 6.1 `.pre-commit-config.yaml` with pre-commit, commit-msg and pre-push stages; every `rev` pinned
     - _Requirements: R9.1, R9.3, R9.4_
     - _Test: `tests/unit/test_precommit_config.py::test_all_revs_pinned`, `::test_stages_present`_
-  - [ ] 6.2 commitizen as the commit-msg hook
+  - [ ] 6.2 conventional-pre-commit as the commit-msg hook (ADR-0001)
     - _Requirements: R9.2_
     - _Test: `tests/integration/test_commit_msg.py::test_non_conventional_message_rejected` (temporary repo)_
   - [ ] 6.3 Identity check `scripts/checks/identities.py`: loads from private configuration or the CI

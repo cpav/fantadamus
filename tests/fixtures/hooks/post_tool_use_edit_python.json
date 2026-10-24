@@ -1,0 +1,19 @@
+{
+  "session_id": "00000000-0000-4000-8000-000000000000",
+  "transcript_path": "/workspace/.claude/transcript.jsonl",
+  "cwd": "/workspace/fantadamus",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/workspace/fantadamus/src/fantadamus/core/hashing.py",
+    "old_string": "a",
+    "new_string": "b",
+    "replace_all": false
+  },
+  "tool_response": {
+    "filePath": "/workspace/fantadamus/src/fantadamus/core/hashing.py",
+    "success": true
+  },
+  "tool_use_id": "toolu_example_04"
+}

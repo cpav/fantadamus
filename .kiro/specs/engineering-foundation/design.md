@@ -29,7 +29,7 @@ This design assumes their **proposed** outcome; if an ADR lands differently, thi
 
 | ADR | Proposed outcome | Needed before |
 |---|---|---|
-| ADR-0001 Tool choices | The toolchain in "Components" C3; commitizen for commit messages; Dependabot (uv, GitHub Actions, pre-commit ecosystems) or Renovate if Dependabot lacks pre-commit support; Claude Code's hook contract (exit code 2 blocks), confirmed live in task 9.7 | Task 2 (Python project) |
+| ADR-0001 Tool choices | The toolchain in "Components" C3; conventional-pre-commit for commit messages; Dependabot (uv, GitHub Actions, pre-commit ecosystems) or Renovate if Dependabot lacks pre-commit support; Claude Code's hook contract (exit code 2 blocks), confirmed live in task 9.7 | Task 2 (Python project) |
 | ADR-0002 IaC | **Terraform ≥ 1.11** with the AWS provider; `tflint`, `checkov`, `terraform test`; IAM policies as JSON templates shared with the Python evaluator (C8) | Bootstrap and infrastructure tasks |
 | ADR-0003 Account, region, deploy identity | The gamegusto account; `eu-north-1`; bootstrap by admin; `fantadamus-terraform` (assume-only, in a group) → `fantadamus-deploy` (≤ 1 h sessions) | Bootstrap task |
 
@@ -49,7 +49,7 @@ How each reference shapes this design:
 | AWS, [Budgets pricing](https://aws.amazon.com/aws-cost-management/aws-budgets/pricing/) | Budgets without actions are free to create and monitor; our one budget has no actions (R15). |
 | Well-Architected DevOps Guidance: [continuous integration](https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/continuous-integration.html), [development lifecycle](https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/development-lifecycle.html), [QA.DT.1 data quality tests](https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/qa.dt.1-ensure-data-integrity-and-accuracy-with-data-quality-tests.html) | The same build locally and in CI; fast feedback; data-quality rules tested like code. The skeleton carries one quality rule end to end. |
 | GitHub, [About rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets) and the rulesets REST API | A branch ruleset with `deletion`, `non_fast_forward`, `pull_request` (squash only) and strict `required_status_checks`, and **no bypass actors**, so admins are bound too (R2.2–R2.7). |
-| MCP Python SDK, [Testing MCP servers](https://py.sdk.modelcontextprotocol.io/testing/) | An in-memory client session (`create_connected_server_and_client_session`) drives a `FastMCP` server in tests, with no network (R16.13). |
+| MCP Python SDK v2, [testing guide](https://github.com/modelcontextprotocol/python-sdk/blob/main/docs/get-started/testing.md) and [migration guide](https://github.com/modelcontextprotocol/python-sdk/blob/main/docs/migration.md) | `mcp.Client(server)` connects to an `MCPServer` (formerly `FastMCP`) in memory, under anyio, with no network (R16.13; ADR-0001). |
 | Claude Code [hooks](https://docs.claude.com/en/docs/claude-code/hooks) | The event arrives as JSON on stdin to a command; exit code 2 blocks a `PreToolUse` call or keeps a `Stop` from ending the turn, with stderr returned to the agent (R17.8). |
 | The owner's gamegusto project (`~/Documents/gamegusto`) | The bootstrap/stack split, the deny-first deploy policy, the assume-only user, the IAM evaluator, the git conventions (requirements, "Reuse from gamegusto"). |
 
@@ -169,9 +169,10 @@ tool-versions.toml, Makefile, pyproject.toml, uv.lock, .pre-commit-config.yaml,
 
 ### C3. Toolchain
 
-- **Python (uv, `pyproject.toml`):** runtime: `pydantic`, `duckdb`, `mcp`. Dev: `ruff`, `mypy`, `pytest`,
-  `pytest-cov`, `pytest-socket`, `pytest-asyncio`, `hypothesis`, `moto`, `boto3`, `checkov`, `sqlfluff`,
-  `yamllint`, `pip-audit`, `mutmut`, `pre-commit`, `commitizen`. Python 3.12 in `requires-python` and
+- **Python (uv, `pyproject.toml`):** runtime: `pydantic`, `duckdb`, `mcp` (v2). Dev: `ruff`, `mypy`, `pytest`,
+  `pytest-cov`, `pytest-socket`, `hypothesis`, `moto`, `boto3`, `checkov`, `sqlfluff`, `yamllint`,
+  `pip-audit`, `mutmut`, `pre-commit`. Async tests use anyio's pytest plugin (`pytest.mark.anyio`), which
+  comes with `mcp` (ADR-0001). Python 3.12 in `requires-python` and
   `.python-version` (R3).
 - **Pinned binaries (`tool-versions.toml`, installed into `bin/`):** `terraform`, `tflint`, `gitleaks`,
   `actionlint`, each with a version and per-platform SHA-256 (`darwin_amd64`, `darwin_arm64`,
@@ -181,8 +182,8 @@ tool-versions.toml, Makefile, pyproject.toml, uv.lock, .pre-commit-config.yaml,
 
   | Stage | Hooks |
   |---|---|
-  | pre-commit | ruff-format, ruff, mypy, sqlfluff, yamllint, markdownlint, actionlint, check-added-large-files, check-merge-conflict, `gitleaks` (staged), identity check (staged) |
-  | commit-msg | commitizen (Conventional Commits) |
+  | pre-commit | ruff-format, ruff, mypy (a local hook running `uv run mypy` in the project environment, ADR-0001), sqlfluff, yamllint, markdownlint, actionlint, check-added-large-files, check-merge-conflict, `gitleaks` (staged), identity check (staged) |
+  | commit-msg | conventional-pre-commit (Conventional Commits) |
   | pre-push | `gitleaks` and the identity check over every outgoing commit, using `PRE_COMMIT_FROM_REF..PRE_COMMIT_TO_REF` |
 
 ### C4. Checks (`scripts/checks/`)
@@ -319,7 +320,7 @@ endpoints, so boto3 uses `us-east-1` for them.
 - **Fixture** (`tests/fixtures/skeleton/rows.json`): three synthetic players (`Giocatore Uno`, `Due`, `Tre`
   of `Squadra Alfa`/`Beta`), source `https://example.org/skeleton`. Committable because it's synthetic
   (R16.9, R2.9).
-- **MCP server** (`FastMCP`, stdio): `submit_skeleton_rows(rows, source_url, published_at?, captured_at)`
+- **MCP server** (`MCPServer` from `mcp.server.mcpserver`, stdio): `submit_skeleton_rows(rows, source_url, published_at?, captured_at)`
   returns `{accepted, rejected: [{index, reason}], bronze_id}`; `get_skeleton_summary()` returns the gold
   rows with `source_urls`.
 - **Flow:**
@@ -389,7 +390,7 @@ sequenceDiagram
   Dev->>Git: git commit
   Git->>PC: pre-commit (format, lint, types, gitleaks, identities)
   PC-->>Git: fail → commit rejected (R9.3)
-  Git->>PC: commit-msg (commitizen)
+  Git->>PC: commit-msg (conventional-pre-commit)
   Dev->>Git: git push (after go-ahead only)
   Git->>PC: pre-push (gitleaks + identities on outgoing commits)
   PC-->>Git: fail → push rejected (R9.6)
