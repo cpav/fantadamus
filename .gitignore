@@ -1,0 +1,54 @@
+# Private configuration and secrets: never committed (R2.8).
+# The default private configuration lives outside the repository; these catch accidental copies.
+private.toml
+*.private.toml
+.env
+.env.*
+
+# Private and local data (R2.9, R2.10)
+data/private/
+data/local/
+
+# Project-local tools installed by `make setup` (R1.8)
+bin/
+
+# Python build output and environments
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Test, type-check, lint and mutation-testing caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+coverage.json
+htmlcov/
+mutants/
+
+# Terraform: state, plans and provider plugins.
+# .terraform.lock.hcl is deliberately NOT ignored: it pins provider versions and checksums.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.tfstate.lock.info
+crash.log
+
+# Local agent settings. The shared .claude/settings.json IS committed.
+.claude/settings.local.json
+.claude/launch.json
+
+# Gate self-test worktrees
+.selftest/
+
+# Operating system and editors
+.DS_Store
+.idea/
+.vscode/
