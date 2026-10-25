@@ -12,9 +12,16 @@ import os
 import subprocess
 import sys
 from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
+from scripts.checks._common import run_command
+
 UV = ("uv", "run", "--frozen")
+# The test suite uses every core, and the coverage gate reads what it wrote: these two run on their own,
+# after the other checks have run side by side, a few at a time.
+ALONE = {"tests", "coverage"}
+PARALLEL = 4
 AWS_BLOCKERS = {"AWS_CONFIG_FILE": "/dev/null", "AWS_SHARED_CREDENTIALS_FILE": "/dev/null"}
 
 Runner = Callable[[Sequence[str], dict[str, str]], subprocess.CompletedProcess[str]]
@@ -49,7 +56,10 @@ STATIC = [
     Check("secrets", _module("secrets", "--history")),
 ]
 TESTS = [
-    Check("tests", (*UV, "pytest", "--cov", "--cov-report=json", "--cov-report=term")),
+    Check(
+        "tests",
+        (*UV, "pytest", "-n", "4", "--dist", "worksteal", "--cov", "--cov-report=json", "--cov-report=term"),
+    ),
     Check("coverage", _module("coverage_gate")),
 ]
 INFRA: list[Check] = []  # Terraform checks and the IAM policy evaluator arrive with task 11.
@@ -77,21 +87,42 @@ def _run(command: Sequence[str], env: dict[str, str]) -> subprocess.CompletedPro
     return subprocess.run(list(command), env=env, check=False, text=True)  # noqa: S603  # reason: fixed commands defined in this module
 
 
-def run_checks(checks: Sequence[Check], run: Runner = _run, env: dict[str, str] | None = None) -> int:
+def _capture(command: Sequence[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    """Run with output captured, for checks that run side by side."""
+    return run_command(command, env=env)
+
+
+def _print(completed: subprocess.CompletedProcess[str]) -> None:
+    for stream, text in ((sys.stdout, completed.stdout), (sys.stderr, completed.stderr)):
+        if text:
+            print(text, end="", file=stream, flush=True)
+
+
+def run_checks(
+    checks: Sequence[Check], run: Runner = _run, env: dict[str, str] | None = None, capture: Runner = _capture
+) -> int:
+    """Run the quick checks side by side, then the test suite on its own; report every check in order."""
     env = check_env(os.environ) if env is None else env
-    results: list[tuple[str, bool]] = []
+    results: dict[str, bool] = {}
+    quick = [check for check in checks if check.name not in ALONE]
+    with ThreadPoolExecutor(max_workers=PARALLEL) as pool:
+        futures = {check.name: pool.submit(capture, check.command, env) for check in quick}
+        for check in quick:
+            completed = futures[check.name].result()
+            print(f"==> {check.name}", flush=True)
+            _print(completed)
+            results[check.name] = completed.returncode == 0
     for check in checks:
-        print(f"==> {check.name}", flush=True)
-        completed = run(check.command, env)
-        for stream, text in ((sys.stdout, completed.stdout), (sys.stderr, completed.stderr)):
-            if text:
-                print(text, end="", file=stream)
-        results.append((check.name, completed.returncode == 0))
+        if check.name in ALONE:
+            print(f"==> {check.name}", flush=True)
+            completed = run(check.command, env)
+            _print(completed)
+            results[check.name] = completed.returncode == 0
     if not checks:
         print("nothing to check in this group yet")
-    for name, ok in results:
-        print(f"{'PASS' if ok else 'FAIL'} {name}")
-    failed = sum(1 for _, ok in results if not ok)
+    for check in checks:
+        print(f"{'PASS' if results[check.name] else 'FAIL'} {check.name}")
+    failed = sum(1 for ok in results.values() if not ok)
     print(f"{len(results) - failed} passed, {failed} failed")
     return 1 if failed else 0
 

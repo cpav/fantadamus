@@ -19,10 +19,8 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "boto3>=1.40",
     "conventional-pre-commit>=4.4,<5",
     "hypothesis>=6.170,<7",
-    "moto>=5.2,<6",
     "mutmut>=3.7,<3.8",  # 3.8 needs libcst>=1.9, which has no Intel-Mac wheel for 3.12 (ADR-0001 amendment)
     "mypy>=2.4,<3",
     "pip-audit>=2.10,<3",
@@ -30,6 +28,8 @@ dev = [
     "pytest>=9.1,<10",
     "pytest-cov>=7.1,<8",
     "pytest-socket>=0.8,<1",
+    "pytest-timeout>=2.4,<3",
+    "pytest-xdist>=3.8,<4",
     "ruff>=0.17,<0.18",
     "sqlfluff>=4.4,<5",
     "types-pyyaml>=6",
@@ -38,7 +38,7 @@ dev = [
 
 [tool.uv]
 # libcst 1.9 ships no macOS x86_64 wheel for Python 3.12; building it needs Rust. Lift with ADR-0001's amendment.
-# cryptography 49+ likewise ships no macOS x86_64 wheel (pulled in by moto and mcp).
+# cryptography 49+ likewise ships no macOS x86_64 wheel (pulled in by mcp); risk accepted, ADR-0001.
 constraint-dependencies = [
     "libcst>=1.8.5,<1.9",
     "cryptography<49; sys_platform == 'darwin' and platform_machine == 'x86_64'",
@@ -51,6 +51,8 @@ testpaths = ["tests"]
 pythonpath = ["."]
 # Unix sockets stay allowed: asyncio's event loop uses a socketpair even without network access.
 addopts = "-q --strict-markers --allow-unix-socket"
+# Any single test over two minutes fails with a traceback, so a hang names itself instead of stalling the run.
+timeout = 120
 markers = [
     "unit: pure functions, no I/O; network blocked",
     "property: Hypothesis property-based tests; network blocked",

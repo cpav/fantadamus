@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import threading
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -34,10 +35,37 @@ def test_check_continues_and_summarises(capsys: pytest.CaptureFixture[str]) -> N
         run_all.Check("second", ("bad",)),
         run_all.Check("third", ("good",)),
     ]
-    assert run_all.run_checks(checks, run=run, env={}) == 1
-    assert ran == ["good", "bad", "good"]
+    assert run_all.run_checks(checks, run=run, capture=run, env={}) == 1
+    assert sorted(ran) == ["bad", "good", "good"]
     out = capsys.readouterr().out
     assert out.endswith("PASS first\nFAIL second\nPASS third\n2 passed, 1 failed\n")
+
+
+def test_quick_checks_run_together_then_tests_alone(capsys: pytest.CaptureFixture[str]) -> None:
+    barrier = threading.Barrier(2, timeout=5)
+    order: list[str] = []
+
+    def quick(args: Sequence[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+        barrier.wait()  # passes only if both quick checks are running at the same time
+        order.append(args[0])
+        return subprocess.CompletedProcess(list(args), 0, stdout=f"{args[0]} output\n", stderr="")
+
+    def serial(args: Sequence[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+        order.append(args[0])
+        return subprocess.CompletedProcess(list(args), 0, stdout="", stderr="")
+
+    checks = [
+        run_all.Check("lint", ("lint",)),
+        run_all.Check("tests", ("tests",)),
+        run_all.Check("coverage", ("coverage",)),
+        run_all.Check("audit", ("audit",)),
+    ]
+    assert run_all.run_checks(checks, run=serial, capture=quick, env={}) == 0
+    assert sorted(order[:2]) == ["audit", "lint"]
+    assert order[2:] == ["tests", "coverage"]
+    out = capsys.readouterr().out
+    assert out.index("==> lint\nlint output") < out.index("==> audit\naudit output") < out.index("==> tests")
+    assert out.endswith("PASS lint\nPASS tests\nPASS coverage\nPASS audit\n4 passed, 0 failed\n")
 
 
 def test_check_is_union_of_subtargets() -> None:

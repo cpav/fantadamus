@@ -31,7 +31,7 @@
           {
             "type": "command",
             "command": "cd \"$CLAUDE_PROJECT_DIR\" && .venv/bin/python -m scripts.hooks.stop_check",
-            "timeout": 630
+            "timeout": 150
           }
         ]
       }

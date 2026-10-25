@@ -114,7 +114,13 @@ the owner's review with task 3:
   in 48.0.1 (PYSEC-2026-3552, -3553, -3554, fixed in 49 and 50), so the constraint is now limited to
   `sys_platform == 'darwin' and platform_machine == 'x86_64'`, and every other platform is held to
   `cryptography>=50`. CI and Linux servers get the fix; the Intel Mac keeps 48.0.1 under three
-  allowlist entries expiring 2026-11-30 (register rows S-010 to S-012).
+  allowlist entries expiring 2026-11-30 (register rows S-010 to S-012). *Decided 2026-10-26 (owner, option
+  B):* cryptography publishes macOS wheels only for Apple Silicon since 49.0.0, so no patched build exists
+  for the Intel Mac without compiling it (Rust and OpenSSL). The owner accepted the risk instead: the three
+  flaws are in code Fantadamus never calls, the local server listens on no network, and anything online
+  runs on Linux with the patched release. The entries are renewed every three months and go away when
+  development moves to an Apple Silicon Mac. `moto` and `boto3` left the dev dependencies with the AWS
+  work (re-plan 2026-10-26), so the MCP library is now the only path to cryptography.
 
 These are `[tool.uv] constraint-dependencies` in `pyproject.toml`, each with a comment. They are reviewed
 whenever the dependency audit flags one of these packages, and lifted once wheels return or the owner moves
@@ -133,12 +139,23 @@ evidence is in [the gate self-test report](../reports/gate-selftest-2026-10-25.m
   with no feedback to the agent. A hook with a long job therefore stops it itself, before its own timeout,
   and reports the failure.
 
+**2026-10-26, faster checks (the owner asked for much faster checks).** Two test plugins join the dev group:
+
+- **pytest-xdist** (MIT, 3.8.0, with execnet, MIT) runs the test suite on four workers with work stealing,
+  so the slowest property tests no longer queue behind each other.
+- **pytest-timeout** (MIT, 2.4.0) fails any single test that runs over two minutes, with a traceback, so a
+  hang names itself instead of stalling `make check`.
+
+With them, and with the quick checks running side by side, `make check` went from about 135 to 66 seconds
+on the owner's Mac. The Hypothesis example counts are unchanged.
+
 ## Sources
 
 - Each tool's repository and licence file, read through the GitHub API on 2026-10-24:
   [uv](https://github.com/astral-sh/uv), [ruff](https://github.com/astral-sh/ruff),
   [mypy](https://github.com/python/mypy), [pytest](https://github.com/pytest-dev/pytest),
   [pytest-cov](https://github.com/pytest-dev/pytest-cov), [pytest-socket](https://github.com/miketheman/pytest-socket),
+  [pytest-xdist](https://github.com/pytest-dev/pytest-xdist), [pytest-timeout](https://github.com/pytest-dev/pytest-timeout),
   [Hypothesis](https://github.com/HypothesisWorks/hypothesis), [anyio](https://github.com/agronholm/anyio),
   [pydantic](https://github.com/pydantic/pydantic), [DuckDB](https://github.com/duckdb/duckdb),
   [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk), [moto](https://github.com/getmoto/moto),

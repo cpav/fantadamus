@@ -6,19 +6,21 @@
 # reason = "why it cannot be fixed yet"
 # expires = YYYY-MM-DD
 
-# The three below affect cryptography 48.0.1, which only the owner's Intel Mac installs (no macOS x86_64
-# wheel for 49+; ADR-0001 amendment). CI and Linux servers install 50.0.2, which fixes them.
+# The three below affect cryptography 48.0.1, which only the owner's Intel Mac installs: since 49.0.0 the
+# project publishes macOS wheels for Apple Silicon only. CI and Linux servers install 50.0.2, which fixes
+# them. The owner accepted the risk on 2026-10-26 (option B, ADR-0001 amendment): renewed every three
+# months, and gone once development moves to an Apple Silicon Mac.
 [[ignore]]
 id = "PYSEC-2026-3552"
 reason = "Intel-Mac dev environment only; PKCS#7 EnvelopedData decryption, which Fantadamus never calls"
-expires = 2026-11-30
+expires = 2027-01-26
 
 [[ignore]]
 id = "PYSEC-2026-3553"
 reason = "Intel-Mac dev environment only; X.509 path building, which Fantadamus never calls"
-expires = 2026-11-30
+expires = 2027-01-26
 
 [[ignore]]
 id = "PYSEC-2026-3554"
 reason = "Intel-Mac dev environment only; X.509 name-constraint verification, which Fantadamus never calls"
-expires = 2026-11-30
+expires = 2027-01-26

@@ -24,7 +24,9 @@ def _ci_examples() -> int:
 
 def register() -> None:
     settings.register_profile("ci", max_examples=_ci_examples(), deadline=None, print_blob=True)
-    settings.register_profile("dev", max_examples=DEV_EXAMPLES, print_blob=True)
+    # No per-example deadline in either profile: with tests running in parallel, wall-clock deadlines
+    # fail at random. Slow tests are caught by the per-test timeout instead (pyproject.toml).
+    settings.register_profile("dev", max_examples=DEV_EXAMPLES, deadline=None, print_blob=True)
 
 
 def load(name: str | None = None) -> None:

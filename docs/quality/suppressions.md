@@ -18,6 +18,6 @@ without a row, and on a row whose approval date is blank.
 | S-007 | `scripts/checks/thresholds.py` | ruff `S603` | Runs fixed git subcommands with a ref chosen by the script itself | 2026-10-24 |
 | S-008 | `scripts/checks/thresholds.py` | ruff `S607` | Resolves `git` from `PATH`, as in every developer shell and CI runner | 2026-10-24 |
 | S-009 | `scripts/checks/run_all.py` | ruff `S603` | `make check` runs the fixed commands defined in this module | 2026-10-25 |
-| S-010 | `config/audit-allowlist.toml` | audit `PYSEC-2026-3552` | cryptography 48.0.1 on the Intel Mac only; PKCS#7 decryption, unused by Fantadamus; expires 2026-11-30 | 2026-10-25 |
-| S-011 | `config/audit-allowlist.toml` | audit `PYSEC-2026-3553` | cryptography 48.0.1 on the Intel Mac only; X.509 path building, unused by Fantadamus; expires 2026-11-30 | 2026-10-25 |
-| S-012 | `config/audit-allowlist.toml` | audit `PYSEC-2026-3554` | cryptography 48.0.1 on the Intel Mac only; X.509 name constraints, unused by Fantadamus; expires 2026-11-30 | 2026-10-25 |
+| S-010 | `config/audit-allowlist.toml` | audit `PYSEC-2026-3552` | cryptography 48.0.1 on the Intel Mac only; PKCS#7 decryption, unused by Fantadamus; risk accepted by the owner (option B); renewed every three months, now to 2027-01-26 | 2026-10-26 |
+| S-011 | `config/audit-allowlist.toml` | audit `PYSEC-2026-3553` | cryptography 48.0.1 on the Intel Mac only; X.509 path building, unused by Fantadamus; risk accepted by the owner (option B); renewed every three months, now to 2027-01-26 | 2026-10-26 |
+| S-012 | `config/audit-allowlist.toml` | audit `PYSEC-2026-3554` | cryptography 48.0.1 on the Intel Mac only; X.509 name constraints, unused by Fantadamus; risk accepted by the owner (option B); renewed every three months, now to 2027-01-26 | 2026-10-26 |

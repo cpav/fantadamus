@@ -6,12 +6,15 @@ Status: **Draft for owner review** · Workflow: Feature Spec, Requirements-First
 
 Spec 0 builds the repository and everything that keeps it honest: the Python project, format, lint and type
 checks, the test harness, pre-commit hooks, one `make check` command shared by local runs and CI, a GitHub
-Actions pipeline, branch protection, an infrastructure skeleton with the AWS Budgets alarm, Claude Code hooks, the
-ADRs for the tool choices, and a **walking skeleton**: a three-row fixture carried through
-bronze → silver → gold on DuckDB.
+Actions pipeline, branch protection, Claude Code hooks, the ADRs for the tool choices, and a
+**walking skeleton**: a three-row fixture carried through bronze → silver → gold on DuckDB.
+
+**Re-plan, 2026-10-26** ([replan-2026-10-26.md](replan-2026-10-26.md)): the infrastructure skeleton, the AWS
+Budgets alarm, the deploy gate and the deploy identity (Requirements 14, 15, 19 and 22) moved to Phase 3,
+where the online server first needs them. They stay specified here and are built then.
 
 The only pipeline code in Spec 0 is the walking skeleton. Its purpose is to prove that every layer of the
-harness (unit, property, integration, golden file, coverage, infrastructure) works end to end before
+harness (unit, property, integration, golden file, coverage) works end to end before
 Spec 1 adds real sources.
 
 Spec 0 is done when its acceptance tests pass, including the gate self-tests that prove each gate
@@ -32,6 +35,8 @@ owner says so (Q8), the exit gate has two parts:
 | 2026-10-24 | Agent hooks shared by Claude Code and Kiro (R17 rewritten, Q5). The method arrives as `docs/method.md` (Q6). The MVP's collector mode (ADR-0005) shapes the walking skeleton. |
 | 2026-10-24 | Analyze-Requirements-style review ([analysis-2026-10-24.md](analysis-2026-10-24.md)): all 30 findings applied. New criteria R1.8, R1.9, R2.11, R2.12, R6.7, R9.6, R10.8, R14.13, R15.7, R16.10–R16.13, R19.6, R20.5, R22.12; acceptance tests split into local and remote gates; AT-19 to AT-21 added. |
 | 2026-10-24 | Kiro dropped; Claude Code is the only agent (owner decision). R17.1, R17.3, R17.4 (now `make task-check`), R17.7, R17.8, R20.3 and AT-8 updated. The `.kiro/` folder keeps only the steering and spec documents. |
+| 2026-10-26 | Faster checks (owner decision, 2026-10-25): the end-of-turn hook runs `make test-fast` with a 2-minute limit instead of `make check` (R17.3); `make test-fast` must finish in under 20 seconds (R1.4). Found in task 9.7: a `make check` run inside the hook took 13 minutes and was cancelled with no feedback. |
+| 2026-10-26 | Re-plan (owner approval, 2026-10-26): Requirements 14, 15, 19 and 22 move to Phase 3; R2.12 (the ruleset becomes a checklist), R18.4 and R21.2 (no PR-description check: `make task-check` checks ADRs), R20.1, R20.2, R20.4 and R20.5 (no self-test framework: ordinary acceptance tests and a one-time GitHub checklist); AT-3, AT-6, AT-8, AT-10, AT-11, AT-18, AT-20 and AT-21 updated. |
 
 ## Glossary
 
@@ -135,7 +140,7 @@ that a green local run predicts a green pull request.
 - **R1.1** THE SYSTEM SHALL provide `make check`, which runs every check in the `make check` table of `quality.md` except mutation testing.
 - **R1.2** WHEN CI runs on a pull request or on `main` THE SYSTEM SHALL run `make check`, either as one job or as parallel jobs whose `make` sub-targets together are exactly `make check`, with no CI-only variant of any check it contains.
 - **R1.3** IF any check in `make check` fails THEN THE SYSTEM SHALL exit with a non-zero status after running the remaining checks, and SHALL print one pass or fail line per check.
-- **R1.4** THE SYSTEM SHALL provide `make test-fast` (format, lint, unit and property tests with the `dev` Hypothesis profile) that finishes in under 30 seconds on the Spec 0 codebase, measured on a GitHub-hosted `ubuntu-latest` runner.
+- **R1.4** THE SYSTEM SHALL provide `make test-fast` (format, lint, unit and property tests with the `dev` Hypothesis profile) that finishes in under 20 seconds on the Spec 0 codebase, on the owner's machine and on a GitHub-hosted `ubuntu-latest` runner.
 - **R1.5** THE SYSTEM SHALL provide `make setup`, which installs the locked Python environment, the pinned non-Python tools (R1.8) and the git hooks (pre-commit, commit-msg, pre-push) from a fresh clone with one command.
 - **R1.6** THE SYSTEM SHALL run `make check` without AWS credentials and without network calls to AWS.
 - **R1.7** THE SYSTEM SHALL provide `make mutation`, which runs mutation testing on the modules listed as core in `pyproject.toml`, for use at phase gates.
@@ -160,7 +165,7 @@ gate, including changes I make myself.
 - **R2.9** THE SYSTEM SHALL commit third-party content (data files, recorded source payloads, golden outputs derived from them) only where its terms of use permit public redistribution, recorded in the README of the directory that holds it, and SHALL keep all other such content in `data/private/`.
 - **R2.10** THE SYSTEM SHALL keep personal data about league members (names, team names, rosters) out of the repository.
 - **R2.11** THE SYSTEM SHALL create the GitHub repository and push to it only after the owner's remote go-ahead, given as its own task in tasks.md; until then all work stays local.
-- **R2.12** THE SYSTEM SHALL define the `main` branch ruleset as committed JSON (`.github/rulesets/main.json`), apply it with a `make` target through the GitHub API, and IF the live ruleset differs from the committed one THEN THE SYSTEM SHALL fail the remote gate.
+- **R2.12** THE SYSTEM SHALL document every GitHub setting the gates rely on (the `main` ruleset, secret scanning, push protection, fork approval, the identity secret) as a checklist in `docs/runbooks/github-setup.md`, which the owner applies at the remote go-ahead and verifies once, with the evidence in the gate report.
 
 ### Requirement 3: Python project and dependencies
 
@@ -311,6 +316,8 @@ so that a change never breaks downstream code silently.
 
 ### Requirement 14: Infrastructure skeleton
 
+*Moved to Phase 3 by the 2026-10-26 re-plan: built with the online server.*
+
 **User Story:** As the owner, I want the cloud foundation defined as tested, policy-checked code, so that
 the first deploy is safe and every later change is reviewable.
 
@@ -331,6 +338,8 @@ the first deploy is safe and every later change is reviewable.
 - **R14.13** IF a taggable resource lacks any of the tags in R14.6 THEN THE SYSTEM SHALL fail the infrastructure tests.
 
 ### Requirement 15: Budget alarm
+
+*Moved to Phase 3 by the 2026-10-26 re-plan: built with the online server.*
 
 **User Story:** As the owner, I want a cost alarm in place before anything else exists in AWS, so that a
 mistake can't run up a bill unnoticed.
@@ -376,7 +385,7 @@ wait for me.
 
 - **R17.1** THE SYSTEM SHALL implement each hook's logic once, as a script in `scripts/hooks/` that reads the agent's JSON event on standard input. Claude Code project hooks (`.claude/settings.json`) SHALL call these scripts as thin wrappers.
 - **R17.2** WHEN the agent edits a `*.py` file THE SYSTEM SHALL format and lint that file.
-- **R17.3** WHEN the agent finishes a turn that changed tracked files THE SYSTEM SHALL run `make check` with a 10-minute timeout and return any failure to the agent, so that a turn can't end on a red build without saying so; WHEN a turn changed no tracked files THE SYSTEM SHALL report that no check was needed.
+- **R17.3** WHEN the agent finishes a turn that changed tracked files THE SYSTEM SHALL run `make test-fast` with a 2-minute timeout, stopping it itself before the hook's own timeout, and return any failure to the agent, so that a turn can't end on a red build without saying so; WHEN a turn changed no tracked files THE SYSTEM SHALL report that no check was needed. The full `make check` runs before every task report, in pre-commit's subset on every commit, and in CI.
 - **R17.4** WHEN a task starts THE SYSTEM SHALL provide `make task-check TASK=<id>`, which the agent runs first, to check that the task's dependencies are complete, that it names its requirement IDs and test, and that any ADR it depends on is Accepted, and IF any of these is missing THEN THE SYSTEM SHALL fail with what's missing, and the agent stops and asks the owner.
 - **R17.5** IF the agent attempts a deploy (`terraform apply`, `make deploy`, `make bootstrap`) or a write to private configuration THEN THE SYSTEM SHALL block the tool call and ask the owner for approval. Before the remote go-ahead (R2.11) the same applies to every `git push` and `gh repo create`; afterwards, to force-pushes and pushes to `main`.
 - **R17.6** THE SYSTEM SHALL test the hook scripts in CI by feeding them recorded agent events, asserting that a failing `make check` is returned to the agent and that every action in R17.5 is blocked.
@@ -394,9 +403,11 @@ approve it before code depends on it and revisit it later.
 - **R18.1** THE SYSTEM SHALL record each research decision as `docs/adr/NNNN-<decision>.md` with a status, a date and the sections Context, Options, Decision, Consequences and Sources.
 - **R18.2** IF an ADR lacks a required section or cites no sources THEN THE SYSTEM SHALL fail the lint check.
 - **R18.3** THE SYSTEM SHALL include, for Spec 0, ADR-0001 (tool choices, with licences, costs and the verified hook behaviour), ADR-0002 (CDK vs Terraform, with test and policy tooling) and ADR-0003 (AWS account, region and deploy identity).
-- **R18.4** THE SYSTEM SHALL list, for each task in tasks.md and in each pull-request description, the ADRs it depends on, and IF any of them is not Accepted THEN THE SYSTEM SHALL fail the PR description check (and the pre-task check, R17.4).
+- **R18.4** THE SYSTEM SHALL list, for each task in tasks.md, the ADRs it depends on, and IF any of them is not Accepted THEN THE SYSTEM SHALL fail the pre-task check (R17.4).
 
 ### Requirement 19: Deploy gate and first deploy
+
+*Moved to Phase 3 by the 2026-10-26 re-plan: built with the online server.*
 
 **User Story:** As the owner, I want to see and approve every change before it reaches AWS, and to know
 right away whether the deploy worked.
@@ -417,11 +428,11 @@ runs.
 
 #### Acceptance Criteria
 
-- **R20.1** THE SYSTEM SHALL provide automated gate self-tests that, for each acceptance test that can be automated, introduce the bad change on a throwaway branch, assert that the gate fails, then delete the branch.
-- **R20.2** WHERE a gate is enforced by GitHub settings THE SYSTEM SHALL exercise it through a throwaway pull request and the GitHub API, and close that pull request afterwards.
+- **R20.1** THE SYSTEM SHALL prove each gate that can be automated with an ordinary acceptance test in `tests/acceptance/` that feeds the gate a bad input (a file, a commit, a configuration) in a temporary directory and asserts that it fails.
+- **R20.2** WHERE a gate is enforced by GitHub settings THE SYSTEM SHALL provide a one-time manual checklist, run after the remote go-ahead, with throwaway branches and pull requests that are deleted afterwards.
 - **R20.3** WHERE a gate cannot be exercised automatically (a live run of the hooks inside Claude Code) THE SYSTEM SHALL provide a manual procedure and record its evidence in the gate self-test report.
-- **R20.4** WHEN the gate self-tests run THE SYSTEM SHALL write a report to `docs/reports/` listing each gate, the bad change and the observed result.
-- **R20.5** THE SYSTEM SHALL run the gate self-tests locally, on demand, with the owner's own GitHub login; they SHALL never run in CI, whose token is read-only (R12.4).
+- **R20.4** THE SYSTEM SHALL keep a gate report in `docs/reports/` listing each gate, the bad change, and the observed result, from the acceptance tests and the manual checklists.
+- **R20.5** THE SYSTEM SHALL run the manual GitHub checklist with the owner's own login, never from CI, whose token is read-only (R12.4).
 
 ### Requirement 21: Traceability and the Definition of Done
 
@@ -431,10 +442,12 @@ covers, so that I can check the Definition of Done at a glance.
 #### Acceptance Criteria
 
 - **R21.1** THE SYSTEM SHALL provide a pull-request template with the Definition of Done checklist from `quality.md` and fields for the task ID, the requirement IDs, the test names and the ADRs relied on.
-- **R21.2** IF a pull request's description lacks a task ID, requirement IDs or test names THEN THE SYSTEM SHALL fail the PR description check, except for automated dependency-update pull requests.
+- **R21.2** IF a pull request's title is not a Conventional Commits message THEN THE SYSTEM SHALL fail CI (R9.5); the task, requirement IDs and tests are named in tasks.md and checked by `make task-check`, not parsed from the description.
 - **R21.3** THE SYSTEM SHALL map every Spec 0 acceptance test to the requirement IDs it proves (table below).
 
 ### Requirement 22: Deploy identity and least privilege
+
+*Moved to Phase 3 by the 2026-10-26 re-plan: built with the online server.*
 
 **User Story:** As the owner, I want automation to run with the smallest permissions that can do the job,
 inside an account I share with other projects, so that a mistake or a leaked key can't escalate, can't
@@ -459,32 +472,32 @@ touch other projects, and can't rewrite its own limits.
 
 AT-1 to AT-10 come from the owner's brief. AT-11 to AT-18 were added with the first drafts, AT-19 to AT-21
 by the 2026-10-24 review. **Gate** says where a test runs: *Local* (owner's machine, before the remote
-go-ahead), *Remote* (needs GitHub, after the go-ahead), *Both* (local and CI parts), *Deploy* (the first
-deploy, task 12).
+go-ahead), *Remote* (needs GitHub, after the go-ahead), *Both* (local and CI parts), *Phase 3* (moved with
+the AWS work by the 2026-10-26 re-plan).
 
 | ID | Acceptance test | Proves | Gate | Automation |
 |---|---|---|---|---|
-| AT-1 | A badly formatted file, and separately a lint error, each fail `make check`, the pre-commit hook and CI | R1.3, R4.1, R4.2, R9.3, R12.1 | Both | Gate self-test |
-| AT-2 | A type error in `src/` or `scripts/` fails `make check` and CI | R5.1, R12.1 | Both | Gate self-test |
-| AT-3 | A failing test blocks the merge into `main` | R2.5, R12.1 | Remote | Gate self-test via throwaway PR |
-| AT-4 | A fake AWS secret key is rejected by pre-commit, by the pre-push hook and by CI, and GitHub push protection is enabled | R9.6, R10.1, R10.2, R10.7 | Both | Gate self-test |
-| AT-5 | Coverage below the threshold fails `make check` and CI | R8.2, R8.3 | Both | Gate self-test |
-| AT-6 | A bucket without encryption, or one that allows non-TLS access, fails the infrastructure check; it passes once fixed, or once suppressed with a written reason and a registered, approved entry | R14.3, R14.11, R6.2, R6.3 | Local | `tests/infra` |
+| AT-1 | A badly formatted file, and separately a lint error, each fail `make check`, the pre-commit hook and CI | R1.3, R4.1, R4.2, R9.3, R12.1 | Both | `tests/acceptance`; CI for the remote part |
+| AT-2 | A type error in `src/` or `scripts/` fails `make check` and CI | R5.1, R12.1 | Both | `tests/acceptance`; CI for the remote part |
+| AT-3 | A failing test blocks the merge into `main` | R2.5, R12.1 | Remote | Manual checklist (R20.2) |
+| AT-4 | A fake AWS secret key is rejected by pre-commit, by the pre-push hook and by CI, and GitHub push protection is enabled | R9.6, R10.1, R10.2, R10.7 | Both | `tests/acceptance`; CI for the remote part |
+| AT-5 | Coverage below the threshold fails `make check` and CI | R8.2, R8.3 | Both | `tests/acceptance`; CI for the remote part |
+| AT-6 | A bucket without encryption, or one that allows non-TLS access, fails the infrastructure check; it passes once fixed, or once suppressed with a written reason and a registered, approved entry | R14.3, R14.11, R6.2, R6.3 | Phase 3 | `tests/infra` |
 | AT-7 | The walking skeleton: a payload submitted through the MCP submit tool reaches gold and is read back through the MCP read tool with its source URL; a payload from a host off the allowlist is rejected and nothing is written; the run takes under 10 s on `ubuntu-latest` and its golden-file test passes | R16.1–R16.13 | Local | `tests/acceptance`, `tests/integration` |
-| AT-8 | When the agent finishes a task, or a turn that changed files, the hook runs `make check` and a failure is returned to the agent; a turn with no changes reports that no check was needed; deploys are blocked, and before the remote go-ahead so is every push | R17.3, R17.5, R17.6 | Local | `tests/unit` on recorded agent events, plus one live run in Claude Code recorded in the gate self-test report (R20.3) |
+| AT-8 | When the agent finishes a task, or a turn that changed files, the hook runs the fast checks and a failure is returned to the agent; a turn with no changes reports that no check was needed; deploys are blocked, and before the remote go-ahead so is every push | R17.3, R17.5, R17.6 | Local | `tests/unit` on recorded agent events, plus one live run in Claude Code recorded in the gate self-test report (R20.3) |
 | AT-9 | The median of the last 10 pull-request runs is under 5 minutes, and no run exceeds 8 minutes | R12.3 | Remote | Measured from the GitHub API |
-| AT-10 | The planned bootstrap module contains the budget alarm, scoped to `Project=fantadamus` | R15.1, R15.2, R15.5, R15.6 | Local | `tests/infra` |
-| AT-11 | A direct push to `main`, and a force-push to `main`, are rejected; the live ruleset matches the committed JSON | R2.2, R2.3, R2.7, R2.12 | Remote | Gate self-test |
-| AT-12 | A commit containing a test FantaCreator identity is rejected by pre-commit and by the pre-push hook, and the output shows only file and line | R9.6, R10.3, R10.5, R10.6 | Local | Gate self-test, with a dummy identity in a test-only private configuration |
-| AT-13 | A non-Conventional commit message is rejected locally, and a non-Conventional PR title fails CI | R9.2, R9.5 | Both | Gate self-test |
-| AT-14 | A contract schema change without a version bump and changelog entry fails `make check` and CI; a field removal with only a minor bump fails too | R13.2, R13.3 | Both | Gate self-test |
-| AT-15 | A blanket `# noqa`, a `# type: ignore` without a code, an unregistered suppression, an unexplained `skip`, and a register entry with a blank approval date each fail `make check` | R6.1–R6.4, R6.6, R6.7 | Local | Gate self-test |
-| AT-16 | Weakening a gate threshold (lowering the coverage minimum, or raising the CI time budget) fails `make check` and CI | R6.5, R8.4 | Both | Gate self-test |
-| AT-17 | A vulnerable pinned dependency fails the audit; with a valid allowlist entry it passes; with an expired entry it fails | R11.2, R11.3 | Both | Gate self-test |
-| AT-18 | The rendered deploy policy refuses: editing its own controls, creating a role without the boundary, passing a role to an unlisted service, touching any `gamegusto-*` resource, and reading secrets outside its path. It still does its job, including reading its budget and the tag status. Removing any Deny statement makes the test fail | R22.3–R22.9, R22.11, R22.12 | Local | `tests/infra`, plus a gate self-test |
+| AT-10 | The planned bootstrap module contains the budget alarm, scoped to `Project=fantadamus` | R15.1, R15.2, R15.5, R15.6 | Phase 3 | `tests/infra` |
+| AT-11 | A direct push to `main`, and a force-push to `main`, are rejected; the live settings match `docs/runbooks/github-setup.md` | R2.2, R2.3, R2.7, R2.12 | Remote | Manual checklist (R20.2) |
+| AT-12 | A commit containing a test FantaCreator identity is rejected by pre-commit and by the pre-push hook, and the output shows only file and line | R9.6, R10.3, R10.5, R10.6 | Local | `tests/acceptance` |
+| AT-13 | A non-Conventional commit message is rejected locally, and a non-Conventional PR title fails CI | R9.2, R9.5 | Both | `tests/acceptance`; CI for the remote part |
+| AT-14 | A contract schema change without a version bump and changelog entry fails `make check` and CI; a field removal with only a minor bump fails too | R13.2, R13.3 | Both | `tests/acceptance`; CI for the remote part |
+| AT-15 | A blanket `# noqa`, a `# type: ignore` without a code, an unregistered suppression, an unexplained `skip`, and a register entry with a blank approval date each fail `make check` | R6.1–R6.4, R6.6, R6.7 | Local | `tests/acceptance` |
+| AT-16 | Weakening a gate threshold (lowering the coverage minimum, or raising the CI time budget) fails `make check` and CI | R6.5, R8.4 | Both | `tests/acceptance`; CI for the remote part |
+| AT-17 | A vulnerable pinned dependency fails the audit; with a valid allowlist entry it passes; with an expired entry it fails | R11.2, R11.3 | Both | `tests/acceptance`; CI for the remote part |
+| AT-18 | The rendered deploy policy refuses: editing its own controls, creating a role without the boundary, passing a role to an unlisted service, touching any `gamegusto-*` resource, and reading secrets outside its path. It still does its job, including reading its budget and the tag status. Removing any Deny statement makes the test fail | R22.3–R22.9, R22.11, R22.12 | Phase 3 | `tests/infra`, plus a gate self-test |
 | AT-19 | A Dependabot pull request passes the FantaCreator-identity check | R10.4, R11.4 | Remote | Observed on the first Dependabot PR |
-| AT-20 | A resource missing any of `Project`, `Environment`, `Spec` or `ManagedBy` fails the infrastructure tests | R14.6, R14.13 | Local | `tests/infra` |
-| AT-21 | The smoke test fails with instructions while the `Project` cost-allocation tag is inactive, and passes once it's active | R15.7, R19.4 | Deploy | Smoke test after the first deploy |
+| AT-20 | A resource missing any of `Project`, `Environment`, `Spec` or `ManagedBy` fails the infrastructure tests | R14.6, R14.13 | Phase 3 | `tests/infra` |
+| AT-21 | The smoke test fails with instructions while the `Project` cost-allocation tag is inactive, and passes once it's active | R15.7, R19.4 | Phase 3 | Smoke test after the first deploy |
 
 ## Out of scope for Spec 0
 

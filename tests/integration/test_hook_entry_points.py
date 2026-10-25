@@ -87,11 +87,11 @@ def test_stop_check_main_runs_make_and_reports_red(
     project: tuple[Path, Git], monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     repo, _ = project
-    (repo / "Makefile").write_text("check:\n\t@echo 'FAIL demo: on purpose'; exit 1\n", encoding="utf-8")
+    (repo / "Makefile").write_text("test-fast:\n\t@echo 'FAIL demo: on purpose'; exit 1\n", encoding="utf-8")
     _stdin(monkeypatch, _fixture("stop"))
     assert stop_check.main() == 2
     assert "FAIL demo: on purpose" in capsys.readouterr().err
-    (repo / "Makefile").write_text("check:\n\t@echo '1 passed, 0 failed'\n", encoding="utf-8")
+    (repo / "Makefile").write_text("test-fast:\n\t@echo '1 passed'\n", encoding="utf-8")
     _stdin(monkeypatch, _fixture("stop"))
     assert stop_check.main() == 0
     _stdin(monkeypatch, _fixture("stop"))

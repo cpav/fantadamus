@@ -159,19 +159,18 @@ tool-versions.toml, Makefile, pyproject.toml, uv.lock, .pre-commit-config.yaml,
 | `check-tests` | pytest over all layers with `HYPOTHESIS_PROFILE=ci`, then the coverage gate | R7, R8, R16 |
 | `check-infra` | For `bootstrap` and `stack`: `terraform fmt -check`, `init -backend=false`, `validate`, `tflint`, `checkov`, `terraform test`, plan-snapshot comparison; then the IAM evaluator suite | R14, R15.5, R22.9, R22.11 |
 | `check-audit` | `pip-audit` on `uv.lock` with `config/audit-allowlist.toml` | R11.1–R11.3 |
-| `test-fast` | Format, lint, unit and property tests with `HYPOTHESIS_PROFILE=dev` | R1.4 |
+| `test-fast` | Format, lint, unit and property tests with `HYPOTHESIS_PROFILE=dev`; about 15 seconds | R1.4 |
 | `mutation` | `mutmut` on the modules in `[tool.fantadamus] core_modules` | R1.7 |
 | `skeleton` | Runs the walking skeleton end to end on the fixture | R16.1 |
-| `github-apply` / `github-verify` | Applies, or compares with, the ruleset, push protection, secret scanning and fork-approval settings through `gh api` | R2.12, R10.7, R12.8 |
-| `bootstrap` | Shows `aws sts get-caller-identity` and the plan for `infra/bootstrap` under the admin profile; applies after interactive confirmation | R19.6 |
-| `deploy` | Plans `infra/stack` as `fantadamus-deploy`, shows the diff, applies after confirmation, then runs the smoke test | R19.1, R19.4 |
+| `bootstrap` (Phase 3) | Shows `aws sts get-caller-identity` and the plan for `infra/bootstrap` under the admin profile; applies after interactive confirmation | R19.6 |
+| `deploy` (Phase 3) | Plans `infra/stack` as `fantadamus-deploy`, shows the diff, applies after confirmation, then runs the smoke test | R19.1, R19.4 |
 | `task-check` | `TASK=<id>`: checks the task's dependencies, requirement IDs, tests and ADRs before work starts | R17.4 |
-| `selftest` | Runs the gate self-tests (`LOCAL=1` for local only) and writes the report | R20 |
 
 ### C3. Toolchain
 
 - **Python (uv, `pyproject.toml`):** runtime: `pydantic`, `duckdb`, `mcp` (v2). Dev: `ruff`, `mypy`, `pytest`,
-  `pytest-cov`, `pytest-socket`, `hypothesis`, `moto`, `boto3`, `checkov`, `sqlfluff`, `yamllint`,
+  `pytest-cov`, `pytest-socket`, `pytest-xdist`, `pytest-timeout`, `hypothesis`, `checkov`,
+  `sqlfluff`, `yamllint`, and from Phase 3 `moto` and `boto3`,
   `pip-audit`, `mutmut`, `pre-commit`. Async tests use anyio's pytest plugin (`pytest.mark.anyio`), which
   comes with `mcp` (ADR-0001). Python 3.12 in `requires-python` and
   `.python-version` (R3).
@@ -208,41 +207,37 @@ summary line for `make check`.
 
 ### C5. CI (`.github/workflows/`)
 
-- **`ci.yml`** runs on `pull_request` and `push` to `main`. It never uses `pull_request_target` (R12.9).
-  Settings: `permissions: contents: read` at the top level, `concurrency` cancels superseded runs, and every
-  job has `timeout-minutes: 10` (R12.4, R12.6). Every action is pinned to a full commit SHA (R11.5). Caches
-  are keyed on `uv.lock`, `tool-versions.toml`, `.pre-commit-config.yaml` and the Terraform provider lock
-  files (R12.5).
+Re-planned on 2026-10-26: one job instead of four, and no PR-description parsing.
+
+- **`ci.yml`** runs on `pull_request` and on `push` to `main`, never on `pull_request_target` (R12.9).
+  `permissions: contents: read` at the top level, `concurrency` cancels superseded runs, every job has
+  `timeout-minutes: 10`, and every action is pinned to a full commit SHA (R11.5, R12.4, R12.6). `setup-uv`
+  caches dependencies keyed on `uv.lock` (R12.5).
 
   | Job (required check) | Runs | Estimated time |
   |---|---|---|
-  | `static` | `make check-static` | about 1.5 min |
-  | `tests` | `make check-tests` | about 2 min |
-  | `infra` | `make check-infra` | about 2.5 min |
-  | `audit` | `make check-audit` | about 1 min |
-  | `pr-meta` (PRs only) | `python -m scripts.checks.pr_meta` | under 30 s |
-  | `pr-secrets` (PRs only) | gitleaks and the identity check over `base..head` | under 1 min |
+  | `check` | `make setup` (tools: gitleaks and actionlint only), then `make check` | about 2 min |
+  | `pr` (pull requests only) | The title as a Conventional Commits message, then gitleaks and the identity check over `base..head` | under 1 min |
 
-  The jobs run in parallel, so the wall-clock time is about 3 minutes, against a budget of 5 (R12.3). The
-  union of the four `make` sub-targets is exactly `make check` (R1.2); a unit test parses the Makefile and
-  `ci.yml` to keep that true.
-- **`audit.yml`** runs `make check-audit` every Monday at 06:00 UTC. A failure triggers GitHub's
-  workflow-failure e-mail to the workflow's author, the owner (R11.6).
-- **Secrets:** `FANTADAMUS_CREATOR_IDENTITIES` is stored as both an Actions secret and a Dependabot secret
-  (R10.4). CI has no AWS credentials (R12.4).
+  One `make check` job is the union of the sub-targets by construction (R1.2). The identity list comes from
+  the `FANTADAMUS_CREATOR_IDENTITIES` secret (R10.4); CI has no AWS credentials (R12.4). The PR title reaches
+  the shell through an environment variable, never through `${{ }}` expansion inside a script.
+- **`audit.yml`** runs `make check-audit` every Monday at 06:00 UTC; a failure triggers GitHub's
+  workflow-failure e-mail to the owner (R11.6).
+- **`dependabot.yml`** opens weekly update PRs for `uv`, `github-actions` and `pre-commit` (R11.4).
 
-### C6. GitHub settings as code
+### C6. GitHub settings: a checklist
 
-- **`.github/rulesets/main.json`** targets `refs/heads/main`, with `enforcement: active` and
-  `bypass_actors: []`. Its rules:
-  - `deletion` and `non_fast_forward`;
-  - `pull_request`, with `allowed_merge_methods: ["squash"]` and zero required approvals (single owner);
-  - `required_status_checks`, with `strict_required_status_checks_policy: true` and the six checks above.
-- **`make github-apply`** creates or updates the ruleset, enables secret scanning and push protection
-  (`PATCH /repos/{o}/{r}` `security_and_analysis`), and sets fork pull-request workflows to require approval
-  for all external contributors.
-- **`make github-verify`** fetches the live settings and diffs them against the committed JSON. It is part
-  of the remote gate (R2.12).
+`docs/runbooks/github-setup.md` lists every setting the gates rely on, and the owner applies it once at the
+remote go-ahead (R2.12):
+
+- the `main` ruleset: no deletion, no force-push, pull requests required with squash merges only, the
+  `check` and `pr` status checks required with strict up-to-date branches, no bypass;
+- secret scanning and push protection on (R10.7);
+- approval required before workflows run for outside contributors' pull requests (R12.8);
+- the `FANTADAMUS_CREATOR_IDENTITIES` secret for Actions and for Dependabot (R10.4).
+
+The remote gate checks the live settings against this list once (AT-11), by hand.
 
 ### C7. Agent hooks (`scripts/hooks/`)
 
@@ -252,13 +247,15 @@ changed files, `stop_hook_active`). Each hook is a thin entry point.
 | Hook | Claude Code event | Logic | Requirements |
 |---|---|---|---|
 | `post_edit` | `PostToolUse`, matcher `Edit\|Write\|MultiEdit` | `ruff format` and `ruff check --fix` on the edited Python file; reports what remains | R17.2 |
-| `stop_check` | `Stop` (timeout 600 s) | If tracked files changed since the last green check (hash of `git diff HEAD` plus untracked files, stored in `.git/fantadamus-last-green`), run `make check`. On failure, exit 2 with the summary, so the agent keeps working. If it fails again while `stop_hook_active` is set, let the turn end but print the failure. With no changes, report that no check was needed | R17.3 |
+| `stop_check` | `Stop` (timeout 150 s) | If tracked files changed since the last green run (hash of HEAD and the status and contents of changed and untracked files, stored in `.git/fantadamus-last-green`), run `make test-fast`, stopping it with its children after 120 s. On failure, exit 2 with the summary, so the agent keeps working. If it fails again while `stop_hook_active` is set, exit 1 so the turn ends with a visible error. With no changes, report that no check was needed. The full output goes to `.git/fantadamus-stop-check.log` | R17.3 |
 | `guard` | `PreToolUse`, matcher `Bash\|Write\|Edit` | Splits shell commands on `;`, `&&`, `\|\|`, `\|` and newlines, then parses each with `shlex`. **Before the go-ahead** (no `origin` remote) it blocks every `git push`, `git remote add` and `gh repo create`; **afterwards** only force-pushes (`-f`, `--force*`, `+refspec`) and pushes to `main`. Always blocks `terraform apply`, `make deploy`, `make bootstrap`, and writes under the private-configuration path | R17.5 |
 
 The task-start check (R17.4) isn't a hook, because Claude Code has no task event: it's `make task-check`
 (C4), which CLAUDE.md tells the agent to run before each task.
 
 ### C8. Infrastructure (`infra/`)
+
+*Moved to Phase 3 by the 2026-10-26 re-plan; kept here as the design to build then.*
 
 **`infra/bootstrap/`** (local state, applied by the owner with `make bootstrap`):
 
@@ -305,6 +302,8 @@ so the two renderers can't diverge. The deploy policy keeps gamegusto's shape:
 
 ### C9. Deploy and smoke test
 
+*Moved to Phase 3 by the 2026-10-26 re-plan; kept here as the design to build then.*
+
 `make deploy` runs `terraform plan -out` as `fantadamus-deploy`, prints the plan, asks for `yes`, applies,
 then runs `scripts/smoke/spec0.py` with the same profile. The smoke test checks:
 
@@ -340,15 +339,19 @@ endpoints, so boto3 uses `us-east-1` for them.
 - **CLI:** `fantadamus skeleton run` runs the fixture through an in-process client and prints the summary
   (`make skeleton`).
 
-### C11. Gate self-tests (`scripts/selftest/`)
+### C11. Gate proofs
 
-Each scenario creates a throwaway git worktree on a `gate-selftest/<scenario>` branch, applies one bad
-change, runs the gate under test, asserts that it fails with the expected message, and removes the worktree
-and branch (R20.1). Remote scenarios push the branch, open a pull request with `gh`, poll its check status
-through the API, then close the PR and delete the branch (R20.2). They run only on the owner's machine with
-the owner's `gh` login (R20.5). Each run writes
-`docs/reports/gate-selftest-<date>.md` with gate, bad change, expected and observed result (R20.4). The live
-agent-hook checks (R20.3) are a written checklist whose evidence goes into the same report.
+Re-planned on 2026-10-26: no self-test framework.
+
+- **Local gates:** each automatable acceptance test is a test in `tests/acceptance/` that builds the bad input
+  in a temporary directory (a badly formatted file, a type error, a fake AWS key in a commit, a contract
+  change without a version bump, and so on) and runs the real gate on it (R20.1).
+- **GitHub gates:** a manual checklist, run once after the go-ahead with the owner's login: a failing test
+  blocks a merge, direct and force pushes to `main` are refused, push protection rejects a fake secret, and a
+  non-Conventional PR title fails (R20.2, R20.5).
+- **Agent hooks:** the live check of task 9.7 (R20.3).
+- **Report:** `docs/reports/gate-selftest-<date>.md` gathers each gate, the bad change and the observed
+  result (R20.4).
 
 ## Data models
 
@@ -470,13 +473,13 @@ sequenceDiagram
   alt no changes
     H-->>A: "no check needed" (exit 0)
   else changes
-    H->>H: make check (≤ 10 min)
+    H->>H: make test-fast (≤ 2 min)
     alt green
       H-->>A: exit 0; record last-green hash
     else red, first time
       H-->>A: exit 2 + summary (agent keeps working)
     else red, stop_hook_active
-      H-->>A: exit 0 + failure printed (turn ends saying so)
+      H-->>A: exit 1 + failure shown (turn ends saying so)
     end
   end
 ```
@@ -554,6 +557,9 @@ it's tested by running it.
 
 ## Cost estimate (monthly)
 
+After the 2026-10-26 re-plan, Phase 0 creates no AWS resources, so its cost is $0 (GitHub Actions on a public
+repository is free). The estimate below applies when the infrastructure is built in Phase 3.
+
 | Item | Estimate | Basis |
 |---|---|---|
 | S3: state, log and lake buckets (empty or KB-sized) | about $0.00–$0.02 | Storage and requests at negligible volume |
@@ -597,14 +603,14 @@ it's tested by running it.
 7. `make check`, `make test-fast`, the union test.
 8. Contracts and contract-version check; walking skeleton with the MCP tools.
 9. Agent hooks.
-10. ADR-0002 and ADR-0003. Owner approval.
-11. Bootstrap module, policies, evaluator, budget (not applied).
-12. Stack module, tests, plan snapshot, checkov suppressions (owner approval).
-13. CI workflows, Dependabot, rulesets as code. Written, not yet run.
-14. Local gate self-tests and report: **local gate**.
-15. **Remote go-ahead** (owner): create the repository, `make github-apply`, push. Remote self-tests and AT-9:
+10. CI workflow, Dependabot, the GitHub setup checklist. Written, not yet run.
+11. Local acceptance tests and report: **local gate**.
+12. **Remote go-ahead** (owner): create the repository, apply the checklist, push; the remote checklist:
     **remote gate**.
-16. First deploy (owner approval): `make bootstrap`, `make deploy`, smoke test (AT-21).
+13. Short phase report and the owner's sign-off.
+
+Moved to Phase 3 by the 2026-10-26 re-plan: ADR-0002 and ADR-0003, the bootstrap and stack modules with
+their policy checks, and the first deploy.
 
 ## Risks and points to verify
 

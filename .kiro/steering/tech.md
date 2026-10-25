@@ -64,7 +64,8 @@ Data mesh solves an *organisational* scaling problem (many teams, many domains).
 
 ## Infrastructure as code
 
-**CDK or Terraform, pending ADR-0002** (Spec 0). Leaning: **Terraform (≥ 1.11)**. The owner already
+**CDK or Terraform, pending ADR-0002**, decided in Phase 3 when the AWS work is built (moved from Spec 0
+by the 2026-10-26 re-plan). Leaning: **Terraform (≥ 1.11)**. The owner already
 runs Terraform in the same AWS account (gamegusto), with a reviewed least-privilege bootstrap, a deploy
 role, a permissions boundary and a policy evaluator that we reuse rather than rebuild in CDK. The
 toolchain is `terraform fmt`, `validate`, `tflint`, `checkov`, and `terraform test` with `override_data`

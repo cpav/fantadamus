@@ -10,10 +10,10 @@ We go step by step. Every step ends at a gate, and **nothing moves forward on a 
 
 | Phase | Spec | What gets built | Research around it | Exit gate |
 |---|---|---|---|---|
-| 0 | `engineering-foundation` | Repository, tooling, CI, test harness, infra skeleton with the budget alarm, Claude Code hooks, and a walking skeleton (a tiny fixture through bronze → silver → gold) | Tool choices, and CDK vs Terraform: one ADR each | Spec 0's acceptance tests pass, including those proving each gate blocks a bad change: the **local gate** first, the **remote gate** after the owner's go-ahead to push (Spec 0, R2.11) |
-| 1 | `data-foundation` (MVP scope) | Submit tools, validation and storage for facts collected by Claude (ADR-0005), one vertical slice at a time | The MVP reading list: which pages answer each need, recorded in the source registry | Spec 1's acceptance tests pass locally and in CI; one real round collected through Claude end to end; the quality report is clean |
-| 2 | `decision-engine` | Lineup calculations implementing [`docs/method.md`](../../docs/method.md) | Fitting team xG from betting lines; calibrating the *(start)* constants against this season's data | Spec 2's acceptance tests pass, including method §A9's six tests; a calibration report exists for at least one real round |
-| 3 | `chat-agent` (MVP scope) | The MCP server: local, then remote for the second user | Remote MCP auth; tool-call time limits | Spec 3's acceptance tests pass; both users answered from their Claude apps |
+| 0 | `engineering-foundation` | Repository, tooling, CI, test harness, Claude Code hooks, and a walking skeleton (a tiny fixture through bronze → silver → gold) | Tool choices (ADR-0001) | Spec 0's acceptance tests pass, including those proving each gate blocks a bad change: the **local gate** first, the **remote gate** after the owner's go-ahead to push (Spec 0, R2.11) |
+| 1 | `mvp-x-or-y` | "X or Y?" for two forwards, locally: submit tools and storage for the facts it needs (ADR-0005), the method for forwards ([`docs/method.md`](../../docs/method.md) §A3–§A4), and `compare_players` | The MVP reading list for those facts; fitting team xG from betting lines | The slice's acceptance tests pass, including method §A9 tests 2, 4 and 6; one real round answered end to end in the owner's Claude Desktop |
+| 2 | Further slices | Keepers and defenders; the full lineup with league rules, the bench and the simulation; the formation call | Calibrating the *(start)* constants against this season's data | Each slice's acceptance tests pass, ending with all six of method §A9; a calibration report exists for at least one real round |
+| 3 | Online | The remote MCP endpoint for the second player, with the AWS skeleton, budget alarm and deploy gate moved from Phase 0 | Remote MCP auth; IaC (ADR-0002); account, region and deploy identity (ADR-0003) | Both users answered from their Claude apps; the first deploy passes its smoke test |
 | 4 | v1 | Scheduled pipelines on AWS, licensed or permitted sources | Source registry decisions D1–D6 | Defined when v1 is specified |
 
 Every exit gate ends with the owner's sign-off.
@@ -50,9 +50,9 @@ Slices are **vertical**: one source or data product end to end, never all of bro
    only.
 5. **Deploy gate.** Nothing reaches AWS without the owner's approval. The owner sees the `terraform plan` (or
    `cdk diff`) first. The budget alarm is in the bootstrap module, the first one applied. A smoke test runs after every deploy.
-6. **Phase gate.** The exit criteria are met. A phase report covers tests, coverage, quality results, cost,
-   open risks and a mutation-testing run on the core modules. The owner signs off before the next spec
-   starts.
+6. **Phase gate.** The exit criteria are met. A phase report covers tests, coverage, quality results, cost
+   and open risks, and from Phase 2 on a mutation-testing run on the core modules. The owner signs off
+   before the next spec starts.
 
 ### Never weaken a gate to get to green
 
@@ -90,7 +90,9 @@ updated with the final list.
 - Dependencies are managed with `uv` and a committed lockfile.
 - **The pull-request gate stays under 5 minutes**: the median of the last 10 runs, wall clock, all required
   checks; any run over 8 minutes fails the gate's own acceptance test.
-- `make test-fast` is the inner loop: format, lint, unit and property tests with the fast Hypothesis profile.
+- `make test-fast` is the inner loop: format, lint, unit and property tests with the fast Hypothesis profile,
+  in under 20 seconds. `make check` runs its quick checks side by side and the test suite in parallel; slowness
+  is treated as a defect, and any single test over two minutes fails with a traceback.
 
 ## Test layers
 
@@ -148,7 +150,7 @@ keep Kiro's file layout (`.kiro/steering/`, `.kiro/specs/`) because it works wel
   | Purpose | Claude Code event |
   |---|---|
   | Format and lint an edited `*.py` file | `PostToolUse` on Edit/Write |
-  | Run `make check` (10-minute timeout) when the turn changed tracked files, otherwise report that no check was needed; a failure goes back to the agent | `Stop` |
+  | Run `make test-fast` (2-minute limit) when the turn changed tracked files, otherwise report that no check was needed; a failure goes back to the agent. The full `make check` runs before each task report | `Stop` |
   | Block deploys (`make deploy`, `make bootstrap`, `terraform apply`) and writes to private configuration; before the remote go-ahead every push and `gh repo create`, afterwards force-pushes and pushes to `main`, unless approved | `PreToolUse` on Bash/Write |
 
 - Hooks fire only on the agent's own actions. **Pre-commit and CI are the gates of record**; hooks are

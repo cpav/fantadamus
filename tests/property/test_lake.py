@@ -12,7 +12,6 @@ from typing import Any
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from fantadamus.core.clock import fixed_clock
 from fantadamus.domains.skeleton import bronze, gold, pipeline, silver
 from fantadamus.lake.duckdb_store import BronzeRecord, LakeStore
 
@@ -73,16 +72,18 @@ def _record(index: int, rows: list[Any], source_url: str, captured_at: dt.dateti
 @given(batch=submissions, repeat=st.booleans())
 def test_bronze_append_only(batch: list[tuple[list[Any], str, dt.datetime]], repeat: bool) -> None:
     with _store() as store:
-        clock = fixed_clock(T0)  # every submission gets the same received_at: names must still never collide
         written: dict[Path, bytes] = {}
         for rows, source_url, captured_at in batch + (batch[:1] if repeat else []):
-            submission = pipeline.Submission(rows=rows, source_url=source_url, captured_at=captured_at)
-            result = pipeline.submit(store, submission, allowed_hosts=ALLOWED, clock=clock, submitted_by="u")
+            # Every record gets the same received_at, so file names collide and must still never overwrite.
+            envelope = _record(0, rows, source_url, captured_at).envelope
+            bronze_id = store.append_bronze(envelope)
             files = store.bronze_files(bronze.SOURCE)
             assert {path: path.read_bytes() for path in written} == written
             assert len(files) == len(written) + 1
-            assert result.bronze_id in {path.stem for path in files}
+            assert bronze_id in {path.stem for path in files}
             written.update({path: path.read_bytes() for path in files})
+        pipeline.refresh(store)  # rebuilding silver and gold leaves bronze untouched
+        assert {path: path.read_bytes() for path in written} == written
 
 
 @io_bound

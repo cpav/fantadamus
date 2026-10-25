@@ -119,8 +119,14 @@ These apply to the coding agent, Claude Code, and to the owner.
   Run an Analyze-Requirements-style review before design. Research is cited in each document.
 - **Change order.** When a requirement changes mid-build: update requirements.md first, then design.md,
   then tasks.md. Never change code ahead of its spec.
-- **Order of specs.** `engineering-foundation` before any pipeline code; `data-foundation` before any engine
-  or agent code. No phase starts before the previous one has passed its gate.
+- **Order of specs.** `engineering-foundation` before any pipeline code. After it, work goes in thin vertical
+  slices, each a small spec taking one question from data to answer (data, then engine, then tool inside the
+  slice). No phase starts before the previous one has passed its gate.
+- **Smallest thing that works.** No new tooling or machinery unless a feature needs it now. A slow check is a
+  defect to fix.
+- **Decisions.** The agent makes small decisions itself and logs them in the task report. A report asks the
+  owner for at most three decisions, each with a recommendation, in plain language. Anything this file or
+  `quality.md` reserves for the owner (gates, paid services, deploys, pushes, downloads) is still asked.
 - **Step by step.** One task at a time, starting with `make task-check TASK=<id>` once it exists. One
   branch and one pull request per task (local squash merges until the remote go-ahead). Post the task
   report (`quality.md`) after each task, then stop.

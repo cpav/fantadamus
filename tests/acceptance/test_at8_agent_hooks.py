@@ -19,7 +19,7 @@ from scripts.hooks.event import HookEvent, parse
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "tests" / "fixtures" / "hooks"
-RED = "PASS format\nFAIL lint: ruff found 1 problem\n17 passed, 1 failed\n"
+RED = "FAILED tests/unit/test_a.py::test_b - assert 1 == 2\n1 failed, 368 passed in 14.20s\n"
 
 
 def _fixture(name: str) -> dict[str, object]:
@@ -87,9 +87,9 @@ def test_at8_agent_hooks(tmp_path: Path) -> None:
 
     last_green = tmp_path / "last-green"
     first = stop_check.handle(stop, state="changed", last_green=last_green, run_check=red)
-    assert (first.code, "FAIL lint" in first.stderr) == (2, True)
+    assert (first.code, "FAILED tests/unit/test_a.py::test_b" in first.stderr) == (2, True)
     again = stop_check.handle(stop_again, state="changed", last_green=last_green, run_check=red)
-    assert (again.code, "FAIL lint" in again.stderr) == (1, True)
+    assert (again.code, "FAILED tests/unit/test_a.py::test_b" in again.stderr) == (1, True)
     last_green.write_text("unchanged\n", encoding="utf-8")
     quiet = stop_check.handle(stop, state="unchanged", last_green=last_green, run_check=red)
     assert (quiet.code, "no check needed" in quiet.stdout) == (0, True)

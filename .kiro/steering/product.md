@@ -105,12 +105,15 @@ not what happens to it.
 
 ## Delivery order
 
+Re-planned on 2026-10-26 to reach a usable advisor sooner: work goes in thin vertical slices, each taking one
+question from data to answer, instead of three full specs one after another.
+
 | Phase | Spec | Status rule |
 |---|---|---|
-| 0 | `engineering-foundation`: repository, tooling, CI, test harness, infra skeleton, walking skeleton | Built first |
-| 1 | `data-foundation`: the pipelines. MVP scope: submit tools, validation and storage for facts collected by Claude (ADR-0005) | Starts after Phase 0's gate |
-| 2 | `decision-engine`: lineup calculations | Outline only until Spec 1's acceptance tests pass |
-| 3 | `chat-agent`: MVP scope is the MCP server (read tools, refresh plans, submit tools; local, then remote) | Outline only until Spec 2 is done |
+| 0 | `engineering-foundation`: repository, tooling, CI, test harness, agent hooks, walking skeleton | Built first; its AWS skeleton moved to Phase 3 |
+| 1 | `mvp-x-or-y`: "X or Y?" for two forwards in the owner's Claude Desktop: the facts it needs (submit tools, storage), the method for forwards, and the `compare_players` tool | Starts after Phase 0's gate |
+| 2 | Further slices, one small spec each: keepers and defenders; the full lineup with league rules and the bench; the formation call | Each after the previous slice has answered a real round |
+| 3 | Online for the second player: the remote MCP endpoint, plus the AWS skeleton, budget alarm and deploy gate moved from Phase 0 | After the slices the second player needs |
 | 4 | v1: automated, scheduled pipelines on licensed or permitted sources | After the MVP has been used for real rounds |
 
 Gates and the Definition of Done are in `quality.md`.

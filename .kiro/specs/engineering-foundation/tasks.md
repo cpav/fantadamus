@@ -1,6 +1,6 @@
 # Implementation Plan: `engineering-foundation` (Spec 0)
 
-Status: **Draft for owner review** · Date: 2026-10-24 · From the approved [requirements](requirements.md)
+Status: **Approved; re-planned 2026-10-26** ([replan-2026-10-26.md](replan-2026-10-26.md)) · Date: 2026-10-24 · From the approved [requirements](requirements.md)
 and [design](design.md).
 
 ## How to read and run these tasks
@@ -218,6 +218,7 @@ and [design](design.md).
 
 - [ ] 10. ADR-0002 (IaC) and ADR-0003 (account, region, deploy identity)
   - Branch: `docs/ef-10-adr-0002-0003` · Depends on: 4.4 · ADRs: none
+  - **Moved to Phase 3** by the 2026-10-26 re-plan: built with the online server, not now.
   - [ ] 10.1 ADR-0002: Terraform vs CDK, with a spike in a scratch module proving offline rendering of the
     policy templates and a `mock_provider` plan
     - _Requirements: R14.1, R14.10, R18.3_
@@ -232,6 +233,7 @@ and [design](design.md).
 
 - [ ] 11. Bootstrap module (written and tested, not applied)
   - Branch: `feat/ef-11-bootstrap` · Depends on: 7, 10 · ADRs: ADR-0002, ADR-0003
+  - **Moved to Phase 3** by the 2026-10-26 re-plan: built with the online server, not now.
   - [ ] 11.1 `versions.tf`, default tags, the state and log buckets (encryption, Block Public Access, TLS
     deny, versioning, lifecycle, logging)
     - _Requirements: R14.3, R14.4, R14.6, R14.12, R14.13, R22.2_
@@ -257,6 +259,7 @@ and [design](design.md).
 
 - [ ] 12. Stack module, policy checks, deploy and smoke test (written and tested, not applied)
   - Branch: `feat/ef-12-stack` · Depends on: 11 · ADRs: ADR-0002, ADR-0003
+  - **Moved to Phase 3** by the 2026-10-26 re-plan: built with the online server, not now.
   - [ ] 12.1 Partial S3 backend; lake bucket with prefixes, versioning, lifecycle and logging; tags
     - _Requirements: R14.2, R14.3, R14.4, R14.6, R14.12, R14.13_
     - _Test: `infra/stack/tests/lake.tftest.hcl`; **AT-6**
@@ -277,72 +280,65 @@ and [design](design.md).
     - _Test: `tests/integration/test_smoke.py::test_tag_inactive_fails_with_instructions`,
       `::test_reports_failed_assertion` (moto)_
 
-- [ ] 13. CI workflows and GitHub settings as code (written, not yet run)
-  - Branch: `ci/ef-13-ci` · Depends on: 7, 12 · ADRs: ADR-0001
-  - [ ] 13.1 `ci.yml`: `static`, `tests`, `infra` and `audit` jobs; read-only permissions; concurrency;
-    10-minute timeouts; caches; actions pinned to SHAs
+- [ ] 13. CI workflow, Dependabot and the GitHub setup checklist (written, not yet run)
+  - Branch: `chore/ef-13-ci` · Depends on: 7 · ADRs: ADR-0001
+  - [ ] 13.1 `ci.yml` `check` job: `make setup` and `make check`; read-only permissions; concurrency;
+    10-minute timeout; uv cache; actions pinned to SHAs; no `pull_request_target`
     - _Requirements: R1.2, R11.5, R12.1, R12.2, R12.4, R12.5, R12.6, R12.9_
-    - _Test: `tests/unit/test_ci_workflow.py::test_union_equals_make_check`,
-      `::test_actions_pinned_to_sha`, `::test_no_pull_request_target`, `::test_read_only_permissions`,
-      `::test_job_timeouts`_
-  - [ ] 13.2 `pr-meta` job and `scripts/checks/pr_meta.py`: title, description fields, ADR status
-    - _Requirements: R9.5, R18.4, R21.2_
-    - _Test: `tests/unit/checks/test_pr_meta.py::test_non_conventional_title_fails`,
-      `::test_missing_fields_fail`, `::test_unaccepted_adr_fails`, `::test_dependabot_exempt`_
-  - [ ] 13.3 `pr-secrets` job: gitleaks and the identity check over `base..head`
-    - _Requirements: R10.2_
-    - _Test: `tests/unit/test_ci_workflow.py::test_pr_secrets_scans_commit_range`_
-  - [ ] 13.4 `audit.yml` (weekly) and `dependabot.yml` (or Renovate, per ADR-0001)
+    - _Test: `tests/unit/test_ci_workflow.py::test_check_job_runs_make_check`, `::test_actions_pinned_to_sha`,
+      `::test_no_pull_request_target`, `::test_read_only_permissions`, `::test_job_timeouts`_
+  - [ ] 13.2 `pr` job: the title as a Conventional Commits message; gitleaks and the identity check over
+    `base..head`
+    - _Requirements: R9.5, R10.2, R21.2_
+    - _Test: `tests/unit/test_ci_workflow.py::test_pr_job_checks_title_and_commit_range`_
+  - [ ] 13.3 `audit.yml` (weekly) and `dependabot.yml` (uv, GitHub Actions, pre-commit)
     - _Requirements: R11.1, R11.4, R11.6_
-    - _Test: `tests/unit/test_ci_workflow.py::test_audit_schedule_weekly`, `::test_dependency_updates_cover_uv_actions_precommit`_
-  - [ ] 13.5 `.github/rulesets/main.json`; `make github-apply` and `make github-verify` (ruleset, secret
-    scanning, push protection, fork approval)
-    - _Requirements: R2.2, R2.3, R2.4, R2.5, R2.6, R2.7, R2.12, R10.7, R12.8_
-    - _Test: `tests/unit/test_github_settings.py::test_ruleset_squash_only_no_bypass`,
-      `::test_strict_required_checks`, `::test_verify_reports_drift` (stubbed API)_
+    - _Test: `tests/unit/test_ci_workflow.py::test_audit_schedule_weekly`,
+      `::test_dependency_updates_cover_uv_actions_precommit`_
+  - [ ] 13.4 `docs/runbooks/github-setup.md`: the ruleset, secret scanning, push protection, fork approval
+    and the identity secret, as a checklist for the go-ahead
+    - _Requirements: R2.2, R2.3, R2.4, R2.5, R2.6, R2.7, R2.12, R10.4, R10.7, R12.8_
+    - _Test: `tests/unit/test_github_setup.py::test_checklist_covers_each_setting`_
 
-- [ ] 14. Gate self-tests and the **local gate**
-  - Branch: `test/ef-14-gate-selftests` · Depends on: 6, 7, 8, 9, 11, 12, 13 · ADRs: ADR-0001
-  - [ ] 14.1 Self-test framework: throwaway worktrees and branches, scenarios, report writer, local-only
-    runs
-    - _Requirements: R20.1, R20.4, R20.5, R21.3_
-    - _Test: `tests/unit/selftest/test_framework.py::test_worktree_and_branch_cleaned_up`,
-      `::test_report_lists_gate_change_result`;
-      `tests/unit/test_traceability.py::test_acceptance_tests_map_to_existing_requirements`_
-  - [ ] 14.2 Local scenarios and their acceptance tests: AT-1, AT-2, AT-4, AT-5, AT-13 and AT-16 (local
-    parts), plus AT-12, AT-14, AT-15 and AT-17
+- [ ] 14. Local acceptance tests and the **local gate**
+  - Branch: `test/ef-14-local-gate` · Depends on: 6, 7, 8, 9, 13 · ADRs: ADR-0001
+  - [ ] 14.1 One test per local acceptance test, each running the real gate on a bad input in a temporary
+    directory: AT-1, AT-2, AT-4, AT-5, AT-12, AT-13, AT-14, AT-15, AT-16 and AT-17 (local parts)
     - _Requirements: R1.3, R4.1, R4.2, R5.1, R6.1, R6.2, R6.3, R6.4, R6.5, R6.6, R6.7, R8.2, R8.3, R9.2, R9.3,
-      R9.6, R10.1, R10.3, R10.5, R10.6, R11.2, R11.3, R13.2, R13.3_
-    - _Test: **AT-1** `tests/acceptance/test_at1_format_lint_gate.py`, **AT-2**
-      `test_at2_type_gate.py`, **AT-4** `test_at4_fake_aws_key_rejected.py`, **AT-5**
-      `test_at5_coverage_gate.py`, **AT-12** `test_at12_identity_rejected.py`, **AT-13**
-      `test_at13_conventional_commits.py`, **AT-14** `test_at14_contract_versioning.py`, **AT-15**
-      `test_at15_suppressions.py`, **AT-16** `test_at16_threshold_ratchet.py`, **AT-17**
-      `test_at17_dependency_audit.py` (all in `tests/acceptance/`, local mode)_
+      R9.6, R10.1, R10.3, R10.5, R10.6, R11.2, R11.3, R13.2, R13.3, R20.1_
+    - _Test: `tests/acceptance/test_at1_format_lint_gate.py`, `test_at2_type_gate.py`,
+      `test_at4_fake_aws_key_rejected.py`, `test_at5_coverage_gate.py`, `test_at12_identity_rejected.py`,
+      `test_at13_conventional_commits.py`, `test_at14_contract_versioning.py`, `test_at15_suppressions.py`,
+      `test_at16_threshold_ratchet.py`, `test_at17_dependency_audit.py`_
+  - [ ] 14.2 Traceability: every acceptance test maps to existing requirements, and every local one to a test
+    file; the gate report lists them
+    - _Requirements: R20.4, R21.3_
+    - _Test: `tests/unit/test_traceability.py::test_acceptance_tests_map_to_existing_requirements`_
   - [ ] 14.3 **Owner:** review the local gate report → **local gate passed**
     - _Requirements: Phase 0 exit gate, local part (requirements, Introduction)_
-    - _Test: `docs/reports/gate-selftest-<date>.md` shows every local scenario failing as expected_
+    - _Test: `docs/reports/gate-selftest-<date>.md` shows every local gate failing on its bad input_
 
 - [ ] 15. Remote go-ahead and the **remote gate**
   - Branch: `chore/ef-15-remote` · Depends on: 14 · ADRs: ADR-0001
-  - [ ] 15.1 **Owner:** give the remote go-ahead and create the public repository; add the identity list
-    as an Actions secret and a Dependabot secret; `make github-apply`; push `main`
-    - _Requirements: R2.1, R2.11, R10.4, R10.7_
-    - _Test: `make github-verify` reports no drift_
-  - [ ] 15.2 Remote scenarios: the CI parts of AT-1, AT-2, AT-4, AT-5, AT-13 and AT-16; AT-3; AT-11
-    - _Requirements: R2.2, R2.3, R2.5, R2.6, R2.7, R2.12, R9.5, R10.2, R12.1, R12.2, R20.2_
-    - _Test: **AT-3** `tests/acceptance/test_at3_failing_test_blocks_merge.py`, **AT-11**
-      `test_at11_direct_and_force_push_rejected.py`, and the remote mode of the AT-1/2/4/5/13/16 tests_
-  - [ ] 15.3 After at least 10 pull-request runs, measure CI time; observe the first Dependabot PR
+  - [ ] 15.1 **Owner:** give the remote go-ahead: create the public repository, apply
+    `docs/runbooks/github-setup.md`, add the identity secret, push `main`
+    - _Requirements: R2.1, R2.11, R2.12, R10.4, R10.7_
+    - _Test: the checklist, ticked, in the gate report_
+  - [ ] 15.2 The remote checklist with throwaway branches: a failing test blocks the merge (AT-3), push
+    protection rejects a fake key (AT-4), direct and force pushes to `main` are refused (AT-11), a
+    non-Conventional PR title fails (AT-13)
+    - _Requirements: R2.2, R2.3, R2.5, R2.6, R2.7, R9.5, R10.2, R12.1, R12.2, R20.2, R20.5_
+    - _Test: evidence in `docs/reports/gate-selftest-<date>.md`_
+  - [ ] 15.3 From the first pull requests: CI time (AT-9) and the first Dependabot PR (AT-19)
     - _Requirements: R12.3, R11.4, R10.4_
-    - _Test: **AT-9** `tests/acceptance/test_at9_ci_time_budget.py`, **AT-19**
-      `test_at19_dependabot_identity_check.py`_
+    - _Test: both noted in the gate report_
   - [ ] 15.4 **Owner:** review the remote gate report → **remote gate passed**
     - _Requirements: Phase 0 exit gate, remote part_
-    - _Test: the report shows every remote scenario failing as expected, and AT-9 and AT-19 passing_
+    - _Test: the report shows every remote gate failing as expected_
 
 - [ ] 16. First deploy (owner approval)
   - Branch: `chore/ef-16-first-deploy` · Depends on: 12, 14 · ADRs: ADR-0002, ADR-0003
+  - **Moved to Phase 3** by the 2026-10-26 re-plan: built with the online server, not now.
   - [ ] 16.1 **Owner:** activate the `Project` cost-allocation tag in Billing; run `make bootstrap` with the
     admin profile; create the access key for `fantadamus-terraform` by hand; configure the
     `fantadamus-deploy` profile
@@ -354,11 +350,11 @@ and [design](design.md).
       tag is inactive, passes once active)_
 
 - [ ] 17. Phase 0 gate
-  - Branch: `docs/ef-17-phase-report` · Depends on: 15, 16 · ADRs: none
-  - [ ] 17.1 Phase report in `docs/reports/`: tests, coverage, quality results, cost so far, open risks, and
-    a mutation-testing run on the core modules (`make mutation`)
-    - _Requirements: R1.7, Phase 0 exit gate_
+  - Branch: `docs/ef-17-phase-report` · Depends on: 15 · ADRs: none
+  - [ ] 17.1 Short phase report in `docs/reports/`: tests, coverage, gate results, cost ($0), open risks.
+    Mutation testing starts in Phase 2, once there is football logic to mutate
+    - _Requirements: R20.4, Phase 0 exit gate_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 17.2 **Owner:** sign off Phase 0 → Spec 1 (`data-foundation`) may start
+  - [ ] 17.2 **Owner:** sign off Phase 0 → the `mvp-x-or-y` spec may start
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the phase report_
