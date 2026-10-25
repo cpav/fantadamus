@@ -36,7 +36,12 @@ dev = [
 [tool.uv]
 # libcst 1.9 ships no macOS x86_64 wheel for Python 3.12; building it needs Rust. Lift with ADR-0001's amendment.
 # cryptography 49+ likewise ships no macOS x86_64 wheel (pulled in by moto and mcp).
-constraint-dependencies = ["libcst>=1.8.5,<1.9", "cryptography<49"]
+constraint-dependencies = [
+    "libcst>=1.8.5,<1.9",
+    "cryptography<49; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # Everywhere else (CI, Linux servers), take the patched releases (PYSEC-2026-3552 to 3554).
+    "cryptography>=50; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -92,3 +97,8 @@ skip_covered = true
 
 [tool.coverage.json]
 output = "coverage.json"
+
+[tool.mutmut]
+# The core modules for mutation testing at phase gates (R1.7). src/fantadamus/core joins with task 8.
+paths_to_mutate = ["scripts/checks/"]
+tests_dir = ["tests/unit/", "tests/property/"]

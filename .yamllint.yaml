@@ -8,3 +8,9 @@ rules:
     allowed-values: ["true", "false"]
     check-keys: false
   document-start: disable
+ignore: |
+  .venv/
+  bin/
+  .pytest_cache/
+  .mypy_cache/
+  .ruff_cache/

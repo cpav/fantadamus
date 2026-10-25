@@ -39,7 +39,8 @@ def test_main_reports_and_exits(git_repo: tuple[Path, Git], monkeypatch: pytest.
     assert ids.main(["--tree"], env=ENV) == 0
     (repo / "notes.md").write_text("Creatore Fittizio\n", encoding="utf-8")
     assert ids.main(["--tree"], env=ENV) == 1
-    assert ids.main(["--tree"], env={}) == 1
+    missing = {"FANTADAMUS_PRIVATE_CONFIG": str(repo / "absent.toml")}
+    assert ids.main(["--tree"], env=missing) == 1, "no list available must fail closed"
 
 
 def test_main_staged_and_range(git_repo: tuple[Path, Git], monkeypatch: pytest.MonkeyPatch) -> None:

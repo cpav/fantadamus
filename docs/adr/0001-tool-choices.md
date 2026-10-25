@@ -109,8 +109,12 @@ the owner's review with task 3:
   moto.
 - **mutmut 3.7** instead of 3.8, with `libcst<1.9`: mutmut 3.8 needs libcst 1.9, which ships no macOS
   x86_64 wheel for Python 3.12, so installing it on the owner's Intel Mac would need a Rust toolchain.
-- **`cryptography<49`** (pulled in by moto and mcp), for the same reason: 49 and later ship no macOS
-  x86_64 wheel.
+- **`cryptography<49` on Intel Macs only** (pulled in by moto and mcp), for the same reason: 49 and later
+  ship no macOS x86_64 wheel. *Revised 2026-10-25 (task 7):* the dependency audit found three advisories
+  in 48.0.1 (PYSEC-2026-3552, -3553, -3554, fixed in 49 and 50), so the constraint is now limited to
+  `sys_platform == 'darwin' and platform_machine == 'x86_64'`, and every other platform is held to
+  `cryptography>=50`. CI and Linux servers get the fix; the Intel Mac keeps 48.0.1 under three
+  allowlist entries expiring 2026-11-30 (register rows S-010 to S-012).
 
 These are `[tool.uv] constraint-dependencies` in `pyproject.toml`, each with a comment. They are reviewed
 whenever the dependency audit flags one of these packages, and lifted once wheels return or the owner moves
