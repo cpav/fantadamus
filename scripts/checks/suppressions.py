@@ -31,7 +31,6 @@ from pathlib import Path
 from scripts.checks._common import CheckResult, report
 
 ROOT = Path(__file__).resolve().parents[2]
-REGISTER = ROOT / "docs" / "quality" / "suppressions.md"
 
 _NOQA = re.compile(r"^noqa\b(?::\s*(?P<codes>[A-Z]+[0-9]+(?:\s*,\s*[A-Z]+[0-9]+)*))?")
 _TYPE_IGNORE = re.compile(r"^type:\s*ignore\b(?:\[(?P<codes>[a-z0-9-]+(?:\s*,\s*[a-z0-9-]+)*)\])?")
@@ -235,7 +234,9 @@ def _tracked_files(root: Path) -> list[str]:
     return completed.stdout.splitlines()
 
 
-def check(root: Path = ROOT) -> CheckResult:
+def check(root: Path = ROOT, register: Path | None = None) -> CheckResult:
+    """Scan the repository at `root` against its register (default: root/docs/quality/suppressions.md)."""
+    register = register or root / "docs" / "quality" / "suppressions.md"
     found: list[Suppression] = []
     for name in _tracked_files(root):
         path = root / name
@@ -249,7 +250,7 @@ def check(root: Path = ROOT) -> CheckResult:
             found.extend(find_per_file_ignores(path.read_text(encoding="utf-8")))
         elif name in (".gitleaks.toml", "config/audit-allowlist.toml"):
             found.extend(find_in_allowlists(name, path.read_text(encoding="utf-8")))
-    issues = problems(found, parse_register(REGISTER.read_text(encoding="utf-8")))
+    issues = problems(found, parse_register(register.read_text(encoding="utf-8")))
     if issues:
         return CheckResult("suppressions", ok=False, message="; ".join(issues))
     return CheckResult("suppressions", ok=True)

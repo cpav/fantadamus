@@ -26,3 +26,9 @@ def test_fresh_lock_passes() -> None:
     result = lockfile.check(run=_runner(0))
     assert result.ok
     assert result.name == "lockfile"
+
+
+def test_stale_lock_without_output_still_explains() -> None:
+    result = lockfile.check(run=_runner(2))
+    assert not result.ok
+    assert result.message.startswith("uv.lock is out of date")

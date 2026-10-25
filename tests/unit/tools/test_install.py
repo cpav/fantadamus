@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import io
 import stat
+import tarfile
 import zipfile
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -68,3 +70,56 @@ def test_loads_pins_from_repository_file() -> None:
     tools = install.load_tools(Path(__file__).resolve().parents[3] / "tool-versions.toml")
     assert {tool.name for tool in tools} == {"terraform", "tflint", "gitleaks", "actionlint"}
     assert all(len(tool.sha256) == 3 for tool in tools)
+
+
+def _tar_gz_with(name: str, content: bytes) -> bytes:
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
+        info = tarfile.TarInfo(name)
+        info.size = len(content)
+        archive.addfile(info, io.BytesIO(content))
+    return buffer.getvalue()
+
+
+def test_installs_from_tar_gz(tmp_path: Path) -> None:
+    archive = _tar_gz_with("gitleaks", BINARY)
+    tool = install.Tool(
+        name="gitleaks",
+        version="8.30.1",
+        url="https://example.org/gitleaks_{version}_{asset}.tar.gz",
+        binary="gitleaks",
+        version_args=("version",),
+        assets={"linux_amd64": "linux_x64"},
+        sha256={"linux_amd64": hashlib.sha256(archive).hexdigest()},
+    )
+    installed = install.install_tool(tool, "linux_amd64", tmp_path, fetch=lambda _url: archive)
+    assert installed.read_bytes() == BINARY
+
+
+def test_platform_without_pin_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(install.UnsupportedPlatformError):
+        install.install_tool(_tool("0" * 64), "linux_amd64", tmp_path, fetch=lambda _url: b"")
+
+
+def test_plain_http_download_is_refused() -> None:
+    with pytest.raises(ValueError, match="non-HTTPS"):
+        install._fetch("http://example.org/tool.zip")
+
+
+def test_main_installs_only_the_requested_tools(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    installed: list[str] = []
+
+    def fake_install(tool: install.Tool, key: str, bin_dir: Path) -> Path:
+        installed.append(f"{tool.name}@{key}")
+        return install.ROOT / "bin" / tool.binary
+
+    monkeypatch.setattr(install, "platform_key", lambda: "darwin_amd64")
+    monkeypatch.setattr(
+        install, "load_tools", lambda: [_tool("0" * 64), replace(_tool("0" * 64), name="tflint")]
+    )
+    monkeypatch.setattr(install, "install_tool", fake_install)
+    assert install.main(["--only", "tflint"]) == 0
+    assert installed == ["tflint@darwin_amd64"]
+    assert "installed tflint 1.17.0" in capsys.readouterr().out

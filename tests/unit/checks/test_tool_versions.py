@@ -49,3 +49,9 @@ def test_missing_tool_fails_with_setup_hint(tmp_path: Path) -> None:
     result = tool_versions.check([TERRAFORM], tmp_path, run=_runner(""))
     assert not result.ok
     assert "make setup" in result.message
+
+
+def test_unreadable_version_fails(tmp_path: Path) -> None:
+    result = tool_versions.check([TERRAFORM], _installed(tmp_path), run=_runner("no version here"))
+    assert not result.ok
+    assert "found unknown" in result.message

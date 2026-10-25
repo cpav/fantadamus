@@ -51,3 +51,13 @@ def test_repo_adrs_pass() -> None:
         if path.name.startswith("0000-"):
             continue
         assert adr_lint.problems(path.name, path.read_text(encoding="utf-8")) == []
+
+
+def test_check_reports_bad_adrs_and_skips_template(tmp_path: Path) -> None:
+    (tmp_path / "0000-template.md").write_text("# template without sections\n", encoding="utf-8")
+    (tmp_path / "0001-good.md").write_text(GOOD, encoding="utf-8")
+    assert adr_lint.check(tmp_path).ok
+    (tmp_path / "0002-bad.md").write_text(GOOD.replace("## Decision\nd\n", ""), encoding="utf-8")
+    result = adr_lint.check(tmp_path)
+    assert not result.ok
+    assert result.message == "0002-bad.md: missing section ## Decision"

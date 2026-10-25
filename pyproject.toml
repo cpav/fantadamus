@@ -39,7 +39,16 @@ constraint-dependencies = ["libcst>=1.8.5,<1.9", "cryptography<49"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "-q"
+# Unix sockets stay allowed: asyncio's event loop uses a socketpair even without network access.
+addopts = "-q --strict-markers --allow-unix-socket"
+markers = [
+    "unit: pure functions, no I/O; network blocked",
+    "property: Hypothesis property-based tests; network blocked",
+    "contract: parsers and schemas against recorded or synthetic payloads",
+    "integration: several components together, on DuckDB and moto; no network",
+    "acceptance: the spec's acceptance tests",
+    "infra: infrastructure tests (Terraform, IAM policy evaluator)",
+]
 
 [tool.ruff]
 line-length = 110
@@ -67,3 +76,17 @@ explicit_package_bases = true
 warn_unused_ignores = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 plugins = ["pydantic.mypy"]
+
+[tool.coverage.run]
+# Line and branch coverage of the product code and the checks (R8.1). The gate self-tests drive git and
+# GitHub, so they are tested by running them, not by coverage.
+branch = true
+source = ["src", "scripts"]
+omit = ["scripts/selftest/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.coverage.json]
+output = "coverage.json"

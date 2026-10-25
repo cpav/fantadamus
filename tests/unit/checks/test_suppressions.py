@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from scripts.checks import suppressions as sup
+from scripts.checks._common import run_command
 
 HEADER = "| ID | Path | Rule | Reason | Approved |\n|---|---|---|---|---|\n"
 
@@ -86,3 +89,80 @@ def test_per_file_ignores_need_register_rows() -> None:
     pyproject = '[tool.ruff.lint.per-file-ignores]\n"tests/**" = ["S101"]\n'
     found = sup.find_per_file_ignores(pyproject)
     assert any("no register row" in p for p in sup.problems(found, sup.parse_register(HEADER)))
+
+
+def test_tflint_ignore_reason_inline_or_above() -> None:
+    register = sup.parse_register(
+        _register(("infra/s.tf", "aws_s3_bucket_name", "legacy name", "2026-10-24"))
+    )
+    inline = sup.find_in_terraform(
+        "infra/s.tf", "# tflint-ignore: aws_s3_bucket_name  # reason: legacy name\n"
+    )
+    above = sup.find_in_terraform(
+        "infra/s.tf", "# reason: legacy name\n# tflint-ignore: aws_s3_bucket_name\n"
+    )
+    missing = sup.find_in_terraform("infra/s.tf", "x = 1\n# tflint-ignore: aws_s3_bucket_name\n")
+    assert sup.problems(inline, register) == []
+    assert sup.problems(above, register) == []
+    assert any("no reason" in p for p in sup.problems(missing, register))
+
+
+def test_checkov_skip_with_reason_and_row_passes() -> None:
+    found = sup.find_in_terraform(
+        "infra/s.tf", "#checkov:skip=CKV_AWS_18:the log bucket cannot log to itself\n"
+    )
+    register = sup.parse_register(_register(("infra/s.tf", "CKV_AWS_18", "log bucket", "2026-10-24")))
+    assert sup.problems(found, register) == []
+
+
+def test_gitleaks_allowlist_needs_description() -> None:
+    text = '[[allowlists]]\nid = "fixture-key"\npaths = ["tests/fixtures/x"]\n'
+    found = sup.find_in_allowlists(".gitleaks.toml", text)
+    register = sup.parse_register(_register((".gitleaks.toml", "fixture-key", "synthetic key", "2026-10-24")))
+    assert any("no reason" in p for p in sup.problems(found, register))
+    described = text.replace('id = "fixture-key"', 'id = "fixture-key"\ndescription = "synthetic test key"')
+    assert sup.problems(sup.find_in_allowlists(".gitleaks.toml", described), register) == []
+
+
+def test_audit_allowlist_needs_reason() -> None:
+    path = "config/audit-allowlist.toml"
+    found = sup.find_in_allowlists(path, '[[ignore]]\nid = "PYSEC-2026-1"\nexpires = 2026-12-31\n')
+    register = sup.parse_register(_register((path, "PYSEC-2026-1", "no fix yet", "2026-10-24")))
+    assert any("no reason" in p for p in sup.problems(found, register))
+
+
+def test_non_skip_pytest_attributes_are_ignored() -> None:
+    source = "import pytest\n\n@pytest.mark.parametrize('x', [1])\ndef test_x(x: int) -> None: ...\n"
+    assert sup.find_in_python("pkg/mod.py", source) == []
+
+
+def test_check_scans_a_repository(tmp_path: Path) -> None:
+    def git(*args: str) -> None:
+        assert run_command(["git", "-C", str(tmp_path), *args]).returncode == 0
+
+    git("init", "-q")
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "mod.py").write_text("run()  # noqa: S603  # reason: fixed args\n", encoding="utf-8")
+    (tmp_path / "infra").mkdir()
+    (tmp_path / "infra" / "s.tf").write_text("#checkov:skip=CKV_AWS_18:log bucket\n", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.ruff.lint.per-file-ignores]\n"t/**" = ["S101"]\n', encoding="utf-8"
+    )
+    (tmp_path / ".gitleaks.toml").write_text(
+        '[[allowlists]]\nid = "k"\ndescription = "d"\n', encoding="utf-8"
+    )
+    register = tmp_path / "register.md"
+    register.write_text(
+        _register(
+            ("pkg/mod.py", "S603", "fixed args", "2026-10-24"),
+            ("infra/s.tf", "CKV_AWS_18", "log bucket", "2026-10-24"),
+            ("t/**", "S101", "pytest asserts", "2026-10-24"),
+            (".gitleaks.toml", "k", "fixture", "2026-10-24"),
+        ),
+        encoding="utf-8",
+    )
+    assert sup.check(tmp_path, register).ok
+    (tmp_path / "pkg" / "new.py").write_text("x  # noqa: E501\n", encoding="utf-8")
+    result = sup.check(tmp_path, register)
+    assert not result.ok
+    assert "pkg/new.py:1: suppression of E501 gives no reason" in result.message
