@@ -1,0 +1,10 @@
+{
+  "source_url": "https://example.org/skeleton",
+  "published_at": null,
+  "captured_at": "2026-10-25T09:00:00Z",
+  "rows": [
+    {"player_id": 1, "name": "Giocatore Uno", "club": "Squadra Alfa", "role": "A"},
+    {"player_id": 2, "name": "Giocatore Due", "club": "Squadra Alfa", "role": "A"},
+    {"player_id": 3, "name": "Giocatore Tre", "club": "Squadra Beta", "role": "D"}
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "contract": "skeleton.player.SkeletonPlayer",
+  "schema": {
+    "additionalProperties": false,
+    "description": "A synthetic player: id, name, club and Classic role (P, D, C, A).",
+    "properties": {
+      "club": {
+        "minLength": 1,
+        "title": "Club",
+        "type": "string"
+      },
+      "name": {
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Name",
+        "type": "string"
+      },
+      "player_id": {
+        "description": "Positive player ID",
+        "exclusiveMinimum": 0,
+        "title": "Player Id",
+        "type": "integer"
+      },
+      "role": {
+        "description": "Classic role: P keeper, D defender, C midfielder, A forward",
+        "enum": [
+          "P",
+          "D",
+          "C",
+          "A"
+        ],
+        "title": "Role",
+        "type": "string"
+      }
+    },
+    "required": [
+      "player_id",
+      "name",
+      "club",
+      "role"
+    ],
+    "title": "SkeletonPlayer",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

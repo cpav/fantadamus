@@ -43,6 +43,7 @@ STATIC = [
     Check("suppressions", _module("suppressions")),
     Check("thresholds", _module("thresholds")),
     Check("adr-lint", _module("adr_lint")),
+    Check("contracts", _module("contracts")),
     Check("identities", _module("identities", "--tree")),
     Check("secrets", _module("secrets", "--history")),
 ]

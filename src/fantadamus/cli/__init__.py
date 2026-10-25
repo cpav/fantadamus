@@ -1,0 +1,1 @@
+"""The `fantadamus` command line."""

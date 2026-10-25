@@ -1,0 +1,3 @@
+# The walking skeleton's own allowlist: its fixture is "read" from example.org, a domain reserved for
+# documentation (RFC 2606), so the production list in config/sources.toml stays unchanged.
+allowed_hosts = ["example.org"]

@@ -6,7 +6,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 UV := uv run --frozen
 
-.PHONY: help setup check check-static check-tests check-infra check-audit test-fast mutation
+.PHONY: help setup check check-static check-tests check-infra check-audit test-fast skeleton mutation
 
 help: ## List the targets
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -35,6 +35,9 @@ test-fast: ## Format, lint, and unit and property tests with the fast profile (R
 	$(UV) ruff format --check .
 	$(UV) ruff check .
 	HYPOTHESIS_PROFILE=dev $(UV) pytest -m "unit or property" -p no:cacheprovider
+
+skeleton: ## Run the walking skeleton end to end and compare gold with its golden file (R16.1, R16.6)
+	$(UV) fantadamus skeleton run --golden tests/golden/skeleton/role_counts.json
 
 mutation: ## Mutation testing on the core modules, for phase gates only (R1.7)
 	$(UV) mutmut run

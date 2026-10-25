@@ -1,0 +1,18 @@
+# Hosts the MCP submit tools accept facts from (R16.11, ADR-0005 guardrail 1). This is the MVP reading list
+# in docs/source-registry.md; a subdomain of a listed host is accepted too. Change the registry first, then
+# this file; tests/unit/test_sources_config.py keeps the two equal.
+allowed_hosts = [
+    "fantacalcio.it",
+    "fantacalcio-online.com",
+    "sosfanta.com",
+    "gazzetta.it",
+    "corrieredellosport.it",
+    "tuttosport.com",
+    "tuttomercatoweb.com",
+    "it.wikipedia.org",
+    "en.wikipedia.org",
+    "wikidata.org",
+    "livetipsportal.com",
+    "jamma.tv",
+    "jamma.it",
+]

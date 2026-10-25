@@ -10,6 +10,9 @@ dependencies = [
     "pydantic>=2.14,<3",
 ]
 
+[project.scripts]
+fantadamus = "fantadamus.cli.__main__:main"
+
 [build-system]
 requires = ["uv_build>=0.11,<0.14"]
 build-backend = "uv_build"
@@ -99,6 +102,6 @@ skip_covered = true
 output = "coverage.json"
 
 [tool.mutmut]
-# The core modules for mutation testing at phase gates (R1.7). src/fantadamus/core joins with task 8.
-paths_to_mutate = ["scripts/checks/"]
+# The core modules for mutation testing at phase gates (R1.7).
+paths_to_mutate = ["scripts/checks/", "src/fantadamus/core/"]
 tests_dir = ["tests/unit/", "tests/property/"]

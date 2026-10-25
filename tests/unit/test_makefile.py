@@ -90,6 +90,13 @@ def test_mutation_target_lists_core_modules() -> None:
 
     mutmut = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["mutmut"]
     assert mutmut["paths_to_mutate"], "core modules for mutation testing must be listed"
+    assert "src/fantadamus/core/" in mutmut["paths_to_mutate"]
+
+
+def test_skeleton_target_checks_the_golden_file() -> None:
+    recipe = _recipe("skeleton")
+    assert "fantadamus skeleton run" in recipe
+    assert "--golden tests/golden/skeleton/role_counts.json" in recipe
 
 
 def test_run_all_rejects_unknown_groups(capsys: pytest.CaptureFixture[str]) -> None:

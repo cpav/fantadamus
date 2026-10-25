@@ -129,15 +129,16 @@ scripts/
   smoke/spec0.py               post-deploy smoke test (C9)
 src/fantadamus/
   core/      hashing.py, clock.py, urls.py
-  contracts/ base.py, envelope.py, skeleton/ (player.py, CHANGELOG.md), schemas/*.json
+  contracts/ base.py, types.py, envelope.py, CHANGELOG.md, skeleton/ (player.py, tables.py, CHANGELOG.md),
+             schemas/*.json
   lake/      duckdb_store.py
-  domains/skeleton/ bronze.py, silver.py, gold.py
+  domains/skeleton/ bronze.py, silver.py, gold.py, gold.sql, pipeline.py (the submit and summary flow)
   quality/   rules.py
   mcp/       server.py (skeleton tools only in Spec 0)
-  cli/       __main__.py  (`fantadamus skeleton run`)
+  cli/       __main__.py  (`fantadamus skeleton run`, `fantadamus serve`)
 tests/
   conftest.py, unit/, property/, contract/, integration/, acceptance/, infra/
-  fixtures/skeleton/rows.json, golden/skeleton/role_counts.json
+  fixtures/skeleton/rows.json and sources.toml, golden/skeleton/role_counts.json
 tool-versions.toml, Makefile, pyproject.toml, uv.lock, .pre-commit-config.yaml,
 .gitleaks.toml, .editorconfig, .gitignore, README.md, private.example.toml, CLAUDE.md
 ```
@@ -318,10 +319,12 @@ endpoints, so boto3 uses `us-east-1` for them.
 ### C10. Walking skeleton
 
 - **Contract:** `SkeletonPlayer` (version `1.0.0`): `player_id: int > 0`, `name: str` (1–60 chars),
-  `club: str`, `role: Literal["P", "D", "C", "A"]`.
+  `club: str` (non-empty), `role: Literal["P", "D", "C", "A"]`. Silver `SkeletonPlayerRecord` and gold
+  `SkeletonRoleCount` (both `1.0.0`, fields as in Data models) are versioned contracts too, so the read
+  tool's output is under the same version rules (R13). Contracts are strict: no type coercion.
 - **Fixture** (`tests/fixtures/skeleton/rows.json`): three synthetic players (`Giocatore Uno`, `Due`, `Tre`
   of `Squadra Alfa`/`Beta`), source `https://example.org/skeleton`. Committable because it's synthetic
-  (R16.9, R2.9).
+  (R16.9, R2.9). Its allowlist is `tests/fixtures/skeleton/sources.toml` (`example.org` only).
 - **MCP server** (`MCPServer` from `mcp.server.mcpserver`, stdio): `submit_skeleton_rows(rows, source_url, published_at?, captured_at)`
   returns `{accepted, rejected: [{index, reason}], bronze_id}`; `get_skeleton_summary()` returns the gold
   rows with `source_urls`.

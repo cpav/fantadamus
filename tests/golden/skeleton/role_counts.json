@@ -1,0 +1,18 @@
+[
+  {
+    "club": "Squadra Alfa",
+    "n_players": 2,
+    "role": "A",
+    "source_urls": [
+      "https://example.org/skeleton"
+    ]
+  },
+  {
+    "club": "Squadra Beta",
+    "n_players": 1,
+    "role": "D",
+    "source_urls": [
+      "https://example.org/skeleton"
+    ]
+  }
+]

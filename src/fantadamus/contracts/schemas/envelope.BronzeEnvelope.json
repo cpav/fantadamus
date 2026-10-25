@@ -1,0 +1,86 @@
+{
+  "contract": "envelope.BronzeEnvelope",
+  "schema": {
+    "$defs": {
+      "JsonValue": {}
+    },
+    "additionalProperties": false,
+    "description": "One submission as received: provenance, times, hash and the payload exactly as submitted.",
+    "properties": {
+      "captured_at": {
+        "description": "When the source was read (UTC); as-of queries use this",
+        "format": "date-time",
+        "title": "Captured At",
+        "type": "string"
+      },
+      "content_sha256": {
+        "description": "SHA-256 of the canonical JSON payload",
+        "pattern": "^[0-9a-f]{64}$",
+        "title": "Content Sha256",
+        "type": "string"
+      },
+      "contract_version": {
+        "description": "Version of the payload's contract",
+        "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$",
+        "title": "Contract Version",
+        "type": "string"
+      },
+      "payload": {
+        "$ref": "#/$defs/JsonValue",
+        "description": "The submitted rows, as received"
+      },
+      "published_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "When the source published it (UTC)",
+        "title": "Published At"
+      },
+      "received_at": {
+        "description": "When the server received it (UTC), from the injected clock",
+        "format": "date-time",
+        "title": "Received At",
+        "type": "string"
+      },
+      "source": {
+        "description": "Logical source name, e.g. `skeleton`",
+        "pattern": "^[a-z][a-z0-9_]{0,39}$",
+        "title": "Source",
+        "type": "string"
+      },
+      "source_url": {
+        "description": "The page the facts were read from; must pass the allowlist",
+        "format": "uri",
+        "maxLength": 2083,
+        "title": "Source Url",
+        "type": "string"
+      },
+      "submitted_by": {
+        "description": "Pseudonymous user ID, never a real name",
+        "pattern": "^[a-z0-9][a-z0-9_-]{0,39}$",
+        "title": "Submitted By",
+        "type": "string"
+      }
+    },
+    "required": [
+      "source",
+      "source_url",
+      "captured_at",
+      "received_at",
+      "content_sha256",
+      "contract_version",
+      "submitted_by",
+      "payload"
+    ],
+    "title": "BronzeEnvelope",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}
