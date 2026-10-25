@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inside Fantadamus</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Saira+Extra+Condensed:wght@600;800&display=swap">
+
+<style>
+  /* Layout: the dressing room behind the team sheet. Same tokens as the product page; a wider column so
+     the diagram and tables breathe, with each section a numbered part of the tour. */
+  :root {
+    --paper: #f3f6f2;
+    --surface: #ffffff;
+    --ink: #142219;
+    --sub: #55665c;
+    --line: rgba(20, 34, 25, 0.14);
+    --line-strong: rgba(20, 34, 25, 0.38);
+    --accent: #17703f;
+    --chalk: #f5f8f1;
+    --booking-fill: #f2c230;
+    --claude: #2a74c4;
+    --role-p: #d97d06;
+    --role-d: #23904d;
+    --role-c: #2a74c4;
+    --role-a: #cc3b33;
+
+    --display: "Saira Extra Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --body: "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --measure: 68ch;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0b1510;
+      --surface: #122019;
+      --ink: #e4ece6;
+      --sub: #97aa9e;
+      --line: rgba(228, 236, 230, 0.14);
+      --line-strong: rgba(228, 236, 230, 0.4);
+      --accent: #5cc48a;
+      --booking-fill: #f2c94c;
+      --claude: #6aa9ec;
+      --role-p: #f0a040;
+      --role-d: #4cc27a;
+      --role-c: #5fa3ea;
+      --role-a: #ec6a62;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0b1510;
+    --surface: #122019;
+    --ink: #e4ece6;
+    --sub: #97aa9e;
+    --line: rgba(228, 236, 230, 0.14);
+    --line-strong: rgba(228, 236, 230, 0.4);
+    --accent: #5cc48a;
+    --booking-fill: #f2c94c;
+    --claude: #6aa9ec;
+    --role-p: #f0a040;
+    --role-d: #4cc27a;
+    --role-c: #5fa3ea;
+    --role-a: #ec6a62;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.6;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding-block: 0 96px; display: flex; flex-direction: column; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  code { font-family: var(--data); font-size: .86em; }
+
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1, h2 { font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .01em; }
+  h1 { font-size: clamp(46px, 8.5vw, 80px); line-height: .92; }
+  h2 { font-size: clamp(30px, 4.6vw, 42px); line-height: 1; }
+  h3 { font-size: 18px; font-weight: 600; line-height: 1.3; }
+  p { margin: 0; max-width: var(--measure); }
+  .lede { font-size: clamp(17px, 2.1vw, 20px); color: var(--sub); }
+  .label { font-family: var(--data); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--sub); }
+
+  .masthead { display: flex; align-items: center; gap: 12px; padding-block: 26px 0; }
+  .masthead svg { width: 30px; height: 30px; flex: none; }
+  .mark-pitch { fill: var(--accent); }
+  .mark-line { fill: none; stroke: var(--chalk); stroke-width: 1.6; }
+  .wordmark { font-family: var(--display); font-weight: 800; font-size: 24px; letter-spacing: .06em; }
+  .theme-toggle {
+    margin-left: auto; background: none; border: 1px solid var(--line); border-radius: 999px; color: var(--sub);
+    font-family: var(--data); font-size: 12px; padding: 6px 13px; cursor: pointer;
+  }
+  .theme-toggle:hover { color: var(--ink); border-color: var(--accent); }
+
+  .hero { display: flex; flex-direction: column; gap: 18px; padding-block: clamp(36px, 7vw, 60px) 0; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .glance { display: flex; flex-wrap: wrap; gap: 8px; }
+  .glance span {
+    font-family: var(--data); font-size: 12.5px; color: var(--sub);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; background: var(--surface);
+    font-variant-numeric: tabular-nums;
+  }
+  .glance b { color: var(--ink); font-weight: 500; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 14px 0 0; list-style: none; counter-reset: toc; border-top: 1px solid var(--line); }
+  .toc li { counter-increment: toc; font-size: 15px; }
+  .toc li::before { content: counter(toc) " "; font-family: var(--data); font-size: 12px; color: var(--sub); }
+  .toc a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line-strong); }
+  .toc a:hover { border-color: var(--accent); }
+
+  .sec { display: flex; flex-direction: column; gap: 18px; padding-block: 76px 0; counter-increment: part; }
+  .wrap { counter-reset: part; }
+  .sec > .label { display: flex; align-items: center; gap: 12px; }
+  .sec > .label::before { content: counter(part, decimal-leading-zero); color: var(--accent); }
+  .sec > .label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  /* the diagram */
+  .fig { margin: 4px 0 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+  .fig .scroll { overflow-x: auto; padding: 18px 12px 6px; }
+  .fig svg { display: block; width: 100%; min-width: 720px; height: auto; }
+  .fig figcaption { padding: 4px 20px 18px; font-size: 15px; color: var(--sub); max-width: none; }
+  .fig figcaption b { color: var(--ink); font-weight: 600; }
+  .bx { fill: var(--paper); stroke: var(--line-strong); stroke-width: 1.4; }
+  .bx.plan { stroke-dasharray: 6 5; fill: none; }
+  .bx.claude { fill: color-mix(in srgb, var(--claude) 9%, var(--paper)); stroke: var(--claude); }
+  .grp { fill: none; stroke: var(--line-strong); stroke-width: 1.2; }
+  .gl { font-family: var(--data); font-size: 11.5px; letter-spacing: .12em; fill: var(--sub); }
+  .t { font-family: var(--body); font-size: 17px; font-weight: 600; fill: var(--ink); }
+  .ts { font-family: var(--data); font-size: 12px; fill: var(--sub); }
+  .tl { font-family: var(--data); font-size: 11.5px; fill: var(--sub); }
+  .tl.hot { fill: var(--accent); }
+  .ar { stroke: var(--sub); stroke-width: 1.5; fill: none; }
+  .ar.hot { stroke: var(--accent); stroke-width: 2; }
+  .ar.claude { stroke: var(--claude); stroke-width: 2; }
+  .mk { fill: var(--sub); }
+  .mk-hot { fill: var(--accent); }
+  .mk-claude { fill: var(--claude); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 0 20px 6px; font-family: var(--data); font-size: 12px; color: var(--sub); }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { width: 26px; height: 14px; border-radius: 3px; border: 1.5px solid var(--line-strong); }
+  .legend i.plan { border-style: dashed; }
+  .legend i.claude { border-color: var(--claude); background: color-mix(in srgb, var(--claude) 9%, var(--paper)); }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px 28px; }
+  .note { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .note h3 { display: flex; align-items: center; gap: 9px; }
+  .note h3::before { content: ""; width: 14px; height: 3px; border-radius: 2px; background: var(--accent); flex: none; }
+  .note p { font-size: 15.5px; color: var(--sub); }
+
+  /* the walkthrough */
+  .walk { list-style: none; margin: 0; padding: 0; counter-reset: step; display: flex; flex-direction: column; }
+  .walk li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 40px 118px 1fr;
+    gap: 6px 14px;
+    align-items: baseline;
+    padding: 13px 0;
+    border-top: 1px solid var(--line);
+  }
+  .walk li:first-child { border-top: none; }
+  .walk li::before { content: counter(step); font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1; color: var(--sub); }
+  .who { font-family: var(--data); font-size: 12px; border-radius: 999px; padding: 2px 10px; justify-self: start; white-space: nowrap; }
+  .who.claude { color: var(--claude); border: 1px solid var(--claude); }
+  .who.us { color: var(--accent); border: 1px solid var(--accent); }
+  .walk p { font-size: 16px; min-width: 0; }
+
+  /* tables */
+  .table { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 11px 16px; border-top: 1px solid var(--line); }
+  thead th { border-top: none; font-family: var(--data); font-size: 11.5px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--sub); }
+  tbody th { font-weight: 600; white-space: nowrap; }
+  td { color: var(--sub); }
+  .num { font-family: var(--data); font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+
+  .fields { display: flex; flex-wrap: wrap; gap: 7px; }
+  .fields code { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; background: var(--surface); }
+  .fields code.key { border-color: var(--accent); color: var(--accent); }
+
+  .formula {
+    font-family: var(--data); font-size: 15px; line-height: 1.7;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+    padding: 16px 18px; overflow-x: auto; white-space: pre; margin: 0;
+  }
+  .formula .c { color: var(--sub); }
+  .tag { font-family: var(--data); font-size: 12px; color: var(--role-p); border: 1px solid var(--role-p); border-radius: 999px; padding: 2px 10px; align-self: flex-start; }
+
+  /* gates */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .stat { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+  .stat b { font-family: var(--display); font-weight: 800; font-size: 42px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 14px; color: var(--sub); }
+  .checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .group .label { font-size: 11px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pills span { font-family: var(--data); font-size: 12.5px; border-radius: 6px; padding: 3px 9px; border: 1px solid var(--line); background: var(--surface); }
+  .pills span::before { content: "✓ "; color: var(--accent); }
+  .rules-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; max-width: var(--measure); }
+  .rules-list li { color: var(--sub); font-size: 16px; }
+  .rules-list b { color: var(--ink); font-weight: 600; }
+
+  /* hosting */
+  .stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .stage { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .stage.now { box-shadow: inset 0 3px 0 var(--accent); }
+  .stage p { font-size: 15px; color: var(--sub); }
+  .stage .label { font-size: 11px; }
+
+  .foot { margin-top: 72px; border-top: 1px solid var(--line); padding-top: 26px; display: flex; flex-direction: column; gap: 8px; }
+  .fineprint { font-family: var(--data); font-size: 12px; color: var(--sub); max-width: none; }
+
+  @media (max-width: 600px) {
+    .walk li { grid-template-columns: 30px 1fr; }
+    .walk li p { grid-column: 2; }
+    .walk li::before { font-size: 26px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <svg viewBox="0 0 32 32" role="img" aria-label="Fantadamus">
+      <rect class="mark-pitch" x="2" y="5" width="28" height="22" rx="4" />
+      <path class="mark-line" d="M16 5v22M2 12h4v8H2M30 12h-4v8h4" />
+      <circle class="mark-line" cx="16" cy="16" r="4.2" />
+    </svg>
+    <span class="wordmark">FANTADAMUS</span>
+    <button class="theme-toggle" id="themeToggle" type="button">theme</button>
+  </header>
+
+  <section class="hero">
+    <span class="label">Behind the team sheet</span>
+    <h1>How a question becomes <em>a verdict</em></h1>
+    <p class="lede">
+      Fantadamus is a set of tools inside each player's Claude app. Claude collects the facts from approved
+      sites; Fantadamus checks them, keeps them in a small lakehouse and does all the arithmetic. This page
+      describes the version for two players now being built, and marks what already runs.
+    </p>
+    <div class="glance" aria-label="At a glance, 25 October 2026">
+      <span>Phase <b>0</b> of 4</span>
+      <span><b>8</b> of 17 foundation tasks</span>
+      <span><b>18</b> checks in <code>make check</code></span>
+      <span><b>245</b> tests</span>
+      <span><b>98%</b> line coverage</span>
+      <span><b>4</b> versioned contracts</span>
+      <span><b>13</b> approved sites</span>
+      <span><b>0</b> AWS resources yet</span>
+    </div>
+    <ol class="toc">
+      <li><a href="#shape">The shape</a></li>
+      <li><a href="#walk">One question</a></li>
+      <li><a href="#lake">Storage</a></li>
+      <li><a href="#engine">The engine</a></li>
+      <li><a href="#guards">Guardrails</a></li>
+      <li><a href="#gates">Gates</a></li>
+      <li><a href="#hosting">Hosting</a></li>
+      <li><a href="#road">Roadmap</a></li>
+    </ol>
+  </section>
+
+  <!-- ═════════ the shape ═════════ -->
+  <section class="sec" id="shape">
+    <span class="label">The shape</span>
+    <h2>Claude collects, the tools decide</h2>
+    <p class="lede">
+      Each player's Claude app talks to the Fantadamus MCP server. Read tools answer from stored data; when
+      something is missing they say what to read and where. Submit tools take the facts Claude found, and
+      only facts that pass every check reach storage.
+    </p>
+
+    <figure class="fig">
+      <div class="scroll">
+        <svg viewBox="0 0 1000 470" role="img"
+             aria-label="Your Claude app asks the read tools and gets an answer or a refresh plan. When asked, it reads approved sites and sends facts to the submit tools. Checks pass facts into bronze storage, which feeds silver and gold. The planned decision engine reads gold and gives the read tools their numbers.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" class="mk" />
+            </marker>
+            <marker id="ahh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" class="mk-hot" />
+            </marker>
+            <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" class="mk-claude" />
+            </marker>
+          </defs>
+
+          <!-- the player's side -->
+          <rect class="bx claude" x="20" y="150" width="180" height="120" rx="10" />
+          <text class="t" x="110" y="190" text-anchor="middle">Your Claude app</text>
+          <text class="ts" x="110" y="214" text-anchor="middle">chat · web search</text>
+          <text class="ts" x="110" y="232" text-anchor="middle">fetch · agent prompt</text>
+
+          <rect class="bx" x="20" y="350" width="180" height="96" rx="10" />
+          <text class="t" x="110" y="388" text-anchor="middle">Approved sites</text>
+          <text class="ts" x="110" y="410" text-anchor="middle">13 hosts on the</text>
+          <text class="ts" x="110" y="427" text-anchor="middle">reading list</text>
+
+          <!-- MCP server -->
+          <rect class="grp" x="245" y="30" width="240" height="430" rx="14" />
+          <text class="gl" x="262" y="56">MCP SERVER</text>
+          <rect class="bx" x="265" y="80" width="200" height="104" rx="8" />
+          <text class="t" x="365" y="114" text-anchor="middle">Read tools</text>
+          <text class="ts" x="365" y="138" text-anchor="middle">today:</text>
+          <text class="ts" x="365" y="156" text-anchor="middle">get_skeleton_summary</text>
+          <rect class="bx" x="265" y="296" width="200" height="104" rx="8" />
+          <text class="t" x="365" y="330" text-anchor="middle">Submit tools</text>
+          <text class="ts" x="365" y="354" text-anchor="middle">today:</text>
+          <text class="ts" x="365" y="372" text-anchor="middle">submit_skeleton_rows</text>
+
+          <!-- checks and engine -->
+          <rect class="bx" x="530" y="296" width="170" height="104" rx="8" />
+          <text class="t" x="615" y="330" text-anchor="middle">Checks</text>
+          <text class="ts" x="615" y="354" text-anchor="middle">contract · source</text>
+          <text class="ts" x="615" y="372" text-anchor="middle">quality · names*</text>
+          <rect class="bx plan" x="530" y="80" width="170" height="104" rx="8" />
+          <text class="t" x="615" y="114" text-anchor="middle">Decision engine</text>
+          <text class="ts" x="615" y="138" text-anchor="middle">docs/method.md</text>
+          <text class="ts" x="615" y="156" text-anchor="middle">Phase 2</text>
+
+          <!-- lake -->
+          <rect class="grp" x="745" y="30" width="235" height="430" rx="14" />
+          <text class="gl" x="762" y="56">LAKE · DUCKDB + PARQUET</text>
+          <rect class="bx" x="765" y="80" width="195" height="80" rx="8" />
+          <text class="t" x="862" y="112" text-anchor="middle">Gold</text>
+          <text class="ts" x="862" y="136" text-anchor="middle">data products</text>
+          <rect class="bx" x="765" y="188" width="195" height="80" rx="8" />
+          <text class="t" x="862" y="220" text-anchor="middle">Silver</text>
+          <text class="ts" x="862" y="244" text-anchor="middle">validated · latest</text>
+          <rect class="bx" x="765" y="296" width="195" height="104" rx="8" />
+          <text class="t" x="862" y="330" text-anchor="middle">Bronze</text>
+          <text class="ts" x="862" y="354" text-anchor="middle">append-only</text>
+          <text class="ts" x="862" y="372" text-anchor="middle">a file per submission</text>
+
+          <!-- edges: the conversation -->
+          <line class="ar claude" x1="200" y1="170" x2="263" y2="122" marker-start="url(#ahc)" marker-end="url(#ahc)" />
+          <text class="tl" x="196" y="126" text-anchor="end">ask ·</text>
+          <text class="tl" x="196" y="141" text-anchor="end">answer</text>
+          <line class="ar claude" x1="110" y1="270" x2="110" y2="348" marker-end="url(#ahc)" />
+          <text class="tl" x="100" y="308" text-anchor="end">reads, when</text>
+          <text class="tl" x="100" y="323" text-anchor="end">a plan asks</text>
+          <polyline class="ar claude" points="200,250 232,250 232,348 263,348" marker-end="url(#ahc)" />
+          <text class="tl" x="224" y="290" text-anchor="end">facts, link,</text>
+          <text class="tl" x="224" y="305" text-anchor="end">time read</text>
+
+          <!-- edges: the server -->
+          <line class="ar hot" x1="465" y1="348" x2="528" y2="348" marker-end="url(#ahh)" />
+          <line class="ar hot" x1="700" y1="348" x2="763" y2="348" marker-end="url(#ahh)" />
+          <text class="tl hot" x="731" y="338" text-anchor="middle">pass</text>
+          <text class="tl" x="615" y="428" text-anchor="middle">fail: rejected with the reason,</text>
+          <text class="tl" x="615" y="444" text-anchor="middle">nothing written</text>
+          <line class="ar hot" x1="862" y1="296" x2="862" y2="270" marker-end="url(#ahh)" />
+          <line class="ar hot" x1="862" y1="188" x2="862" y2="162" marker-end="url(#ahh)" />
+          <line class="ar" x1="765" y1="120" x2="702" y2="120" marker-end="url(#ah)" />
+          <line class="ar" x1="530" y1="132" x2="467" y2="132" marker-end="url(#ah)" />
+          <text class="tl" x="498" y="122" text-anchor="middle">numbers</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i></i>runs today, in the walking skeleton</span>
+        <span><i class="plan"></i>planned</span>
+        <span><i class="claude"></i>the player's own Claude</span>
+      </div>
+      <figcaption>
+        <b>Green marks the path a fact takes</b> once it passes the checks: appended to bronze, promoted to
+        silver, built into gold. The skeleton runs this path end to end with a three-player synthetic fixture.
+        *Name resolution against the official player list arrives with Phase 1.
+      </figcaption>
+    </figure>
+
+    <div class="notes">
+      <div class="note">
+        <h3>Why Claude collects</h3>
+        <p>All season, Claude chat found odds, lineups and ratings with no API keys. In the MVP each player's
+          own Claude does that reading, so Fantadamus needs no keys or scrapers of its own (ADR-0005).</p>
+      </div>
+      <div class="note">
+        <h3>Why the tools decide</h3>
+        <p>Probabilities need to be precise and repeatable. Claude never computes one: it submits what pages
+          say, then relays the engine's answer. All the arithmetic is tested Python.</p>
+      </div>
+      <div class="note">
+        <h3>Why collect once</h3>
+        <p>Facts are stored with their source and time and shared. When one player refreshes Genoa's lineup
+          news, the other's next question uses it too.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ one question ═════════ -->
+  <section class="sec" id="walk">
+    <span class="label">One question</span>
+    <h2>From “Beto o Laurienté?” to a verdict</h2>
+    <ol class="walk">
+      <li><span class="who claude">Claude</span><p>The player asks. Claude calls the read tool <code>compare_players</code>.</p></li>
+      <li><span class="who us">Fantadamus</span><p>The tool answers from gold, or returns a refresh plan: which facts are missing or stale, which approved pages have them, and which submit tool takes each one.</p></li>
+      <li><span class="who claude">Claude</span><p>Says “refreshing Genoa's lineup news…” and reads those pages with its own web search and fetch.</p></li>
+      <li><span class="who claude">Claude</span><p>Submits structured facts with the page's link, when the page was published and when it was read. It leaves a field empty rather than guess.</p></li>
+      <li><span class="who us">Fantadamus</span><p>Checks the contract, the source host, the player names and the quality rules. A rejection comes back with its reason; Claude fixes only what the reason names.</p></li>
+      <li><span class="who us">Fantadamus</span><p>Appends the submission to bronze, rebuilds silver and gold, and recomputes the engine's numbers.</p></li>
+      <li><span class="who claude">Claude</span><p>Calls the read tool again and relays the verdict, the margin and the reasons, in the player's language.</p></li>
+    </ol>
+  </section>
+
+  <!-- ═════════ storage ═════════ -->
+  <section class="sec" id="lake">
+    <span class="label">Storage</span>
+    <h2>Three layers, one direction</h2>
+    <p class="lede">
+      A medallion lakehouse, sized for two players: Parquet files read through DuckDB. Every table has a
+      versioned contract, and facts only ever flow from bronze to silver to gold.
+    </p>
+    <div class="table">
+      <table>
+        <thead><tr><th scope="col">Layer</th><th scope="col">Holds</th><th scope="col">Rule</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Bronze</th><td>Each submission exactly as received, inside its envelope.</td><td>Append-only. The same payload sent twice adds a second file; no file is ever rewritten.</td></tr>
+          <tr><th scope="row">Silver</th><td>Validated rows, one per player, the latest by when the source was read.</td><td>Invalid rows stay out and are reported with field-level reasons. Ties break on content, so the order facts arrive in never changes the result.</td></tr>
+          <tr><th scope="row">Gold</th><td>The data products the read tools serve, each row carrying its source links.</td><td>Rebuilt from silver. Tests compare gold with reviewed golden files.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>The bronze envelope</h3>
+    <div class="fields" aria-label="Envelope fields">
+      <code>source</code><code>source_url</code><code>published_at</code><code class="key">captured_at</code><code>received_at</code><code>content_sha256</code><code>contract_version</code><code>submitted_by</code><code>payload</code>
+    </div>
+    <div class="notes">
+      <div class="note">
+        <h3>As-of queries</h3>
+        <p>Questions about the past use <code>captured_at</code>, when the source was read, so a replay of
+          last Saturday sees only what was known then.</p>
+      </div>
+      <div class="note">
+        <h3>Contracts with versions</h3>
+        <p>Each contract is a strict pydantic model with a committed JSON Schema. A schema change without a
+          version bump and changelog entry fails the build; a breaking change needs a major bump.</p>
+      </div>
+      <div class="note">
+        <h3>Why DuckDB and Parquet</h3>
+        <p>Tests run in seconds with no AWS account. The same files and layout move to S3 when the server
+          goes online.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ engine ═════════ -->
+  <section class="sec" id="engine">
+    <span class="label">The engine</span>
+    <h2>Every player has three outcomes</h2>
+    <span class="tag">planned · Phase 2</span>
+    <p class="lede">
+      The method is the owner's own (<code>docs/method.md</code>). It works out the expected score for every
+      outcome, sorts each role by one key, then simulates the formations your league allows.
+    </p>
+    <div class="table">
+      <table>
+        <thead><tr><th scope="col">Outcome</th><th scope="col">Probability</th><th scope="col">Worth</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Starts</th><td class="num">p_start</td><td>Expected rating plus the priced bonuses.</td></tr>
+          <tr><th scope="row">Comes on, gets a rating</th><td class="num">p_cameo</td><td>A cameo's value, and it blocks his substitute.</td></tr>
+          <tr><th scope="row">No rating</th><td class="num">1 − p_start − p_cameo</td><td>Nothing: the first bench player in his role replaces him.</td></tr>
+        </tbody>
+      </table>
+    </div>
+<pre class="formula"><span class="c"># the ordering key: sort each role by it; the eleven is the top, the bench the rest</span>
+key     = (p_start × E_start + p_cameo × E_cameo) / (p_start + p_cameo)
+
+<span class="c"># the rating and the bonuses, priced apart</span>
+E_start = expected vote + bonus_goal × E[goals] + bonus_assist × E[assists] − malus_yellow × P(yellow)
+E[goals] = team xG × goal share × minutes share      <span class="c"># team xG fitted from the match odds</span></pre>
+    <div class="notes">
+      <div class="note">
+        <h3>The odds set the bonuses</h3>
+        <p>Team xG comes from the 1X2, over/under 2.5 and both-teams-to-score lines, through a Poisson model
+          with a Dixon–Coles low-score correction.</p>
+      </div>
+      <div class="note">
+        <h3>Shrink everything</h3>
+        <p>Ratings, goal shares and team form are pulled toward a prior in proportion to the sample. Five
+          games are as noisy for a team as for a player.</p>
+      </div>
+      <div class="note">
+        <h3>Tested on real calls</h3>
+        <p>Its acceptance tests are six decisions from this season, including a brute-force proof that the
+          key gives the best ordering.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ guardrails ═════════ -->
+  <section class="sec" id="guards">
+    <span class="label">Guardrails</span>
+    <h2>Rules the code enforces</h2>
+    <ul class="rules-list">
+      <li><b>Approved sites only.</b> A submission whose source host isn't one of the 13 on the reading list
+        is rejected and nothing is written. Look-alikes such as <code>fantacalcio.it.evil.example</code> or
+        <code>https://fantacalcio.it@evil.example</code> fail too; generated URLs test this on every run.</li>
+      <li><b>No getting round a block.</b> The agent prompt forbids signing in, paywall workarounds and
+        video transcripts. A page that can't be read is reported, never forced.</li>
+      <li><b>Facts, not pages.</b> Bronze stores the submitted facts with their link. No page text is
+        kept.</li>
+      <li><b>Pundits stay anonymous.</b> The creators behind the pundit consensus are named only in private
+        configuration outside the repository; a check scans every commit and push for their names.</li>
+      <li><b>A public repository with nothing private in it.</b> No third-party data, league members' names
+        or rosters, or secrets. gitleaks runs on every commit and push.</li>
+    </ul>
+  </section>
+
+  <!-- ═════════ gates ═════════ -->
+  <section class="sec" id="gates">
+    <span class="label">Gates</span>
+    <h2>Nothing moves on a red check</h2>
+    <div class="stats">
+      <div class="stat"><b>245</b><span>tests, written before the code they test</span></div>
+      <div class="stat"><b>98.3%</b><span>of lines covered (95.5% of branches); the floor is 90% and only goes up</span></div>
+      <div class="stat"><b>500</b><span>generated examples per property test in <code>make check</code></span></div>
+      <div class="stat"><b>0</b><span>errors from <code>mypy --strict</code></span></div>
+    </div>
+    <div class="checks">
+      <div class="group">
+        <span class="label">Static · 15</span>
+        <div class="pills"><span>lockfile</span><span>tool versions</span><span>format</span><span>lint</span><span>types</span><span>YAML</span><span>SQL</span><span>Markdown</span><span>Actions</span><span>suppressions</span><span>thresholds</span><span>ADR lint</span><span>contracts</span><span>identities</span><span>secrets</span></div>
+      </div>
+      <div class="group">
+        <span class="label">Tests · 2</span>
+        <div class="pills"><span>tests</span><span>coverage</span></div>
+        <span class="label">Audit · 1</span>
+        <div class="pills"><span>dependency audit</span></div>
+      </div>
+    </div>
+    <ul class="rules-list">
+      <li><b>One task, one branch.</b> Each task ends with a report and waits for the owner's review before
+        it is merged.</li>
+      <li><b>Never weaken a gate.</b> Every suppression names its rule and reason, and is listed in a register
+        with the owner's approval date.</li>
+      <li><b>The same gate everywhere.</b> <code>make check</code> runs the same checks locally as CI will;
+        git hooks block a bad commit or push before it leaves the Mac.</li>
+    </ul>
+  </section>
+
+  <!-- ═════════ hosting ═════════ -->
+  <section class="sec" id="hosting">
+    <span class="label">Hosting</span>
+    <h2>On one Mac first, then AWS</h2>
+    <div class="stages">
+      <div class="stage now">
+        <span class="label">MVP · first</span>
+        <h3>The owner's Mac</h3>
+        <p>The MCP server runs locally over stdio for the owner's Claude app. The lake lives in a git-ignored
+          folder. No cloud needed.</p>
+      </div>
+      <div class="stage">
+        <span class="label">MVP · Phase 3</span>
+        <h3>Online for the second player</h3>
+        <p>The same server as an AWS Lambda endpoint that both Claude apps connect to, with the lake on a
+          private S3 prefix. How players sign in is decided in Phase 3.</p>
+      </div>
+      <div class="stage">
+        <span class="label">v1 · later</span>
+        <h3>Scheduled pipelines</h3>
+        <p>Collection moves into the server on a fixture-driven schedule: Iceberg on S3, Glue, Athena, Step
+          Functions and EventBridge, from licensed or permitted sources.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note">
+        <h3>One shared account, fenced off</h3>
+        <p>It uses the AWS account that runs gamegusto, isolated by the <code>fantadamus-</code> name prefix,
+          a permissions boundary and a deploy role that can touch nothing else.</p>
+      </div>
+      <div class="note">
+        <h3>A budget alarm comes first</h3>
+        <p>The first module applied creates a €20 monthly budget alarm. The planned resources cost under
+          $0.10 a month; the alarm is there to catch mistakes.</p>
+      </div>
+      <div class="note">
+        <h3>The owner deploys</h3>
+        <p>Nothing reaches AWS until the owner has seen the plan and approved it; CI never deploys on its
+          own. Terraform and the region (eu-north-1) are proposals awaiting their decision records.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ roadmap ═════════ -->
+  <section class="sec" id="road">
+    <span class="label">Roadmap</span>
+    <h2>Four phases to two players</h2>
+    <div class="table">
+      <table>
+        <thead><tr><th scope="col">Phase</th><th scope="col">Builds</th><th scope="col">Done when</th><th scope="col">Status</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">0 · Foundation</th><td>Repository, gates, CI, storage, infrastructure skeleton, walking skeleton.</td><td>Its acceptance tests pass, including proof that each gate blocks a bad change.</td><td class="num">8 of 17 tasks</td></tr>
+          <tr><th scope="row">1 · Data</th><td>Submit tools, checks and storage for every fact the method needs.</td><td>One real round collected through Claude, end to end.</td><td class="num">not started</td></tr>
+          <tr><th scope="row">2 · Engine</th><td>The method in code, with team xG from the odds.</td><td>The method's six tests pass and a calibration report exists for a real round.</td><td class="num">method written</td></tr>
+          <tr><th scope="row">3 · Chat</th><td>The read tools and refresh plans, locally and then online.</td><td>Both players answered from their own Claude apps.</td><td class="num">prompt written</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="foot">
+    <p class="fineprint">Figures measured against the code on 25 October 2026 (main at 25f89ed). Update them when the system changes.</p>
+    <p class="fineprint">Source of truth: .kiro/steering/, the engineering-foundation spec, ADR-0005 and docs/method.md.</p>
+  </div>
+</div>
+
+<script>
+  // Theme: follow the system until the viewer chooses.
+  document.getElementById("themeToggle").addEventListener("click", function () {
+    var root = document.documentElement;
+    var current = root.getAttribute("data-theme");
+    if (!current) {
+      current = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    root.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+  });
+</script>

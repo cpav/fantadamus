@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fantadamus</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Saira+Extra+Condensed:wght@600;800&display=swap">
+
+<style>
+  /* Layout: one reading column, like a team sheet handed in before kickoff. The single bold element is
+     the pitch-green board where a sample verdict is played out; everything around it stays quiet. */
+  :root {
+    --paper: #f3f6f2;
+    --surface: #ffffff;
+    --ink: #142219;
+    --sub: #55665c;
+    --line: rgba(20, 34, 25, 0.14);
+    --accent: #17703f;
+    --turf: #1b6640;
+    --turf-2: #1f7047;
+    --chalk: #f5f8f1;
+    --chalk-dim: rgba(245, 248, 241, 0.72);
+    --booking: #b88400;
+    --booking-fill: #f2c230;
+    /* Fantacalcio's role colours: portiere, difensore, centrocampista, attaccante. */
+    --role-p: #d97d06;
+    --role-d: #23904d;
+    --role-c: #2a74c4;
+    --role-a: #cc3b33;
+
+    --display: "Saira Extra Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --body: "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --measure: 64ch;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0b1510;
+      --surface: #122019;
+      --ink: #e4ece6;
+      --sub: #97aa9e;
+      --line: rgba(228, 236, 230, 0.14);
+      --accent: #5cc48a;
+      --turf: #134a2f;
+      --turf-2: #165236;
+      --booking: #f2c94c;
+      --booking-fill: #f2c94c;
+      --role-p: #f0a040;
+      --role-d: #4cc27a;
+      --role-c: #5fa3ea;
+      --role-a: #ec6a62;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0b1510;
+    --surface: #122019;
+    --ink: #e4ece6;
+    --sub: #97aa9e;
+    --line: rgba(228, 236, 230, 0.14);
+    --accent: #5cc48a;
+    --turf: #134a2f;
+    --turf-2: #165236;
+    --booking: #f2c94c;
+    --booking-fill: #f2c94c;
+    --role-p: #f0a040;
+    --role-d: #4cc27a;
+    --role-c: #5fa3ea;
+    --role-a: #ec6a62;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.6;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding-block: 0 96px; display: flex; flex-direction: column; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  h1, h2 { font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .01em; }
+  h1 { font-size: clamp(46px, 9vw, 84px); line-height: .92; }
+  h2 { font-size: clamp(32px, 5vw, 44px); line-height: 1; }
+  h3 { font-size: 19px; font-weight: 600; line-height: 1.3; }
+  p { margin: 0; max-width: var(--measure); }
+  .lede { font-size: clamp(18px, 2.3vw, 21px); color: var(--sub); }
+  .label {
+    font-family: var(--data);
+    font-size: 12px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--sub);
+  }
+
+  /* masthead */
+  .masthead { display: flex; align-items: center; gap: 12px; padding-block: 26px 0; }
+  .masthead svg { width: 30px; height: 30px; flex: none; }
+  .mark-pitch { fill: var(--accent); }
+  .mark-line { fill: none; stroke: var(--chalk); stroke-width: 1.6; }
+  .wordmark { font-family: var(--display); font-weight: 800; font-size: 24px; letter-spacing: .06em; }
+  .theme-toggle {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--sub);
+    font-family: var(--data);
+    font-size: 12px;
+    padding: 6px 13px;
+    cursor: pointer;
+  }
+  .theme-toggle:hover { color: var(--ink); border-color: var(--accent); }
+
+  /* hero */
+  .hero { display: flex; flex-direction: column; gap: 18px; padding-block: clamp(36px, 7vw, 64px) 0; }
+  .status {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--data);
+    font-size: 12.5px;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 5px 13px 5px 10px;
+  }
+  .status::before {
+    content: "";
+    width: 9px; height: 12px;
+    border-radius: 2px;
+    background: var(--booking-fill);
+    transform: rotate(8deg);
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+
+  /* the board: the one loud element */
+  .board {
+    margin-top: 10px;
+    border-radius: 18px;
+    color: var(--chalk);
+    background:
+      repeating-linear-gradient(90deg, var(--turf) 0 64px, var(--turf-2) 64px 128px);
+    padding: clamp(18px, 3.5vw, 30px);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* chalk markings: the halfway line and the centre circle */
+  .board::before, .board::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    border: 2px solid rgba(245, 248, 241, 0.16);
+  }
+  .board::before { top: -2px; bottom: -2px; left: 50%; border-width: 0 0 0 2px; }
+  .board::after {
+    width: 220px; height: 220px; border-radius: 50%;
+    left: calc(50% - 109px); top: calc(50% - 110px);
+  }
+  .board > * { position: relative; z-index: 1; }
+  .board .label { color: var(--chalk-dim); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tab {
+    font-family: var(--body);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--chalk);
+    background: rgba(245, 248, 241, 0.08);
+    border: 1px solid rgba(245, 248, 241, 0.34);
+    border-radius: 999px;
+    padding: 7px 15px;
+    cursor: pointer;
+  }
+  .tab:hover { background: rgba(245, 248, 241, 0.16); }
+  .tab[aria-selected="true"] { background: var(--chalk); color: var(--turf); border-color: var(--chalk); }
+  .question {
+    font-family: var(--data);
+    font-size: 15px;
+    align-self: flex-start;
+    max-width: 52ch;
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: 14px 14px 14px 4px;
+    padding: 10px 14px;
+  }
+  .question::before { content: "you  "; color: var(--chalk-dim); }
+
+  /* the verdict card: the answer as it will read in the Claude app */
+  .sheet {
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: clamp(16px, 3vw, 22px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  }
+  .verdict-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; }
+  .verdict { font-family: var(--display); font-weight: 800; font-size: clamp(30px, 5vw, 40px); line-height: 1; text-transform: uppercase; }
+  .margin {
+    font-family: var(--data);
+    font-size: 12.5px;
+    border-radius: 999px;
+    padding: 3px 11px;
+    border: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .margin[data-kind="clear"] { color: var(--accent); border-color: var(--accent); }
+  .margin[data-kind="lean"] { color: var(--role-c); border-color: var(--role-c); }
+  .margin[data-kind="flip"] { color: var(--role-p); border-color: var(--role-p); }
+  .reasons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .reasons li {
+    display: grid;
+    grid-template-columns: minmax(96px, 150px) 1fr;
+    gap: 4px 16px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+  .reasons .k { font-family: var(--data); font-size: 12.5px; color: var(--sub); padding-top: 2px; }
+  .reasons .v { min-width: 0; font-size: 15.5px; line-height: 1.5; }
+  .num { font-family: var(--data); font-size: 14.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .role {
+    display: inline-grid;
+    place-items: center;
+    width: 20px; height: 20px;
+    border-radius: 5px;
+    font-family: var(--data);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #ffffff;
+    vertical-align: 1px;
+    margin-right: 3px;
+  }
+  .role.p { background: var(--role-p); }
+  .role.d { background: var(--role-d); }
+  .role.c { background: var(--role-c); }
+  .role.a { background: var(--role-a); }
+  .check {
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    font-size: 15px;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--booking-fill) 14%, transparent);
+  }
+  .check::before {
+    content: "";
+    flex: none;
+    width: 11px; height: 15px;
+    margin-top: 4px;
+    border-radius: 2px;
+    background: var(--booking-fill);
+    transform: rotate(8deg);
+  }
+  .provenance { font-family: var(--data); font-size: 12px; color: var(--sub); }
+  .sample-note { font-family: var(--data); font-size: 12px; color: var(--chalk-dim); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sheet.swap { animation: slide .35s cubic-bezier(.2, .7, .3, 1) both; }
+    @keyframes slide { from { opacity: .4; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  }
+
+  /* sections */
+  .sec { display: flex; flex-direction: column; gap: 18px; padding-block: 72px 0; }
+  .sec > .label { display: flex; align-items: center; gap: 12px; }
+  .sec > .label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  /* what you can ask */
+  .asks { display: flex; flex-direction: column; }
+  .ask {
+    display: grid;
+    grid-template-columns: minmax(150px, 210px) 1fr;
+    gap: 6px 22px;
+    padding: 18px 0;
+    border-top: 1px solid var(--line);
+  }
+  .ask:first-child { border-top: none; }
+  .ask h3 { font-family: var(--display); font-weight: 800; font-size: 25px; text-transform: uppercase; line-height: 1.05; }
+  .ask > div { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .ask .say { font-family: var(--data); font-size: 14px; color: var(--accent); }
+  .ask p { font-size: 16px; color: var(--sub); }
+
+  /* the fantavoto sum */
+  .sum {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .term { flex: 1 1 96px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--line); }
+  .term:last-child { border-right: none; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .term b { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .term span { font-family: var(--data); font-size: 11.5px; color: var(--sub); letter-spacing: .06em; text-transform: uppercase; }
+  .term .op { color: var(--sub); }
+  .caption { font-size: 15px; color: var(--sub); }
+
+  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 26px 30px; margin-top: 8px; }
+  .rule { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .rule h3 { display: flex; align-items: center; gap: 9px; }
+  .rule h3::before { content: ""; width: 14px; height: 3px; border-radius: 2px; background: var(--accent); flex: none; }
+  .rule p { font-size: 15.5px; color: var(--sub); }
+
+  /* what happens when you ask */
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; counter-reset: step; }
+  .steps li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+  }
+  .steps li:first-child { border-top: none; }
+  .steps li::before {
+    content: counter(step);
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 44px;
+    line-height: .9;
+    color: var(--accent);
+    text-align: center;
+  }
+  .steps li > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .steps p { color: var(--sub); font-size: 16px; }
+  .steps .say { font-family: var(--data); font-size: 14px; color: var(--ink); }
+
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .panel { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .panel ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
+  .panel li { font-size: 15.5px; color: var(--sub); }
+  .panel li b { color: var(--ink); font-weight: 600; }
+
+  /* where it stands */
+  .phases { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .phase { border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px; background: var(--surface); }
+  .phase .label { font-size: 11px; }
+  .phase b { font-weight: 600; font-size: 15.5px; line-height: 1.3; }
+  .phase span { font-size: 13.5px; color: var(--sub); }
+  .phase.now { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
+  .meter { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--accent); }
+
+  .close { margin-top: 72px; border-top: 1px solid var(--line); padding-top: 34px; display: flex; flex-direction: column; gap: 12px; }
+  .fineprint { font-family: var(--data); font-size: 12px; color: var(--sub); }
+
+  @media (max-width: 560px) {
+    .ask { grid-template-columns: 1fr; }
+    .reasons li { grid-template-columns: 1fr; }
+    .steps li { grid-template-columns: 38px 1fr; }
+    .steps li::before { font-size: 36px; }
+    .board::after { display: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <svg viewBox="0 0 32 32" role="img" aria-label="Fantadamus">
+      <rect class="mark-pitch" x="2" y="5" width="28" height="22" rx="4" />
+      <path class="mark-line" d="M16 5v22M2 12h4v8H2M30 12h-4v8h4" />
+      <circle class="mark-line" cx="16" cy="16" r="4.2" />
+    </svg>
+    <span class="wordmark">FANTADAMUS</span>
+    <button class="theme-toggle" id="themeToggle" type="button">theme</button>
+  </header>
+
+  <section class="hero">
+    <span class="status">In development: not ready to use yet</span>
+    <h1>Who do I field <em>this round?</em></h1>
+    <p class="lede">
+      Fantadamus answers the question every Fantacalcio player asks before the deadline. You ask in your
+      own Claude app; it replies with a verdict, the margin, the reasons, and what to check before the lineups
+      lock.
+    </p>
+
+    <div class="board" aria-label="A sample answer">
+      <span class="label">Sample answers</span>
+      <div class="tabs" role="tablist" aria-label="Sample questions">
+        <button class="tab" id="tab-forward" role="tab" type="button" aria-selected="true" data-sample="forward">Last forward place</button>
+        <button class="tab" id="tab-doubtful" role="tab" type="button" aria-selected="false" data-sample="doubtful">A doubtful star</button>
+        <button class="tab" id="tab-keeper" role="tab" type="button" aria-selected="false" data-sample="keeper">Keeper on a streak</button>
+      </div>
+
+      <p class="question" id="question">Last forward spot: Player A or Player B?</p>
+
+      <article class="sheet" id="sheet" role="tabpanel" aria-labelledby="tab-forward" aria-live="polite">
+        <div class="verdict-row">
+          <span class="verdict" id="verdict">Start A</span>
+          <span class="margin" id="margin" data-kind="clear">clear: over 0.5 pts</span>
+        </div>
+        <ul class="reasons" id="reasons">
+          <li><span class="k">Starting</span><span class="v"><span class="role a">A</span>A <span class="num">88%</span> · B <span class="num">25%</span>. B is in a rotation and usually comes off the bench.</span></li>
+          <li><span class="k">Scoring</span><span class="v">A <span class="num">32%</span> · B <span class="num">10%</span>. A's team should score 1.35 goals, and he takes the biggest share of them.</span></li>
+          <li><span class="k">Form</span><span class="v">A's 4 goals in 5 starts are pulled toward a centre-forward's usual share before they count.</span></li>
+          <li><span class="k">Would flip</span><span class="v">If A drops out of the probable lineups.</span></li>
+        </ul>
+        <div class="check" id="check">If A plays in the round's first match, his official lineup lands before the lock. Check it.</div>
+        <span class="provenance" id="provenance">From: probable lineups (3 outlets), the match odds, season stats.</span>
+      </article>
+
+      <span class="sample-note">Worked examples from the method's own tests, players anonymised. Real answers use this round's data.</span>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="asks-title">
+    <span class="label">What you can ask</span>
+    <h2 id="asks-title">Four questions, in your own words</h2>
+    <div class="asks">
+      <div class="ask">
+        <h3>X or Y?</h3>
+        <div>
+          <span class="say">“Beto o Laurienté?”</span>
+          <p>The most common question, often minutes before the deadline. You get the verdict first, with
+            bench advice when it matters: “start X, put Y first on the bench”.</p>
+        </div>
+      </div>
+      <div class="ask">
+        <h3>My eleven</h3>
+        <div>
+          <span class="say">“Here's my squad. Who plays this round?”</span>
+          <p>The eleven, the bench in order for each role, the formation, the expected score and the chance of
+            reaching each of your league's goal thresholds.</p>
+        </div>
+      </div>
+      <div class="ask">
+        <h3>Formation</h3>
+        <div>
+          <span class="say">“Fourth defender or fourth midfielder?”</span>
+          <p>It compares the players on the edge of the team, so the formation follows from who is worth
+            fielding.</p>
+        </div>
+      </div>
+      <div class="ask">
+        <h3>The fixture</h3>
+        <div>
+          <span class="say">“What's the story for Genoa–Lazio?”</span>
+          <p>Form, goals for and against, injuries, suspensions, penalty takers and midweek European games,
+            plus what each means for the players you own.</p>
+        </div>
+      </div>
+    </div>
+    <p class="caption">It plays by your league's rules: bonuses, maluses, modifiers, bench size and
+      substitutions. Tell it once and it remembers. If you don't, it uses standard Classic rules and says so.</p>
+  </section>
+
+  <section class="sec" aria-labelledby="how-title">
+    <span class="label">How it decides</span>
+    <h2 id="how-title">The rating and the bonuses are priced apart</h2>
+    <div class="sum" aria-label="Fantavoto: 6.5 rating plus 3 for a goal plus 1 for an assist minus 0.5 for a yellow card equals 10">
+      <div class="term"><span>Voto</span><b>6.5</b></div>
+      <div class="term"><span>Goal</span><b><span class="op">+</span>3</b></div>
+      <div class="term"><span>Assist</span><b><span class="op">+</span>1</b></div>
+      <div class="term"><span>Yellow</span><b><span class="op">−</span>0.5</b></div>
+      <div class="term"><span>Fantavoto</span><b>10</b></div>
+    </div>
+    <p class="caption">Averaging a striker's fantavoti blurs his goals into his ratings. Fantadamus estimates
+      the rating and the chance of each bonus separately, then adds them up under your league's rules.</p>
+
+    <div class="rules">
+      <div class="rule">
+        <h3>Bonuses come from the market</h3>
+        <p>How many goals a team should score comes from the betting odds for the match. A player's chance of
+          scoring is his share of those goals.</p>
+      </div>
+      <div class="rule">
+        <h3>Five games prove little</h3>
+        <p>Four goals in five matches is mostly luck until more games back it up. Every form figure is pulled
+          toward the usual level for the role.</p>
+      </div>
+      <div class="rule">
+        <h3>A doubt can cost nothing</h3>
+        <p>If your bench covers him, a no-show costs nothing. A late cameo does cost, because his rating
+          blocks the substitute.</p>
+      </div>
+      <div class="rule">
+        <h3>Disagreement stays visible</h3>
+        <p>Probable lineups come from two or three outlets. When they disagree, the answer says so instead of
+          averaging it away.</p>
+      </div>
+      <div class="rule">
+        <h3>News moves certainty</h3>
+        <p>A new coach or a rumour mostly makes it less clear who plays. Midweek European games are the
+          exception: they really do bring rotation.</p>
+      </div>
+      <div class="rule">
+        <h3>It keeps score of itself</h3>
+        <p>Every probability it gives is logged and checked after the round, and its starting assumptions are
+          recalibrated from what actually happened.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="flow-title">
+    <span class="label">What happens when you ask</span>
+    <h2 id="flow-title">Your Claude reads, Fantadamus decides</h2>
+    <ol class="steps">
+      <li><div>
+        <h3>You ask in your Claude app</h3>
+        <span class="say">“Beto o Laurienté?”</span>
+      </div></li>
+      <li><div>
+        <h3>If anything is stale, your Claude fetches it</h3>
+        <p>Fantadamus says which facts are missing and which approved sites have them. Your Claude reads
+          those pages and hands over what they say, with the link and the time.</p>
+        <span class="say">refreshing Genoa's lineup news…</span>
+      </div></li>
+      <li><div>
+        <h3>Fantadamus checks the facts and does the maths</h3>
+        <p>Each fact is checked for its format, its source and the player's name. All the arithmetic is
+          Fantadamus's own tested code. Your Claude never works out a probability.</p>
+      </div></li>
+      <li><div>
+        <h3>You get the answer</h3>
+        <p>The verdict, the margin and the reasons, each traceable to its source. Facts one of you collects
+          serve the other too.</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section class="sec" aria-labelledby="terms-title">
+    <span class="label">The small print</span>
+    <h2 id="terms-title">What it costs, and what stays private</h2>
+    <div class="pair">
+      <div class="panel">
+        <h3>Cost</h3>
+        <ul>
+          <li><b>Nothing to subscribe to.</b> It runs inside your Claude app, so collecting uses your Claude
+            plan's allowance.</li>
+          <li><b>Hosting costs cents.</b> At two players' volume the AWS bill is expected to stay in cents
+            a month, with a €20 budget alarm to catch mistakes.</li>
+          <li><b>No data feeds to buy.</b> It reads public pages from an approved list.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Privacy and fair use</h3>
+        <ul>
+          <li><b>Your squad and rules stay private.</b> They never go into the public code.</li>
+          <li><b>Approved sites only.</b> It never signs in, gets round a paywall or reads YouTube.</li>
+          <li><b>Facts, not pages.</b> It keeps what a page says and its link, never the page itself.</li>
+          <li><b>Pundits stay anonymous.</b> Their picks show up as “pundit consensus”.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="caption">Trades, auctions and market values are out of scope.</p>
+  </section>
+
+  <section class="sec" aria-labelledby="status-title">
+    <span class="label">Where it stands · 25 October 2026</span>
+    <h2 id="status-title">The foundation is being laid</h2>
+    <ol class="phases">
+      <li class="phase now">
+        <span class="label">Phase 0 · now</span>
+        <b>Foundation</b>
+        <span>Quality gates, storage, a working end-to-end skeleton. 8 of 17 tasks done.</span>
+        <div class="meter" aria-hidden="true"><i style="width: 47%"></i></div>
+      </li>
+      <li class="phase">
+        <span class="label">Phase 1</span>
+        <b>The data</b>
+        <span>Lineups, odds, stats, ratings and injuries, collected and checked.</span>
+      </li>
+      <li class="phase">
+        <span class="label">Phase 2</span>
+        <b>The engine</b>
+        <span>The method in code, tested on real decisions from this season.</span>
+      </li>
+      <li class="phase">
+        <span class="label">Phase 3</span>
+        <b>In your Claude app</b>
+        <span>The tools you talk to. First on one Mac, then online for a second player.</span>
+      </li>
+    </ol>
+  </section>
+
+  <div class="close">
+    <h2>When it's ready</h2>
+    <p class="lede">You'll add Fantadamus to your Claude app as a connector, tell it your league's rules, and
+      ask your first question. A setup guide comes with Phase 3.</p>
+    <p class="fineprint">Built for two players for now. Not affiliated with Fantacalcio.it, Serie A or any
+      club.</p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    // Sample answers, taken from the worked examples in the method's tests (docs/method.md, §A9). They show
+    // the shape of an answer; the page says so under the board.
+    var SAMPLES = {
+      forward: {
+        question: "Last forward spot: Player A or Player B?",
+        verdict: "Start A",
+        margin: ["clear", "clear: over 0.5 pts"],
+        reasons: [
+          ["Starting", '<span class="role a">A</span>A <span class="num">88%</span> · B <span class="num">25%</span>. B is in a rotation and usually comes off the bench.'],
+          ["Scoring", 'A <span class="num">32%</span> · B <span class="num">10%</span>. A\'s team should score 1.35 goals, and he takes the biggest share of them.'],
+          ["Form", "A's 4 goals in 5 starts are pulled toward a centre-forward's usual share before they count."],
+          ["Would flip", "If A drops out of the probable lineups."]
+        ],
+        check: "If A plays in the round's first match, his official lineup lands before the lock. Check it.",
+        provenance: "From: probable lineups (3 outlets), the match odds, season stats."
+      },
+      doubtful: {
+        question: "X is doubtful. Start him or Y?",
+        verdict: "Start X, Y first on the bench",
+        margin: ["lean", "lean: 0.15 to 0.5 pts"],
+        reasons: [
+          ["If he plays", '<span class="role a">A</span>X is the better pick: more of his team\'s expected goals go through him.'],
+          ["Starting", 'X is <span class="num">55%</span> to get a rating. If he doesn\'t play, Y comes in from the bench, so the doubt costs little.'],
+          ["The bench", "Y is a near-certain starter, which is what the first bench place needs."],
+          ["Would flip", "No other forward on your bench, or X likely to come on only for the last 20 minutes."]
+        ],
+        check: "X's official lineup, if his match kicks off before the lock.",
+        provenance: "From: probable lineups (3 outlets, they disagree on X), the match odds, season stats."
+      },
+      keeper: {
+        question: "My backup keeper kept three clean sheets in a row. Swap him in?",
+        verdict: "Coin flip",
+        margin: ["flip", "coin flip: about 0.1 pts"],
+        reasons: [
+          ["Raw form", '<span class="role p">P</span>On the last five games, the hot keeper looks <span class="num">0.9</span> pts better.'],
+          ["Regressed", "Five games of a defence are as noisy as five games of a player. Pulled toward their usual level, the two are within 0.1."],
+          ["Clean sheet", "Each keeper's chance of a clean sheet comes from this match's odds, not from the streak."],
+          ["Your call", "When it's this close, your situation decides. If you need a big week, take the one with more upside."]
+        ],
+        check: "Nothing urgent: both are certain starters.",
+        provenance: "From: the match odds, team goals for and against, season ratings."
+      }
+    };
+
+    var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+    var sheet = document.getElementById("sheet");
+
+    function show(key, tab) {
+      var s = SAMPLES[key];
+      if (!s) return;
+      tabs.forEach(function (t) { t.setAttribute("aria-selected", String(t === tab)); });
+      sheet.setAttribute("aria-labelledby", tab.id);
+      document.getElementById("question").textContent = s.question;
+      document.getElementById("verdict").textContent = s.verdict;
+      var margin = document.getElementById("margin");
+      margin.dataset.kind = s.margin[0];
+      margin.textContent = s.margin[1];
+      document.getElementById("reasons").innerHTML = s.reasons.map(function (r) {
+        return '<li><span class="k">' + r[0] + '</span><span class="v">' + r[1] + "</span></li>";
+      }).join("");
+      document.getElementById("check").textContent = s.check;
+      document.getElementById("provenance").textContent = s.provenance;
+      sheet.classList.remove("swap");
+      void sheet.offsetWidth;
+      sheet.classList.add("swap");
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () { show(tab.dataset.sample, tab); });
+    });
+
+    // Theme: follow the system until the viewer chooses.
+    document.getElementById("themeToggle").addEventListener("click", function () {
+      var root = document.documentElement;
+      var current = root.getAttribute("data-theme");
+      if (!current) {
+        current = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      root.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+    });
+  })();
+</script>

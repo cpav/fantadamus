@@ -1,14 +1,60 @@
 # Fantadamus
 
-A Fantacalcio advisor (Serie A fantasy football, Classic rules). It answers "who do I play?": the best
-eleven and bench for a league's own rules, "X or Y?" with a short breakdown, and the best formation.
-The numbers come from a deterministic decision engine over a small data lakehouse; the chat happens in
-the user's own Claude app through MCP tools.
+A Fantacalcio advisor (Serie A fantasy football, Classic rules). It answers "who do I field?": "X or Y?"
+with a verdict and its reasons, the best eleven and bench under a league's own rules, and the formation
+call. You ask in your own Claude app; Fantadamus's MCP tools hold the data and do the arithmetic.
+
+- **For players:** what it answers, how it decides and what it costs, in
+  [`docs/presentation/product.html`](docs/presentation/product.html).
+- **How it's built:** the architecture tour, in
+  [`docs/presentation/architecture.html`](docs/presentation/architecture.html).
+
+Both pages open directly in a browser; [`docs/presentation/`](docs/presentation/README.md) also links
+published copies.
+
+## How it works
+
+```text
+your Claude app ──ask──▶ read tools ──▶ answer, or a refresh plan (what's stale, where to read it)
+       │                     ▲
+       └─reads approved sites, then──▶ submit tools ──▶ checks ──▶ bronze ─▶ silver ─▶ gold ─▶ engine
+```
+
+- **Claude collects, the tools decide.** Each player's Claude reads only the approved sites and submits what
+  they say, with the link and the time. Fantadamus checks every fact, stores it, and computes every
+  probability in tested Python ([ADR-0005](docs/adr/0005-mvp-claude-collects-tools-decide.md)).
+- **The method** is the owner's own: [`docs/method.md`](docs/method.md). Bonuses are priced from the betting
+  odds, small samples are shrunk, and source disagreement is shown rather than averaged.
+- **Storage** is a small medallion lakehouse: Parquet files read through DuckDB, bronze append-only, every
+  table under a versioned contract. The same layout moves to S3 when the server goes online.
 
 ## Status
 
-Phase 0, `engineering-foundation`: the repository, tooling, CI, test harness and infrastructure skeleton.
-No pipeline or advice code exists yet.
+Not ready for players yet. Phase 0 (`engineering-foundation`) is half done: 8 of 17 tasks. What runs today
+is the walking skeleton, which carries a three-player synthetic fixture through an MCP submit tool, the
+checks, bronze, silver and gold, and reads it back through an MCP read tool.
+
+| Phase | Builds | Status |
+|---|---|---|
+| 0 Foundation | Repository, gates, CI, storage, infrastructure skeleton, walking skeleton | 8 of 17 tasks |
+| 1 Data | Submit tools, checks and storage for every fact the method needs | Not started |
+| 2 Engine | `docs/method.md` in code, with team xG from the odds | Method written |
+| 3 Chat | Read tools and refresh plans, on one Mac and then online for a second player | Prompt written |
+
+A setup guide for players comes with Phase 3.
+
+## Run it locally
+
+You need macOS or Linux, `git`, `make` and [uv](https://docs.astral.sh/uv/).
+
+```bash
+make setup      # the locked Python environment, the pinned tools and the git hooks
+make check      # every gate, as CI runs it: one PASS or FAIL line per check
+make test-fast  # format, lint, unit and property tests with the fast profile
+make skeleton   # the walking skeleton end to end, compared with its golden file
+```
+
+`uv run fantadamus serve` starts the MCP server on stdio. In Phase 0 it has only the skeleton's two tools.
 
 ## How this project works
 
@@ -21,11 +67,6 @@ agent:
 - [`docs/adr/`](docs/adr/): one record per research decision, with its sources;
 - [`docs/method.md`](docs/method.md): the decision method; [`docs/source-registry.md`](docs/source-registry.md):
   where the data comes from and on what terms.
-
-## Setup
-
-`make setup` installs the locked Python environment, the pinned tools and the git hooks. It arrives with
-task 7 of `engineering-foundation`; until then there is nothing to install.
 
 ## Repository rules
 
