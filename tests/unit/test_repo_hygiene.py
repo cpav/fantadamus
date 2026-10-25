@@ -65,3 +65,14 @@ def test_pr_template_fields() -> None:
 def test_suppression_register_columns() -> None:
     register = (ROOT / "docs" / "quality" / "suppressions.md").read_text(encoding="utf-8")
     assert "| ID | Path | Rule | Reason | Approved |" in register
+
+
+def test_leak_runbook_sections() -> None:
+    runbook = (ROOT / "docs" / "runbooks" / "leak.md").read_text(encoding="utf-8")
+    for heading in (
+        "## A secret reached GitHub",
+        "## A FantaCreator identity reached GitHub",
+        "## Afterwards",
+    ):
+        assert heading in runbook, f"leak runbook lacks {heading}"
+    assert "rotate" in runbook.casefold()

@@ -36,7 +36,7 @@ Fantacalcio.it's content needs written authorisation. The owner also chose:
 
 **Option C for the MVP.**
 
-```
+```text
 Claude app ──MCP tool call──▶ fantadamus MCP server
    1. which data products does this answer need?      (e.g. availability for two players' fixtures)
    2. freshness check per product                     (fresh → skip to 6)

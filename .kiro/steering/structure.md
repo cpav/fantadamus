@@ -8,7 +8,7 @@ inclusion: always
 
 Target layout. Directories appear as the task that needs them lands; nothing is created ahead of its spec.
 
-```
+```text
 .kiro/                 spec documents in Kiro's layout (Kiro itself isn't used)
   steering/            product.md, tech.md, structure.md, quality.md
   specs/<spec>/        requirements.md, design.md, tasks.md

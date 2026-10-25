@@ -1,0 +1,6 @@
+# gitleaks configuration (R10.1, R10.2): the default rules, plus any allowlists below.
+# Every allowlist entry needs a `description` and a row in docs/quality/suppressions.md (R6.2, R6.3).
+title = "fantadamus"
+
+[extend]
+useDefault = true

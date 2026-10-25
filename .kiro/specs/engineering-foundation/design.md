@@ -101,7 +101,7 @@ flowchart LR
 
 ### C1. Repository layout (files Spec 0 creates)
 
-```
+```text
 .claude/settings.json          Claude Code hooks → scripts/hooks
 .github/
   workflows/ci.yml             PR gate and main
@@ -291,6 +291,7 @@ so the two renderers can't diverge. The deploy policy keeps gamegusto's shape:
   `/fantadamus/` (R22.8).
 
 **Tests:**
+
 - `tests/*.tftest.hcl` with `mock_provider "aws"` assert resource arguments: encryption, Block Public
   Access, TLS deny, logging, versioning, lifecycle, tags, and budget notifications (R14.13, R15.5).
 - `plan.snapshot.json` is a normalised `terraform show -json` of a mocked plan (sorted keys, volatile fields
@@ -305,6 +306,7 @@ so the two renderers can't diverge. The deploy policy keeps gamegusto's shape:
 
 `make deploy` runs `terraform plan -out` as `fantadamus-deploy`, prints the plan, asks for `yes`, applies,
 then runs `scripts/smoke/spec0.py` with the same profile. The smoke test checks:
+
 - each bucket exists, with encryption, Block Public Access and the TLS deny (R19.4);
 - `budgets.describe_budget("fantadamus-monthly")` shows its four notifications;
 - `ce.list_cost_allocation_tags(TagKeys=["Project"])` is `Active`, otherwise it fails with the activation
@@ -535,6 +537,7 @@ example and its reproduction seed on failure (R7.5).
 | Gate self-tests | AT-1 to AT-6, AT-11 to AT-17, local first and remote after the go-ahead | Report in `docs/reports/` |
 
 **Acceptance tests by location:**
+
 - AT-6, AT-10, AT-18, AT-20: `tests/infra`
 - AT-7: `tests/acceptance` and `tests/integration`
 - AT-8: `tests/unit` plus the live checklist

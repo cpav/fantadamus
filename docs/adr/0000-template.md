@@ -1,8 +1,8 @@
-# ADR-NNNN: <the decision, as a short sentence>
+# ADR-NNNN: {the decision, as a short sentence}
 
 - **Status:** Proposed, YYYY-MM-DD <!-- Proposed | Accepted by the owner, date | Superseded by ADR-NNNN -->
 - **Deciders:** the owner
-- **Specs affected:** <spec names>
+- **Specs affected:** {spec names}
 
 ## Context
 

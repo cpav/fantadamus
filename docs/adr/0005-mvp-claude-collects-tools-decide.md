@@ -33,7 +33,7 @@ reach Fantadamus from their own Claude app, and that Claude has web search and f
 
 **Option B for the MVP.**
 
-```
+```text
 user: "Beto o Laurienté?" ──▶ Claude app
   1. Claude calls a read tool (e.g. compare_players)
   2. the tool answers, or returns a refresh plan: what is missing or stale, the allowed sources to read

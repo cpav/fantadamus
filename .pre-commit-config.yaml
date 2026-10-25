@@ -1,0 +1,82 @@
+---
+# Git hooks (R9). Install all three hook types with `make setup` (task 7).
+# Local hooks run through `uv run --frozen`, so they use exactly the versions in uv.lock (ADR-0001);
+# remote hook repositories are pinned to a commit SHA, with the release noted beside it (R9.4).
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"]
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: 341e2a331ba578029e66c2e01183e7a6b5ca9ab4  # frozen: v0.24.0
+    hooks:
+      - id: markdownlint-cli2
+
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --frozen ruff format
+        language: system
+        types_or: [python, pyi]
+      - id: ruff
+        name: ruff check
+        entry: uv run --frozen ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: mypy
+        name: mypy (strict, project environment)
+        entry: uv run --frozen mypy
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+      - id: yamllint
+        name: yamllint
+        entry: uv run --frozen yamllint --strict
+        language: system
+        types: [yaml]
+      - id: sqlfluff
+        name: sqlfluff
+        entry: uv run --frozen sqlfluff lint
+        language: system
+        types: [sql]
+      - id: actionlint
+        name: actionlint
+        entry: bin/actionlint
+        language: system
+        files: ^\.github/workflows/
+      - id: gitleaks-staged
+        name: secrets in staged files (gitleaks)
+        entry: uv run --frozen python -m scripts.checks.secrets --staged
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: identities-staged
+        name: FantaCreator identities in staged files
+        entry: uv run --frozen python -m scripts.checks.identities --staged
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: conventional-commits
+        name: Conventional Commits message
+        entry: uv run --frozen conventional-pre-commit --strict
+        language: system
+        stages: [commit-msg]
+      - id: outgoing-secrets-and-identities
+        name: secrets and identities in outgoing commits
+        entry: uv run --frozen python -m scripts.checks.pre_push
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true

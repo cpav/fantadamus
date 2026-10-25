@@ -78,7 +78,7 @@ BSL 1.1, which is fine for our own use; OpenTofu is a drop-in, MPL-2.0 alternati
 
 ### Deploy identity (pattern from gamegusto)
 
-```
+```text
 owner's admin identity ──applies once──▶ infra/bootstrap/   (local state, git-ignored)
                                           state bucket · permissions boundary · deploy role · budget
 fantadamus-terraform   ──assume──▶ fantadamus-deploy ──applies──▶ infra/stack/   (remote state)
@@ -129,7 +129,7 @@ fantadamus-terraform   ──assume──▶ fantadamus-deploy ──applies─�
 Spec 1's design compares (a) an agent that browses per question with (b) ingest-once, serve-many, in
 tokens, with prices as inputs and nothing hardcoded. Starting shape (refined in design.md):
 
-```
+```text
 Let U = users, R = rounds, q = questions per user per round,
     S = sources, f = refreshes per source per round,
     t_page = tokens per fetched page, t_extract = extraction tokens per page,

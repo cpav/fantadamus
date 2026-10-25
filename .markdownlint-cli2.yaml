@@ -4,6 +4,10 @@ config:
   MD013: false
   # The PR template starts with an HTML comment telling the author how to write the title.
   MD041: false
+  # Every table here uses `| a |` header cells with `|---|` separators, consistently; MD060 wants one or the other.
+  MD060: false
+  # The agent prompt (the owner's text) and the design use bold labels to introduce lists; they aren't headings.
+  MD036: false
   MD024:
     siblings_only: true
 ignores:

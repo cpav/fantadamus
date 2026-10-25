@@ -25,7 +25,7 @@ sources, and keep their disagreement as uncertainty rather than averaging it awa
 
 ## A3. The ordering rule
 
-```
+```text
 key = (p_start × E_start + p_cameo × E_cameo) / (p_start + p_cameo)
 ```
 
@@ -38,7 +38,7 @@ key = (p_start × E_start + p_cameo × E_cameo) / (p_start + p_cameo)
 
 ## A4. Expected score if he starts
 
-```
+```text
 E_start = expected vote + bonus_goal × E[goals] + bonus_assist × E[assists] − malus_yellow × P(yellow)
 ```
 
@@ -52,7 +52,7 @@ win probability predicts clean sheets, not bonuses.
 
 **Expected goals and assists.**
 
-```
+```text
 E[goals]   = team xG × goal share × minutes share   (+ penalty term for the designated taker)
 E[assists] = team xG × assist share × minutes share
 P(scores)  = 1 − e^(−E[goals])
@@ -77,6 +77,7 @@ P(scores)  = 1 − e^(−E[goals])
   source exists. A large gap is a flag to investigate, not something to average.
 
 **Cameo value.**
+
 - Defenders and holding midfielders: about 5.5 *(start)*.
 - Attackers need a priced cameo. Their chance of scoring in about 25 minutes uses the same formula with
   minutes share ≈ 0.28. A cameo with a goal is worth about 9.8. Without a goal he gets a rating about 60%
@@ -91,7 +92,7 @@ P(scores)  = 1 − e^(−E[goals])
 
 ## A6. Keepers
 
-```
+```text
 E = expected vote + clean-sheet bonus × P(clean sheet) − malus per goal × expected goals conceded
 ```
 

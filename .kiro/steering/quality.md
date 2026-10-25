@@ -158,7 +158,7 @@ keep Kiro's file layout (`.kiro/steering/`, `.kiro/specs/`) because it works wel
 
 Post this after every task, then stop:
 
-```
+```text
 Task 1.4: <title>
 Requirements: R1.2, R1.3
 Tests: tests/unit/test_aliases.py::test_soule_variants (red → green), …
