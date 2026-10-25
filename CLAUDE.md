@@ -10,5 +10,5 @@ the only coding agent. The steering files are the source of truth:
 
 Specs live in `.kiro/specs/<spec>/` (requirements.md → design.md → tasks.md). Work only on the current
 spec's approved documents, one task at a time, and stop after each task report. Before each task, run
-`make task-check TASK=<id>` (from task 9.5 on); until then, check the task's dependencies, requirement IDs,
-tests and ADRs by hand.
+`make task-check TASK=<id>`; if it fails, stop and ask the owner. Tick the task's boxes in tasks.md on its
+branch when it is done.

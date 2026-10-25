@@ -120,6 +120,19 @@ These are `[tool.uv] constraint-dependencies` in `pyproject.toml`, each with a c
 whenever the dependency audit flags one of these packages, and lifted once wheels return or the owner moves
 off the Intel Mac.
 
+**2026-10-25, task 9.7 (the hook contract, confirmed live).** For the owner's review with task 9. The
+evidence is in [the gate self-test report](../reports/gate-selftest-2026-10-25.md).
+
+- **Confirmed:** the payload fields above, the exit codes (2 blocks `PreToolUse`, returns stderr after
+  `PostToolUse`, and keeps `Stop` from ending the turn), and that edits to `.claude/settings.json` are
+  picked up during a session, from the next tool call on.
+- **Extra fields:** live payloads also carry `effort`, `prompt_id` and `scratchpad_dir`; `PostToolUse` adds
+  `duration_ms`, and `Stop` adds `background_tasks`, `last_assistant_message` and `session_crons`. The
+  parser keeps unknown fields, so the hooks don't depend on them.
+- **Timeouts:** a hook that runs past its `timeout` is cancelled, and a cancelled `Stop` hook ends the turn
+  with no feedback to the agent. A hook with a long job therefore stops it itself, before its own timeout,
+  and reports the failure.
+
 ## Sources
 
 - Each tool's repository and licence file, read through the GitHub API on 2026-10-24:

@@ -10,7 +10,16 @@ import pytest
 
 @pytest.mark.parametrize(
     "module",
-    ["adr_lint", "suppressions", "thresholds", "coverage_gate", "lockfile", "tool_versions", "contracts"],
+    [
+        "adr_lint",
+        "suppressions",
+        "thresholds",
+        "coverage_gate",
+        "lockfile",
+        "tool_versions",
+        "contracts",
+        "hook_config",
+    ],
 )
 def test_module_exits_with_its_result(
     module: str, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch

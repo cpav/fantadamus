@@ -13,6 +13,9 @@ and [design](design.md).
   - where relevant, `_Depends on:_` and `_ADRs:_`.
   `make task-check TASK=<id>` (R17.4) reads these lines; the agent runs it before every task once it
   exists (task 9.5), and checks the same things by hand until then.
+- A ticked box (`- [x]`) marks a task or step as done. The agent ticks it on the task's own branch, so it
+  reaches `main` only with the owner's merge; `make task-check` treats a dependency as complete when its
+  box is ticked.
 - Property-based tests (P1–P13 in the design) are **required** tasks. No task is optional.
 - Run one task at a time and post the task report after each (`quality.md`).
 - **Before the remote go-ahead (task 15)** there is no GitHub, so there are no pull requests. Each task
@@ -26,9 +29,9 @@ and [design](design.md).
 
 ## Tasks
 
-- [ ] 1. Repository skeleton (local only)
+- [x] 1. Repository skeleton (local only)
   - Branch: `chore/ef-1-repository` · Depends on: none · ADRs: none
-  - [ ] 1.1 `git init` with a `main` branch; README (purpose, setup, and "no licence granted, all rights
+  - [x] 1.1 `git init` with a `main` branch; README (purpose, setup, and "no licence granted, all rights
     reserved"); `.editorconfig`; `.gitignore` for private configuration, `.env*`, `data/local/`,
     `data/private/`, `bin/`, build output, Terraform state, plans and `.terraform/` (keeping
     `.terraform.lock.hcl`), `.claude/settings.local.json` and `.claude/launch.json`
@@ -36,179 +39,179 @@ and [design](design.md).
     - _Test: no harness exists yet, so the proof is a recorded `git check-ignore -v` for each private path in
       the task report. Automated in 3.4: `tests/unit/test_repo_hygiene.py::test_private_paths_ignored`,
       `::test_readme_states_no_licence`_
-  - [ ] 1.2 Pull-request template with the Definition of Done checklist and fields for task, requirements,
+  - [x] 1.2 Pull-request template with the Definition of Done checklist and fields for task, requirements,
     tests and ADRs; empty suppression register `docs/quality/suppressions.md`; ADR template
     `docs/adr/0000-template.md`
     - _Requirements: R21.1, R6.3, R18.1_
     - _Test: automated in 3.4: `tests/unit/test_repo_hygiene.py::test_pr_template_fields`,
       `::test_suppression_register_columns`_
 
-- [ ] 2. ADR-0001: tool choices (research)
+- [x] 2. ADR-0001: tool choices (research)
   - Branch: `docs/ef-2-adr-0001` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 Write `docs/adr/0001-tool-choices.md`. It confirms each tool, version and licence in the
+  - [x] 2.1 Write `docs/adr/0001-tool-choices.md`. It confirms each tool, version and licence in the
     design's C3, plus commitizen vs conventional-pre-commit, and Dependabot vs Renovate (uv, GitHub Actions
     and pre-commit ecosystems).
     - _Requirements: R18.1, R18.3, R11.4_
     - _Test: owner approval; `scripts/checks/adr_lint` passes on it once 4.4 lands
       (`tests/unit/checks/test_adr_lint.py::test_repo_adrs_pass`)_
-  - [ ] 2.2 Claude Code hook contract: record from the official reference the events we use (`PreToolUse`,
+  - [x] 2.2 Claude Code hook contract: record from the official reference the events we use (`PreToolUse`,
     `PostToolUse`, `Stop`), their JSON payloads and the exit-code contract; save example payloads as
     fixtures for 9.1. The live confirmation is task 9.7.
     - _Requirements: R17.8_
     - _Test: the recorded payloads under `tests/fixtures/hooks/` parse in 9.1
       (`tests/contract/test_hook_events.py::test_recorded_events_parse`)_
-  - [ ] 2.3 **Owner:** approve ADR-0001 (status Accepted)
+  - [x] 2.3 **Owner:** approve ADR-0001 (status Accepted)
     - _Requirements: R18.4_
     - _Test: `Status: Accepted` in the ADR; checked by `pr_meta` and `pre_task` from 9.5 and 13.2_
 
-- [ ] 3. Python project and pinned toolchain
+- [x] 3. Python project and pinned toolchain
   - Branch: `chore/ef-3-python-project` · Depends on: 2 · ADRs: ADR-0001
-  - [ ] 3.1 `pyproject.toml` with the `fantadamus` package in `src/`, Python 3.12 in `requires-python` and
+  - [x] 3.1 `pyproject.toml` with the `fantadamus` package in `src/`, Python 3.12 in `requires-python` and
     `.python-version`, runtime and dev dependencies from the design's C3; `uv.lock` committed
     - _Requirements: R3.1, R3.2, R3.3, R3.5_
     - _Test: `tests/unit/test_project.py::test_python_pinned_312`, `::test_src_layout_importable`_
-  - [ ] 3.2 Lockfile check `scripts/checks/lockfile.py`
+  - [x] 3.2 Lockfile check `scripts/checks/lockfile.py`
     - _Requirements: R3.4_
     - _Test: `tests/unit/checks/test_lockfile.py::test_stale_lock_fails`_
-  - [ ] 3.3 `tool-versions.toml` (terraform, tflint, gitleaks, actionlint; version and SHA-256 per platform);
+  - [x] 3.3 `tool-versions.toml` (terraform, tflint, gitleaks, actionlint; version and SHA-256 per platform);
     `scripts/tools/install.py` into `bin/`; `scripts/checks/tool_versions.py`
     - _Requirements: R1.8, R1.9_
     - _Test: `tests/unit/tools/test_install.py::test_checksum_mismatch_refused`,
       `tests/unit/checks/test_tool_versions.py::test_version_mismatch_fails`_
-  - [ ] 3.4 Backfill task 1's proofs as tests
+  - [x] 3.4 Backfill task 1's proofs as tests
     - _Requirements: R2.1, R2.8, R2.10, R21.1_
     - _Test: `tests/unit/test_repo_hygiene.py` (the four tests named in task 1)_
 
-- [ ] 4. Format, lint, types and gate integrity
+- [x] 4. Format, lint, types and gate integrity
   - Branch: `chore/ef-4-lint-types` · Depends on: 3 · ADRs: ADR-0001
-  - [ ] 4.1 ruff (format; lint with `B`, `S`, `PGH`, `RUF`), mypy `--strict` on `src/`, `scripts/` and
+  - [x] 4.1 ruff (format; lint with `B`, `S`, `PGH`, `RUF`), mypy `--strict` on `src/`, `scripts/` and
     Python under `infra/` and `tests/infra/` (tests with `check_untyped_defs`), plus sqlfluff, yamllint,
     markdownlint and actionlint configurations
     - _Requirements: R4.1, R4.2, R4.3, R4.4, R5.1, R5.2_
     - _Test: `tests/unit/test_tool_config.py::test_ruff_selects_bugbear_and_bandit`,
       `::test_mypy_strict_paths`, `::test_linters_configured`_
-  - [ ] 4.2 Suppression lint `scripts/checks/suppressions.py` and the register format
+  - [x] 4.2 Suppression lint `scripts/checks/suppressions.py` and the register format
     - _Requirements: R6.1, R6.2, R6.3, R6.4, R6.6, R6.7_
     - _Test: `tests/unit/checks/test_suppressions.py` (one case per rule, including a blank approval date);
       property P10 `tests/property/test_suppression_lint.py::test_suppression_lint`_
-  - [ ] 4.3 `config/thresholds.toml` with directions; ratchet check `scripts/checks/thresholds.py`
+  - [x] 4.3 `config/thresholds.toml` with directions; ratchet check `scripts/checks/thresholds.py`
     - _Requirements: R6.5, R8.4_
     - _Test: `tests/unit/checks/test_thresholds.py::test_weakened_coverage_fails`,
       `::test_raised_time_budget_fails`; property P9
       `tests/property/test_threshold_ratchet.py::test_threshold_ratchet`_
-  - [ ] 4.4 ADR lint `scripts/checks/adr_lint.py`
+  - [x] 4.4 ADR lint `scripts/checks/adr_lint.py`
     - _Requirements: R18.1, R18.2_
     - _Test: `tests/unit/checks/test_adr_lint.py::test_missing_section_fails`, `::test_no_sources_fails`,
       `::test_repo_adrs_pass`_
 
-- [ ] 5. Test harness and coverage
+- [x] 5. Test harness and coverage
   - Branch: `test/ef-5-harness` · Depends on: 3 · ADRs: ADR-0001
-  - [ ] 5.1 Layer directories; `tests/conftest.py` applying one marker per directory; shared fixtures;
+  - [x] 5.1 Layer directories; `tests/conftest.py` applying one marker per directory; shared fixtures;
     `pytest-socket` blocking the network in unit and property tests
     - _Requirements: R7.1, R7.2, R7.4_
     - _Test: `tests/unit/test_harness.py::test_markers_applied_by_directory`,
       `::test_network_blocked_in_unit_tests`_
-  - [ ] 5.2 Hypothesis profiles `ci` and `dev`, chosen by `HYPOTHESIS_PROFILE`; failures print the seed
+  - [x] 5.2 Hypothesis profiles `ci` and `dev`, chosen by `HYPOTHESIS_PROFILE`; failures print the seed
     - _Requirements: R7.3, R7.5_
     - _Test: `tests/unit/test_harness.py::test_profile_selection`, `::test_failure_prints_reproduction`_
-  - [ ] 5.3 Coverage of `src/` and `scripts/`, and the gate `scripts/checks/coverage_gate.py` (line and
+  - [x] 5.3 Coverage of `src/` and `scripts/`, and the gate `scripts/checks/coverage_gate.py` (line and
     branch checked separately)
     - _Requirements: R8.1, R8.2, R8.3_
     - _Test: `tests/unit/checks/test_coverage_gate.py::test_branch_below_threshold_fails`; property P13
       `tests/property/test_coverage_gate.py::test_coverage_gate`_
 
-- [ ] 6. Git hooks, secrets and identities
+- [x] 6. Git hooks, secrets and identities
   - Branch: `chore/ef-6-git-hooks` · Depends on: 4, 5 · ADRs: ADR-0001
-  - [ ] 6.1 `.pre-commit-config.yaml` with pre-commit, commit-msg and pre-push stages; every `rev` pinned
+  - [x] 6.1 `.pre-commit-config.yaml` with pre-commit, commit-msg and pre-push stages; every `rev` pinned
     - _Requirements: R9.1, R9.3, R9.4_
     - _Test: `tests/unit/test_precommit_config.py::test_all_revs_pinned`, `::test_stages_present`_
-  - [ ] 6.2 conventional-pre-commit as the commit-msg hook (ADR-0001)
+  - [x] 6.2 conventional-pre-commit as the commit-msg hook (ADR-0001)
     - _Requirements: R9.2_
     - _Test: `tests/integration/test_commit_msg.py::test_non_conventional_message_rejected` (temporary repo)_
-  - [ ] 6.3 Identity check `scripts/checks/identities.py`: loads from private configuration or the CI
+  - [x] 6.3 Identity check `scripts/checks/identities.py`: loads from private configuration or the CI
     secret, fails closed, normalises, scans staged files, a commit range or the tree, prints `path:line`
     only
     - _Requirements: R10.3, R10.4, R10.5, R10.6_
     - _Test: `tests/unit/checks/test_identities.py::test_missing_list_fails_closed`; property P7
       `tests/property/test_identity.py::test_identity_normalisation`, `::test_identity_output_redacted`_
-  - [ ] 6.4 `.gitleaks.toml` and a wrapper for staged, range and tree scans
+  - [x] 6.4 `.gitleaks.toml` and a wrapper for staged, range and tree scans
     - _Requirements: R10.1, R10.2_
     - _Test: `tests/integration/test_gitleaks_wrapper.py::test_fake_aws_key_detected_in_range`_
-  - [ ] 6.5 The pre-push stage runs gitleaks and the identity check on every outgoing commit
+  - [x] 6.5 The pre-push stage runs gitleaks and the identity check on every outgoing commit
     - _Requirements: R9.6_
     - _Test: `tests/integration/test_pre_push.py::test_outgoing_secret_rejected`,
       `::test_outgoing_identity_rejected`_
-  - [ ] 6.6 Leak runbook `docs/runbooks/leak.md`
+  - [x] 6.6 Leak runbook `docs/runbooks/leak.md`
     - _Requirements: R10.8_
     - _Test: `tests/unit/test_repo_hygiene.py::test_leak_runbook_sections`_
 
-- [ ] 7. Make targets and dependency audit
+- [x] 7. Make targets and dependency audit
   - Branch: `chore/ef-7-make` · Depends on: 4, 5, 6 · ADRs: ADR-0001
-  - [ ] 7.1 Makefile: `setup`, `check` (runs everything, then a per-check summary), `check-static`,
+  - [x] 7.1 Makefile: `setup`, `check` (runs everything, then a per-check summary), `check-static`,
     `check-tests`, `check-infra` (Python-only until task 11), `check-audit`, `test-fast`, `mutation`,
     `help`; `make check` uses `HYPOTHESIS_PROFILE=ci` and no AWS credentials
     - _Requirements: R1.1, R1.2, R1.3, R1.4, R1.5, R1.6, R1.7_
     - _Test: `tests/unit/test_makefile.py::test_check_continues_and_summarises`,
       `::test_check_is_union_of_subtargets`, `::test_check_env_has_no_aws_credentials`,
       `::test_setup_installs_all_hook_types`_
-  - [ ] 7.2 `pip-audit` with `config/audit-allowlist.toml` (id, reason, expiry)
+  - [x] 7.2 `pip-audit` with `config/audit-allowlist.toml` (id, reason, expiry)
     - _Requirements: R11.1, R11.2, R11.3_
     - _Test: `tests/unit/checks/test_audit_allowlist.py::test_expired_entry_fails`,
       `::test_entry_requires_reason`, `::test_offline_audit_fails_not_passes`_
 
-- [ ] 8. Contracts and the walking skeleton
+- [x] 8. Contracts and the walking skeleton
   - Branch: `feat/ef-8-walking-skeleton` · Depends on: 5, 7 · ADRs: ADR-0001
-  - [ ] 8.1 `core`: canonical-JSON hashing, the injected clock, URL host matching for the allowlist
+  - [x] 8.1 `core`: canonical-JSON hashing, the injected clock, URL host matching for the allowlist
     - _Requirements: R16.2, R16.11_
     - _Test: property P2 `tests/property/test_hashing.py::test_hash_canonical`; property P3
       `tests/property/test_allowlist.py::test_allowlist_rejects_lookalikes`_
-  - [ ] 8.2 Contract base, bronze envelope, `SkeletonPlayer` 1.0.0, committed JSON schemas and changelog;
+  - [x] 8.2 Contract base, bronze envelope, `SkeletonPlayer` 1.0.0, committed JSON schemas and changelog;
     contract-version check `scripts/checks/contracts.py`
     - _Requirements: R13.1, R13.2, R13.3, R16.2, R16.4_
     - _Test: `tests/contract/test_skeleton_schema.py::test_schema_matches_committed`; property P8
       `tests/property/test_contract_versions.py::test_contract_version_rules`_
-  - [ ] 8.3 DuckDB/Parquet lake store: append-only bronze, silver promotion with the quality rule, gold
+  - [x] 8.3 DuckDB/Parquet lake store: append-only bronze, silver promotion with the quality rule, gold
     - _Requirements: R16.3, R16.4, R16.5, R16.6, R16.8_
     - _Test: properties P1 `tests/property/test_lake.py::test_bronze_append_only`, P4
       `::test_valid_rows_roundtrip`, P5 `::test_invalid_rows_excluded`, P6 `::test_gold_order_invariant`;
       `tests/unit/test_quality_rules.py::test_duplicate_player_id_reported`_
-  - [ ] 8.4 MCP server with `submit_skeleton_rows` and `get_skeleton_summary`; `config/sources.toml`
+  - [x] 8.4 MCP server with `submit_skeleton_rows` and `get_skeleton_summary`; `config/sources.toml`
     - _Requirements: R16.10, R16.11, R16.12, R16.13_
     - _Test: `tests/integration/test_skeleton_mcp.py::test_submit_then_read`,
       `::test_off_allowlist_rejected_nothing_written` (in-process MCP client)_
-  - [ ] 8.5 Synthetic fixture and golden file (each with a README on why it may be public), the CLI, and
+  - [x] 8.5 Synthetic fixture and golden file (each with a README on why it may be public), the CLI, and
     `make skeleton`
     - _Requirements: R16.1, R16.6, R16.7, R16.9, R2.9_
     - _Test: **AT-7** `tests/acceptance/test_at7_walking_skeleton.py::test_at7_walking_skeleton` (timed,
       golden file)_
 
-- [ ] 9. Agent hooks
+- [x] 9. Agent hooks
   - Branch: `feat/ef-9-agent-hooks` · Depends on: 2, 7 · ADRs: ADR-0001
-  - [ ] 9.1 `HookEvent` parser for Claude Code payloads
+  - [x] 9.1 `HookEvent` parser for Claude Code payloads
     - _Requirements: R17.1_
     - _Test: `tests/contract/test_hook_events.py::test_recorded_events_parse`_
-  - [ ] 9.2 `post_edit`: format and lint the edited file
+  - [x] 9.2 `post_edit`: format and lint the edited file
     - _Requirements: R17.2_
     - _Test: `tests/unit/hooks/test_post_edit.py::test_formats_and_reports_remaining`_
-  - [ ] 9.3 `stop_check`: runs `make check` only on changes, with a 10-minute timeout and loop protection
+  - [x] 9.3 `stop_check`: runs `make check` only on changes, with a 10-minute timeout and loop protection
     - _Requirements: R17.3_
     - _Test: `tests/unit/hooks/test_stop_check.py::test_no_changes_reports_no_check`,
       `::test_red_first_time_blocks`, `::test_red_again_allows_stop_with_message`,
       `::test_timeout_is_failure`_
-  - [ ] 9.4 `guard`: pushes, remote creation, deploys and private-configuration writes
+  - [x] 9.4 `guard`: pushes, remote creation, deploys and private-configuration writes
     - _Requirements: R17.5_
     - _Test: `tests/unit/hooks/test_guard.py::test_pre_go_ahead_blocks_any_push`; property P11
       `tests/property/test_guard.py::test_guard_commands`_
-  - [ ] 9.5 `make task-check TASK=<id>` (`scripts/checks/task_check.py`): dependencies, requirement IDs,
+  - [x] 9.5 `make task-check TASK=<id>` (`scripts/checks/task_check.py`): dependencies, requirement IDs,
     tests and ADR status; CLAUDE.md tells the agent to run it before each task
     - _Requirements: R17.4, R18.4_
     - _Test: `tests/unit/checks/test_task_check.py::test_missing_requirements_fails`,
       `::test_unaccepted_adr_fails`, `::test_unfinished_dependency_fails`_
-  - [ ] 9.6 Wire `.claude/settings.json`; hook-config check
+  - [x] 9.6 Wire `.claude/settings.json`; hook-config check
     - _Requirements: R17.1, R17.6, R17.7, R17.9_
     - _Test: `tests/unit/checks/test_hook_config.py::test_configs_valid`; **AT-8**
       `tests/acceptance/test_at8_agent_hooks.py::test_at8_agent_hooks` (recorded events)_
-  - [ ] 9.7 Live check in Claude Code (owner and agent): a red stop, a blocked push and a blocked deploy,
+  - [x] 9.7 Live check in Claude Code (owner and agent): a red stop, a blocked push and a blocked deploy,
     with the observed payloads compared against 2.2's fixtures and the evidence recorded
     - _Requirements: R20.3, R17.8_
     - _Test: checklist evidence in `docs/reports/gate-selftest-<date>.md`_

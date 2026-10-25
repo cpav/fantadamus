@@ -44,6 +44,7 @@ STATIC = [
     Check("thresholds", _module("thresholds")),
     Check("adr-lint", _module("adr_lint")),
     Check("contracts", _module("contracts")),
+    Check("hook-config", _module("hook_config")),
     Check("identities", _module("identities", "--tree")),
     Check("secrets", _module("secrets", "--history")),
 ]

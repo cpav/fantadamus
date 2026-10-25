@@ -93,6 +93,10 @@ def test_mutation_target_lists_core_modules() -> None:
     assert "src/fantadamus/core/" in mutmut["paths_to_mutate"]
 
 
+def test_task_check_target_takes_the_task_id() -> None:
+    assert "scripts.checks.task_check $(TASK)" in _recipe("task-check")
+
+
 def test_skeleton_target_checks_the_golden_file() -> None:
     recipe = _recipe("skeleton")
     assert "fantadamus skeleton run" in recipe
