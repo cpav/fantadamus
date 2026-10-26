@@ -32,15 +32,15 @@ your Claude app ──ask──▶ read tools ──▶ answer, or a refresh pla
 
 Not ready for other players yet. Phase 0, the foundation, is complete and signed off
 ([report](docs/reports/phase-0-report.md)). Phase 1's "X or Y?" for two forwards runs locally in Claude
-Desktop: the submit tools, the checks and storage, the forward model and `compare_players`. Its last step is
-the owner's first real round.
+Desktop: the submit tools, the checks and storage, the forward model and `compare_players`. The owner's first
+real round was answered on 2026-10-26 ([Phase 1 report](docs/reports/phase-1-report.md)).
 
 Re-planned on 2026-10-26: the work now goes in thin slices, each taking one question from data to answer.
 
 | Phase | Builds | Status |
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton | Done, signed off 2026-10-26 |
-| 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Built; the owner's real round next |
+| 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | First real round answered 2026-10-26 ([report](docs/reports/phase-1-report.md)); awaiting sign-off |
 | 2 More slices | Keepers and defenders; the full lineup with league rules and the bench; the formation | Method written |
 | 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
 
