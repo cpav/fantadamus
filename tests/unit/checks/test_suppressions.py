@@ -79,40 +79,10 @@ def test_noqa_text_inside_a_string_is_not_a_suppression() -> None:
     assert sup.find_in_python("pkg/mod.py", 'text = "run()  # noqa"\n') == []
 
 
-def test_checkov_skip_needs_reason() -> None:
-    found = sup.find_in_terraform("infra/s.tf", "#checkov:skip=CKV_AWS_18\nresource {}\n")
-    register = _register(("infra/s.tf", "CKV_AWS_18", "log bucket", "2026-10-24"))
-    assert any("no reason" in p for p in sup.problems(found, sup.parse_register(register)))
-
-
 def test_per_file_ignores_need_register_rows() -> None:
     pyproject = '[tool.ruff.lint.per-file-ignores]\n"tests/**" = ["S101"]\n'
     found = sup.find_per_file_ignores(pyproject)
     assert any("no register row" in p for p in sup.problems(found, sup.parse_register(HEADER)))
-
-
-def test_tflint_ignore_reason_inline_or_above() -> None:
-    register = sup.parse_register(
-        _register(("infra/s.tf", "aws_s3_bucket_name", "legacy name", "2026-10-24"))
-    )
-    inline = sup.find_in_terraform(
-        "infra/s.tf", "# tflint-ignore: aws_s3_bucket_name  # reason: legacy name\n"
-    )
-    above = sup.find_in_terraform(
-        "infra/s.tf", "# reason: legacy name\n# tflint-ignore: aws_s3_bucket_name\n"
-    )
-    missing = sup.find_in_terraform("infra/s.tf", "x = 1\n# tflint-ignore: aws_s3_bucket_name\n")
-    assert sup.problems(inline, register) == []
-    assert sup.problems(above, register) == []
-    assert any("no reason" in p for p in sup.problems(missing, register))
-
-
-def test_checkov_skip_with_reason_and_row_passes() -> None:
-    found = sup.find_in_terraform(
-        "infra/s.tf", "#checkov:skip=CKV_AWS_18:the log bucket cannot log to itself\n"
-    )
-    register = sup.parse_register(_register(("infra/s.tf", "CKV_AWS_18", "log bucket", "2026-10-24")))
-    assert sup.problems(found, register) == []
 
 
 def test_gitleaks_allowlist_needs_description() -> None:
@@ -143,8 +113,6 @@ def test_check_scans_a_repository(tmp_path: Path) -> None:
     git("init", "-q")
     (tmp_path / "pkg").mkdir()
     (tmp_path / "pkg" / "mod.py").write_text("run()  # noqa: S603  # reason: fixed args\n", encoding="utf-8")
-    (tmp_path / "infra").mkdir()
-    (tmp_path / "infra" / "s.tf").write_text("#checkov:skip=CKV_AWS_18:log bucket\n", encoding="utf-8")
     (tmp_path / "pyproject.toml").write_text(
         '[tool.ruff.lint.per-file-ignores]\n"t/**" = ["S101"]\n', encoding="utf-8"
     )
@@ -155,7 +123,6 @@ def test_check_scans_a_repository(tmp_path: Path) -> None:
     register.write_text(
         _register(
             ("pkg/mod.py", "S603", "fixed args", "2026-10-24"),
-            ("infra/s.tf", "CKV_AWS_18", "log bucket", "2026-10-24"),
             ("t/**", "S101", "pytest asserts", "2026-10-24"),
             (".gitleaks.toml", "k", "fixture", "2026-10-24"),
         ),

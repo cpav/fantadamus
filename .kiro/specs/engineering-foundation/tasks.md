@@ -1,6 +1,6 @@
 # Implementation Plan: `engineering-foundation` (Spec 0)
 
-Status: **Approved; re-planned 2026-10-26** ([replan-2026-10-26.md](replan-2026-10-26.md)) · Date: 2026-10-24 · From the approved [requirements](requirements.md)
+Status: **Approved; re-planned 2026-10-26** (requirements.md, change log) · Date: 2026-10-24 · From the approved [requirements](requirements.md)
 and [design](design.md).
 
 ## How to read and run these tasks

@@ -15,9 +15,8 @@ Everything that keeps the repository honest is built and proved:
 - **Claude Code hooks.**
 - **CI on a public GitHub repository** with a protected `main`.
 
-The AWS skeleton (bootstrap, stack, budget alarm, first deploy) moved to Phase 3 in the
-[2026-10-26 re-plan](../../.kiro/specs/engineering-foundation/replan-2026-10-26.md). It will be built when the
-online server needs it.
+The AWS skeleton (bootstrap, stack, budget alarm, first deploy) moved to Phase 3 in the 2026-10-26 re-plan
+(recorded in the spec's change log). It will be built when the online server needs it.
 
 ## Numbers
 
@@ -63,8 +62,8 @@ $0. No AWS resources exist yet, and GitHub Actions is free for a public reposito
 1. **No creator names yet.** The identity check protects nothing until the real FantaCreator names replace the
    placeholder, in the Actions secret, the Dependabot secret and the private configuration.
 2. **The Intel Mac is losing pre-built packages.** cryptography's three known flaws are accepted until
-   2027-01-26, and mutmut and libcst are pinned to older versions. An Apple Silicon Mac would remove all
-   three.
+   2027-01-26. An Apple Silicon Mac would remove them, and the same problem will come back with mutmut in
+   Phase 2.
 3. **One end-of-turn check ran 13 minutes once,** on 2026-10-25, and the cause is unknown. A hang now names
    the test and is stopped within 2 minutes, so a repeat would be diagnosed.
 4. **The presentation pages show 25 October figures.** Refresh them before sharing.

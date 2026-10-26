@@ -34,10 +34,7 @@ class HookEvent(BaseModel):
     model_config = ConfigDict(extra="allow", frozen=True)
 
     hook_event_name: str
-    session_id: str = ""
-    transcript_path: str = ""
     cwd: str = ""
-    permission_mode: str | None = None
     tool_name: str | None = None
     tool_input: dict[str, JsonValue] = Field(default_factory=dict)
     stop_hook_active: bool = False

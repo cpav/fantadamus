@@ -11,7 +11,7 @@ import tomllib
 from collections.abc import Mapping
 from pathlib import Path
 
-from scripts.checks._common import CheckResult, report
+from scripts.checks._common import CheckResult, report, run_command
 
 ROOT = Path(__file__).resolve().parents[2]
 RELATIVE = "config/thresholds.toml"
@@ -54,13 +54,7 @@ def load_current(root: Path = ROOT) -> dict[str, dict[str, object]]:
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(  # noqa: S603  # reason: fixed git subcommands with a ref chosen by this script
-        ["git", *args],  # noqa: S607  # reason: git from PATH, as in every developer shell and CI runner
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    return run_command(["git", "-C", str(ROOT), *args])
 
 
 def base_ref() -> str:

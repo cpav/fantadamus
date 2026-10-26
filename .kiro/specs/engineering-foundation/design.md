@@ -154,13 +154,11 @@ tool-versions.toml, Makefile, pyproject.toml, uv.lock, .pre-commit-config.yaml,
 | Target | Does | Requirements |
 |---|---|---|
 | `setup` | `uv sync --locked`; `scripts/tools/install.py` (pinned tools → `bin/`); `pre-commit install --hook-type pre-commit --hook-type commit-msg --hook-type pre-push` | R1.5, R1.8 |
-| `check` | Runs `check-static`, `check-tests`, `check-infra` and `check-audit`, continuing past failures, then prints one pass/fail line per check and exits non-zero if any failed | R1.1–R1.3 |
-| `check-static` | Lockfile, tool versions, format, lint (ruff, sqlfluff, yamllint, markdownlint, actionlint), types, suppressions, thresholds, ADR lint, hook-config validation, contract versions, identity scan and gitleaks over the tree | R3.4, R1.9, R4, R5, R6, R13, R17.7, R18.2, R10 |
-| `check-tests` | pytest over all layers with `HYPOTHESIS_PROFILE=ci`, then the coverage gate | R7, R8, R16 |
-| `check-infra` | For `bootstrap` and `stack`: `terraform fmt -check`, `init -backend=false`, `validate`, `tflint`, `checkov`, `terraform test`, plan-snapshot comparison; then the IAM evaluator suite | R14, R15.5, R22.9, R22.11 |
+| `check` | The static checks side by side (lockfile, tool versions, format, lint with ruff, sqlfluff, yamllint, markdownlint and actionlint, types, suppressions, thresholds, ADR lint, hook configuration, contract versions, identity scan, gitleaks), then pytest over all layers with `HYPOTHESIS_PROFILE=ci` and the coverage gate, then the audit; continues past failures, prints one pass/fail line per check, exits non-zero if any failed | R1.1–R1.3, R3.4, R1.9, R4–R8, R10, R13, R16, R17.7, R18.2 |
+| `check-infra` (Phase 3) | For `bootstrap` and `stack`: `terraform fmt -check`, `init -backend=false`, `validate`, `tflint`, `checkov`, `terraform test`, plan-snapshot comparison; then the IAM evaluator suite | R14, R15.5, R22.9, R22.11 |
 | `check-audit` | `pip-audit` on `uv.lock` with `config/audit-allowlist.toml` | R11.1–R11.3 |
 | `test-fast` | Format, lint, unit and property tests with `HYPOTHESIS_PROFILE=dev`; about 15 seconds | R1.4 |
-| `mutation` | `mutmut` on the modules in `[tool.fantadamus] core_modules` | R1.7 |
+| `mutation` (Phase 2) | `mutmut` on the core modules | R1.7 |
 | `skeleton` | Runs the walking skeleton end to end on the fixture | R16.1 |
 | `bootstrap` (Phase 3) | Shows `aws sts get-caller-identity` and the plan for `infra/bootstrap` under the admin profile; applies after interactive confirmation | R19.6 |
 | `deploy` (Phase 3) | Plans `infra/stack` as `fantadamus-deploy`, shows the diff, applies after confirmation, then runs the smoke test | R19.1, R19.4 |

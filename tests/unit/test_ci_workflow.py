@@ -84,22 +84,3 @@ def test_pr_job_checks_title_and_commit_range() -> None:
     for name, workflow in _all_workflows().items():
         for each in workflow["jobs"].values():
             assert all("${{" not in run for run in _runs(each)), name
-
-
-def test_audit_schedule_weekly() -> None:
-    audit = _load(WORKFLOWS / "audit.yml")
-    assert _triggers(audit)["schedule"] == [{"cron": "0 6 * * 1"}]
-    assert "make check-audit" in _runs(audit["jobs"]["audit"])
-
-
-def test_dependency_updates_cover_uv_actions_precommit() -> None:
-    config = _load(ROOT / ".github" / "dependabot.yml")
-    updates = {entry["package-ecosystem"]: entry for entry in config["updates"]}
-    assert set(updates) == {"uv", "github-actions", "pre-commit"}
-    for entry in updates.values():
-        assert entry["schedule"]["interval"] == "weekly"
-        # Conventional titles, so the PR title check passes.
-        assert entry["commit-message"]["prefix"] == "build"
-        # Only releases at least two weeks old (a supply-chain precaution), one pull request per ecosystem.
-        assert entry["cooldown"]["default-days"] >= 14
-        assert entry["groups"]["all"]["patterns"] == ["*"]

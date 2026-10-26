@@ -15,7 +15,7 @@ pytest_plugins = ["pytester"]
 hypothesis_profiles.load()
 
 ROOT = Path(__file__).resolve().parents[1]
-LAYERS = ("unit", "property", "contract", "integration", "acceptance", "infra")
+LAYERS = ("unit", "property", "contract", "integration", "acceptance")
 NO_NETWORK = frozenset({"unit", "property"})
 
 Git = Callable[..., str]

@@ -1,9 +1,10 @@
 """Run a group of checks, keep going past failures, and print one PASS/FAIL line per check (R1.1 to R1.3).
 
-`make check` runs the group `all`, which is exactly static + tests + infra + audit; CI runs those four as
-parallel jobs (R1.2). Every check gets the thorough Hypothesis profile and no AWS credentials (R1.6, R7.3).
+`make check` runs the group `all` (static + tests + audit), locally and in CI (R1.2); the weekly audit
+workflow runs `audit` alone. Every check gets the thorough Hypothesis profile and no AWS credentials (R1.6,
+R7.3).
 
-Usage: python -m scripts.checks.run_all {all,static,tests,infra,audit}
+Usage: python -m scripts.checks.run_all {all,static,tests,audit}
 """
 
 from __future__ import annotations
@@ -62,15 +63,13 @@ TESTS = [
     ),
     Check("coverage", _module("coverage_gate")),
 ]
-INFRA: list[Check] = []  # Terraform checks and the IAM policy evaluator arrive with task 11.
 AUDIT = [Check("audit", _module("audit"))]
 
 GROUPS: dict[str, list[Check]] = {
     "static": STATIC,
     "tests": TESTS,
-    "infra": INFRA,
     "audit": AUDIT,
-    "all": [*STATIC, *TESTS, *INFRA, *AUDIT],
+    "all": [*STATIC, *TESTS, *AUDIT],
 }
 
 

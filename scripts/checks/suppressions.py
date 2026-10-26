@@ -7,7 +7,6 @@ Suppressions found:
   `# type: ignore[code]`. The reason is `# reason: …` after the codes, or a `# reason: …` line above.
 - pytest skips (read from the syntax tree): `pytest.mark.skip`, `skipif`, `xfail`, `pytest.skip`,
   `pytest.xfail`. The reason is their `reason=` argument, or a first positional string.
-- Terraform comments: `#checkov:skip=CKV_…:reason` and `# tflint-ignore: rule` with a `# reason: …`.
 - Configuration: ruff's `per-file-ignores` in pyproject.toml; their reason is the register row.
 - File allowlists: `.gitleaks.toml` entries need a `description`; `config/audit-allowlist.toml`
   entries need a `reason`.
@@ -21,22 +20,19 @@ from __future__ import annotations
 import ast
 import io
 import re
-import subprocess
 import tokenize
 import tomllib
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.checks._common import CheckResult, report
+from scripts.checks._common import CheckResult, report, run_command
 
 ROOT = Path(__file__).resolve().parents[2]
 
 _NOQA = re.compile(r"^noqa\b(?::\s*(?P<codes>[A-Z]+[0-9]+(?:\s*,\s*[A-Z]+[0-9]+)*))?")
 _TYPE_IGNORE = re.compile(r"^type:\s*ignore\b(?:\[(?P<codes>[a-z0-9-]+(?:\s*,\s*[a-z0-9-]+)*)\])?")
 _REASON = re.compile(r"^reason:\s*(?P<text>\S.*)$")
-_CHECKOV = re.compile(r"#\s*checkov:skip=(?P<code>CKV2?_[A-Z0-9]+_\d+)(?::(?P<reason>.*\S))?")
-_TFLINT = re.compile(r"#\s*tflint-ignore:\s*(?P<codes>[a-z0-9_]+(?:\s*,\s*[a-z0-9_]+)*)")
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _SKIPS = {("mark", "skip"), ("mark", "skipif"), ("mark", "xfail"), ("pytest", "skip"), ("pytest", "xfail")}
 
@@ -135,23 +131,6 @@ def _dedupe_calls(found: list[Suppression]) -> list[Suppression]:
     return list(best.values())
 
 
-def find_in_terraform(path: str, source: str) -> list[Suppression]:
-    """Find checkov and tflint skips in Terraform source."""
-    found: list[Suppression] = []
-    lines = source.splitlines()
-    for number, text in enumerate(lines, start=1):
-        for match in _CHECKOV.finditer(text):
-            found.append(Suppression(path, number, match.group("code"), match.group("reason")))
-        tflint = _TFLINT.search(text)
-        if tflint:
-            reason = _reason_in(_segments(text.split("tflint-ignore", 1)[1]))
-            if reason is None and number > 1:
-                reason = _reason_in(_segments(lines[number - 2]))
-            codes = [c.strip() for c in tflint.group("codes").split(",")]
-            found.extend(Suppression(path, number, code, reason) for code in codes)
-    return found
-
-
 def find_per_file_ignores(pyproject: str) -> list[Suppression]:
     """Each ruff per-file-ignores entry is a suppression whose reason lives in the register."""
     data = tomllib.loads(pyproject)
@@ -224,13 +203,11 @@ def problems(found: Iterable[Suppression], rows: Sequence[RegisterRow]) -> list[
 
 
 def _tracked_files(root: Path) -> list[str]:
-    completed = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],  # noqa: S607  # reason: git from PATH, as in every developer shell and CI runner
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=True,
+    completed = run_command(
+        ["git", "-C", str(root), "ls-files", "--cached", "--others", "--exclude-standard"]
     )
+    if completed.returncode != 0:
+        raise RuntimeError(f"git ls-files failed: {completed.stderr.strip()}")
     return completed.stdout.splitlines()
 
 
@@ -244,8 +221,6 @@ def check(root: Path = ROOT, register: Path | None = None) -> CheckResult:
             continue
         if name.endswith(".py"):
             found.extend(find_in_python(name, path.read_text(encoding="utf-8")))
-        elif name.endswith((".tf", ".tftest.hcl")):
-            found.extend(find_in_terraform(name, path.read_text(encoding="utf-8")))
         elif name == "pyproject.toml":
             found.extend(find_per_file_ignores(path.read_text(encoding="utf-8")))
         elif name in (".gitleaks.toml", "config/audit-allowlist.toml"):
