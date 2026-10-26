@@ -45,20 +45,20 @@ and [design](design.md)
     - _Test: `tests/unit/test_sources_config.py::test_reading_list_pages_are_allowed`,
       `::test_reading_list_covers_each_submit_tool`_
 
-- [ ] 2. Fixtures, season figures and names
+- [x] 2. Fixtures, season figures and names
   - Branch: `feat/xy-2-fixtures-season` · Depends on: 1 · ADRs: ADR-0005
-  - [ ] 2.1 `submit_fixtures` and the `fixtures` domain: bronze with the envelope, silver `fixtures` with
+  - [x] 2.1 `submit_fixtures` and the `fixtures` domain: bronze with the envelope, silver `fixtures` with
     history, the gold view `fixture(club, round)` and the round's deadline (its first kickoff)
     - _Requirements: R2.1, R2.2, R7.1, R7.2_
     - _Test: `tests/integration/xy/test_fixtures.py::test_submit_fixtures_bronze_to_silver`,
       `::test_deadline_is_first_kickoff`, `::test_as_of_ignores_later_fixtures`_
-  - [ ] 2.2 `submit_player_season`, `submit_team_season` and `submit_penalty_takers`, and the `season` domain:
-    silver `players`, `player_seasons`, `team_seasons`, `penalty_takers`; the gold views
+  - [x] 2.2 `submit_player_season`, `submit_team_season` and `submit_penalty_takers`, and the `season` domain:
+    silver `player_seasons` (a player's identity is his latest row), `team_seasons`, `penalty_takers`; the gold views
     `player_form(player, as_of)` and `penalty_order(club, as_of)`
     - _Requirements: R1.1, R6.1, R6.2, R6.3, R7.1, R7.2_
     - _Test: `tests/integration/xy/test_season.py::test_profile_creates_player_and_season`,
       `::test_team_table_and_penalty_takers`, `::test_resubmission_keeps_history`_
-  - [ ] 2.3 Name resolution (C4): case, accents and spacing ignored; a unique surname; "Lautaro M." style;
+  - [x] 2.3 Name resolution (C4): case, accents and spacing ignored; a unique surname; "Lautaro M." style;
     candidates instead of a guess
     - _Requirements: R1.2, R1.3_
     - _Test: `tests/unit/xy/test_resolve.py::test_full_name_and_unique_surname`, `::test_surname_and_initial`,

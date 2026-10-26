@@ -52,7 +52,17 @@ def test_serve_runs_the_server_on_stdio(monkeypatch: pytest.MonkeyPatch, tmp_pat
 
     monkeypatch.setattr(MCPServer, "run", fake_run)
     assert cli.main(["serve", "--lake", str(tmp_path / "lake"), "--user", "user-1"]) == 0
-    assert seen == {"transport": "stdio", "tools": ["get_skeleton_summary", "submit_skeleton_rows"]}
+    assert seen == {
+        "transport": "stdio",
+        "tools": [
+            "get_skeleton_summary",
+            "submit_fixtures",
+            "submit_penalty_takers",
+            "submit_player_season",
+            "submit_skeleton_rows",
+            "submit_team_season",
+        ],
+    }
 
 
 def test_no_command_prints_help(capsys: pytest.CaptureFixture[str]) -> None:

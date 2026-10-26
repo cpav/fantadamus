@@ -63,20 +63,20 @@ publication time if shown, `captured_at` and the pseudonymous user ID.
 
 ### C3. Domains (`domains/{fixtures,availability,odds,season}/`)
 
-Each domain follows the skeleton: `bronze.py` wraps a submission in its envelope and appends it; `silver.py`
-rebuilds the domain's silver table from all its bronze records on each submission. **Silver keeps history:**
+One shared flow (`domains/facts.py`) wraps a submission in its envelope, appends it to bronze and rebuilds
+the domain's silver table from all its bronze records; each domain's `silver.py` says how a payload becomes
+rows, and its `gold.py` holds the as-of reads. **Silver keeps history:**
 every row carries `captured_at`, the outlet and the bronze hash, and nothing is overwritten (R7.2). There
 are no materialised gold tables: gold is computed on read for an as-of time (C6), which is what makes replay
 possible (R7.4) and keeps one fewer copy of the data.
 
 | Silver table | From | Key columns |
 |---|---|---|
-| `players` | profiles (R6.1) | player ID → name, club, roles, normalised name |
 | `fixtures` | `submit_fixtures` | round, home, away, kickoff |
 | `lineup_views` | probable lineups | match, outlet, player (ID or unresolved name), status, p_start view |
 | `official_lineups` | official lineups | match, player, starter or bench |
 | `odds` | match odds | match, page, de-margined 1X2, P(over 2.5), P(both score) |
-| `player_seasons` | profiles | player ID and the R6.1 figures |
+| `player_seasons` | profiles (R6.1) | player ID, name, club, roles and the R6.1 figures; a player's identity is his latest row |
 | `team_seasons` | league table | club, played, goals for and against |
 | `penalty_takers` | takers page | club, order, player |
 

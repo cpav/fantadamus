@@ -20,12 +20,15 @@ from mcp.server.mcpserver import MCPServer
 from pydantic import AwareDatetime, BaseModel, JsonValue
 
 from fantadamus.core.clock import utc_now
+from fantadamus.core.clubs import Clubs
 from fantadamus.domains.skeleton.pipeline import SubmitResult
 from fantadamus.lake.duckdb_store import DEFAULT_ROOT, LakeStore
 from fantadamus.mcp.server import DEFAULT_SOURCES, SkeletonSummary, build_server, load_allowed_hosts
+from fantadamus.mcp.tools import submit
 
 SKELETON_FIXTURE = Path("tests/fixtures/skeleton/rows.json")
 SKELETON_SOURCES = Path("tests/fixtures/skeleton/sources.toml")
+DEFAULT_CLUBS = Path("config/clubs.toml")
 DEFAULT_USER = "local"
 
 
@@ -80,12 +83,11 @@ def _skeleton(args: argparse.Namespace) -> int:
 
 
 def _serve(args: argparse.Namespace) -> int:
-    server = build_server(
-        LakeStore(Path(args.lake)),
-        allowed_hosts=load_allowed_hosts(Path(args.sources)),
-        clock=utc_now,
-        submitted_by=args.user,
-    )
+    store = LakeStore(Path(args.lake))
+    hosts = load_allowed_hosts(Path(args.sources))
+    server = build_server(store, allowed_hosts=hosts, clock=utc_now, submitted_by=args.user)
+    clubs = Clubs.from_toml(DEFAULT_CLUBS.read_text(encoding="utf-8"))
+    submit.register(server, store, allowed_hosts=hosts, clock=utc_now, submitted_by=args.user, clubs=clubs)
     server.run("stdio")
     return 0
 

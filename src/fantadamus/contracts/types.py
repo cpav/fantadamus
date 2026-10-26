@@ -5,9 +5,14 @@ from __future__ import annotations
 import datetime as dt
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, AwareDatetime, Field, StringConstraints
+from pydantic import AfterValidator, AwareDatetime, BeforeValidator, Field, StringConstraints
 
 from fantadamus.core.urls import url_host
+
+
+def _from_iso(value: object) -> object:
+    # Strict contracts refuse strings for datetimes, but tool arguments arrive as JSON: accept ISO 8601 only.
+    return dt.datetime.fromisoformat(value) if isinstance(value, str) else value
 
 
 def _to_utc(value: dt.datetime) -> dt.datetime:
@@ -20,7 +25,7 @@ def _readable_url(value: str) -> str:
     return value
 
 
-UtcDatetime = Annotated[AwareDatetime, AfterValidator(_to_utc)]
+UtcDatetime = Annotated[AwareDatetime, BeforeValidator(_from_iso), AfterValidator(_to_utc)]
 SourceUrl = Annotated[
     str, Field(max_length=2083, json_schema_extra={"format": "uri"}), AfterValidator(_readable_url)
 ]
