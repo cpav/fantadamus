@@ -30,16 +30,19 @@ your Claude app ──ask──▶ read tools ──▶ answer, or a refresh pla
 
 ## Status
 
-Not ready for players yet. Phase 0 (`engineering-foundation`) is half done: 8 of 17 tasks. What runs today
-is the walking skeleton, which carries a three-player synthetic fixture through an MCP submit tool, the
-checks, bronze, silver and gold, and reads it back through an MCP read tool.
+Not ready for players yet. Phase 0, the foundation, is complete and awaiting the owner's sign-off
+([report](docs/reports/phase-0-report.md)). What runs today is the walking skeleton: a three-player synthetic
+fixture goes in through an MCP submit tool, through the checks, bronze, silver and gold, and comes back out
+through an MCP read tool.
+
+Re-planned on 2026-10-26: the work now goes in thin slices, each taking one question from data to answer.
 
 | Phase | Builds | Status |
 |---|---|---|
-| 0 Foundation | Repository, gates, CI, storage, infrastructure skeleton, walking skeleton | 8 of 17 tasks |
-| 1 Data | Submit tools, checks and storage for every fact the method needs | Not started |
-| 2 Engine | `docs/method.md` in code, with team xG from the odds | Method written |
-| 3 Chat | Read tools and refresh plans, on one Mac and then online for a second player | Prompt written |
+| 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton | Done, sign-off pending |
+| 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Next |
+| 2 More slices | Keepers and defenders; the full lineup with league rules and the bench; the formation | Method written |
+| 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
 
 A setup guide for players comes with Phase 3.
 
