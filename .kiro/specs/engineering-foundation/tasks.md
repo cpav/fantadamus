@@ -351,12 +351,12 @@ and [design](design.md).
     - _Test: **AT-21** smoke-test output recorded in `docs/reports/first-deploy-<date>.md` (fails while the
       tag is inactive, passes once active)_
 
-- [ ] 17. Phase 0 gate
+- [x] 17. Phase 0 gate
   - Branch: `docs/ef-17-phase-report` · Depends on: 15 · ADRs: none
   - [x] 17.1 Short phase report in `docs/reports/`: tests, coverage, gate results, cost ($0), open risks.
     Mutation testing starts in Phase 2, once there is football logic to mutate
     - _Requirements: R20.4, Phase 0 exit gate_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 17.2 **Owner:** sign off Phase 0 → the `mvp-x-or-y` spec may start
+  - [x] 17.2 **Owner:** sign off Phase 0 → the `mvp-x-or-y` spec may start
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the phase report_

@@ -1,6 +1,6 @@
 # Phase 0 report: engineering foundation
 
-2026-10-26 · Spec `engineering-foundation` · Owner's sign-off: pending (task 17.2)
+2026-10-26 · Spec `engineering-foundation` · **Signed off by the owner on 2026-10-26** (task 17.2)
 
 ## What Phase 0 delivered
 
