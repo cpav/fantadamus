@@ -96,15 +96,15 @@ and [design](design.md)
       `::test_regressed_form_fallback`;
       **P6** `tests/property/xy/test_odds_fit.py::test_p6_fit_reproduces_market`_
 
-- [ ] 5. The forward model
+- [x] 5. The forward model
   - Branch: `feat/xy-5-forward-model` · Depends on: none · ADRs: none
-  - [ ] 5.1 `engine/constants.py` (every _(start)_ value with its method section) and the formulas in
+  - [x] 5.1 `engine/constants.py` (every _(start)_ value with its method section) and the formulas in
     `engine/forwards.py` (C8): expected vote, shares, E[goals] with the penalty term, P(yellow), E_start with
     signed rule values, E_cameo
     - _Requirements: R9.1, R9.2, R9.3, R9.4, R9.5, R9.6, R9.7, R12.5_
     - _Test: `tests/unit/xy/test_forwards.py::test_formulas_by_hand`, `::test_signed_yellow_lowers_score`;
       **AT-2** `tests/acceptance/xy/test_method.py::test_at2_goal_chances`_
-  - [ ] 5.2 The key, the comparison, the margin label, the flip points and the verdict without bench cover
+  - [x] 5.2 The key, the comparison, the margin label, the flip points and the verdict without bench cover
     - _Requirements: R9.8, R10.1, R10.2, R10.4, R10.6_
     - _Test: `tests/unit/xy/test_forwards.py::test_margin_labels`, `::test_flip_points`;
       **AT-1** `tests/acceptance/xy/test_method.py::test_at1_tie_and_rejected_ranking`,

@@ -16,3 +16,25 @@ DIXON_COLES_RHO = -0.10  # the low-score correction; negative adds 0-0 and 1-1 d
 MAX_GOALS = 10  # a team's goals counted up to this in the 1X2
 XG_RANGE = (0.20, 4.00)  # the team xG searched
 TEAM_FORM_WEIGHT = 12  # regressed team form weighs n / (n + 12) matches, without odds
+
+# The forward model (R9, method §A4)
+VOTE_BASELINE = 6.0  # a forward's expected vote before his own ratings count
+VOTE_WEIGHT = 10  # k_vote: his average counts n / (n + 10) of rated appearances
+FIXTURE_EFFECT = 0.3  # the vote moves 0.3 x (P(win) - P(loss))
+SHARE_WEIGHT = 15  # W: shares shrink toward the prior with the weight of 15 team goals
+GOAL_SHARE_PRIOR = {"Pc": 0.30, "A": 0.20, "W": 0.15}  # by Mantra role
+GOAL_SHARE_PRIOR_UNKNOWN = 0.20  # any other or no Mantra role
+ASSIST_SHARE_PRIOR = 0.11  # attackers
+MINUTES_START = 0.85  # a forward's minutes share if he starts
+MINUTES_CAMEO = 0.28  # and if he comes on
+PENALTY_RATE = 0.15  # P(his team gets a penalty) per match
+PENALTY_CONVERSION = 0.78
+YELLOW_PRIOR = 0.15  # yellow cards per appearance, before his own count
+YELLOW_WEIGHT = 10  # appearances' weight of that prior
+CAMEO_GOAL_VALUE = 9.8  # a cameo with a goal
+CAMEO_RATED = 0.6  # a cameo without a goal gets a rating this often
+CAMEO_RATING = 5.75  # and is worth this
+
+# The answer (R10.2, method §A7)
+COIN_FLIP = 0.15  # a margin below this is a coin flip
+CLEAR = 0.5  # above this, clear; in between, a lean
