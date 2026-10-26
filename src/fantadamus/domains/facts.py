@@ -107,12 +107,13 @@ def submit[P: Contract](
             f"source_url host {host} is not on the allowlist" if host else "source_url is not a web page"
         )
     data = payload.model_dump(mode="json")
+    received_at = clock()
     envelope = BronzeEnvelope(
         source=domain.source,
         source_url=source_url,
         published_at=published_at,
-        captured_at=captured_at,
-        received_at=clock(),
+        captured_at=min(captured_at, received_at),  # a page can't be read after it arrives; clocks drift
+        received_at=received_at,
         content_sha256=content_sha256(data),
         contract_version=payload.__version__,
         submitted_by=submitted_by,

@@ -38,7 +38,7 @@ def _availability(store: LakeStore, as_of: dt.datetime) -> Availability | None:
 
 async def test_outlets_kept_side_by_side(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
-    async with tools(store) as client:
+    async with tools(store, now=LATER) as client:
         await send(client, "submit_player_season", page("player_season"), READ)
         first = await send(client, "submit_probable_lineups", probable("Uno Formazioni"), READ)
         assert not first.is_error, first
@@ -74,7 +74,7 @@ async def test_outlets_kept_side_by_side(tmp_path: Path) -> None:
 
 async def test_unresolved_name_resolves_when_profile_arrives(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
-    async with tools(store) as client:
+    async with tools(store, now=LATER) as client:
         await send(client, "submit_probable_lineups", probable("Uno Formazioni"), READ)
         assert known_players(read_silver(store, PLAYER_SEASONS), LATER) == []
         assert "Alfa Nove" in {row.name for row in read_silver(store, LINEUP_VIEWS)}  # kept by name

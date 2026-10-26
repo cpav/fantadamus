@@ -51,7 +51,8 @@ and [design](design.md)
     history, the gold view `fixture(club, round)` and the round's deadline (its first kickoff)
     - _Requirements: R2.1, R2.2, R7.1, R7.2_
     - _Test: `tests/integration/xy/test_fixtures.py::test_submit_fixtures_bronze_to_silver`,
-      `::test_deadline_is_first_kickoff`, `::test_as_of_ignores_later_fixtures`_
+      `::test_deadline_is_first_kickoff`, `::test_as_of_ignores_later_fixtures`,
+      `::test_capture_after_receipt_counts_as_receipt` (added in task 8.1, after the owner's first round)_
   - [x] 2.2 `submit_player_season`, `submit_team_season` and `submit_penalty_takers`, and the `season` domain:
     silver `player_seasons` (a player's identity is his latest row), `team_seasons`, `penalty_takers`; the gold views
     `player_form(player, as_of)` and `penalty_order(club, as_of)`
