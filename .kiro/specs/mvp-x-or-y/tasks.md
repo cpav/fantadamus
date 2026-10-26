@@ -82,14 +82,14 @@ and [design](design.md)
       **AT-5** `tests/acceptance/xy/test_lineups.py::test_at5_official_lineup_overrides`,
       **AT-6** `::test_at6_two_outlets_disputed`_
 
-- [ ] 4. Match odds and team xG
+- [x] 4. Match odds and team xG
   - Branch: `feat/xy-4-odds` · Depends on: 2 · ADRs: ADR-0005
-  - [ ] 4.1 `submit_match_odds` and the `odds` domain: silver `odds` with each page's de-margined
+  - [x] 4.1 `submit_match_odds` and the `odds` domain: silver `odds` with each page's de-margined
     probabilities
     - _Requirements: R5.1, R7.1, R7.2_
     - _Test: `tests/integration/xy/test_odds.py::test_submit_odds_de_margined`,
       `::test_pages_kept_side_by_side`_
-  - [ ] 4.2 The fit (`engine/odds.py`, C7): Poisson with the Dixon–Coles correction, grid then refinement;
+  - [x] 4.2 The fit (`engine/odds.py`, C7): Poisson with the Dixon–Coles correction, grid then refinement;
     the fallback from regressed team form; the gold view `team_xg(match, as_of)`, with the fallback flagged
     - _Requirements: R5.2, R5.3_
     - _Test: `tests/unit/xy/test_odds_fit.py::test_known_market`, `::test_dixon_coles_low_scores`,

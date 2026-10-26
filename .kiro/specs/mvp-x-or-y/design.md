@@ -113,8 +113,9 @@ Pure functions over silver rows, all taking `as_of` and ignoring rows captured a
 2. Model: independent Poisson goals for each team with the Dixon–Coles adjustment on 0–0, 1–0, 0–1 and 1–1,
    ρ = −0.10 *(start)*, scores up to 10.
 3. Fit (λ_home, λ_away) by least squares against P(home), P(draw), P(away), P(over 2.5) and, when present,
-   P(both score): a grid over 0.20–4.00 in steps of 0.05, then a 0.005-step refinement around the best
-   point. Deterministic, a few tens of milliseconds, no library.
+   P(both score): a grid over 0.20–4.00 in steps of 0.2, then a pattern search around the best point that
+   halves its step down to 0.0005. The correction only touches the four low scores, so it has closed forms
+   and one evaluation is cheap. Deterministic, a few milliseconds, no library.
 4. Outputs: team xG for both teams, P(win), P(draw), P(loss).
 5. Without odds: regressed team form (R5.3), the club's goals for and against per match shrunk toward the
    league average with weight n / (n + 12).

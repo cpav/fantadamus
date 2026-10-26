@@ -17,6 +17,7 @@ from pydantic import AwareDatetime
 from fantadamus.contracts.base import Contract
 from fantadamus.contracts.xy.fixtures import FixturesPayload
 from fantadamus.contracts.xy.lineups import OfficialLineupPayload, ProbableLineupPayload
+from fantadamus.contracts.xy.odds import MatchOddsPayload
 from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
 from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
@@ -24,6 +25,7 @@ from fantadamus.domains import facts
 from fantadamus.domains.availability.silver import LINEUP_VIEWS, OFFICIAL_LINEUPS
 from fantadamus.domains.facts import Domain, Receipt
 from fantadamus.domains.fixtures.silver import FIXTURES
+from fantadamus.domains.odds.silver import ODDS
 from fantadamus.domains.season.silver import PENALTY_TAKERS, PLAYER_SEASONS, TEAM_SEASONS
 from fantadamus.lake.duckdb_store import LakeStore
 
@@ -143,3 +145,15 @@ def register(
         published_at: AwareDatetime | None = None,
     ) -> Receipt:
         return submit(OFFICIAL_LINEUPS, payload, source_url, captured_at, published_at)
+
+    @server.tool(
+        description="Submit one bookmaker's decimal odds for one match from a betting preview "
+        "(livetipsportal, Jamma): 1X2, over/under 2.5 and, if shown, goal/no goal. " + PROVENANCE
+    )
+    def submit_match_odds(
+        payload: MatchOddsPayload,
+        source_url: str,
+        captured_at: AwareDatetime,
+        published_at: AwareDatetime | None = None,
+    ) -> Receipt:
+        return submit(ODDS, payload, source_url, captured_at, published_at)
