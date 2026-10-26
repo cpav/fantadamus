@@ -76,7 +76,7 @@ The first Dependabot pull request (AT-19) arrived the same day: PR #3, "build: B
 10.3.0 to 10.3.2". Both checks passed, including the identity and secret scan, which used the Dependabot
 secret. Its title was a Conventional Commits message, as `dependabot.yml` intends.
 
-PR #3 itself was closed unmerged: it proposed a release four days old. Dependabot now waits 14 days before
+PR #3 itself proposes a release only four days old, so it isn't merged. Dependabot now waits 14 days before
 proposing a release, and it groups each week's updates into one pull request per ecosystem.
 
 Owner's review (task 15.4): accepted on 2026-10-26. **Remote gate passed.**
