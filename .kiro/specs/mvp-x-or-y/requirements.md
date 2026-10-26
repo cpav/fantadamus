@@ -1,6 +1,7 @@
 # Requirements Document: `mvp-x-or-y` (Phase 1)
 
-Status: **Draft for the owner's review** · Workflow: requirements-first · Last updated: 2026-10-26
+Status: **Approved by the owner, 2026-10-26** (league rules set in Claude at first use) · Workflow:
+requirements-first · Last updated: 2026-10-26
 
 ## Introduction
 
@@ -9,7 +10,8 @@ in the owner's own Claude Desktop. It covers three things:
 
 - **the facts that question needs:** collected by the owner's Claude from the approved sites (ADR-0005);
 - **the method for forwards:** [`docs/method.md`](../../../docs/method.md) §A2 to §A4;
-- **one read tool:** `compare_players`, which answers or, when facts are missing, returns a refresh plan.
+- **one read tool:** `compare_players`, which answers or, when facts are missing, returns a refresh plan;
+- **the user's league rules:** set once, in Claude, the first time the user asks (R12).
 
 The slice replaces nothing in Spec 0. It reuses the contracts, the bronze → silver → gold lake on DuckDB, the
 quality rules and the MCP server, and adds real data domains next to the walking skeleton. It's done when the
@@ -31,6 +33,7 @@ Spec-wide terms are in `product.md`. Here:
 | Key | Method §A3: (p_start × E_start + p_cameo × E_cameo) / (p_start + p_cameo) |
 | Fact | A structured value read from one page, submitted with that page's URL, its publication time and when it was read |
 | Refresh plan | What `compare_players` returns instead of an answer: the facts missing or stale, the pages to read, and the submit tool for each |
+| League rules | A user's bonus and malus values, set once with `set_league_rules` and used for every answer to that user |
 | *(start)* | A starting value from the method, to be calibrated later (method §A8) |
 
 ## Sources
@@ -163,8 +166,9 @@ challenge an answer.
 **User Story:** As the owner, I want the method's arithmetic, not the model's judgement, so that answers are
 consistent and testable.
 
-- **R9.1** THE SYSTEM SHALL compute E_start = expected vote + bonus_goal × E[goals] + bonus_assist ×
-  E[assists] − malus_yellow × P(yellow), with the bonuses from the league rules (R12).
+- **R9.1** THE SYSTEM SHALL compute E_start = expected vote + goal × E[goals] + assist × E[assists] +
+  yellow card × P(yellow), using the signed values of the user's league rules (R12), so a
+  yellow card at −0.5 lowers the score.
 - **R9.2** THE SYSTEM SHALL compute the expected vote as 6.0 + n / (n + 10) × (average rating − 6.0) +
   0.3 × (P(win) − P(loss)), where n is appearances with a rating and the win and loss chances come from the
   fitted odds *(start)*.
@@ -216,19 +220,32 @@ stays on the approved sites.
 
 ### Requirement 12: League rules
 
-**User Story:** As the owner, I want my league's bonuses used, so that the answer fits my league.
+**User Story:** As a player, I want to set my league's rules once, the first time I use Fantadamus, so that
+every answer scores players the way my league does.
 
-- **R12.1** THE SYSTEM SHALL use Classic rules by default: +3 a goal, +1 an assist, −0.5 a yellow card.
-- **R12.2** WHERE the private configuration sets other values THE SYSTEM SHALL use them, and the answer SHALL
-  name the rules it used.
+- **R12.1** THE SYSTEM SHALL keep one set of league rules per user: the bonus and malus table of a Fantacalcio
+  Classic league. It holds goal (one value, or one per role P, D, C and A), assist, penalty scored, penalty
+  missed, penalty saved, own goal, yellow card, red card, and, for keepers, goal conceded and clean sheet.
+- **R12.2** THE SYSTEM SHALL provide `set_league_rules`, which validates and stores a user's rules, and which
+  the user can call again to change them. IF a value is out of range (a bonus below 0 or above 10, a malus
+  above 0 or below −10) THEN it SHALL reject it with the reason.
+- **R12.3** IF a user has no league rules THEN `compare_players` SHALL return the setup step instead of an
+  answer: the values to ask the user for, offering the Classic values as the starting choice (goal +3,
+  assist +1, penalty scored +3, penalty missed −3, penalty saved +3, own goal −2, yellow card −0.5, red card
+  −1, goal conceded −1, clean sheet +1).
+- **R12.4** THE SYSTEM SHALL store each user's rules privately, keyed by their pseudonymous user ID, never in
+  the repository; and every answer SHALL name the rules it used.
+- **R12.5** This slice uses goal, assist, penalty scored (as a goal) and yellow card. The rest of the table
+  is kept for later slices, and the rules beyond bonuses and maluses (goal thresholds, modifiers, bench size,
+  substitutions, formations) are added with the full-lineup slice.
 
 ### Requirement 13: In the owner's Claude Desktop
 
 **User Story:** As the owner, I want to ask from my own Claude app, so that nothing new needs installing for
 the conversation.
 
-- **R13.1** THE SYSTEM SHALL serve `compare_players` and the submit tools from the existing MCP server over
-  stdio, with tool descriptions that name each tool's source pages.
+- **R13.1** THE SYSTEM SHALL serve `compare_players`, `set_league_rules` and the submit tools from the
+  existing MCP server over stdio, with tool descriptions that name each submit tool's source pages.
 - **R13.2** THE SYSTEM SHALL serve the agent prompt (`docs/agent-prompt.md`, with its MVP collection section)
   as the server's instructions.
 - **R13.3** THE SYSTEM SHALL document, in the README, how to add the server to Claude Desktop.
@@ -239,7 +256,8 @@ the conversation.
 happened (method §A8).
 
 - **R14.1** WHEN `compare_players` answers THE SYSTEM SHALL append to a log: the as-of time, both players, every
-  published probability (p_start, P(scores)), both keys, the verdict, and the content hashes of the facts used.
+  published probability (p_start, P(scores)), both keys, the verdict, the league rules used, and the content
+  hashes of the facts used.
 - **R14.2** THE SYSTEM SHALL never modify or delete a log entry.
 
 ## Acceptance tests
@@ -255,11 +273,13 @@ happened (method §A8).
 | AT-7 | Bad submissions are rejected with the reason and nothing is stored: a host off the allowlist, 10 starters, shares summing to 80 %, a margin of 25 % | R8, ADR-0005 |
 | AT-8 | An answer at an earlier as-of time ignores facts captured later | R7.4 |
 | AT-9 | Every answer adds one log entry; entries are never changed | R14 |
-| AT-10 | Manual: the owner asks a real "X or Y?" in Claude Desktop for a real round, and gets an answer whose facts all come from the reading list | All, R13 |
+| AT-10 | A user without league rules gets the setup step instead of an answer; after `set_league_rules`, the answer uses those rules, and raising the goal bonus raises E_start; an out-of-range value is rejected | R12 |
+| AT-11 | Manual: the owner sets their rules in Claude Desktop, then asks a real "X or Y?" for a real round, and gets an answer whose facts all come from the reading list | All, R13 |
 
-## Decisions for the owner
+## Owner decisions
 
-1. **League rules.** Are your league's goal, assist and yellow-card values the Classic +3, +1 and −0.5? If not,
-   they go into the private configuration (R12).
-2. **Approve these requirements**, so that the design can start. The constants marked *(start)* are the
-   method's starting values; they're calibrated later from the decision log.
+- **2026-10-26:** league rules are set by each user in Claude, the first time they ask, through
+  `set_league_rules` (option A). The owner's league uses the Classic values for goal (+3), assist (+1) and
+  yellow card (−0.5).
+- **2026-10-26:** these requirements approved. The constants marked *(start)* are the method's starting
+  values, calibrated later from the decision log.
