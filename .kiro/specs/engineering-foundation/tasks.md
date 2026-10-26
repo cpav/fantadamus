@@ -280,22 +280,22 @@ and [design](design.md).
     - _Test: `tests/integration/test_smoke.py::test_tag_inactive_fails_with_instructions`,
       `::test_reports_failed_assertion` (moto)_
 
-- [ ] 13. CI workflow, Dependabot and the GitHub setup checklist (written, not yet run)
+- [x] 13. CI workflow, Dependabot and the GitHub setup checklist (written, not yet run)
   - Branch: `chore/ef-13-ci` · Depends on: 7 · ADRs: ADR-0001
-  - [ ] 13.1 `ci.yml` `check` job: `make setup` and `make check`; read-only permissions; concurrency;
+  - [x] 13.1 `ci.yml` `check` job: `make setup` and `make check`; read-only permissions; concurrency;
     10-minute timeout; uv cache; actions pinned to SHAs; no `pull_request_target`
     - _Requirements: R1.2, R11.5, R12.1, R12.2, R12.4, R12.5, R12.6, R12.9_
     - _Test: `tests/unit/test_ci_workflow.py::test_check_job_runs_make_check`, `::test_actions_pinned_to_sha`,
       `::test_no_pull_request_target`, `::test_read_only_permissions`, `::test_job_timeouts`_
-  - [ ] 13.2 `pr` job: the title as a Conventional Commits message; gitleaks and the identity check over
+  - [x] 13.2 `pr` job: the title as a Conventional Commits message; gitleaks and the identity check over
     `base..head`
     - _Requirements: R9.5, R10.2, R21.2_
     - _Test: `tests/unit/test_ci_workflow.py::test_pr_job_checks_title_and_commit_range`_
-  - [ ] 13.3 `audit.yml` (weekly) and `dependabot.yml` (uv, GitHub Actions, pre-commit)
+  - [x] 13.3 `audit.yml` (weekly) and `dependabot.yml` (uv, GitHub Actions, pre-commit)
     - _Requirements: R11.1, R11.4, R11.6_
     - _Test: `tests/unit/test_ci_workflow.py::test_audit_schedule_weekly`,
       `::test_dependency_updates_cover_uv_actions_precommit`_
-  - [ ] 13.4 `docs/runbooks/github-setup.md`: the ruleset, secret scanning, push protection, fork approval
+  - [x] 13.4 `docs/runbooks/github-setup.md`: the ruleset, secret scanning, push protection, fork approval
     and the identity secret, as a checklist for the go-ahead
     - _Requirements: R2.2, R2.3, R2.4, R2.5, R2.6, R2.7, R2.12, R10.4, R10.7, R12.8_
     - _Test: `tests/unit/test_github_setup.py::test_checklist_covers_each_setting`_

@@ -1,0 +1,68 @@
+# The pull-request gate (design C5): one job runs `make check`, exactly as on the owner's machine; a second
+# job, on pull requests only, checks the title and scans the pull request's commits. Required checks:
+# `check` and `pr` (docs/runbooks/github-setup.md).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FANTADAMUS_CREATOR_IDENTITIES: ${{ secrets.FANTADAMUS_CREATOR_IDENTITIES }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0  # the history scan and the base-branch comparisons need every commit and `main`
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          version: "0.11.26"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: |
+            ~/.cache/pre-commit
+            bin
+          key: tools-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml', 'tool-versions.toml') }}
+      - run: make setup
+      - run: make check
+
+  pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      FANTADAMUS_CREATOR_IDENTITIES: ${{ secrets.FANTADAMUS_CREATOR_IDENTITIES }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          version: "0.11.26"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked && uv run --frozen python -m scripts.tools.install --only gitleaks
+      - name: The title is a Conventional Commits message (R9.5)
+        run: |
+          printf '%s\n' "$PR_TITLE" > "$RUNNER_TEMP/title"
+          uv run --frozen conventional-pre-commit --strict "$RUNNER_TEMP/title"
+      - name: No secrets or FantaCreator identities in the pull request's commits (R10.2)
+        run: |
+          uv run --frozen python -m scripts.checks.secrets --range "$BASE_SHA..$HEAD_SHA"
+          uv run --frozen python -m scripts.checks.identities --range "$BASE_SHA..$HEAD_SHA"

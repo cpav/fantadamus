@@ -1,0 +1,22 @@
+# Weekly version updates (R11.4). The `build` prefix makes every update a Conventional Commits title, so the
+# pull-request title check passes. Dependabot pull requests read the identity list from Dependabot secrets.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
