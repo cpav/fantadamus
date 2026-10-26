@@ -1,0 +1,12 @@
+{
+  "home": "Alfa",
+  "away": "Beta",
+  "bookmaker": "Banco Esempio",
+  "home_win": 2.1,
+  "draw": 3.3,
+  "away_win": 3.6,
+  "over_2_5": 1.95,
+  "under_2_5": 1.85,
+  "goal": 1.8,
+  "no_goal": 1.95
+}

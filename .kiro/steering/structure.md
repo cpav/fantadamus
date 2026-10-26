@@ -50,7 +50,8 @@ data/
                        recorded payloads (git-ignored)
   local/               DuckDB lake for local runs (git-ignored)
 config/                thresholds.toml (gate thresholds), sources.toml (submit-tool allowlist),
-                       audit-allowlist.toml (dependency-audit exceptions with expiry)
+                       audit-allowlist.toml (dependency-audit exceptions with expiry),
+                       clubs.toml (clubs and their spellings), reading_list.toml (pages per fact)
 scripts/               helpers called by `make`
   checks/              one module per check (suppressions, thresholds, coverage gate, identities, …)
   hooks/               Claude Code hook logic, tested in CI

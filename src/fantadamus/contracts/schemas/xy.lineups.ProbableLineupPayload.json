@@ -1,0 +1,143 @@
+{
+  "contract": "xy.lineups.ProbableLineupPayload",
+  "schema": {
+    "$defs": {
+      "Ballottaggio": {
+        "additionalProperties": false,
+        "description": "A contest for one starting place, with each player's share as the page shows it.",
+        "properties": {
+          "players": {
+            "items": {
+              "$ref": "#/$defs/Share"
+            },
+            "maxItems": 4,
+            "minItems": 2,
+            "title": "Players",
+            "type": "array"
+          }
+        },
+        "required": [
+          "players"
+        ],
+        "title": "Ballottaggio",
+        "type": "object"
+      },
+      "ProbableTeam": {
+        "additionalProperties": false,
+        "properties": {
+          "ballottaggi": {
+            "default": [],
+            "description": "Contested places with their shares",
+            "items": {
+              "$ref": "#/$defs/Ballottaggio"
+            },
+            "title": "Ballottaggi",
+            "type": "array"
+          },
+          "bench": {
+            "default": [],
+            "description": "Players listed but not expected to start",
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Bench",
+            "type": "array"
+          },
+          "starters": {
+            "description": "The 11 expected starters, including each ballottaggio's favourite",
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Starters",
+            "type": "array"
+          },
+          "unavailable": {
+            "default": [],
+            "description": "Injured, suspended or otherwise out",
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Unavailable",
+            "type": "array"
+          }
+        },
+        "required": [
+          "starters"
+        ],
+        "title": "ProbableTeam",
+        "type": "object"
+      },
+      "Share": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "percent": {
+            "description": "His share of the place, in percent",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Percent",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "percent"
+        ],
+        "title": "Share",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "One outlet's probable lineups for one match.",
+    "properties": {
+      "away": {
+        "description": "Away club",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Away",
+        "type": "string"
+      },
+      "away_team": {
+        "$ref": "#/$defs/ProbableTeam"
+      },
+      "home": {
+        "description": "Home club",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Home",
+        "type": "string"
+      },
+      "home_team": {
+        "$ref": "#/$defs/ProbableTeam"
+      },
+      "outlet": {
+        "description": "Whose view this is, e.g. the site or the newspaper it quotes",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Outlet",
+        "type": "string"
+      }
+    },
+    "required": [
+      "outlet",
+      "home",
+      "away",
+      "home_team",
+      "away_team"
+    ],
+    "title": "ProbableLineupPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

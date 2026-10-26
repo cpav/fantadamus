@@ -41,6 +41,12 @@ class Contract(BaseModel):
         }
 
 
+class Part(BaseModel):
+    """A nested part of a contract (a match, a team): same rules, versioned with the contract holding it."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
+
 def all_contracts() -> list[type[Contract]]:
     """Every contract defined in the `fantadamus.contracts` package, sorted by name."""
     package = importlib.import_module(PACKAGE)

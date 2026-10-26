@@ -1,0 +1,84 @@
+# The 20 Serie A clubs of 2026/27 and the spellings outlets use for them (design C1). Source: Wikipedia,
+# "Serie A 2026-2027", read 2026-10-26. Names match ignoring case, accents, spacing and punctuation, so only
+# genuinely different spellings are listed. Each key is also the club's slug in Fantacalcio.it URLs.
+# Next season: replace the relegated clubs with the promoted ones.
+
+[clubs.atalanta]
+name = "Atalanta"
+aliases = ["Atalanta BC", "Atalanta Bergamasca Calcio"]
+
+[clubs.bologna]
+name = "Bologna"
+aliases = ["Bologna FC", "Bologna FC 1909", "Bologna Football Club 1909"]
+
+[clubs.cagliari]
+name = "Cagliari"
+aliases = ["Cagliari Calcio"]
+
+[clubs.como]
+name = "Como"
+aliases = ["Como 1907"]
+
+[clubs.fiorentina]
+name = "Fiorentina"
+aliases = ["ACF Fiorentina"]
+
+[clubs.frosinone]
+name = "Frosinone"
+aliases = ["Frosinone Calcio"]
+
+[clubs.genoa]
+name = "Genoa"
+aliases = ["Genoa CFC", "Genoa Cricket and Football Club"]
+
+[clubs.inter]
+name = "Inter"
+aliases = ["Internazionale", "FC Internazionale Milano", "Football Club Internazionale Milano", "Inter Milan"]
+
+[clubs.juventus]
+name = "Juventus"
+aliases = ["Juve", "Juventus FC", "Juventus Football Club"]
+
+[clubs.lazio]
+name = "Lazio"
+aliases = ["SS Lazio", "Società Sportiva Lazio"]
+
+[clubs.lecce]
+name = "Lecce"
+aliases = ["US Lecce", "Unione Sportiva Lecce"]
+
+[clubs.milan]
+name = "Milan"
+aliases = ["AC Milan", "Associazione Calcio Milan"]
+
+[clubs.monza]
+name = "Monza"
+aliases = ["AC Monza", "Associazione Calcio Monza"]
+
+[clubs.napoli]
+name = "Napoli"
+aliases = ["SSC Napoli", "Società Sportiva Calcio Napoli"]
+
+[clubs.parma]
+name = "Parma"
+aliases = ["Parma Calcio", "Parma Calcio 1913"]
+
+[clubs.roma]
+name = "Roma"
+aliases = ["AS Roma", "Associazione Sportiva Roma"]
+
+[clubs.sassuolo]
+name = "Sassuolo"
+aliases = ["US Sassuolo", "Unione Sportiva Sassuolo Calcio"]
+
+[clubs.torino]
+name = "Torino"
+aliases = ["Torino FC", "Torino Football Club"]
+
+[clubs.udinese]
+name = "Udinese"
+aliases = ["Udinese Calcio"]
+
+[clubs.venezia]
+name = "Venezia"
+aliases = ["Venezia FC", "Venezia Football Club"]

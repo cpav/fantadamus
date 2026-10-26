@@ -1,0 +1,55 @@
+{
+  "contract": "xy.season.PenaltyTakersPayload",
+  "schema": {
+    "$defs": {
+      "ClubTakers": {
+        "additionalProperties": false,
+        "properties": {
+          "club": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Club",
+            "type": "string"
+          },
+          "takers": {
+            "description": "Designated takers, first choice first",
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Takers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "club",
+          "takers"
+        ],
+        "title": "ClubTakers",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Each club's penalty takers in order, from the penalty-takers page.",
+    "properties": {
+      "clubs": {
+        "items": {
+          "$ref": "#/$defs/ClubTakers"
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "title": "Clubs",
+        "type": "array"
+      }
+    },
+    "required": [
+      "clubs"
+    ],
+    "title": "PenaltyTakersPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

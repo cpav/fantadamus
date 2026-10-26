@@ -1,0 +1,17 @@
+{
+  "clubs": [
+    {
+      "club": "Alfa",
+      "takers": [
+        "Alfa Nove",
+        "Alfa Dieci"
+      ]
+    },
+    {
+      "club": "Beta",
+      "takers": [
+        "Beta Nove"
+      ]
+    }
+  ]
+}

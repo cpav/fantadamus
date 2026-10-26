@@ -1,0 +1,67 @@
+{
+  "contract": "xy.fixtures.FixturesPayload",
+  "schema": {
+    "$defs": {
+      "Fixture": {
+        "additionalProperties": false,
+        "properties": {
+          "away": {
+            "description": "Away club, as the page names it",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Away",
+            "type": "string"
+          },
+          "home": {
+            "description": "Home club, as the page names it",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Home",
+            "type": "string"
+          },
+          "kickoff_at": {
+            "description": "Kickoff with its time zone, e.g. 2026-10-31T15:00:00+01:00",
+            "format": "date-time",
+            "title": "Kickoff At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "home",
+          "away",
+          "kickoff_at"
+        ],
+        "title": "Fixture",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "The matches of one round.",
+    "properties": {
+      "matches": {
+        "description": "The round's matches",
+        "items": {
+          "$ref": "#/$defs/Fixture"
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "title": "Matches",
+        "type": "array"
+      },
+      "round": {
+        "description": "The round (giornata) number",
+        "maximum": 38,
+        "minimum": 1,
+        "title": "Round",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "round",
+      "matches"
+    ],
+    "title": "FixturesPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

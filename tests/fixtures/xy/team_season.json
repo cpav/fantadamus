@@ -1,0 +1,16 @@
+{
+  "teams": [
+    {
+      "club": "Alfa",
+      "played": 8,
+      "goals_for": 14,
+      "goals_against": 9
+    },
+    {
+      "club": "Beta",
+      "played": 8,
+      "goals_for": 10,
+      "goals_against": 11
+    }
+  ]
+}
