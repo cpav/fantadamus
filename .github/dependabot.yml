@@ -1,4 +1,6 @@
-# Weekly version updates (R11.4). The `build` prefix makes every update a Conventional Commits title, so the
+# Weekly version updates (R11.4), one grouped pull request per ecosystem, so each week needs at most three
+# approvals. Releases younger than 14 days are not proposed: a supply-chain precaution, the same rule the
+# pinned action SHAs followed. The `build` prefix makes every title a Conventional Commits message, so the
 # pull-request title check passes. Dependabot pull requests read the identity list from Dependabot secrets.
 version: 2
 updates:
@@ -6,17 +8,32 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 14
+    groups:
+      all:
+        patterns: ["*"]
     commit-message:
       prefix: build
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 14
+    groups:
+      all:
+        patterns: ["*"]
     commit-message:
       prefix: build
   - package-ecosystem: pre-commit
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 14
+    groups:
+      all:
+        patterns: ["*"]
     commit-message:
       prefix: build

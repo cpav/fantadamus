@@ -98,6 +98,8 @@ def test_dependency_updates_cover_uv_actions_precommit() -> None:
     assert set(updates) == {"uv", "github-actions", "pre-commit"}
     for entry in updates.values():
         assert entry["schedule"]["interval"] == "weekly"
-        assert (
-            entry["commit-message"]["prefix"] == "build"
-        )  # Conventional titles, so the PR title check passes
+        # Conventional titles, so the PR title check passes.
+        assert entry["commit-message"]["prefix"] == "build"
+        # Only releases at least two weeks old (a supply-chain precaution), one pull request per ecosystem.
+        assert entry["cooldown"]["default-days"] >= 14
+        assert entry["groups"]["all"]["patterns"] == ["*"]
