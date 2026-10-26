@@ -78,9 +78,13 @@ submit tools.
    }
    ```
 
-4. Ask "X or Y?" for two forwards. The first time, Claude asks for your league's bonuses and maluses, with
-   the Fantacalcio Classic values offered. When facts are missing or stale, Claude reads the approved pages,
-   submits what they say, and asks again.
+4. Create a Claude **Project** called Fantadamus and paste the agent prompt (everything below the `---` line in
+   [`docs/agent-prompt.md`](docs/agent-prompt.md)) as its instructions, so Claude uses the tools unasked.
+5. In that project, ask "X or Y?" for two forwards. The first time, Claude asks for your league's bonuses and
+   maluses, with the Fantacalcio Classic values offered. When facts are missing or stale, Claude reads the
+   approved pages, submits what they say, and asks again.
+
+A second player installs it from [`docs/player-setup.md`](docs/player-setup.md), step by step.
 
 Your league rules, the lake and the decision log stay in git-ignored `data/local/`.
 

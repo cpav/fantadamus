@@ -372,9 +372,15 @@ class Advisor:
         players = [
             self._player_answer(side, value, round) for side, value in zip(sides, result.values, strict=True)
         ]
-        message = f"Start {verdict.first}, put {verdict.second} first on the bench."
-        if verdict.no_cover_differs:
-            message += f" Without bench cover, start {verdict.no_cover_first}."
+        if not verdict.first_plays:
+            message = f"Neither {verdict.first} nor {verdict.second} will play: field another forward."
+        elif not verdict.second_plays:
+            message = f"Start {verdict.first}; {verdict.second} won't play, "
+            message += "so put a fit forward first on the bench."
+        else:
+            message = f"Start {verdict.first}, put {verdict.second} first on the bench."
+            if verdict.no_cover_differs:
+                message += f" Without bench cover, start {verdict.no_cover_first}."
         message += f" Margin {verdict.margin:.2f} points: {verdict.label}."
         answer = Answer(
             message=message,
