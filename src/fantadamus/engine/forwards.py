@@ -118,6 +118,9 @@ class Verdict(BaseModel):
     no_cover_first: str
     """Who to start if the bench can't cover (R10.6)."""
     no_cover_differs: bool
+    first_plays: bool
+    second_plays: bool
+    """False when he has no chance of a rating, so he shouldn't take the bench place (R10.7)."""
 
 
 class Comparison(BaseModel):
@@ -232,7 +235,7 @@ def _rank(option: Option) -> tuple[float, float, str]:
 
 
 def verdict(a: Option, b: Option) -> Verdict:
-    """Start the higher key, put the other first on the bench (R10.1, R10.2, R10.6)."""
+    """Start the higher key, put the other first on the bench (R10.1, R10.2, R10.6, R10.7)."""
     first, second = sorted((a, b), key=_rank, reverse=True)
     covered = max((a, b), key=lambda option: (no_cover(**option.figures()), option.name))
     return Verdict(
@@ -242,6 +245,8 @@ def verdict(a: Option, b: Option) -> Verdict:
         label=label(_rank(first)[0] - _rank(second)[0]),
         no_cover_first=covered.name,
         no_cover_differs=covered.name != first.name,
+        first_plays=first.p_start + first.p_cameo > 0,
+        second_plays=second.p_start + second.p_cameo > 0,
     )
 
 

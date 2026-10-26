@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-x-or-y` (Phase 1)
 
-Status: **Approved by the owner, 2026-10-26** (league rules set in Claude at first use) · Workflow:
+Status: **Approved by the owner, 2026-10-26**; amended the same day after the first real round (R10.7, R13.4) · Workflow:
 requirements-first · Last updated: 2026-10-26
 
 ## Introduction
@@ -205,6 +205,9 @@ seconds.
   (method §A7).
 - **R10.6** THE SYSTEM SHALL return the verdict without bench cover too: ranked by p_start × E_start + p_cameo ×
   E_cameo (the chance of no rating then costs points, method §A3), and say when it differs.
+- **R10.7** IF a player has no chance of a rating (p_start + p_cameo = 0: unavailable, not in the squad or
+  without a match) THEN THE SYSTEM SHALL say he won't play instead of putting him first on the bench: "start
+  X; Y won't play, so put a fit forward first on the bench", or, if neither can play, that neither will.
 
 ### Requirement 11: The refresh plan
 
@@ -250,6 +253,9 @@ the conversation.
 - **R13.2** THE SYSTEM SHALL serve the agent prompt (`docs/agent-prompt.md`, with its MVP collection section)
   as the server's instructions.
 - **R13.3** THE SYSTEM SHALL document, in the README, how to add the server to Claude Desktop.
+- **R13.4** THE SYSTEM SHALL provide a step-by-step setup guide for a second player, including a Claude Project
+  whose instructions are the agent prompt, so that Claude uses the tools without being told to; and the
+  agent prompt SHALL name only the tools that exist.
 
 ### Requirement 14: The decision log
 
@@ -284,3 +290,6 @@ happened (method §A8).
   yellow card (−0.5).
 - **2026-10-26:** these requirements approved. The constants marked *(start)* are the method's starting
   values, calibrated later from the decision log.
+- **2026-10-26, after the first real round:** R10.7 (a player who can't play isn't benched) and R13.4 (a
+  Claude Project and a guide for the second player) added. When no odds are found, the flagged team-form
+  fallback (R5.3) stays.

@@ -94,3 +94,15 @@ def test_flip_points() -> None:
         assert (below.verdict.first, above.verdict.first) == ("Beta Nove", "Alfa Nove"), field
     certain = forwards.compare(leader.model_copy(update={"p_start": 1.0, "p_cameo": 0.0}), trailer, CLASSIC)
     assert certain.flip_p_start is None  # nothing short of not playing changes his key
+
+
+def test_verdict_knows_who_can_play() -> None:
+    fit = forwards.Option(name="X", p_start=0.4, p_cameo=0.3, e_start=7.0, e_cameo=5.0)
+    injured = forwards.Option(name="Y", p_start=0.0, p_cameo=0.0, e_start=7.5, e_cameo=5.0)
+    verdict = forwards.verdict(injured, fit)
+    assert (verdict.first, verdict.second) == ("X", "Y")
+    assert (verdict.first_plays, verdict.second_plays) == (True, False)
+    neither = forwards.verdict(injured, injured.model_copy(update={"name": "Z"}))
+    assert (neither.first_plays, neither.second_plays) == (False, False)
+    both = forwards.verdict(fit, fit.model_copy(update={"name": "W"}))
+    assert (both.first_plays, both.second_plays) == (True, True)

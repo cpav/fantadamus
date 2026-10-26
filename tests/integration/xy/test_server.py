@@ -60,3 +60,11 @@ def test_instructions_are_agent_prompt(tmp_path: Path) -> None:
     assert instructions.startswith("You are a Fantacalcio advisor.")
     assert "**MVP only: collecting data**" in instructions
     assert "Status:" not in instructions
+
+
+async def test_prompt_names_only_served_tools(tmp_path: Path) -> None:
+    server = _server(tmp_path)
+    served = {tool.name for tool in await server.list_tools()}
+    named = set(re.findall(r"`([a-z]+(?:_[a-z]+)+)`", server.instructions or ""))
+    assert "compare_players" in named
+    assert named <= served, named - served

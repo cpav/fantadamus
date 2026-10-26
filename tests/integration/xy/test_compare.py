@@ -102,3 +102,21 @@ async def test_first_match_to_check(tmp_path: Path) -> None:
     assert "Alfa Nove" in answer["check_before_deadline"][0]
     assert "Gamma Nove" not in answer["check_before_deadline"][0]
     assert answer["rules"]["user"] == "user-1"
+
+
+async def test_player_who_cannot_play_is_not_benched(tmp_path: Path) -> None:
+    only_alfa = page("fixtures")
+    only_alfa["matches"] = only_alfa["matches"][:1]
+    async with tools(LakeStore(tmp_path)) as client:
+        await set_classic(client)
+        await collect(client, READ, facts=("season",))
+        await send(client, "submit_fixtures", only_alfa, READ)
+        await send(client, "submit_probable_lineups", page("probable_lineup"), READ)
+        await send(client, "submit_match_odds", page("match_odds"), READ)
+        result = await ask(client, "Gamma Nove", "Alfa Nove")
+    message = result["answer"]["message"]
+    assert message.startswith(
+        "Start Alfa Nove; Gamma Nove won't play, so put a fit forward first on the bench."
+    )
+    assert "put Gamma Nove first on the bench" not in message
+    assert result["answer"]["verdict"]["second_plays"] is False
