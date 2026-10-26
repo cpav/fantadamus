@@ -200,8 +200,9 @@ seconds.
   P(scores), the expected vote, team xG, the fixture, and the facts' sources and capture times.
 - **R10.4** THE SYSTEM SHALL return what would flip the verdict: the p_start or team xG at which the order
   changes.
-- **R10.5** THE SYSTEM SHALL return what to check before the deadline: any of the two players whose match
-  kicks off before the deadline, so his official lineup is out before the lock.
+- **R10.5** THE SYSTEM SHALL return what to check before the deadline: either player whose match is the
+  round's first (it sets the deadline), because his official lineup is out about an hour before the lock
+  (method §A7).
 - **R10.6** THE SYSTEM SHALL return the verdict without bench cover too: ranked by p_start × E_start + p_cameo ×
   E_cameo (the chance of no rating then costs points, method §A3), and say when it differs.
 
