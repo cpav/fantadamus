@@ -166,3 +166,16 @@ and [design](design.md)
   - [ ] 8.3 **Owner:** sign off Phase 1 → the next slice may start
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the phase report_
+
+- [x] 9. Fixes from the first real round
+  - Branch: `feat/xy-9-round-fixes` · Depends on: 7 · ADRs: ADR-0005
+  - [x] 9.1 A player who can't play isn't put first on the bench
+    - _Requirements: R10.7_
+    - _Test: `tests/unit/xy/test_forwards.py::test_verdict_knows_who_can_play`,
+      `tests/integration/xy/test_compare.py::test_player_who_cannot_play_is_not_benched`_
+  - [x] 9.2 The agent prompt names only the tools that exist, calls `compare_players` for every "X or Y?" and
+    tells the round's deadline from each player's kickoff; the README and `docs/player-setup.md` set up a
+    Claude Project with it
+    - _Requirements: R13.2, R13.4_
+    - _Test: `tests/integration/xy/test_server.py::test_prompt_names_only_served_tools`,
+      `tests/unit/test_repo_hygiene.py::test_player_guide_setup`_

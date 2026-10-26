@@ -1,6 +1,6 @@
 # Design Document: `mvp-x-or-y` (Phase 1)
 
-Status: **Approved by the owner, 2026-10-26** · From the approved [requirements](requirements.md) · 2026-10-26
+Status: **Approved by the owner, 2026-10-26**; amended for R10.7 and R13.4 the same day · From the approved [requirements](requirements.md) · 2026-10-26
 
 ## Overview
 
@@ -135,7 +135,7 @@ Pure functions, one per method formula, each taking its inputs explicitly (R9):
 | `e_start(...)` | vote + goal × E[goals] + assist × E[assists] + yellow × P(yellow) |
 | `e_cameo(...)` | P(cameo goal) × 9.8 + (1 − P) × 0.6 × 5.75, with minutes 0.28 |
 | `key(p_start, e_start, p_cameo, e_cameo)` | method §A3 |
-| `compare(a, b, rules)` | verdict, margin and label, flip points, the verdict without bench cover |
+| `compare(a, b, rules)` | verdict, margin and label, flip points, the verdict without bench cover, and whether each player can get a rating at all (R10.7) |
 
 `constants.py` holds every *(start)* value with the method section it comes from. The flip point is found by
 solving the key for the leader's p_start and team xG with the other inputs fixed (bisection, both bounded
@@ -156,7 +156,8 @@ Classic starting value and one line on what it means.
 4. Collect needs and freshness (R7.3): fixtures, lineups for both matches, odds for both matches, both
    profiles, the league table, the penalty takers.
 5. Anything missing or stale → the refresh plan (C11).
-6. Otherwise: gold views → forward model → the answer (R10) → append to the decision log (C12) → return.
+6. Otherwise: gold views → forward model → the answer (R10) → append to the decision log (C12) → return. A
+   player with no chance of a rating is never put first on the bench (R10.7).
 
 `as_of` defaults to now from the injected clock and may be passed explicitly, so an old question can be
 replayed. Answers are structured (a pydantic result model); the agent prompt tells Claude how to word them.

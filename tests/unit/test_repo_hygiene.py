@@ -56,3 +56,16 @@ def test_readme_claude_desktop_setup() -> None:
     assert server["command"].endswith("/uv")
     assert server["args"][:2] == ["--directory", "/path/to/fantadamus"]
     assert server["args"][2:] == ["run", "--frozen", "fantadamus", "serve", "--user", "owner"]
+
+
+def test_player_guide_setup() -> None:
+    """mvp-x-or-y task 9.2 (R13.4): a second player can set Fantadamus up from the guide alone."""
+    guide = (ROOT / "docs" / "player-setup.md").read_text(encoding="utf-8")
+    assert "git clone https://github.com/cpav/fantadamus.git" in guide
+    block = guide.split("```json\n", 1)[1].split("```", 1)[0]
+    server = json.loads(block)["mcpServers"]["fantadamus"]
+    assert server["command"].endswith("/.local/bin/uv")
+    assert server["args"][0] == "--directory"
+    assert server["args"][2:] == ["run", "--frozen", "--no-dev", "fantadamus", "serve", "--user", "your-name"]
+    assert "Project" in guide
+    assert "docs/agent-prompt.md" in guide
