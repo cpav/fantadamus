@@ -26,8 +26,8 @@ test-fast: ## Format, lint, and unit and property tests with the fast profile (R
 	$(UV) ruff check .
 	HYPOTHESIS_PROFILE=dev $(UV) pytest -m "unit or property" -p no:cacheprovider
 
-task-check: ## Before a task: dependencies done, requirements and tests named, ADRs Accepted (TASK=<id>, R17.4)
-	@$(UV) python -m scripts.checks.task_check $(TASK)
+task-check: ## Before a task: dependencies done, requirements and tests named, ADRs Accepted (TASK=<id> [SPEC=<spec>], R17.4)
+	@$(UV) python -m scripts.checks.task_check $(if $(SPEC),--spec $(SPEC)) $(TASK)
 
 skeleton: ## Run the walking skeleton end to end and compare gold with its golden file (R16.1, R16.6)
 	$(UV) fantadamus skeleton run --golden tests/golden/skeleton/role_counts.json

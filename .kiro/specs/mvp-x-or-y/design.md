@@ -1,6 +1,6 @@
 # Design Document: `mvp-x-or-y` (Phase 1)
 
-Status: **Draft for the owner's review** · From the approved [requirements](requirements.md) · 2026-10-26
+Status: **Approved by the owner, 2026-10-26** · From the approved [requirements](requirements.md) · 2026-10-26
 
 ## Overview
 
