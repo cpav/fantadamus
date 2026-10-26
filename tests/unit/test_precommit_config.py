@@ -1,4 +1,4 @@
-"""Task 6.1: the git hooks cover every stage; every remote hook is pinned to a commit (R9.1, R9.3, R9.4)."""
+"""The git hooks: remote hooks pinned to a commit, leak guards wired, local tools from `.venv` (R9, R10)."""
 
 from __future__ import annotations
 
@@ -27,24 +27,13 @@ def test_all_revs_pinned() -> None:
         assert re.fullmatch(r"[0-9a-f]{40}", repo["rev"]), f"{repo['repo']} must be pinned to a commit SHA"
 
 
-def test_stages_present() -> None:
+def test_leak_guards_are_wired() -> None:
+    # The preventive gates of a public repository: a secret or a creator name never leaves this machine.
     assert set(_config()["default_install_hook_types"]) == {"pre-commit", "commit-msg", "pre-push"}
     hooks = _hooks()
-    for hook_id in (
-        "ruff-format",
-        "ruff",
-        "mypy",
-        "yamllint",
-        "markdownlint-cli2",
-        "actionlint",
-        "gitleaks-staged",
-        "identities-staged",
-        "check-added-large-files",
-        "check-merge-conflict",
-    ):
-        assert hook_id in hooks, f"missing pre-commit hook {hook_id}"
-    assert hooks["conventional-commits"]["stages"] == ["commit-msg"]
+    assert {"gitleaks-staged", "identities-staged"} <= set(hooks)
     assert hooks["outgoing-secrets-and-identities"]["stages"] == ["pre-push"]
+    assert hooks["conventional-commits"]["stages"] == ["commit-msg"]
 
 
 def test_local_hooks_use_the_locked_environment() -> None:

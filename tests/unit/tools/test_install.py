@@ -68,7 +68,7 @@ def test_platform_key_maps_os_and_machine() -> None:
 
 def test_loads_pins_from_repository_file() -> None:
     tools = install.load_tools(Path(__file__).resolve().parents[3] / "tool-versions.toml")
-    assert {tool.name for tool in tools} == {"terraform", "tflint", "gitleaks", "actionlint"}
+    assert {tool.name for tool in tools} == {"gitleaks", "actionlint"}
     assert all(len(tool.sha256) == 3 for tool in tools)
 
 
