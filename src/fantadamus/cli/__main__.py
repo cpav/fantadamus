@@ -2,7 +2,7 @@
 
 fantadamus skeleton run   submit the skeleton fixture through the MCP tools, read gold back, print it,
                           and compare it with a golden file (C10, `make skeleton`)
-fantadamus serve          run the MCP server on stdio, for a Claude app (ADR-0005)
+fantadamus serve          run the advisor's MCP server on stdio, for Claude Desktop (ADR-0005)
 """
 
 from __future__ import annotations
@@ -22,10 +22,18 @@ from pydantic import AwareDatetime, BaseModel, JsonValue
 from fantadamus.core.clock import utc_now
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.skeleton.pipeline import SubmitResult
+from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import DEFAULT_ROOT, LakeStore
 from fantadamus.league.rules import RulesStore
-from fantadamus.mcp.server import DEFAULT_SOURCES, SkeletonSummary, build_server, load_allowed_hosts
-from fantadamus.mcp.tools import league, submit
+from fantadamus.mcp.server import (
+    DEFAULT_SOURCES,
+    SkeletonSummary,
+    build_advisor,
+    build_server,
+    load_allowed_hosts,
+    load_instructions,
+)
+from fantadamus.mcp.tools.compare import load_reading_list
 
 SKELETON_FIXTURE = Path("tests/fixtures/skeleton/rows.json")
 SKELETON_SOURCES = Path("tests/fixtures/skeleton/sources.toml")
@@ -84,12 +92,17 @@ def _skeleton(args: argparse.Namespace) -> int:
 
 
 def _serve(args: argparse.Namespace) -> int:
-    store = LakeStore(Path(args.lake))
-    hosts = load_allowed_hosts(Path(args.sources))
-    server = build_server(store, allowed_hosts=hosts, clock=utc_now, submitted_by=args.user)
-    clubs = Clubs.from_toml(DEFAULT_CLUBS.read_text(encoding="utf-8"))
-    submit.register(server, store, allowed_hosts=hosts, clock=utc_now, submitted_by=args.user, clubs=clubs)
-    league.register(server, RulesStore(), user=args.user, clock=utc_now)
+    server = build_advisor(
+        LakeStore(Path(args.lake)),
+        allowed_hosts=load_allowed_hosts(Path(args.sources)),
+        clubs=Clubs.from_toml(DEFAULT_CLUBS.read_text(encoding="utf-8")),
+        rules=RulesStore(),
+        log=DecisionLog(),
+        reading=load_reading_list(),
+        user=args.user,
+        clock=utc_now,
+        instructions=load_instructions(),
+    )
     server.run("stdio")
     return 0
 
@@ -112,7 +125,9 @@ def _parser() -> argparse.ArgumentParser:
     serve = commands.add_parser("serve", help="run the MCP server on stdio")
     serve.add_argument("--sources", default=str(DEFAULT_SOURCES), help="allowlist (TOML)")
     serve.add_argument("--lake", default=str(DEFAULT_ROOT), help="lake root directory")
-    serve.add_argument("--user", default=DEFAULT_USER, help="pseudonymous user ID recorded as submitted_by")
+    serve.add_argument(
+        "--user", default="owner", help="pseudonymous user ID: whose league rules, who submitted"
+    )
     serve.set_defaults(handler=_serve)
     return parser
 

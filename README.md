@@ -30,17 +30,17 @@ your Claude app ──ask──▶ read tools ──▶ answer, or a refresh pla
 
 ## Status
 
-Not ready for players yet. Phase 0, the foundation, is complete and signed off
-([report](docs/reports/phase-0-report.md)); Phase 1 has started. What runs today is the walking skeleton: a three-player synthetic
-fixture goes in through an MCP submit tool, through the checks, bronze, silver and gold, and comes back out
-through an MCP read tool.
+Not ready for other players yet. Phase 0, the foundation, is complete and signed off
+([report](docs/reports/phase-0-report.md)). Phase 1's "X or Y?" for two forwards runs locally in Claude
+Desktop: the submit tools, the checks and storage, the forward model and `compare_players`. Its last step is
+the owner's first real round.
 
 Re-planned on 2026-10-26: the work now goes in thin slices, each taking one question from data to answer.
 
 | Phase | Builds | Status |
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton | Done, signed off 2026-10-26 |
-| 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Requirements and design approved; tasks for review |
+| 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Built; the owner's real round next |
 | 2 More slices | Keepers and defenders; the full lineup with league rules and the bench; the formation | Method written |
 | 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
 
@@ -57,7 +57,32 @@ make test-fast  # format, lint, unit and property tests with the fast profile
 make skeleton   # the walking skeleton end to end, compared with its golden file
 ```
 
-`uv run fantadamus serve` starts the MCP server on stdio. In Phase 0 it has only the skeleton's two tools.
+`uv run fantadamus serve` starts the MCP server on stdio: `compare_players`, `set_league_rules` and the seven
+submit tools.
+
+## Use it in Claude Desktop
+
+1. Run `make setup` once, as above.
+2. Find uv's full path with `which uv`: Claude Desktop doesn't read your shell's `PATH`.
+3. Add the server to `~/Library/Application Support/Claude/claude_desktop_config.json`, with your two paths,
+   then restart Claude Desktop:
+
+   ```json
+   {
+     "mcpServers": {
+       "fantadamus": {
+         "command": "/Users/you/.local/bin/uv",
+         "args": ["--directory", "/path/to/fantadamus", "run", "--frozen", "fantadamus", "serve", "--user", "owner"]
+       }
+     }
+   }
+   ```
+
+4. Ask "X or Y?" for two forwards. The first time, Claude asks for your league's bonuses and maluses, with
+   the Fantacalcio Classic values offered. When facts are missing or stale, Claude reads the approved pages,
+   submits what they say, and asks again.
+
+Your league rules, the lake and the decision log stay in git-ignored `data/local/`.
 
 ## How this project works
 

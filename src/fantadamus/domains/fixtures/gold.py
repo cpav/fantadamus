@@ -26,3 +26,12 @@ def fixture(rows: Sequence[FixtureRow], club: str, round: int, as_of: dt.datetim
 def deadline(rows: Sequence[FixtureRow], round: int, as_of: dt.datetime) -> dt.datetime | None:
     """The round's deadline: the kickoff of its first match (R2.2)."""
     return min((row.kickoff_at for row in matches(rows, as_of) if row.round == round), default=None)
+
+
+def next_round(rows: Sequence[FixtureRow], as_of: dt.datetime) -> int | None:
+    """The round being asked about: the next one whose deadline is after `as_of`."""
+    deadlines: dict[int, dt.datetime] = {}
+    for row in matches(rows, as_of):
+        deadlines[row.round] = min(deadlines.get(row.round, row.kickoff_at), row.kickoff_at)
+    upcoming = sorted((when, round) for round, when in deadlines.items() if when > as_of)
+    return upcoming[0][1] if upcoming else None
