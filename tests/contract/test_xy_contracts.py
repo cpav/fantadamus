@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
+
+from fantadamus.contracts.base import Contract
 from fantadamus.contracts.xy.fixtures import FixturesPayload
 from fantadamus.contracts.xy.lineups import OfficialLineupPayload, ProbableLineupPayload
 from fantadamus.contracts.xy.odds import MatchOddsPayload
 from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
-from pydantic import ValidationError
-
-from fantadamus.contracts.base import Contract
 
 PAGES = Path(__file__).resolve().parents[1] / "fixtures" / "xy"
 

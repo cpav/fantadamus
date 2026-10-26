@@ -70,7 +70,9 @@ def test_at1_format_lint_gate(tmp_path: Path) -> None:
         "--check",
         ".",
     )  # make check runs them on the whole repository
-    assert _static("lint")[-2:] == ("check", ".")
+    # Without the cache: import sorting depends on which packages exist, which the cache doesn't track, so a
+    # cached local run could pass where CI's fresh run fails.
+    assert _static("lint")[-3:] == ("check", "--no-cache", ".")
 
 
 def test_at2_type_gate(tmp_path: Path) -> None:

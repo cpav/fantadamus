@@ -42,7 +42,7 @@ STATIC = [
     Check("lockfile", _module("lockfile")),
     Check("tool-versions", _module("tool_versions")),
     Check("format", (*UV, "ruff", "format", "--check", ".")),
-    Check("lint", (*UV, "ruff", "check", ".")),
+    Check("lint", (*UV, "ruff", "check", "--no-cache", ".")),
     Check("types", (*UV, "mypy")),
     Check("yaml", (*UV, "yamllint", "--strict", ".")),
     Check("sql", (*UV, "sqlfluff", "lint", ".")),
