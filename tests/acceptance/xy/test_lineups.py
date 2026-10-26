@@ -46,7 +46,7 @@ async def test_at5_official_lineup_overrides(tmp_path: Path) -> None:
     ]
     official["home_team"]["starters"].append("Alfa Dodici")
     official["home_team"]["bench"] = ["Alfa Nove"]
-    async with tools(store) as client:
+    async with tools(store, now=OFFICIAL) as client:
         await send(client, "submit_player_season", page("player_season"), READ)
         for outlet, status in (("Uno", "starter"), ("Due", "ballottaggio"), ("Tre", "bench")):
             await send(client, "submit_probable_lineups", probable(outlet, home_team=alfa_team(status)), READ)
@@ -68,7 +68,7 @@ async def test_at5_official_lineup_overrides(tmp_path: Path) -> None:
 
 async def test_at6_two_outlets_disputed(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
-    async with tools(store) as client:
+    async with tools(store, now=OFFICIAL) as client:
         await send(client, "submit_player_season", page("player_season"), READ)
         await send(client, "submit_probable_lineups", probable("Uno", home_team=alfa_team("starter")), READ)
         await send(

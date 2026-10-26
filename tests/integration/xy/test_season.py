@@ -22,7 +22,7 @@ LATER = dt.datetime(2026, 10, 27, 9, 0, tzinfo=dt.UTC)
 
 async def test_profile_creates_player_and_season(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
-    async with tools(store) as client:
+    async with tools(store, now=LATER) as client:
         result = await send(client, "submit_player_season", page("player_season"), READ)
         assert not result.is_error, result
         unknown = page("player_season") | {"club": "Omega"}
@@ -50,7 +50,7 @@ async def test_team_table_and_penalty_takers(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     changed = page("penalty_takers")
     changed["clubs"][0]["takers"] = ["Alfa Dieci", "Alfa Nove"]
-    async with tools(store) as client:
+    async with tools(store, now=LATER) as client:
         assert not (await send(client, "submit_team_season", page("team_season"), READ)).is_error
         assert not (await send(client, "submit_penalty_takers", page("penalty_takers"), READ)).is_error
         assert not (await send(client, "submit_penalty_takers", changed, LATER)).is_error
@@ -71,7 +71,7 @@ async def test_team_table_and_penalty_takers(tmp_path: Path) -> None:
 async def test_resubmission_keeps_history(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     updated = page("player_season") | {"appearances": 9, "rated_appearances": 9, "goals": 6, "club": "Beta"}
-    async with tools(store) as client:
+    async with tools(store, now=LATER) as client:
         await send(client, "submit_player_season", page("player_season"), READ)
         await send(client, "submit_player_season", updated, LATER)
     rows = read_silver(store, PLAYER_SEASONS)

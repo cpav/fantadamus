@@ -59,7 +59,9 @@ submission is rejected with a field-level reason and nothing is written.
 | `LeagueRules` | the R12.1 table, signed values; goal as one value or per role | Bonuses 0 to 10, maluses −10 to 0 (R12.2) |
 
 Every submission also carries the Spec 0 envelope: the page's URL (checked against the allowlist), its
-publication time if shown, `captured_at` and the pseudonymous user ID.
+publication time if shown, `captured_at` and the pseudonymous user ID. A `captured_at` later than the time
+the server receives it is stored as that time: a page can't be read after it arrives, and a collector's clock
+running a few minutes ahead would otherwise hide its facts from a question asked now.
 
 ### C3. Domains (`domains/{fixtures,availability,odds,season}/`)
 

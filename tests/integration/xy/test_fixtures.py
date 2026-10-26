@@ -11,7 +11,7 @@ from fantadamus.domains.facts import read_silver
 from fantadamus.domains.fixtures import gold
 from fantadamus.domains.fixtures.silver import FIXTURES
 from fantadamus.lake.duckdb_store import LakeStore
-from tests.xy_harness import URL, error_text, page, send, tools
+from tests.xy_harness import NOW, URL, error_text, page, send, tools
 
 pytestmark = pytest.mark.anyio
 
@@ -25,7 +25,7 @@ def _kickoff(day: int, hour: int) -> dt.datetime:
 
 async def test_submit_fixtures_bronze_to_silver(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
-    async with tools(store) as client:
+    async with tools(store, now=LATER) as client:
         result = await send(client, "submit_fixtures", page("fixtures"), READ)
         assert not result.is_error, result
         assert result.structured_content is not None
@@ -64,7 +64,7 @@ async def test_deadline_is_first_kickoff(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     moved = page("fixtures")
     moved["matches"][0]["kickoff_at"] = "2026-10-31T21:00:00+01:00"  # Alfa-Beta moved after Gamma-Delta
-    async with tools(store) as client:
+    async with tools(store, now=LATER) as client:
         await send(client, "submit_fixtures", page("fixtures"), READ)
         await send(client, "submit_fixtures", moved, LATER)
     rows = read_silver(store, FIXTURES)
@@ -77,7 +77,7 @@ async def test_as_of_ignores_later_fixtures(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     moved = page("fixtures")
     moved["round"] = 12
-    async with tools(store) as client:
+    async with tools(store, now=LATER) as client:
         await send(client, "submit_fixtures", page("fixtures"), READ)
         await send(client, "submit_fixtures", moved, LATER)
     rows = read_silver(store, FIXTURES)
@@ -89,3 +89,13 @@ async def test_as_of_ignores_later_fixtures(tmp_path: Path) -> None:
     later = gold.fixture(rows, "beta", 12, as_of=LATER)
     assert later is not None
     assert later.source.source_url == URL
+
+
+async def test_capture_after_receipt_counts_as_receipt(tmp_path: Path) -> None:
+    """A page can't be read after the server receives it: a clock running ahead mustn't hide the facts."""
+    store = LakeStore(tmp_path)
+    async with tools(store) as client:
+        await send(client, "submit_fixtures", page("fixtures"), NOW + dt.timedelta(minutes=3))
+    [record] = store.read_bronze("fixtures")
+    assert record.envelope.captured_at == record.envelope.received_at == NOW
+    assert gold.fixture(read_silver(store, FIXTURES), "alfa", 9, as_of=NOW) is not None

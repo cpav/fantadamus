@@ -22,7 +22,7 @@ OTHER = "https://example.org/other-preview"
 
 async def test_submit_odds_de_margined(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
-    async with tools(store) as client:
+    async with tools(store, now=READ) as client:
         assert not (await send(client, "submit_match_odds", page("match_odds"), READ)).is_error
         wide = page("match_odds") | {"home_win": 1.6, "draw": 2.9, "away_win": 2.9}
         assert "1X2 margin 31.5%" in error_text(await send(client, "submit_match_odds", wide, READ))
@@ -38,7 +38,7 @@ async def test_submit_odds_de_margined(tmp_path: Path) -> None:
 async def test_pages_kept_side_by_side(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     other = page("match_odds") | {"goal": None, "no_goal": None, "home_win": 2.0, "away_win": 3.8}
-    async with tools(store) as client:
+    async with tools(store, now=READ) as client:
         await send(client, "submit_match_odds", page("match_odds"), READ)
         await send(client, "submit_match_odds", other, READ, url=OTHER)
     rows = read_silver(store, ODDS)
