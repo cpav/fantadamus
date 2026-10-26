@@ -152,7 +152,7 @@ and [design](design.md)
       **AT-7** `tests/acceptance/xy/test_compare.py::test_at7_bad_submissions_rejected`;
       `tests/unit/test_repo_hygiene.py::test_readme_claude_desktop_setup`_
 
-- [ ] 8. The owner's real round and the Phase 1 gate
+- [x] 8. The owner's real round and the Phase 1 gate
   - Branch: `docs/xy-8-phase-report` · Depends on: 7 · ADRs: ADR-0005
   - [x] 8.1 **Owner:** add the server to Claude Desktop, set your league rules, and ask a real "X or Y?" for a
     real round
@@ -163,7 +163,7 @@ and [design](design.md)
     entries, cost ($0), open risks
     - _Requirements: R14.1, Phase 1 exit gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 8.3 **Owner:** sign off Phase 1 → the next slice may start
+  - [x] 8.3 **Owner:** sign off Phase 1 → the next slice may start
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the phase report_
 

@@ -30,21 +30,21 @@ your Claude app ──ask──▶ read tools ──▶ answer, or a refresh pla
 
 ## Status
 
-Not ready for other players yet. Phase 0, the foundation, is complete and signed off
-([report](docs/reports/phase-0-report.md)). Phase 1's "X or Y?" for two forwards runs locally in Claude
-Desktop: the submit tools, the checks and storage, the forward model and `compare_players`. The owner's first
-real round was answered on 2026-10-26 ([Phase 1 report](docs/reports/phase-1-report.md)).
+Phase 1 is complete and signed off ([report](docs/reports/phase-1-report.md)): "X or Y?" for two forwards runs
+locally in Claude Desktop, from the submit tools and checks to the forward model and `compare_players`. Testing
+with a second player has started ([setup guide](docs/player-setup.md)). Phase 0, the foundation, was signed off
+before it ([report](docs/reports/phase-0-report.md)).
 
 Re-planned on 2026-10-26: the work now goes in thin slices, each taking one question from data to answer.
 
 | Phase | Builds | Status |
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton | Done, signed off 2026-10-26 |
-| 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | First real round answered 2026-10-26 ([report](docs/reports/phase-1-report.md)); awaiting sign-off |
+| 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Done, signed off 2026-10-26 ([report](docs/reports/phase-1-report.md)) |
 | 2 More slices | Keepers and defenders; the full lineup with league rules and the bench; the formation | Method written |
 | 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
 
-A setup guide for players comes with Phase 3.
+For now each player runs Fantadamus on their own Mac; the shared online server comes with Phase 3.
 
 ## Run it locally
 

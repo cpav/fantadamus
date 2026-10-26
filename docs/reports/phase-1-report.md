@@ -1,6 +1,6 @@
 # Phase 1 report: "X or Y?" for forwards
 
-2026-10-26 · Spec `mvp-x-or-y` · **Awaiting the owner's sign-off** (task 8.3)
+2026-10-26 · Spec `mvp-x-or-y` · **Signed off by the owner on 2026-10-26** (task 8.3)
 
 ## What Phase 1 delivered
 
