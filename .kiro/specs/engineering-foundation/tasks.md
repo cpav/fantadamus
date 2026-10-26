@@ -322,11 +322,11 @@ and [design](design.md).
 
 - [ ] 15. Remote go-ahead and the **remote gate**
   - Branch: `chore/ef-15-remote` · Depends on: 14 · ADRs: ADR-0001
-  - [ ] 15.1 **Owner:** give the remote go-ahead: create the public repository, apply
+  - [x] 15.1 **Owner:** give the remote go-ahead: create the public repository, apply
     `docs/runbooks/github-setup.md`, add the identity secret, push `main`
     - _Requirements: R2.1, R2.11, R2.12, R10.4, R10.7_
     - _Test: the checklist, ticked, in the gate report_
-  - [ ] 15.2 The remote checklist with throwaway branches: a failing test blocks the merge (AT-3), push
+  - [x] 15.2 The remote checklist with throwaway branches: a failing test blocks the merge (AT-3), push
     protection rejects a fake key (AT-4), direct and force pushes to `main` are refused (AT-11), a
     non-Conventional PR title fails (AT-13)
     - _Requirements: R2.2, R2.3, R2.5, R2.6, R2.7, R9.5, R10.2, R12.1, R12.2, R20.2, R20.5_

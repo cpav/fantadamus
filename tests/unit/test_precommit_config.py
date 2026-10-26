@@ -48,7 +48,9 @@ def test_stages_present() -> None:
 
 
 def test_local_hooks_use_the_locked_environment() -> None:
+    # The project's own environment (made by `make setup`) or the pinned binaries, never a tool found on
+    # PATH: a terminal without `uv` on its PATH must still run every hook (found at the go-ahead push).
     local = next(repo for repo in _config()["repos"] if repo["repo"] == "local")
     for hook in local["hooks"]:
         entry = hook["entry"]
-        assert entry.startswith(("uv run --frozen ", "bin/")), f"{hook['id']} must run locked or pinned tools"
+        assert entry.startswith((".venv/bin/", "bin/")), f"{hook['id']} must run locked or pinned tools"
