@@ -29,3 +29,39 @@ Still to come:
 - **Moved to Phase 3:** AT-6, AT-10, AT-18, AT-20 and AT-21.
 
 Owner's review (task 14.3): accepted on 2026-10-26. **Local gate passed.**
+
+## The remote gate (task 15.1 and 15.2)
+
+The repository went public as <https://github.com/cpav/fantadamus> on 2026-10-26.
+
+- **The push:** the pre-push hook scanned every commit for secrets and identities first, and passed.
+- **CI on `main`:** the first run passed; the `check` job took 64 s on `ubuntu-latest`.
+- **Settings:** compared with `docs/runbooks/github-setup.md` through the GitHub API, read-only.
+
+| Setting | Live value |
+|---|---|
+| Visibility | Public |
+| Merge methods | Squash only; head branches deleted on merge |
+| Ruleset `main` | Active on the default branch, empty bypass list; deletion and force-push blocked; pull request required (0 approvals, squash only); required checks `check` and `pr`, strict |
+| Secret scanning, push protection | Both enabled |
+| Workflows from fork pull requests | Approval required for all external contributors |
+| Workflow token | Read-only |
+| `FANTADAMUS_CREATOR_IDENTITIES` | Set for Actions and for Dependabot (a placeholder until the creators are chosen) |
+
+| AT | Gate | Bad change | Expected | Observed |
+|---|---|---|---|---|
+| AT-3 | Required checks | PR #2, with a planted failing test | `check` red, merge blocked | `check` failed on the planted test alone ("18 passed, 1 failed"); merge state BLOCKED |
+| AT-13 (remote) | Pull-request title | PR #2, titled "Gate probe: failing test and bad title" | `pr` red | `pr` failed at the title step |
+| AT-4 (remote) | Push protection | None pushed | Enabled | Enabled, read from the settings; the CI scan is the same gitleaks command proved locally |
+| AT-11 | Direct and force pushes to `main` | None attempted | Refused | Proved by the live ruleset: pull request required, force-push blocked, no bypass. The owner decided against a live push |
+
+- **The probe:** PR #2 was closed and its branch deleted after the result was recorded.
+- **The first real pull request:** PR #1 (the hook fix) passed `check` and `pr`, and its merge state was CLEAN.
+- **Found on the way:** the pre-push hook needed `uv` on the PATH, and failed closed without it. PR #1 fixes
+  this; the hooks now run from the project's `.venv`.
+
+Still open:
+
+- **Task 15.3:** the CI time over the first pull requests (AT-9), and the first Dependabot pull request
+  (AT-19).
+- **Task 15.4:** the owner's review of this section.
