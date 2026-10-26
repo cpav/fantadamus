@@ -23,8 +23,9 @@ from fantadamus.core.clock import utc_now
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.skeleton.pipeline import SubmitResult
 from fantadamus.lake.duckdb_store import DEFAULT_ROOT, LakeStore
+from fantadamus.league.rules import RulesStore
 from fantadamus.mcp.server import DEFAULT_SOURCES, SkeletonSummary, build_server, load_allowed_hosts
-from fantadamus.mcp.tools import submit
+from fantadamus.mcp.tools import league, submit
 
 SKELETON_FIXTURE = Path("tests/fixtures/skeleton/rows.json")
 SKELETON_SOURCES = Path("tests/fixtures/skeleton/sources.toml")
@@ -88,6 +89,7 @@ def _serve(args: argparse.Namespace) -> int:
     server = build_server(store, allowed_hosts=hosts, clock=utc_now, submitted_by=args.user)
     clubs = Clubs.from_toml(DEFAULT_CLUBS.read_text(encoding="utf-8"))
     submit.register(server, store, allowed_hosts=hosts, clock=utc_now, submitted_by=args.user, clubs=clubs)
+    league.register(server, RulesStore(), user=args.user, clock=utc_now)
     server.run("stdio")
     return 0
 

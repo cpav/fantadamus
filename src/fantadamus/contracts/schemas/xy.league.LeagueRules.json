@@ -1,0 +1,141 @@
+{
+  "contract": "xy.league.LeagueRules",
+  "schema": {
+    "$defs": {
+      "GoalByRole": {
+        "additionalProperties": false,
+        "description": "A goal's bonus for each Classic role, for leagues that set it that way.",
+        "properties": {
+          "defender": {
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Defender",
+            "type": "number"
+          },
+          "forward": {
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Forward",
+            "type": "number"
+          },
+          "keeper": {
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Keeper",
+            "type": "number"
+          },
+          "midfielder": {
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Midfielder",
+            "type": "number"
+          }
+        },
+        "required": [
+          "keeper",
+          "defender",
+          "midfielder",
+          "forward"
+        ],
+        "title": "GoalByRole",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "The league's bonus and malus table. Bonuses are 0 to 10, maluses -10 to 0.",
+    "properties": {
+      "assist": {
+        "description": "An assist",
+        "maximum": 10,
+        "minimum": 0,
+        "title": "Assist",
+        "type": "number"
+      },
+      "clean_sheet": {
+        "description": "A keeper's clean sheet",
+        "maximum": 10,
+        "minimum": 0,
+        "title": "Clean Sheet",
+        "type": "number"
+      },
+      "goal": {
+        "anyOf": [
+          {
+            "maximum": 10,
+            "minimum": 0,
+            "type": "number"
+          },
+          {
+            "$ref": "#/$defs/GoalByRole"
+          }
+        ],
+        "description": "A goal scored: one value, or one per role",
+        "title": "Goal"
+      },
+      "goal_conceded": {
+        "description": "Each goal a keeper concedes",
+        "maximum": 0,
+        "minimum": -10,
+        "title": "Goal Conceded",
+        "type": "number"
+      },
+      "own_goal": {
+        "description": "An own goal",
+        "maximum": 0,
+        "minimum": -10,
+        "title": "Own Goal",
+        "type": "number"
+      },
+      "penalty_missed": {
+        "description": "A penalty missed",
+        "maximum": 0,
+        "minimum": -10,
+        "title": "Penalty Missed",
+        "type": "number"
+      },
+      "penalty_saved": {
+        "description": "A penalty saved, for keepers",
+        "maximum": 10,
+        "minimum": 0,
+        "title": "Penalty Saved",
+        "type": "number"
+      },
+      "penalty_scored": {
+        "description": "A penalty scored, counted in place of the goal bonus",
+        "maximum": 10,
+        "minimum": 0,
+        "title": "Penalty Scored",
+        "type": "number"
+      },
+      "red_card": {
+        "description": "A red card",
+        "maximum": 0,
+        "minimum": -10,
+        "title": "Red Card",
+        "type": "number"
+      },
+      "yellow_card": {
+        "description": "A yellow card",
+        "maximum": 0,
+        "minimum": -10,
+        "title": "Yellow Card",
+        "type": "number"
+      }
+    },
+    "required": [
+      "goal",
+      "assist",
+      "penalty_scored",
+      "penalty_missed",
+      "penalty_saved",
+      "own_goal",
+      "yellow_card",
+      "red_card",
+      "goal_conceded",
+      "clean_sheet"
+    ],
+    "title": "LeagueRules",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}
