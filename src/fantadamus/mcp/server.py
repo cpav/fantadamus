@@ -1,4 +1,5 @@
-"""The MCP server. In Spec 0 it exposes only the walking skeleton's two tools (C10, R16.10 to R16.12)."""
+"""The MCP servers: the advisor `fantadamus serve` gives Claude (mvp-x-or-y C13), and the walking skeleton's
+two tools, which `fantadamus skeleton run` still uses (Spec 0 C10, R16.10 to R16.12)."""
 
 from __future__ import annotations
 
@@ -12,10 +13,16 @@ from pydantic import AwareDatetime, BaseModel, JsonValue
 
 from fantadamus.contracts.skeleton.tables import SkeletonRoleCount
 from fantadamus.core.clock import Clock
+from fantadamus.core.clubs import Clubs
 from fantadamus.domains.skeleton import pipeline
+from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
+from fantadamus.league.rules import RulesStore
+from fantadamus.mcp.tools import compare, league, submit
+from fantadamus.mcp.tools.compare import ReadingItem
 
 DEFAULT_SOURCES = Path("config/sources.toml")
+DEFAULT_PROMPT = Path("docs/agent-prompt.md")
 _HOST = re.compile(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+")
 
 INSTRUCTIONS = (
@@ -72,4 +79,32 @@ def build_server(
         """Players per club and role, from the stored data, with the source URLs each count came from."""
         return SkeletonSummary(rows=pipeline.summary(store))
 
+    return server
+
+
+def load_instructions(path: Path = DEFAULT_PROMPT) -> str:
+    """The agent prompt as the server's instructions: everything after its `---` line (R13.2)."""
+    return path.read_text(encoding="utf-8").split("\n---\n", 1)[1].strip() + "\n"
+
+
+def build_advisor(
+    lake: LakeStore,
+    *,
+    allowed_hosts: Sequence[str],
+    clubs: Clubs,
+    rules: RulesStore,
+    log: DecisionLog,
+    reading: dict[str, ReadingItem],
+    user: str,
+    clock: Clock,
+    instructions: str,
+) -> MCPServer:
+    """The server Claude Desktop runs: `compare_players`, `set_league_rules` and the submit tools (R13.1)."""
+    server = MCPServer(name="fantadamus", instructions=instructions)
+    submit.register(server, lake, allowed_hosts=allowed_hosts, clock=clock, submitted_by=user, clubs=clubs)
+    league.register(server, rules, user=user, clock=clock)
+    advisor = compare.Advisor(
+        lake=lake, rules=rules, log=log, clubs=clubs, reading=reading, user=user, clock=clock
+    )
+    compare.register(server, advisor)
     return server

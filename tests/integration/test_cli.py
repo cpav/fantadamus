@@ -55,7 +55,7 @@ def test_serve_runs_the_server_on_stdio(monkeypatch: pytest.MonkeyPatch, tmp_pat
     assert seen == {
         "transport": "stdio",
         "tools": [
-            "get_skeleton_summary",
+            "compare_players",
             "set_league_rules",
             "submit_fixtures",
             "submit_match_odds",
@@ -63,7 +63,6 @@ def test_serve_runs_the_server_on_stdio(monkeypatch: pytest.MonkeyPatch, tmp_pat
             "submit_penalty_takers",
             "submit_player_season",
             "submit_probable_lineups",
-            "submit_skeleton_rows",
             "submit_team_season",
         ],
     }

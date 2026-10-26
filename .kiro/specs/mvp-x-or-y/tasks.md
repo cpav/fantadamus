@@ -125,13 +125,13 @@ and [design](design.md)
       `::test_out_of_range_rejected_with_reason`;
       `tests/unit/xy/test_league_rules.py::test_setup_step_offers_classic_values`_
 
-- [ ] 7. `compare_players` and the server
+- [x] 7. `compare_players` and the server
   - Branch: `feat/xy-7-compare` · Depends on: 3, 4, 5, 6 · ADRs: ADR-0005
-  - [ ] 7.1 The freshness targets (R7.3) and the as-of reads across every gold view
+  - [x] 7.1 The freshness targets (R7.3) and the as-of reads across every gold view
     - _Requirements: R7.3, R7.4_
     - _Test: `tests/unit/xy/test_freshness.py::test_targets_tighten_near_the_match`;
       **P4** `tests/property/xy/test_as_of.py::test_p4_as_of_never_sees_later_facts`_
-  - [ ] 7.2 `compare_players` (C10): setup step, names, round and fixtures, the refresh plan in its order,
+  - [x] 7.2 `compare_players` (C10): setup step, names, round and fixtures, the refresh plan in its order,
     then the answer with its breakdown, the rules it used, times in `Europe/Rome`, the flagged fallbacks and
     what to check before the deadline
     - _Requirements: R1.3, R1.4, R2.2, R2.3, R10.1, R10.2, R10.3, R10.4, R10.5, R10.6, R11.1, R11.2, R11.3,
@@ -140,11 +140,11 @@ and [design](design.md)
       `::test_no_fixture_means_not_playing`, `::test_first_match_to_check`;
       **AT-4** `tests/acceptance/xy/test_compare.py::test_at4_scripted_collection`,
       **AT-8** `::test_at8_earlier_as_of_ignores_later_facts`, **AT-10** `::test_at10_league_rules`_
-  - [ ] 7.3 The decision log (C12): one appended line per answer
+  - [x] 7.3 The decision log (C12): one appended line per answer
     - _Requirements: R14.1, R14.2_
     - _Test: **AT-9** `tests/acceptance/xy/test_compare.py::test_at9_one_log_entry_per_answer`;
       **P8** `tests/property/xy/test_decision_log.py::test_p8_log_only_grows`_
-  - [ ] 7.4 The server (C13): the nine tools, the skeleton's tools no longer served, `docs/agent-prompt.md` as
+  - [x] 7.4 The server (C13): the nine tools, the skeleton's tools no longer served, `docs/agent-prompt.md` as
     the instructions, `--user`, tool descriptions naming their pages; the README's Claude Desktop setup
     - _Requirements: R13.1, R13.2, R13.3, R7.1, R8.1, R8.2, R8.3_
     - _Test: `tests/integration/xy/test_server.py::test_served_tools`, `::test_instructions_are_agent_prompt`;

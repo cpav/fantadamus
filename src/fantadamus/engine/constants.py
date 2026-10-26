@@ -38,3 +38,15 @@ CAMEO_RATING = 5.75  # and is worth this
 # The answer (R10.2, method §A7)
 COIN_FLIP = 0.15  # a margin below this is a coin flip
 CLEAR = 0.5  # above this, clear; in between, a lean
+
+# Freshness (R7.3): how long a fact counts, and the tighter target within a day of the match
+FRESH_FOR_HOURS = {
+    "probable_lineups": 12,
+    "match_odds": 24,
+    "player_season": 7 * 24,
+    "team_season": 7 * 24,
+    "penalty_takers": 7 * 24,
+    "fixtures": 7 * 24,
+}
+FRESH_NEAR_MATCH_HOURS = {"probable_lineups": 3, "match_odds": 6}
+NEAR_MATCH_HOURS = 24
