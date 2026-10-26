@@ -35,7 +35,7 @@ online server needs it.
 | Gate | Result | Evidence |
 |---|---|---|
 | Local gate: every local acceptance test fails on its bad input | Passed, accepted 2026-10-26 | [gate report](gate-selftest-2026-10-26.md) |
-| Remote gate: settings, required checks, PR title, push protection, protected `main` | Passed, accepted 2026-10-26 | [gate report](gate-selftest-2026-10-26.md), remote section |
+| Remote gate: settings, required checks, PR title, push protection, protected `main`, Dependabot | Passed, accepted 2026-10-26 | [gate report](gate-selftest-2026-10-26.md), remote section |
 | Agent hooks, live in Claude Code | Passed after one fix | [hook report](gate-selftest-2026-10-25.md) |
 
 ## Cost
@@ -62,15 +62,13 @@ $0. No AWS resources exist yet, and GitHub Actions is free for a public reposito
 
 1. **No creator names yet.** The identity check protects nothing until the real FantaCreator names replace the
    placeholder, in the Actions secret, the Dependabot secret and the private configuration.
-2. **The first Dependabot pull request (AT-19) hasn't arrived.** When it does, check that it passes the
-   identity check.
-3. **The Intel Mac is losing pre-built packages.** cryptography's three known flaws are accepted until
+2. **The Intel Mac is losing pre-built packages.** cryptography's three known flaws are accepted until
    2027-01-26, and mutmut and libcst are pinned to older versions. An Apple Silicon Mac would remove all
    three.
-4. **One end-of-turn check ran 13 minutes once,** on 2026-10-25, and the cause is unknown. A hang now names
+3. **One end-of-turn check ran 13 minutes once,** on 2026-10-25, and the cause is unknown. A hang now names
    the test and is stopped within 2 minutes, so a repeat would be diagnosed.
-5. **The presentation pages show 25 October figures.** Refresh them before sharing.
-6. **Mutation testing** waits until Phase 2, when there is football logic to test this way.
+4. **The presentation pages show 25 October figures.** Refresh them before sharing.
+5. **Mutation testing** waits until Phase 2, when there is football logic to test this way.
 
 ## Next
 
