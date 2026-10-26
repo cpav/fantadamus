@@ -7,7 +7,7 @@ import datetime as dt
 from fantadamus.contracts.xy import once_each
 from fantadamus.contracts.xy.fixtures import FixturesPayload
 from fantadamus.core.clubs import Clubs
-from fantadamus.domains.facts import Domain, SilverRow, Source
+from fantadamus.domains.facts import PROVENANCE_COLUMNS, Domain, SilverRow, Source
 from fantadamus.lake.duckdb_store import Table
 
 
@@ -35,8 +35,8 @@ def _rows(payload: FixturesPayload, clubs: Clubs, source: Source) -> list[Fixtur
 
 TABLE = Table(
     "fixtures",
-    "CREATE TEMP TABLE fixtures (source_url VARCHAR, captured_at TIMESTAMPTZ, content_sha256 VARCHAR, "
-    "round BIGINT, home VARCHAR, away VARCHAR, kickoff_at TIMESTAMPTZ)",
+    f"CREATE TEMP TABLE fixtures ({PROVENANCE_COLUMNS}, round BIGINT, home VARCHAR, away VARCHAR, "
+    "kickoff_at TIMESTAMPTZ)",
     "INSERT INTO fixtures VALUES (?, ?, ?, ?, ?, ?, ?)",
 )
 FIXTURES = Domain("fixtures", FixturesPayload, FixtureRow, _rows, TABLE)

@@ -16,10 +16,12 @@ from pydantic import AwareDatetime
 
 from fantadamus.contracts.base import Contract
 from fantadamus.contracts.xy.fixtures import FixturesPayload
+from fantadamus.contracts.xy.lineups import OfficialLineupPayload, ProbableLineupPayload
 from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
 from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains import facts
+from fantadamus.domains.availability.silver import LINEUP_VIEWS, OFFICIAL_LINEUPS
 from fantadamus.domains.facts import Domain, Receipt
 from fantadamus.domains.fixtures.silver import FIXTURES
 from fantadamus.domains.season.silver import PENALTY_TAKERS, PLAYER_SEASONS, TEAM_SEASONS
@@ -114,3 +116,30 @@ def register(
         published_at: AwareDatetime | None = None,
     ) -> Receipt:
         return submit(PENALTY_TAKERS, payload, source_url, captured_at, published_at)
+
+    @server.tool(
+        description="Submit one outlet's probable lineups for one match, from Fantacalcio.it's probabili "
+        "formazioni, Fantacalcio-Online's or SOS Fanta's page: each team's 11 expected starters, the "
+        "ballottaggi with their percentages, the bench and the unavailable players. Submit each outlet "
+        "separately, naming it in `outlet`. " + PROVENANCE
+    )
+    def submit_probable_lineups(
+        payload: ProbableLineupPayload,
+        source_url: str,
+        captured_at: AwareDatetime,
+        published_at: AwareDatetime | None = None,
+    ) -> Receipt:
+        return submit(LINEUP_VIEWS, payload, source_url, captured_at, published_at)
+
+    @server.tool(
+        description="Submit the official lineups of one match, from Fantacalcio.it's or SOS Fanta's "
+        "formazioni ufficiali article, out about an hour before kickoff: both teams' starters and "
+        "benches. " + PROVENANCE
+    )
+    def submit_official_lineup(
+        payload: OfficialLineupPayload,
+        source_url: str,
+        captured_at: AwareDatetime,
+        published_at: AwareDatetime | None = None,
+    ) -> Receipt:
+        return submit(OFFICIAL_LINEUPS, payload, source_url, captured_at, published_at)

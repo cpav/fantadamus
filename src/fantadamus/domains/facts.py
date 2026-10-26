@@ -24,6 +24,9 @@ from fantadamus.core.hashing import canonical_json, content_sha256
 from fantadamus.core.urls import host_allowed, url_host
 from fantadamus.lake.duckdb_store import LakeStore, Table
 
+PROVENANCE_COLUMNS = "source_url VARCHAR, captured_at TIMESTAMPTZ, content_sha256 VARCHAR"
+"""The first columns of every silver table, matching `SilverRow`."""
+
 
 class RefusedError(ValueError):
     """A submission rejected before anything was written; the message says why."""
@@ -147,3 +150,15 @@ def latest_by[R: SilverRow, K](rows: Iterable[R], as_of: dt.datetime, key: Calla
         ):
             best[key(row)] = row
     return best
+
+
+def latest_submissions[R: SilverRow, K](
+    rows: Iterable[R], as_of: dt.datetime, key: Callable[[R], K]
+) -> dict[K, list[R]]:
+    """For each key, all the rows of the submission captured last at or before `as_of`."""
+    rows = list(rows)
+    winners = latest_by(rows, as_of, key)
+    return {
+        group: [row for row in rows if key(row) == group and row.source == winner.source]
+        for group, winner in winners.items()
+    }

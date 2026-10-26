@@ -65,15 +65,15 @@ and [design](design.md)
       `::test_ambiguous_or_unknown_returns_candidates`;
       **P5** `tests/property/xy/test_resolve.py::test_p5_resolution_ignores_learning_order`_
 
-- [ ] 3. Probable and official lineups
+- [x] 3. Probable and official lineups
   - Branch: `feat/xy-3-lineups` · Depends on: 2 · ADRs: ADR-0005
-  - [ ] 3.1 `submit_probable_lineups` and `submit_official_lineup`, and the `availability` domain: silver
+  - [x] 3.1 `submit_probable_lineups` and `submit_official_lineup`, and the `availability` domain: silver
     `lineup_views` and `official_lineups`; names that don't resolve are kept and resolved again when a
     profile arrives
     - _Requirements: R3.1, R4.1, R7.1, R7.2_
     - _Test: `tests/integration/xy/test_lineups.py::test_outlets_kept_side_by_side`,
       `::test_unresolved_name_resolves_when_profile_arrives`_
-  - [ ] 3.2 Consensus (C5) and the gold view `availability(player, match, as_of)`: each outlet's view, the
+  - [x] 3.2 Consensus (C5) and the gold view `availability(player, match, as_of)`: each outlet's view, the
     mean over fresh outlets, the spread and the disputed flag, p_cameo, the official lineup's override
     - _Requirements: R3.2, R3.3, R3.4, R4.2_
     - _Test: `tests/unit/xy/test_consensus.py::test_outlet_views`, `::test_unmentioned_player_counts_bench`,

@@ -7,7 +7,7 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel
 
-from fantadamus.domains.facts import Source, latest_by
+from fantadamus.domains.facts import Source, latest_by, latest_submissions
 from fantadamus.domains.players.resolve import KnownPlayer
 from fantadamus.domains.season.silver import PenaltyTakerRow, PlayerSeasonRow, TeamSeasonRow
 
@@ -38,10 +38,8 @@ def team_season(rows: Sequence[TeamSeasonRow], club: str, as_of: dt.datetime) ->
 
 def penalty_order(rows: Sequence[PenaltyTakerRow], club: str, as_of: dt.datetime) -> PenaltyOrder | None:
     """The club's takers from the latest submission that lists the club."""
-    first = latest_by(rows, as_of, key=lambda row: row.club).get(club)
-    if first is None:
+    latest = latest_submissions(rows, as_of, key=lambda row: row.club).get(club)
+    if latest is None:
         return None
-    takers = sorted(
-        (row for row in rows if row.club == club and row.source == first.source), key=lambda row: row.rank
-    )
-    return PenaltyOrder(takers=[row.name for row in takers], source=first.source)
+    takers = sorted(latest, key=lambda row: row.rank)
+    return PenaltyOrder(takers=[row.name for row in takers], source=takers[0].source)
