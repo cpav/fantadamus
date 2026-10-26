@@ -40,7 +40,7 @@ Re-planned on 2026-10-26: the work now goes in thin slices, each taking one ques
 | Phase | Builds | Status |
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton | Done, signed off 2026-10-26 |
-| 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Requirements in progress |
+| 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Requirements and design approved; tasks for review |
 | 2 More slices | Keepers and defenders; the full lineup with league rules and the bench; the formation | Method written |
 | 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
 

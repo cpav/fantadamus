@@ -110,20 +110,28 @@ def test_unknown_task_fails(adr_dir: Path) -> None:
     assert _problems("99", TASKS, adr_dir) == ["no task 99 in tasks.md"]
 
 
-def test_repo_tasks_are_well_formed() -> None:
-    tasks = task_check.parse_tasks(task_check.TASKS.read_text(encoding="utf-8"))
-    known = task_check.requirement_ids(task_check.REQUIREMENTS.read_text(encoding="utf-8"))
-    assert len(tasks) == 17
+@pytest.mark.parametrize("spec", task_check.specs())
+def test_repo_tasks_are_well_formed(spec: str) -> None:
+    tasks_md, requirements_md = task_check.spec_files(spec)
+    tasks = task_check.parse_tasks(tasks_md.read_text(encoding="utf-8"))
+    known = task_check.requirement_ids(requirements_md.read_text(encoding="utf-8"))
+    assert tasks, spec
     for task in tasks.values():
-        assert task.subtasks, task.id
+        assert task.subtasks, (spec, task.id)
         for sub in task.subtasks:
-            assert sub.test, sub.id
-            assert sub.owner or sub.requirements, sub.id
-            assert set(sub.requirements) <= known, sub.id
+            assert sub.test, (spec, sub.id)
+            assert sub.owner or sub.requirements, (spec, sub.id)
+            assert set(sub.requirements) <= known, (spec, sub.id)
+
+
+def test_each_spec_has_its_own_tasks() -> None:
+    assert {"engineering-foundation", "mvp-x-or-y"} <= set(task_check.specs())
+    assert task_check.check("1", "engineering-foundation").ok  # finished long ago
+    assert task_check.check("99", "mvp-x-or-y").message == "mvp-x-or-y task 99: no task 99 in tasks.md"
 
 
 def test_main_reports(capsys: pytest.CaptureFixture[str]) -> None:
-    assert task_check.main(["1"]) == 0
-    assert capsys.readouterr().out.startswith("PASS task-check: task 1")
-    assert task_check.main(["99"]) == 1
+    assert task_check.main(["--spec", "engineering-foundation", "1"]) == 0
+    assert capsys.readouterr().out.startswith("PASS task-check: engineering-foundation task 1")
+    assert task_check.main(["--spec", "engineering-foundation", "99"]) == 1
     assert "no task 99" in capsys.readouterr().err

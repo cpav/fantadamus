@@ -1,12 +1,13 @@
 """Before a task starts: are its dependencies done, its requirements and tests named, its ADRs Accepted?
 (R17.4, R18.4)
 
-Reads `.kiro/specs/engineering-foundation/tasks.md`. A task or sub-task is done when its box is ticked
-(`- [x]`), which happens on its own branch and reaches `main` with the owner's merge. Every sub-task needs
-a `_Test:_` line and a `_Requirements:_` line whose R-IDs exist in requirements.md; an **Owner** step may
-name a gate instead of R-IDs. If anything is missing the check fails, and the agent stops and asks the owner.
+Reads `.kiro/specs/<spec>/tasks.md` (default: the current spec, `mvp-x-or-y`). A task or sub-task is done
+when its box is ticked (`- [x]`), which happens on its own branch and reaches `main` with the owner's merge.
+Every sub-task needs a `_Test:_` line and a `_Requirements:_` line whose R-IDs exist in requirements.md; an
+**Owner** step may name a gate instead of R-IDs. If anything is missing the check fails, and the agent stops
+and asks the owner.
 
-Usage: python -m scripts.checks.task_check <task id, e.g. 9 or 9.3>   (make task-check TASK=9)
+Usage: python -m scripts.checks.task_check [--spec <spec>] <task id, e.g. 9 or 9.3>   (make task-check TASK=9)
 """
 
 from __future__ import annotations
@@ -20,9 +21,8 @@ from pathlib import Path
 from scripts.checks._common import CheckResult, report
 
 ROOT = Path(__file__).resolve().parents[2]
-SPEC = ROOT / ".kiro" / "specs" / "engineering-foundation"
-TASKS = SPEC / "tasks.md"
-REQUIREMENTS = SPEC / "requirements.md"
+SPECS = ROOT / ".kiro" / "specs"
+CURRENT_SPEC = "mvp-x-or-y"
 ADR_DIR = ROOT / "docs" / "adr"
 
 _TASK = re.compile(r"^- \[(?P<done>[ xX])\] (?P<id>\d+)\. (?P<title>.*)$")
@@ -151,22 +151,34 @@ def problems(task_id: str, tasks: Mapping[str, Task], known: set[str], adrs: Map
     return issues
 
 
-def check(task_id: str) -> CheckResult:
+def specs() -> list[str]:
+    """The specs that have a task list."""
+    return sorted(path.parent.name for path in SPECS.glob("*/tasks.md"))
+
+
+def spec_files(spec: str) -> tuple[Path, Path]:
+    return SPECS / spec / "tasks.md", SPECS / spec / "requirements.md"
+
+
+def check(task_id: str, spec: str = CURRENT_SPEC) -> CheckResult:
+    tasks_md, requirements_md = spec_files(spec)
     issues = problems(
         task_id,
-        parse_tasks(TASKS.read_text(encoding="utf-8")),
-        requirement_ids(REQUIREMENTS.read_text(encoding="utf-8")),
+        parse_tasks(tasks_md.read_text(encoding="utf-8")),
+        requirement_ids(requirements_md.read_text(encoding="utf-8")),
         adr_statuses(ADR_DIR),
     )
     if issues:
-        return CheckResult("task-check", ok=False, message=f"task {task_id}: " + "; ".join(issues))
-    return CheckResult("task-check", ok=True, message=f"task {task_id} is ready to start")
+        return CheckResult("task-check", ok=False, message=f"{spec} task {task_id}: " + "; ".join(issues))
+    return CheckResult("task-check", ok=True, message=f"{spec} task {task_id} is ready to start")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--spec", choices=specs(), default=CURRENT_SPEC, help="a folder in .kiro/specs/")
     parser.add_argument("task", help="task or sub-task ID, e.g. 9 or 9.3")
-    return report(check(parser.parse_args(argv).task))
+    args = parser.parse_args(argv)
+    return report(check(args.task, args.spec))
 
 
 if __name__ == "__main__":

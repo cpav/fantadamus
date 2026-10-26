@@ -31,6 +31,8 @@ src/fantadamus/
   contracts/<domain>/  versioned pydantic models (bronze payloads, silver tables, gold products)
   domains/<domain>/    bronze.py, silver.py, gold.py: one module set per data domain
   quality/             data-quality rule definitions (defined once, rendered for DuckDB and Glue DQ)
+  engine/              the method's arithmetic: odds fit, player models, starting constants (pure)
+  league/              each user's league rules (stored privately, under data/local/)
   lake/                storage adapters: DuckDB/Parquet (MVP, local or S3), S3/Iceberg (v1)
   mcp/                 the MCP server: read tools, refresh plans and submit tools (ADR-0005)
   web/                 v1 only (ADR-0004): search client, polite fetcher, extractor
@@ -92,7 +94,7 @@ The repository may contain a `private.example.toml` with placeholder values only
 | ADRs | `docs/adr/NNNN-<kebab-decision>.md`, numbered in order, never renumbered | `0002-iac-cdk-vs-terraform.md` |
 | Requirement IDs | `R<requirement>.<criterion>`, unique within a spec; across specs, `<spec>#R<n>.<m>` | `R3.2`, `data-foundation#R4.1` |
 | Acceptance tests | `AT-<n>` per spec; test function `test_at<n>_<slug>` in `tests/acceptance/` | `test_at4_fake_aws_key_rejected` |
-| Branches | `<type>/<spec-abbrev>-<task-id>-<slug>`; types `feat`, `fix`, `refactor`, `test`, `chore`, `docs`; abbreviations `ef`, `df`, `de`, `ca` | `chore/ef-1.4-test-harness` |
+| Branches | `<type>/<spec-abbrev>-<task-id>-<slug>`; types `feat`, `fix`, `refactor`, `test`, `chore`, `docs`; abbreviations `ef`, `xy` | `chore/ef-1.4-test-harness` |
 | Commits | Conventional Commits; the scope is the spec abbreviation or domain | `feat(availability): add consensus p_start` |
 | AWS resources | Prefix `fantadamus-` (SSM paths `/fantadamus/`). **The prefix is the security boundary**: the deploy role can touch nothing else | `fantadamus-lake-<account>` |
 | AWS tags | `Project=fantadamus`, `Environment`, `Spec`, `ManagedBy` (`terraform/bootstrap` or `terraform/stack`) | |
