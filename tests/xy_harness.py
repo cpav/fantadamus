@@ -60,3 +60,26 @@ async def send(
 def error_text(result: CallToolResult) -> str:
     assert result.is_error
     return " ".join(getattr(block, "text", "") for block in result.content)
+
+
+def probable(outlet: str, **teams: dict[str, Any]) -> dict[str, Any]:
+    """The synthetic probable lineup as `outlet` sees it, with `home_team` or `away_team` replaced."""
+    payload = page("probable_lineup") | {"outlet": outlet}
+    return payload | teams
+
+
+def alfa_team(nove: str) -> dict[str, Any]:
+    """Alfa's probable team with Alfa Nove as a `starter`, in a 50/50 `ballottaggio`, on the `bench` or
+    `unavailable`. The eleven starters stay eleven."""
+    team: dict[str, Any] = page("probable_lineup")["home_team"]
+    if nove != "starter":
+        team["starters"] = [name for name in team["starters"] if name != "Alfa Nove"] + ["Alfa Dodici"]
+        team["ballottaggi"] = []
+        team["bench"] = ["Alfa Tredici"]
+    if nove == "ballottaggio":
+        team["ballottaggi"] = [
+            {"players": [{"name": "Alfa Nove", "percent": 50}, {"name": "Alfa Dodici", "percent": 50}]}
+        ]
+    elif nove in {"bench", "unavailable"}:
+        team[nove].append("Alfa Nove")
+    return team

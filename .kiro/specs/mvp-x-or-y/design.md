@@ -73,7 +73,7 @@ possible (R7.4) and keeps one fewer copy of the data.
 | Silver table | From | Key columns |
 |---|---|---|
 | `fixtures` | `submit_fixtures` | round, home, away, kickoff |
-| `lineup_views` | probable lineups | match, outlet, player (ID or unresolved name), status, p_start view |
+| `lineup_views` | probable lineups | match, outlet, club, name as written, status, ballottaggio share |
 | `official_lineups` | official lineups | match, player, starter or bench |
 | `odds` | match odds | match, page, de-margined 1X2, P(over 2.5), P(both score) |
 | `player_seasons` | profiles (R6.1) | player ID, name, club, roles and the R6.1 figures; a player's identity is his latest row |
@@ -84,9 +84,9 @@ possible (R7.4) and keeps one fewer copy of the data.
 
 Names are normalised (case, accents, spaces, as Spec 0's identity check does). A name resolves to a player
 when it equals his full name, or his surname and that surname is unique among known players; an outlet's
-"Lautaro M." style matches surname plus initial. Lineup names that don't resolve stay in silver with the
-name and are resolved again whenever a profile arrives (silver rebuilds on each submission). `compare_players`
-returns candidates rather than guessing (R1.3).
+"Lautaro M." style matches surname plus initial. Lineup names stay in silver as the outlet wrote them and
+are resolved on read against the club's players with profiles, so a name becomes a player as soon as his
+profile arrives. `compare_players` returns candidates rather than guessing (R1.3).
 
 ### C5. Availability (`domains/availability/consensus.py`)
 

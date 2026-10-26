@@ -9,7 +9,7 @@ from __future__ import annotations
 from fantadamus.contracts.xy import once_each
 from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
 from fantadamus.core.clubs import Clubs
-from fantadamus.domains.facts import Domain, SilverRow, Source
+from fantadamus.domains.facts import PROVENANCE_COLUMNS, Domain, SilverRow, Source
 from fantadamus.lake.duckdb_store import Table
 
 
@@ -66,7 +66,6 @@ def _taker_rows(payload: PenaltyTakersPayload, clubs: Clubs, source: Source) -> 
     return rows
 
 
-PROVENANCE = "source_url VARCHAR, captured_at TIMESTAMPTZ, content_sha256 VARCHAR"
 PLAYER_SEASONS = Domain(
     "player_season",
     PlayerSeasonPayload,
@@ -74,8 +73,8 @@ PLAYER_SEASONS = Domain(
     _player_rows,
     Table(
         "player_seasons",
-        f"CREATE TEMP TABLE player_seasons ({PROVENANCE}, player_id BIGINT, name VARCHAR, club VARCHAR, "
-        "role VARCHAR, mantra_role VARCHAR, appearances BIGINT, rated_appearances BIGINT, "
+        f"CREATE TEMP TABLE player_seasons ({PROVENANCE_COLUMNS}, player_id BIGINT, name VARCHAR, "
+        "club VARCHAR, role VARCHAR, mantra_role VARCHAR, appearances BIGINT, rated_appearances BIGINT, "
         "average_rating DOUBLE, goals BIGINT, assists BIGINT, yellow_cards BIGINT, penalties_scored BIGINT, "
         "penalties_taken BIGINT)",
         "INSERT INTO player_seasons VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -88,8 +87,8 @@ TEAM_SEASONS = Domain(
     _team_rows,
     Table(
         "team_seasons",
-        f"CREATE TEMP TABLE team_seasons ({PROVENANCE}, club VARCHAR, played BIGINT, goals_for BIGINT, "
-        "goals_against BIGINT)",
+        f"CREATE TEMP TABLE team_seasons ({PROVENANCE_COLUMNS}, club VARCHAR, played BIGINT, "
+        "goals_for BIGINT, goals_against BIGINT)",
         "INSERT INTO team_seasons VALUES (?, ?, ?, ?, ?, ?, ?)",
     ),
 )
@@ -100,7 +99,7 @@ PENALTY_TAKERS = Domain(
     _taker_rows,
     Table(
         "penalty_takers",
-        f"CREATE TEMP TABLE penalty_takers ({PROVENANCE}, club VARCHAR, rank BIGINT, name VARCHAR)",
+        f"CREATE TEMP TABLE penalty_takers ({PROVENANCE_COLUMNS}, club VARCHAR, rank BIGINT, name VARCHAR)",
         "INSERT INTO penalty_takers VALUES (?, ?, ?, ?, ?, ?)",
     ),
 )
