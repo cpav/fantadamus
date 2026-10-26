@@ -103,7 +103,7 @@ All small and reversible, each logged in its pull request:
    worked as designed (one fresh outlet is enough, and team form stood in, flagged), but it rests on less
    than the method would like. Decision 3 below.
 
-## Decisions for the owner
+## Decisions for the owner (approved 2026-10-26, implemented in task 9, PR #19)
 
 1. **When the second player can't play, say so.** For example: "start X; Y isn't playing, so put a fit
    forward first on the bench." **Recommendation: yes.** It's a one-line change to R10.1, then the code;
