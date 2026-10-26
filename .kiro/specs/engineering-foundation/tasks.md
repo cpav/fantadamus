@@ -300,21 +300,23 @@ and [design](design.md).
     - _Requirements: R2.2, R2.3, R2.4, R2.5, R2.6, R2.7, R2.12, R10.4, R10.7, R12.8_
     - _Test: `tests/unit/test_github_setup.py::test_checklist_covers_each_setting`_
 
-- [ ] 14. Local acceptance tests and the **local gate**
+- [x] 14. Local acceptance tests and the **local gate**
   - Branch: `test/ef-14-local-gate` · Depends on: 6, 7, 8, 9, 13 · ADRs: ADR-0001
-  - [ ] 14.1 One test per local acceptance test, each running the real gate on a bad input in a temporary
-    directory: AT-1, AT-2, AT-4, AT-5, AT-12, AT-13, AT-14, AT-15, AT-16 and AT-17 (local parts)
+  - [x] 14.1 One test per local acceptance test, each running the real gate on a bad input in a temporary
+    directory or repository, gathered in one file: AT-1, AT-2, AT-4, AT-5, AT-12, AT-13, AT-14, AT-15, AT-16
+    and AT-17 (local parts)
     - _Requirements: R1.3, R4.1, R4.2, R5.1, R6.1, R6.2, R6.3, R6.4, R6.5, R6.6, R6.7, R8.2, R8.3, R9.2, R9.3,
       R9.6, R10.1, R10.3, R10.5, R10.6, R11.2, R11.3, R13.2, R13.3, R20.1_
-    - _Test: `tests/acceptance/test_at1_format_lint_gate.py`, `test_at2_type_gate.py`,
-      `test_at4_fake_aws_key_rejected.py`, `test_at5_coverage_gate.py`, `test_at12_identity_rejected.py`,
-      `test_at13_conventional_commits.py`, `test_at14_contract_versioning.py`, `test_at15_suppressions.py`,
-      `test_at16_threshold_ratchet.py`, `test_at17_dependency_audit.py`_
-  - [ ] 14.2 Traceability: every acceptance test maps to existing requirements, and every local one to a test
+    - _Test: `tests/acceptance/test_local_gates.py::test_at1_format_lint_gate`, `::test_at2_type_gate`,
+      `::test_at4_fake_aws_key_rejected`, `::test_at5_coverage_gate`, `::test_at12_identity_rejected`,
+      `::test_at13_conventional_commits`, `::test_at14_contract_versioning`, `::test_at15_suppressions`,
+      `::test_at16_threshold_ratchet`, `::test_at17_dependency_audit`_
+  - [x] 14.2 Traceability: every acceptance test maps to existing requirements, and every local one to a test
     file; the gate report lists them
     - _Requirements: R20.4, R21.3_
-    - _Test: `tests/unit/test_traceability.py::test_acceptance_tests_map_to_existing_requirements`_
-  - [ ] 14.3 **Owner:** review the local gate report → **local gate passed**
+    - _Test: `tests/unit/test_traceability.py::test_acceptance_tests_map_to_existing_requirements`,
+      `::test_local_acceptance_tests_exist`_
+  - [x] 14.3 **Owner:** review the local gate report → **local gate passed**
     - _Requirements: Phase 0 exit gate, local part (requirements, Introduction)_
     - _Test: `docs/reports/gate-selftest-<date>.md` shows every local gate failing on its bad input_
 

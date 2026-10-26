@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from scripts.checks import pre_push
 
-from tests.integration.conftest import Git
+from tests.conftest import Git
 
 FAKE_KEY = "".join(["AKIA", "QYLP", "MN7R", "B3XK", "Z2WD"])
 IDENTITY = "Creatore Fittizio"

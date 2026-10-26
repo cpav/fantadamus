@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 from scripts.checks._common import run_command
 
-from tests.integration.conftest import Git
+from tests.conftest import Git
 
 ROOT = Path(__file__).resolve().parents[2]
 

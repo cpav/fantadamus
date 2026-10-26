@@ -6,7 +6,7 @@ from pathlib import Path
 
 from scripts.hooks.stop_check import tree_state
 
-from tests.integration.conftest import Git
+from tests.conftest import Git
 
 
 def test_state_tracks_edits_new_files_and_commits(git_repo: tuple[Path, Git]) -> None:

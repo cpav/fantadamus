@@ -6,7 +6,7 @@ from pathlib import Path
 
 from scripts.checks import secrets
 
-from tests.integration.conftest import Git
+from tests.conftest import Git
 
 # Assembled at run time so this file never contains a key-shaped string itself.
 FAKE_KEY = "".join(["AKIA", "QYLP", "MN7R", "B3XK", "Z2WD"])

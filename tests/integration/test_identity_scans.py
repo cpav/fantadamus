@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from scripts.checks import identities as ids
 
-from tests.integration.conftest import Git
+from tests.conftest import Git
 
 ENV = {"FANTADAMUS_CREATOR_IDENTITIES": "Creatore Fittizio"}
 

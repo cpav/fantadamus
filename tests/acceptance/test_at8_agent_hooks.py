@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 from scripts.checks import hook_config
 from scripts.checks._common import run_command
-from scripts.hooks import post_edit, stop_check
+from scripts.hooks import guard, post_edit, stop_check
 from scripts.hooks.event import HookEvent, parse
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -64,19 +64,16 @@ def test_at8_agent_hooks(tmp_path: Path) -> None:
         "file_path": str(Path.home() / ".config/fantadamus/private.toml"),
         "content": "x",
     }
-    blocked = [
-        _fixture("pre_tool_use_bash_git_push"),
-        _bash("terraform apply"),
-        _bash("make deploy"),
-        _bash("make bootstrap"),
-        private,
-    ]
-    for payload in blocked:
-        result = _run_guard(payload, shapes)
-        assert result.returncode == 2, (payload, result.stderr)
-        assert "Blocked by the project guard" in result.stderr
+    wired = _run_guard(_fixture("pre_tool_use_bash_git_push"), shapes)  # through the shell, as wired
+    assert wired.returncode == 2, wired.stderr
+    assert "Blocked by the project guard" in wired.stderr
     assert _run_guard(_fixture("pre_tool_use_bash_harmless"), shapes).returncode == 0
-    assert shapes.read_text(encoding="utf-8").count("PreToolUse") >= 2
+    assert '"event": "PreToolUse"' in shapes.read_text(encoding="utf-8")  # each distinct shape is kept once
+    state = guard.current_state(ROOT, os.environ, str(ROOT))
+    for payload in (_bash("terraform apply"), _bash("make deploy"), _bash("make bootstrap"), private):
+        result = guard.handle(HookEvent.model_validate(payload), state)
+        assert result.code == 2, payload
+        assert "Blocked by the project guard" in result.stderr
 
     # R17.3: a red `make check` goes back to the agent; a second red lets the turn end, visibly.
     stop = parse((FIXTURES / "stop.json").read_text(encoding="utf-8"))

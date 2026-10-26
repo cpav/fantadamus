@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from scripts.hooks import event, guard, post_edit, stop_check
 
-from tests.integration.conftest import Git
+from tests.conftest import Git
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "hooks"
 
