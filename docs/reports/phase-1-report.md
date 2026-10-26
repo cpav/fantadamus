@@ -106,28 +106,28 @@ All small and reversible, each logged in its pull request:
 ## Decisions for the owner (approved 2026-10-26, implemented in task 9, PR #19)
 
 1. **When the second player can't play, say so.** For example: "start X; Y isn't playing, so put a fit
-   forward first on the bench." **Recommendation: yes.** It's a one-line change to R10.1, then the code;
-   it goes first in the next slice.
+   forward first on the bench." **Approved.** Now R10.7: the answer says he won't play instead of benching
+   him.
 2. **Make Claude use Fantadamus without being told.** Create a Claude Project called "Fantadamus" with the
    agent prompt as its instructions, and say in the prompt which time is the round's deadline.
-   **Recommendation: yes.** There is no code, only a README step and two lines in the prompt.
+   **Approved.** Now R13.4: the README and `docs/player-setup.md` set up the project, and the prompt names
+   only the tools that exist and tells the round's deadline from each player's kickoff.
 3. **Odds when the previews have nothing.** Either keep the flagged team-form fallback, or add another odds
-   page to the reading list, after checking its terms. **Recommendation: keep the fallback for now**, and
-   look at odds coverage with the next slice.
+   page to the reading list, after checking its terms. **Approved: keep the fallback for now**, and look at
+   odds coverage with the next slice.
 
 ## Open risks and follow-ups
 
 1. **`make check` is slower:** about 100 s, from about 80 s. The long pole is Phase 0's lake property test
    (25 s); trim it before it grows.
-2. **The agent prompt names tools from later specs** (`get_round_context`, `best_lineup`…). Claude coped,
-   but the prompt should match what exists.
-3. **Carried from Phase 0:**
+2. **Carried from Phase 0:**
    - the creator-name placeholder is still in use;
    - the cryptography allowlist must be renewed by 2027-01-26;
    - the presentation pages show 25 October figures.
-4. **Mutation testing** joins the phase gate from Phase 2 (`quality.md`).
+3. **Mutation testing** joins the phase gate from Phase 2 (`quality.md`).
 
 ## Next
 
-After sign-off, Phase 2's next slice gets its own small spec. The first candidates are keepers and
-defenders, then the full lineup with the bench. Decision 1, if approved, goes in first.
+Testing with the second player starts from `docs/player-setup.md`. After sign-off the work pauses; Phase 2's
+next slice then gets its own small spec, starting with keepers and defenders, then the full lineup with the
+bench.
