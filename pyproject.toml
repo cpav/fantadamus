@@ -21,7 +21,6 @@ build-backend = "uv_build"
 dev = [
     "conventional-pre-commit>=4.4,<5",
     "hypothesis>=6.170,<7",
-    "mutmut>=3.7,<3.8",  # 3.8 needs libcst>=1.9, which has no Intel-Mac wheel for 3.12 (ADR-0001 amendment)
     "mypy>=2.4,<3",
     "pip-audit>=2.10,<3",
     "pre-commit>=4.7,<5",
@@ -37,10 +36,8 @@ dev = [
 ]
 
 [tool.uv]
-# libcst 1.9 ships no macOS x86_64 wheel for Python 3.12; building it needs Rust. Lift with ADR-0001's amendment.
-# cryptography 49+ likewise ships no macOS x86_64 wheel (pulled in by mcp); risk accepted, ADR-0001.
+# cryptography 49+ ships no macOS x86_64 wheel (pulled in by mcp); risk accepted, ADR-0001.
 constraint-dependencies = [
-    "libcst>=1.8.5,<1.9",
     "cryptography<49; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     # Everywhere else (CI, Linux servers), take the patched releases (PYSEC-2026-3552 to 3554).
     "cryptography>=50; sys_platform != 'darwin' or platform_machine != 'x86_64'",
@@ -59,7 +56,6 @@ markers = [
     "contract: parsers and schemas against recorded or synthetic payloads",
     "integration: several components together, on DuckDB and moto; no network",
     "acceptance: the spec's acceptance tests",
-    "infra: infrastructure tests (Terraform, IAM policy evaluator)",
 ]
 
 [tool.ruff]
@@ -94,7 +90,6 @@ plugins = ["pydantic.mypy"]
 # GitHub, so they are tested by running them, not by coverage.
 branch = true
 source = ["src", "scripts"]
-omit = ["scripts/selftest/*"]
 
 [tool.coverage.report]
 show_missing = true
@@ -102,8 +97,3 @@ skip_covered = true
 
 [tool.coverage.json]
 output = "coverage.json"
-
-[tool.mutmut]
-# The core modules for mutation testing at phase gates (R1.7).
-paths_to_mutate = ["scripts/checks/", "src/fantadamus/core/"]
-tests_dir = ["tests/unit/", "tests/property/"]

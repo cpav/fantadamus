@@ -1,25 +1,14 @@
-"""Task 7.1: `make check` runs every group, keeps going, summarises, and never sees AWS credentials (R1)."""
+"""`make check` (run_all) keeps going past failures, summarises, runs quick checks side by side, and never
+sees AWS credentials (R1.1 to R1.3, R1.6)."""
 
 from __future__ import annotations
 
-import re
 import subprocess
 import threading
 from collections.abc import Sequence
-from pathlib import Path
 
 import pytest
-import yaml
 from scripts.checks import run_all
-
-ROOT = Path(__file__).resolve().parents[2]
-MAKEFILE = (ROOT / "Makefile").read_text(encoding="utf-8")
-
-
-def _recipe(target: str) -> str:
-    match = re.search(rf"^{re.escape(target)}:.*\n((?:\t.*\n)+)", MAKEFILE, re.M)
-    assert match, f"Makefile has no recipe for {target}"
-    return match.group(1)
 
 
 def test_check_continues_and_summarises(capsys: pytest.CaptureFixture[str]) -> None:
@@ -68,19 +57,6 @@ def test_quick_checks_run_together_then_tests_alone(capsys: pytest.CaptureFixtur
     assert out.endswith("PASS lint\nPASS tests\nPASS coverage\nPASS audit\n4 passed, 0 failed\n")
 
 
-def test_check_is_union_of_subtargets() -> None:
-    union = [
-        *run_all.GROUPS["static"],
-        *run_all.GROUPS["tests"],
-        *run_all.GROUPS["infra"],
-        *run_all.GROUPS["audit"],
-    ]
-    assert run_all.GROUPS["all"] == union
-    assert "scripts.checks.run_all all" in _recipe("check")
-    for group in ("static", "tests", "infra", "audit"):
-        assert f"scripts.checks.run_all {group}" in _recipe(f"check-{group}")
-
-
 def test_check_env_has_no_aws_credentials() -> None:
     env = run_all.check_env(
         {
@@ -95,40 +71,6 @@ def test_check_env_has_no_aws_credentials() -> None:
     assert env["AWS_CONFIG_FILE"] == env["AWS_SHARED_CREDENTIALS_FILE"] == "/dev/null"
     assert env["HYPOTHESIS_PROFILE"] == "ci"
     assert env["PATH"] == "/bin"
-
-
-def test_setup_installs_all_hook_types() -> None:
-    recipe = _recipe("setup")
-    assert "uv sync --locked" in recipe
-    assert "scripts.tools.install" in recipe
-    assert "pre-commit install" in recipe
-    config = yaml.safe_load((ROOT / ".pre-commit-config.yaml").read_text(encoding="utf-8"))
-    assert set(config["default_install_hook_types"]) == {"pre-commit", "commit-msg", "pre-push"}
-
-
-def test_test_fast_uses_the_dev_profile_and_fast_layers() -> None:
-    recipe = _recipe("test-fast")
-    assert "HYPOTHESIS_PROFILE=dev" in recipe
-    assert "unit or property" in recipe
-
-
-def test_mutation_target_lists_core_modules() -> None:
-    assert "mutmut run" in _recipe("mutation")
-    import tomllib
-
-    mutmut = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["mutmut"]
-    assert mutmut["paths_to_mutate"], "core modules for mutation testing must be listed"
-    assert "src/fantadamus/core/" in mutmut["paths_to_mutate"]
-
-
-def test_task_check_target_takes_the_task_id() -> None:
-    assert "scripts.checks.task_check $(TASK)" in _recipe("task-check")
-
-
-def test_skeleton_target_checks_the_golden_file() -> None:
-    recipe = _recipe("skeleton")
-    assert "fantadamus skeleton run" in recipe
-    assert "--golden tests/golden/skeleton/role_counts.json" in recipe
 
 
 def test_run_all_rejects_unknown_groups(capsys: pytest.CaptureFixture[str]) -> None:

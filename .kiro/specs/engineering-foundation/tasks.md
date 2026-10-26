@@ -1,6 +1,6 @@
 # Implementation Plan: `engineering-foundation` (Spec 0)
 
-Status: **Approved; re-planned 2026-10-26** ([replan-2026-10-26.md](replan-2026-10-26.md)) · Date: 2026-10-24 · From the approved [requirements](requirements.md)
+Status: **Approved; re-planned 2026-10-26** (requirements.md, change log) · Date: 2026-10-24 · From the approved [requirements](requirements.md)
 and [design](design.md).
 
 ## How to read and run these tasks
@@ -320,7 +320,7 @@ and [design](design.md).
     - _Requirements: Phase 0 exit gate, local part (requirements, Introduction)_
     - _Test: `docs/reports/gate-selftest-<date>.md` shows every local gate failing on its bad input_
 
-- [ ] 15. Remote go-ahead and the **remote gate**
+- [x] 15. Remote go-ahead and the **remote gate**
   - Branch: `chore/ef-15-remote` · Depends on: 14 · ADRs: ADR-0001
   - [x] 15.1 **Owner:** give the remote go-ahead: create the public repository, apply
     `docs/runbooks/github-setup.md`, add the identity secret, push `main`
@@ -331,10 +331,10 @@ and [design](design.md).
     non-Conventional PR title fails (AT-13)
     - _Requirements: R2.2, R2.3, R2.5, R2.6, R2.7, R9.5, R10.2, R12.1, R12.2, R20.2, R20.5_
     - _Test: evidence in `docs/reports/gate-selftest-<date>.md`_
-  - [ ] 15.3 From the first pull requests: CI time (AT-9) and the first Dependabot PR (AT-19)
+  - [x] 15.3 From the first pull requests: CI time (AT-9) and the first Dependabot PR (AT-19)
     - _Requirements: R12.3, R11.4, R10.4_
     - _Test: both noted in the gate report_
-  - [ ] 15.4 **Owner:** review the remote gate report → **remote gate passed**
+  - [x] 15.4 **Owner:** review the remote gate report → **remote gate passed**
     - _Requirements: Phase 0 exit gate, remote part_
     - _Test: the report shows every remote gate failing as expected_
 
@@ -353,7 +353,7 @@ and [design](design.md).
 
 - [ ] 17. Phase 0 gate
   - Branch: `docs/ef-17-phase-report` · Depends on: 15 · ADRs: none
-  - [ ] 17.1 Short phase report in `docs/reports/`: tests, coverage, gate results, cost ($0), open risks.
+  - [x] 17.1 Short phase report in `docs/reports/`: tests, coverage, gate results, cost ($0), open risks.
     Mutation testing starts in Phase 2, once there is football logic to mutate
     - _Requirements: R20.4, Phase 0 exit gate_
     - _Test: the report exists with every section; `make check` green on `main`_

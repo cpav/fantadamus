@@ -22,10 +22,7 @@ def test_recorded_events_parse() -> None:
         "stop_active",
     }
     for event in events.values():
-        assert event.session_id
-        assert event.transcript_path
         assert event.cwd == "/workspace/fantadamus"
-        assert event.permission_mode == "default"
     push = events["pre_tool_use_bash_git_push"]
     assert (push.hook_event_name, push.tool_name, push.command) == (
         "PreToolUse",

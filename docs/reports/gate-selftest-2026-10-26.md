@@ -60,8 +60,23 @@ The repository went public as <https://github.com/cpav/fantadamus> on 2026-10-26
 - **Found on the way:** the pre-push hook needed `uv` on the PATH, and failed closed without it. PR #1 fixes
   this; the hooks now run from the project's `.venv`.
 
-Still open:
+### Task 15.3: CI time and Dependabot
 
-- **Task 15.3:** the CI time over the first pull requests (AT-9), and the first Dependabot pull request
-  (AT-19).
-- **Task 15.4:** the owner's review of this section.
+The CI runs so far, from start to finish (AT-9; budget: median under 5 minutes, none over 8):
+
+| Run | Event | Result | Time |
+|---|---|---|---|
+| First push of `main` | push | success | 68 s |
+| PR #1, first commit | pull request | success | 78 s |
+| PR #2, the probe | pull request | failure, as intended | 61 s |
+| PR #1, evidence commit | pull request | success | 79 s |
+
+The median is under 80 seconds, so AT-9 is met with a wide margin; the owner closed 15.3 on these runs.
+The first Dependabot pull request (AT-19) arrived the same day: PR #3, "build: Bump astral-sh/setup-uv from
+10.3.0 to 10.3.2". Both checks passed, including the identity and secret scan, which used the Dependabot
+secret. Its title was a Conventional Commits message, as `dependabot.yml` intends.
+
+PR #3 itself proposes a release only four days old, so it isn't merged. Dependabot now waits 14 days before
+proposing a release, and it groups each week's updates into one pull request per ecosystem.
+
+Owner's review (task 15.4): accepted on 2026-10-26. **Remote gate passed.**

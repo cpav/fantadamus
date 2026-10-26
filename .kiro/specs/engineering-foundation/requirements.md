@@ -9,7 +9,7 @@ checks, the test harness, pre-commit hooks, one `make check` command shared by l
 Actions pipeline, branch protection, Claude Code hooks, the ADRs for the tool choices, and a
 **walking skeleton**: a three-row fixture carried through bronze → silver → gold on DuckDB.
 
-**Re-plan, 2026-10-26** ([replan-2026-10-26.md](replan-2026-10-26.md)): the infrastructure skeleton, the AWS
+**Re-plan, 2026-10-26** (see the change log): the infrastructure skeleton, the AWS
 Budgets alarm, the deploy gate and the deploy identity (Requirements 14, 15, 19 and 22) moved to Phase 3,
 where the online server first needs them. They stay specified here and are built then.
 
@@ -33,10 +33,11 @@ owner says so (Q8), the exit gate has two parts:
 | 2026-10-17 | First draft. |
 | 2026-10-17 | Public repository (Q1): R2.9, R2.10, R10.7, R12.8, R12.9. Reuse of the owner's gamegusto project: R22, R14.12, the budget in the bootstrap module (R15), deploy credentials (R19.3). Owner decisions Q2–Q9. |
 | 2026-10-24 | Agent hooks shared by Claude Code and Kiro (R17 rewritten, Q5). The method arrives as `docs/method.md` (Q6). The MVP's collector mode (ADR-0005) shapes the walking skeleton. |
-| 2026-10-24 | Analyze-Requirements-style review ([analysis-2026-10-24.md](analysis-2026-10-24.md)): all 30 findings applied. New criteria R1.8, R1.9, R2.11, R2.12, R6.7, R9.6, R10.8, R14.13, R15.7, R16.10–R16.13, R19.6, R20.5, R22.12; acceptance tests split into local and remote gates; AT-19 to AT-21 added. |
+| 2026-10-24 | Analyze-Requirements-style review: all 30 findings applied (the review notes are in git history). New criteria R1.8, R1.9, R2.11, R2.12, R6.7, R9.6, R10.8, R14.13, R15.7, R16.10–R16.13, R19.6, R20.5, R22.12; acceptance tests split into local and remote gates; AT-19 to AT-21 added. |
 | 2026-10-24 | Kiro dropped; Claude Code is the only agent (owner decision). R17.1, R17.3, R17.4 (now `make task-check`), R17.7, R17.8, R20.3 and AT-8 updated. The `.kiro/` folder keeps only the steering and spec documents. |
 | 2026-10-26 | Faster checks (owner decision, 2026-10-25): the end-of-turn hook runs `make test-fast` with a 2-minute limit instead of `make check` (R17.3); `make test-fast` must finish in under 20 seconds (R1.4). Found in task 9.7: a `make check` run inside the hook took 13 minutes and was cancelled with no feedback. |
 | 2026-10-26 | Re-plan (owner approval, 2026-10-26): Requirements 14, 15, 19 and 22 move to Phase 3; R2.12 (the ruleset becomes a checklist), R18.4 and R21.2 (no PR-description check: `make task-check` checks ADRs), R20.1, R20.2, R20.4 and R20.5 (no self-test framework: ordinary acceptance tests and a one-time GitHub checklist); AT-3, AT-6, AT-8, AT-10, AT-11, AT-18, AT-20 and AT-21 updated. |
+| 2026-10-26 | Clean-up (owner request): R1.7 moves to Phase 2 with mutmut; the empty `check-infra` and the unused `check-static` and `check-tests` targets are removed; Terraform's tools and suppression scanning wait for Phase 3; tests that only restated the project's own documents are removed. |
 
 ## Glossary
 
@@ -143,7 +144,7 @@ that a green local run predicts a green pull request.
 - **R1.4** THE SYSTEM SHALL provide `make test-fast` (format, lint, unit and property tests with the `dev` Hypothesis profile) that finishes in under 20 seconds on the Spec 0 codebase, on the owner's machine and on a GitHub-hosted `ubuntu-latest` runner.
 - **R1.5** THE SYSTEM SHALL provide `make setup`, which installs the locked Python environment, the pinned non-Python tools (R1.8) and the git hooks (pre-commit, commit-msg, pre-push) from a fresh clone with one command.
 - **R1.6** THE SYSTEM SHALL run `make check` without AWS credentials and without network calls to AWS.
-- **R1.7** THE SYSTEM SHALL provide `make mutation`, which runs mutation testing on the modules listed as core in `pyproject.toml`, for use at phase gates.
+- **R1.7** From Phase 2, THE SYSTEM SHALL provide `make mutation`, which runs mutation testing on the core modules, for use at phase gates.
 - **R1.8** THE SYSTEM SHALL pin the version and checksum of every non-Python tool (Terraform, tflint, checkov, gitleaks, actionlint, Node.js, markdownlint) in one committed file (`tool-versions.toml`), and `make setup` SHALL install them into a git-ignored, project-local `bin/` on macOS (Intel and Apple silicon) and Linux.
 - **R1.9** IF an installed tool's version differs from its pin THEN THE SYSTEM SHALL fail `make check` with the expected and found versions.
 
