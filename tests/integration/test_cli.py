@@ -56,6 +56,7 @@ def test_serve_runs_the_server_on_stdio(monkeypatch: pytest.MonkeyPatch, tmp_pat
         "transport": "stdio",
         "tools": [
             "get_skeleton_summary",
+            "set_league_rules",
             "submit_fixtures",
             "submit_match_odds",
             "submit_official_lineup",

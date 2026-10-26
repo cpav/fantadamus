@@ -33,3 +33,9 @@ Headings are `## <Contract> <version> (<date>)`.
 ## PenaltyTakersPayload 1.0.0 (2026-10-26)
 
 - First version: per club the `takers`, first choice first (R6.3).
+
+## LeagueRules 1.0.0 (2026-10-26)
+
+- First version: `goal` (one value, or one per role), `assist`, `penalty_scored`, `penalty_missed`,
+  `penalty_saved`, `own_goal`, `yellow_card`, `red_card`, `goal_conceded`, `clean_sheet`; bonuses 0 to 10,
+  maluses −10 to 0 (R12.1, R12.2).

@@ -111,14 +111,14 @@ and [design](design.md)
       **AT-3** `::test_at3_bench_cover_changes_verdict`;
       **P7** `tests/property/xy/test_forwards.py::test_p7_higher_e_start_never_ranks_lower`_
 
-- [ ] 6. League rules
+- [x] 6. League rules
   - Branch: `feat/xy-6-league-rules` · Depends on: none · ADRs: ADR-0005
-  - [ ] 6.1 The `LeagueRules` contract and the store (`league/rules.py`, C9): one file per user under the
+  - [x] 6.1 The `LeagueRules` contract and the store (`league/rules.py`, C9): one file per user under the
     git-ignored `data/local/league/`, each change keeping the previous version
     - _Requirements: R12.1, R12.2, R12.4_
     - _Test: `tests/contract/test_xy_contracts.py::test_league_rules_ranges`,
       `tests/unit/xy/test_league_rules.py::test_change_keeps_previous_version`_
-  - [ ] 6.2 `set_league_rules` and the setup step: every field with its Classic starting value and one line on
+  - [x] 6.2 `set_league_rules` and the setup step: every field with its Classic starting value and one line on
     what it means
     - _Requirements: R12.2, R12.3, R12.5_
     - _Test: `tests/integration/xy/test_league_rules.py::test_set_then_change_rules`,

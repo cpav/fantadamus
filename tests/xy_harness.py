@@ -16,7 +16,8 @@ from mcp.types import CallToolResult
 from fantadamus.core.clock import fixed_clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.mcp.tools import submit
+from fantadamus.league.rules import RulesStore
+from fantadamus.mcp.tools import league, submit
 
 PAGES = Path(__file__).resolve().parent / "fixtures" / "xy"
 URL = "https://example.org/page"
@@ -34,16 +35,14 @@ def page(name: str) -> dict[str, Any]:
 
 @contextlib.asynccontextmanager
 async def tools(store: LakeStore, now: dt.datetime = NOW) -> AsyncIterator[Client]:
-    """The submit tools over `store`, accepting pages from example.org, as user `user-1`."""
+    """The tools over `store`, accepting pages from example.org, as user `user-1`; league rules are kept
+    under `<lake>/league`."""
     server = MCPServer(name="fantadamus-test")
+    clock = fixed_clock(now)
     submit.register(
-        server,
-        store,
-        allowed_hosts=["example.org"],
-        clock=fixed_clock(now),
-        submitted_by="user-1",
-        clubs=CLUBS,
+        server, store, allowed_hosts=["example.org"], clock=clock, submitted_by="user-1", clubs=CLUBS
     )
+    league.register(server, RulesStore(store.root / "league"), user="user-1", clock=clock)
     async with Client(server) as client:
         yield client
 

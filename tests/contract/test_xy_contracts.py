@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from fantadamus.contracts.base import Contract
 from fantadamus.contracts.xy.fixtures import FixturesPayload
+from fantadamus.contracts.xy.league import LeagueRules
 from fantadamus.contracts.xy.lineups import OfficialLineupPayload, ProbableLineupPayload
 from fantadamus.contracts.xy.odds import MatchOddsPayload
 from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
@@ -116,3 +117,39 @@ def test_odds_margin(change: dict[str, float | None], message: str) -> None:
 def test_impossible_season_figures(change: dict[str, float | None], message: str) -> None:
     with pytest.raises(ValidationError, match=message):
         parse(PlayerSeasonPayload, page("player_season") | change)
+
+
+CLASSIC = {
+    "goal": 3,
+    "assist": 1,
+    "penalty_scored": 3,
+    "penalty_missed": -3,
+    "penalty_saved": 3,
+    "own_goal": -2,
+    "yellow_card": -0.5,
+    "red_card": -1,
+    "goal_conceded": -1,
+    "clean_sheet": 1,
+}
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({}, None),
+        ({"goal": {"keeper": 5, "defender": 4.5, "midfielder": 3.5, "forward": 3}}, None),
+        ({"goal": 10.5}, "less than or equal to 10"),
+        ({"goal": {"keeper": 11, "defender": 3, "midfielder": 3, "forward": 3}}, "less than or equal to 10"),
+        ({"assist": -1}, "greater than or equal to 0"),
+        ({"yellow_card": 0.5}, "less than or equal to 0"),
+        ({"own_goal": -10.5}, "greater than or equal to -10"),
+    ],
+)
+def test_league_rules_ranges(change: dict[str, Any], message: str | None) -> None:
+    if message is None:
+        assert parse(LeagueRules, CLASSIC | change).__version__ == "1.0.0"
+    else:
+        with pytest.raises(ValidationError, match=message):
+            parse(LeagueRules, CLASSIC | change)
+    with pytest.raises(ValidationError, match="Field required"):
+        parse(LeagueRules, {key: value for key, value in CLASSIC.items() if key != "clean_sheet"})
