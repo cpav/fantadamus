@@ -1,0 +1,51 @@
+# What compare_players asks Claude to read for each fact (design C11), from docs/source-registry.md, "What we
+# read for each need". For each fact: the submit tool that takes it, fixed `pages` and `search` hints, the
+# primary first and cross-checks after. Every page, and every `site:` in a search, must be on the allowlist
+# in config/sources.toml (tests/unit/test_sources_config.py). Placeholders, filled by compare_players:
+# {home} and {away} (the match's clubs), {club} (a club key from config/clubs.toml) and {player} (his name).
+# The season pages change each summer, with config/clubs.toml.
+
+[facts.fixtures]
+need = "N2"
+submit_tool = "submit_fixtures"
+pages = ["https://it.wikipedia.org/wiki/Serie_A_2026-2027"]
+
+[facts.probable_lineups]
+need = "N3"
+submit_tool = "submit_probable_lineups"
+pages = [
+    "https://www.fantacalcio.it/probabili-formazioni-serie-a",
+    "https://www.fantacalcio-online.com/it/serie-a/2026-2027/probabili-formazioni/ultima-giornata",
+    "https://www.sosfanta.com/lista-formazioni/probabili-formazioni-serie-a/",
+]
+
+[facts.official_lineups]
+need = "N4"
+submit_tool = "submit_official_lineup"
+search = [
+    "{home} {away} formazioni ufficiali site:fantacalcio.it",
+    "{home} {away} formazioni ufficiali site:sosfanta.com",
+]
+
+[facts.match_odds]
+need = "N14"
+submit_tool = "submit_match_odds"
+search = [
+    "{home} {away} quote over under goal no goal site:livetipsportal.com",
+    "{home} {away} quote site:jamma.tv",
+]
+
+[facts.player_season]
+need = "N5"
+submit_tool = "submit_player_season"
+search = ["{player} {club} site:fantacalcio.it/serie-a/squadre"]
+
+[facts.team_season]
+need = "N5"
+submit_tool = "submit_team_season"
+pages = ["https://it.wikipedia.org/wiki/Serie_A_2026-2027"]
+
+[facts.penalty_takers]
+need = "N9"
+submit_tool = "submit_penalty_takers"
+pages = ["https://www.fantacalcio.it/rigoristi-serie-a"]

@@ -1,0 +1,71 @@
+{
+  "contract": "xy.lineups.OfficialLineupPayload",
+  "schema": {
+    "$defs": {
+      "OfficialTeam": {
+        "additionalProperties": false,
+        "properties": {
+          "bench": {
+            "default": [],
+            "description": "The substitutes",
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Bench",
+            "type": "array"
+          },
+          "starters": {
+            "description": "The 11 starters",
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Starters",
+            "type": "array"
+          }
+        },
+        "required": [
+          "starters"
+        ],
+        "title": "OfficialTeam",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "The official lineups of one match, published about an hour before kickoff.",
+    "properties": {
+      "away": {
+        "description": "Away club",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Away",
+        "type": "string"
+      },
+      "away_team": {
+        "$ref": "#/$defs/OfficialTeam"
+      },
+      "home": {
+        "description": "Home club",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Home",
+        "type": "string"
+      },
+      "home_team": {
+        "$ref": "#/$defs/OfficialTeam"
+      }
+    },
+    "required": [
+      "home",
+      "away",
+      "home_team",
+      "away_team"
+    ],
+    "title": "OfficialLineupPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

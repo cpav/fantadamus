@@ -1,0 +1,77 @@
+{
+  "outlet": "Esempio Formazioni",
+  "home": "Alfa",
+  "away": "Beta",
+  "home_team": {
+    "starters": [
+      "Alfa Uno",
+      "Alfa Due",
+      "Alfa Tre",
+      "Alfa Quattro",
+      "Alfa Cinque",
+      "Alfa Sei",
+      "Alfa Sette",
+      "Alfa Otto",
+      "Alfa Nove",
+      "Alfa Dieci",
+      "Alfa Undici"
+    ],
+    "ballottaggi": [
+      {
+        "players": [
+          {
+            "name": "Alfa Undici",
+            "percent": 60
+          },
+          {
+            "name": "Alfa Dodici",
+            "percent": 40
+          }
+        ]
+      }
+    ],
+    "bench": [
+      "Alfa Dodici",
+      "Alfa Tredici"
+    ],
+    "unavailable": [
+      "Alfa Quattordici"
+    ]
+  },
+  "away_team": {
+    "starters": [
+      "Beta Uno",
+      "Beta Due",
+      "Beta Tre",
+      "Beta Quattro",
+      "Beta Cinque",
+      "Beta Sei",
+      "Beta Sette",
+      "Beta Otto",
+      "Beta Nove",
+      "Beta Dieci",
+      "Beta Undici"
+    ],
+    "ballottaggi": [
+      {
+        "players": [
+          {
+            "name": "Beta Undici",
+            "percent": 60
+          },
+          {
+            "name": "Beta Dodici",
+            "percent": 40
+          }
+        ]
+      }
+    ],
+    "bench": [
+      "Beta Dodici",
+      "Beta Tredici"
+    ],
+    "unavailable": [
+      "Beta Quattordici"
+    ]
+  }
+}

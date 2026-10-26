@@ -1,0 +1,136 @@
+{
+  "contract": "xy.season.PlayerSeasonPayload",
+  "schema": {
+    "additionalProperties": false,
+    "description": "A player's Serie A season so far, from his Fantacalcio.it profile.",
+    "properties": {
+      "appearances": {
+        "description": "Presenze",
+        "maximum": 38,
+        "minimum": 0,
+        "title": "Appearances",
+        "type": "integer"
+      },
+      "assists": {
+        "minimum": 0,
+        "title": "Assists",
+        "type": "integer"
+      },
+      "average_rating": {
+        "anyOf": [
+          {
+            "maximum": 10,
+            "minimum": 3,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Media voto (MV), not fantamedia; none without rated appearances",
+        "title": "Average Rating"
+      },
+      "club": {
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Club",
+        "type": "string"
+      },
+      "goals": {
+        "minimum": 0,
+        "title": "Goals",
+        "type": "integer"
+      },
+      "mantra_role": {
+        "anyOf": [
+          {
+            "enum": [
+              "Por",
+              "Ds",
+              "Dc",
+              "Dd",
+              "B",
+              "E",
+              "M",
+              "C",
+              "T",
+              "W",
+              "A",
+              "Pc"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "The first Mantra role on the profile",
+        "title": "Mantra Role"
+      },
+      "name": {
+        "description": "His name as the profile writes it",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Name",
+        "type": "string"
+      },
+      "penalties_scored": {
+        "minimum": 0,
+        "title": "Penalties Scored",
+        "type": "integer"
+      },
+      "penalties_taken": {
+        "minimum": 0,
+        "title": "Penalties Taken",
+        "type": "integer"
+      },
+      "player_id": {
+        "description": "The numeric ID at the end of his profile URL",
+        "exclusiveMinimum": 0,
+        "title": "Player Id",
+        "type": "integer"
+      },
+      "rated_appearances": {
+        "description": "Appearances with a rating (presenze a voto)",
+        "maximum": 38,
+        "minimum": 0,
+        "title": "Rated Appearances",
+        "type": "integer"
+      },
+      "role": {
+        "description": "Classic role: P keeper, D defender, C midfielder, A forward",
+        "enum": [
+          "P",
+          "D",
+          "C",
+          "A"
+        ],
+        "title": "Role",
+        "type": "string"
+      },
+      "yellow_cards": {
+        "minimum": 0,
+        "title": "Yellow Cards",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "player_id",
+      "name",
+      "club",
+      "role",
+      "appearances",
+      "rated_appearances",
+      "goals",
+      "assists",
+      "yellow_cards",
+      "penalties_scored",
+      "penalties_taken"
+    ],
+    "title": "PlayerSeasonPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

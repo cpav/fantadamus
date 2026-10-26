@@ -1,0 +1,42 @@
+{
+  "home": "Alfa",
+  "away": "Beta",
+  "home_team": {
+    "starters": [
+      "Alfa Uno",
+      "Alfa Due",
+      "Alfa Tre",
+      "Alfa Quattro",
+      "Alfa Cinque",
+      "Alfa Sei",
+      "Alfa Sette",
+      "Alfa Otto",
+      "Alfa Nove",
+      "Alfa Dieci",
+      "Alfa Undici"
+    ],
+    "bench": [
+      "Alfa Dodici",
+      "Alfa Tredici"
+    ]
+  },
+  "away_team": {
+    "starters": [
+      "Beta Uno",
+      "Beta Due",
+      "Beta Tre",
+      "Beta Quattro",
+      "Beta Cinque",
+      "Beta Sei",
+      "Beta Sette",
+      "Beta Otto",
+      "Beta Nove",
+      "Beta Dieci",
+      "Beta Undici"
+    ],
+    "bench": [
+      "Beta Dodici",
+      "Beta Tredici"
+    ]
+  }
+}

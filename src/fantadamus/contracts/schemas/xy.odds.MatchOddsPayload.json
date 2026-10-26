@@ -1,0 +1,110 @@
+{
+  "contract": "xy.odds.MatchOddsPayload",
+  "schema": {
+    "additionalProperties": false,
+    "description": "One bookmaker's prices for one match, as a page shows them.",
+    "properties": {
+      "away": {
+        "description": "Away club",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Away",
+        "type": "string"
+      },
+      "away_win": {
+        "description": "Decimal odds, e.g. 2.10",
+        "exclusiveMinimum": 1,
+        "maximum": 1000,
+        "title": "Away Win",
+        "type": "number"
+      },
+      "bookmaker": {
+        "description": "The bookmaker the page quotes",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Bookmaker",
+        "type": "string"
+      },
+      "draw": {
+        "description": "Decimal odds, e.g. 2.10",
+        "exclusiveMinimum": 1,
+        "maximum": 1000,
+        "title": "Draw",
+        "type": "number"
+      },
+      "goal": {
+        "anyOf": [
+          {
+            "description": "Decimal odds, e.g. 2.10",
+            "exclusiveMinimum": 1,
+            "maximum": 1000,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Both teams to score, when the page shows it",
+        "title": "Goal"
+      },
+      "home": {
+        "description": "Home club",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Home",
+        "type": "string"
+      },
+      "home_win": {
+        "description": "Decimal odds, e.g. 2.10",
+        "exclusiveMinimum": 1,
+        "maximum": 1000,
+        "title": "Home Win",
+        "type": "number"
+      },
+      "no_goal": {
+        "anyOf": [
+          {
+            "description": "Decimal odds, e.g. 2.10",
+            "exclusiveMinimum": 1,
+            "maximum": 1000,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Not both teams to score, when the page shows it",
+        "title": "No Goal"
+      },
+      "over_2_5": {
+        "description": "Decimal odds, e.g. 2.10",
+        "exclusiveMinimum": 1,
+        "maximum": 1000,
+        "title": "Over 2 5",
+        "type": "number"
+      },
+      "under_2_5": {
+        "description": "Decimal odds, e.g. 2.10",
+        "exclusiveMinimum": 1,
+        "maximum": 1000,
+        "title": "Under 2 5",
+        "type": "number"
+      }
+    },
+    "required": [
+      "home",
+      "away",
+      "bookmaker",
+      "home_win",
+      "draw",
+      "away_win",
+      "over_2_5",
+      "under_2_5"
+    ],
+    "title": "MatchOddsPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

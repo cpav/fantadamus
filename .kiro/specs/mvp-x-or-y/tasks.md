@@ -1,6 +1,6 @@
 # Implementation Plan: `mvp-x-or-y` (Phase 1)
 
-Status: **Draft for the owner's review** · Date: 2026-10-26 · From the approved [requirements](requirements.md)
+Status: **Approved by the owner, 2026-10-26** · Date: 2026-10-26 · From the approved [requirements](requirements.md)
 and [design](design.md)
 
 ## How to read and run these tasks
@@ -24,22 +24,22 @@ and [design](design.md)
 
 ## Tasks
 
-- [ ] 1. Clubs, contracts and the reading list
+- [x] 1. Clubs, contracts and the reading list
   - Branch: `feat/xy-1-contracts` · Depends on: none · ADRs: ADR-0005
-  - [ ] 1.1 `config/clubs.toml`: the 20 Serie A clubs of 2026/27, each with its canonical key and the spellings
+  - [x] 1.1 `config/clubs.toml`: the 20 Serie A clubs of 2026/27, each with its canonical key and the spellings
     outlets use, and a lookup that rejects an unknown club with the list of known ones. The club list is read
     from Wikipedia's season page (on the reading list), and the owner checks it in the task report
     - _Requirements: R2.1, R6.2_
     - _Test: `tests/unit/xy/test_clubs.py::test_twenty_clubs_unique_aliases`,
       `::test_unknown_club_lists_known_ones`_
-  - [ ] 1.2 The seven fact contracts in `contracts/xy/` (C2), each with its quality rule as a model validator:
+  - [x] 1.2 The seven fact contracts in `contracts/xy/` (C2), each with its quality rule as a model validator:
     `FixturesPayload`, `ProbableLineupPayload`, `OfficialLineupPayload`, `MatchOddsPayload`,
     `PlayerSeasonPayload`, `TeamSeasonPayload`, `PenaltyTakersPayload`; their schema snapshots and changelog
     entries
     - _Requirements: R1.1, R2.1, R3.1, R4.1, R5.1, R6.1, R6.2, R6.3, R8.1, R8.2, R8.3, R8.4_
     - _Test: `tests/contract/test_xy_contracts.py::test_synthetic_pages_parse`, `::test_eleven_starters`,
       `::test_ballottaggio_shares`, `::test_odds_margin`, `::test_impossible_season_figures`_
-  - [ ] 1.3 `config/reading_list.toml` (C11): for each fact, the page or URL template, the cross-check pages,
+  - [x] 1.3 `config/reading_list.toml` (C11): for each fact, the page or URL template, the cross-check pages,
     a search hint where no URL can be built, and the submit tool
     - _Requirements: R11.1_
     - _Test: `tests/unit/test_sources_config.py::test_reading_list_pages_are_allowed`,

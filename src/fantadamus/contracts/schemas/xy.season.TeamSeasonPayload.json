@@ -1,0 +1,62 @@
+{
+  "contract": "xy.season.TeamSeasonPayload",
+  "schema": {
+    "$defs": {
+      "TeamRow": {
+        "additionalProperties": false,
+        "properties": {
+          "club": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Club",
+            "type": "string"
+          },
+          "goals_against": {
+            "minimum": 0,
+            "title": "Goals Against",
+            "type": "integer"
+          },
+          "goals_for": {
+            "minimum": 0,
+            "title": "Goals For",
+            "type": "integer"
+          },
+          "played": {
+            "description": "Matches played",
+            "maximum": 38,
+            "minimum": 0,
+            "title": "Played",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "club",
+          "played",
+          "goals_for",
+          "goals_against"
+        ],
+        "title": "TeamRow",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "The Serie A table: matches played and goals for and against, per club.",
+    "properties": {
+      "teams": {
+        "items": {
+          "$ref": "#/$defs/TeamRow"
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "title": "Teams",
+        "type": "array"
+      }
+    },
+    "required": [
+      "teams"
+    ],
+    "title": "TeamSeasonPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}
