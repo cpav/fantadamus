@@ -39,3 +39,8 @@ Headings are `## <Contract> <version> (<date>)`.
 - First version: `goal` (one value, or one per role), `assist`, `penalty_scored`, `penalty_missed`,
   `penalty_saved`, `own_goal`, `yellow_card`, `red_card`, `goal_conceded`, `clean_sheet`; bonuses 0 to 10,
   maluses −10 to 0 (R12.1, R12.2).
+
+## MatchOddsPayload 1.1.0 (2026-10-30)
+
+- `over_2_5` and `under_2_5` become optional, together, like goal/no goal: a page that shows only 1X2 prices
+  can be submitted (R5.1). A widening change, so a minor version.

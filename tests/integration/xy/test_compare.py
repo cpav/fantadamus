@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from fantadamus.lake.duckdb_store import LakeStore
-from tests.xy_harness import NOW, ask, collect, page, send, set_classic, tools
+from tests.xy_harness import NOW, ask, collect, lineup, odds_for, page, send, set_classic, tools
 
 pytestmark = pytest.mark.anyio
 
@@ -120,3 +120,38 @@ async def test_player_who_cannot_play_is_not_benched(tmp_path: Path) -> None:
     )
     assert "put Gamma Nove first on the bench" not in message
     assert result["answer"]["verdict"]["second_plays"] is False
+
+
+async def test_missing_totals_are_asked_for(tmp_path: Path) -> None:
+    """mvp-x-or-y task 12.1 (R5.4): over/under prices the bonuses, so the plan asks for it until Claude says
+    there is none; then the answer uses the 1X2 alone and says so."""
+    only_1x2 = {"over_2_5": None, "under_2_5": None, "goal": None, "no_goal": None}
+    async with tools(LakeStore(tmp_path)) as client:
+        await set_classic(client)
+        await collect(client, READ, facts=("season", "fixtures"))
+        for home, away in (("Alfa", "Beta"), ("Gamma", "Delta")):
+            await send(client, "submit_probable_lineups", lineup(home, away, "Uno"), READ)
+            await send(client, "submit_match_odds", odds_for(home, away) | only_1x2, READ)
+        plan = await ask(client)
+        answer = await ask(client, odds_unavailable=True)
+    assert [(item["fact"], item["why"], item["about"]) for item in plan["refresh"]] == [
+        ("match_odds", "partial", "Alfa v Beta"),
+        ("match_odds", "partial", "Gamma v Delta"),
+    ]
+    alfa = answer["answer"]["players"][0]
+    assert alfa["team_xg_from_odds"]
+    assert any("over/under" in note for note in alfa["notes"])
+
+
+async def test_each_match_needs_its_own_odds(tmp_path: Path) -> None:
+    """mvp-x-or-y task 12.1 (R5.2, R11.1): odds for one match don't stand in for the other's."""
+    async with tools(LakeStore(tmp_path)) as client:
+        await set_classic(client)
+        await collect(client, READ, facts=("season", "fixtures"))
+        for home, away in (("Alfa", "Beta"), ("Gamma", "Delta")):
+            await send(client, "submit_probable_lineups", lineup(home, away, "Uno"), READ)
+        await send(client, "submit_match_odds", odds_for("Alfa", "Beta"), READ)
+        plan = await ask(client)
+    assert [(item["fact"], item["why"], item["about"]) for item in plan["refresh"]] == [
+        ("match_odds", "missing", "Gamma v Delta")
+    ]

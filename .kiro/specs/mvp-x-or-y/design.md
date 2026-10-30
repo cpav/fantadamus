@@ -52,7 +52,7 @@ submission is rejected with a field-level reason and nothing is written.
 | `FixturesPayload` | round; matches: home, away, `kickoff_at` | Known clubs; each club once per round |
 | `ProbableLineupPayload` | outlet; match; per team: starters, ballottaggi (players with shares), bench, unavailable (all by name) | 11 starters per team (R8.1); shares sum to 95–105 % (R8.2) |
 | `OfficialLineupPayload` | match; per team: starters, bench | 11 starters per team |
-| `MatchOddsPayload` | match; bookmaker; 1X2; over/under 2.5; optional goal/no goal (decimal odds) | Each market's margin within 0–15 % (R8.3) |
+| `MatchOddsPayload` | match; bookmaker; 1X2; optional over/under 2.5 and goal/no goal (decimal odds) | Each market's margin within 0–15 % (R8.3); each optional market's two sides together |
 | `PlayerSeasonPayload` | player ID, name, club, Classic role, optional Mantra role, appearances, rated appearances, average rating, goals, assists, yellow cards, penalties scored and taken | Plausible figures (R8.4) |
 | `TeamSeasonPayload` | per club: played, goals for, goals against | Known clubs |
 | `PenaltyTakersPayload` | per club: takers by name, in order | Known clubs |
@@ -114,8 +114,8 @@ Pure functions over silver rows, all taking `as_of` and ignoring rows captured a
 1. De-margin each market by proportional normalisation; average the fresh pages.
 2. Model: independent Poisson goals for each team with the Dixon–Coles adjustment on 0–0, 1–0, 0–1 and 1–1,
    ρ = −0.10 *(start)*, scores up to 10.
-3. Fit (λ_home, λ_away) by least squares against P(home), P(draw), P(away), P(over 2.5) and, when present,
-   P(both score): a grid over 0.20–4.00 in steps of 0.2, then a pattern search around the best point that
+3. Fit (λ_home, λ_away) by least squares against P(home), P(draw), P(away) and, when the pages show them,
+   P(over 2.5) and P(both score); the 1X2 alone still pins both rates: a grid over 0.20–4.00 in steps of 0.2, then a pattern search around the best point that
    halves its step down to 0.0005. The correction only touches the four low scores, so it has closed forms
    and one evaluation is cheap. Deterministic, a few milliseconds, no library.
 4. Outputs: team xG for both teams, P(win), P(draw), P(loss).

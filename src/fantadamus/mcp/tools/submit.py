@@ -158,7 +158,7 @@ def register(
 
     @server.tool(
         description="Submit one bookmaker's decimal odds for one match from a betting preview "
-        "(livetipsportal, Jamma): 1X2, over/under 2.5 and, if shown, goal/no goal. " + PROVENANCE
+        "(livetipsportal, Jamma): 1X2 and, if shown, over/under 2.5 and goal/no goal. " + PROVENANCE
     )
     def submit_match_odds(
         payload: MatchOddsPayload,

@@ -110,12 +110,15 @@ actually happened.
 **User Story:** As the owner, I want goal chances priced from the betting market, so that bonuses aren't
 guessed.
 
-- **R5.1** THE SYSTEM SHALL provide `submit_match_odds` for one match from one page: decimal odds for 1X2,
-  over/under 2.5 and, when shown, goal/no goal, with the bookmaker named on the page.
+- **R5.1** THE SYSTEM SHALL provide `submit_match_odds` for one match from one page: decimal odds for 1X2 and,
+  when shown, over/under 2.5 and goal/no goal, with the bookmaker named on the page.
 - **R5.2** THE SYSTEM SHALL remove the bookmaker's margin, and fit each team's expected goals with a
   Poisson model and a Dixon–Coles low-score correction (method §A4), from the mean of the pages read.
 - **R5.3** IF a match has no odds THEN THE SYSTEM SHALL fall back to regressed team form, with weight
   n / (n + 12) *(start)* (method §A5), and say so in the answer.
+- **R5.4** WHILE a match's fresh odds show no over/under 2.5, THE SYSTEM SHALL keep asking for them in the refresh
+  plan, because they price goals, assists and clean sheets. WHEN the collector reports that none can be found,
+  THE SYSTEM SHALL answer from the 1X2 alone and say so.
 
 ### Requirement 6: Player and team season figures
 
@@ -301,3 +304,6 @@ happened (method §A8).
   season page), and the plan offered nothing else, so no answer was possible. The owner asked for more
   reliable sources: Fantacalcio.it's calendar and table become the primary pages, and R11.4 rules out single
   points of failure.
+- **2026-10-30, same round:** Claude found only 1X2 prices for a match, which `submit_match_odds` couldn't
+  take, so the answer fell back to team form. The owner approved making over/under 2.5 optional (R5.1), so the
+  fit uses whichever markets the page shows, but over/under stays wanted (R5.4): it prices the bonuses.

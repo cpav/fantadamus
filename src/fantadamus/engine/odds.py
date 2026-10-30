@@ -22,14 +22,14 @@ _FINEST_STEP = 0.0005
 
 
 class Market(BaseModel):
-    """Match probabilities, de-margined: 1X2, over 2.5 goals and, when known, both teams to score."""
+    """Match probabilities, de-margined: 1X2 and, when known, over 2.5 goals and both teams to score."""
 
     model_config = ConfigDict(frozen=True)
 
     p_home: float
     p_draw: float
     p_away: float
-    p_over: float
+    p_over: float | None = None
     p_btts: float | None = None
 
 
@@ -79,14 +79,10 @@ def _running_sum(values: Sequence[float]) -> list[float]:
 
 def _error(market: Market, home: float, away: float) -> float:
     fitted = model(home, away)
-    pairs = [
-        (fitted.p_home, market.p_home),
-        (fitted.p_draw, market.p_draw),
-        (fitted.p_away, market.p_away),
-        (fitted.p_over, market.p_over),
-    ]
-    if market.p_btts is not None and fitted.p_btts is not None:
-        pairs.append((fitted.p_btts, market.p_btts))
+    pairs = [(fitted.p_home, market.p_home), (fitted.p_draw, market.p_draw), (fitted.p_away, market.p_away)]
+    for shown, model_value in ((market.p_over, fitted.p_over), (market.p_btts, fitted.p_btts)):
+        if shown is not None and model_value is not None:
+            pairs.append((model_value, shown))
     return math.fsum((a - b) ** 2 for a, b in pairs)
 
 
