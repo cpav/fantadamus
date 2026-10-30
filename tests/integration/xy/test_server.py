@@ -102,3 +102,10 @@ async def test_schemas_spell_out_every_field(tmp_path: Path) -> None:
     }
     for name, field in shapes.items():
         assert field in (tools[name].description or ""), name
+
+
+def test_prompt_has_answer_shape(tmp_path: Path) -> None:
+    """mvp-x-or-y task 13.2 (R10.8): the owner's "X or Y?" shape, match context then each player's reasons."""
+    instructions = _server(tmp_path).instructions or ""
+    for part in ("match context", "ballottaggio rival", "penalt", "chance of scoring", "form"):
+        assert part in instructions, part

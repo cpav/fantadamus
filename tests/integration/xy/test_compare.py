@@ -155,3 +155,20 @@ async def test_each_match_needs_its_own_odds(tmp_path: Path) -> None:
     assert [(item["fact"], item["why"], item["about"]) for item in plan["refresh"]] == [
         ("match_odds", "missing", "Gamma v Delta")
     ]
+
+
+async def test_answer_has_match_context_and_form(tmp_path: Path) -> None:
+    """mvp-x-or-y task 13.2 (R10.8): enough to give reasons, not just numbers."""
+    async with tools(LakeStore(tmp_path)) as client:
+        await set_classic(client)
+        await collect(client, READ)
+        result = await ask(client)
+    alfa, gamma = result["answer"]["players"]
+    assert (alfa["role"], alfa["opponent"], gamma["opponent"]) == ("A", "Beta", "Delta")
+    assert alfa["p_win"] + alfa["p_draw"] + alfa["p_loss"] == pytest.approx(1)
+    assert alfa["p_win"] > alfa["p_loss"]  # Alfa at home at 2.10 against 3.60
+    assert alfa["team_xg"] > alfa["opponent_xg"] > 0
+    assert (alfa["penalty_taker"], alfa["penalties_scored"], alfa["penalties_taken"]) == (True, 1, 2)
+    assert (alfa["appearances"], alfa["rated_appearances"], alfa["average_rating"]) == (8, 8, 6.4)
+    assert (alfa["goals"], alfa["assists"]) == (5, 1)
+    assert (gamma["penalty_taker"], gamma["goals"]) == (True, 2)

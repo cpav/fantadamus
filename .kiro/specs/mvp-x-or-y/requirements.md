@@ -1,7 +1,7 @@
 # Requirements Document: `mvp-x-or-y` (Phase 1)
 
 Status: **Approved by the owner, 2026-10-26**; amended after the first real round (R10.7, R13.4) and the first test
-round on 2026-10-30 (R11.4) · Workflow:
+round on 2026-10-30 (R5.4, R10.8, R11.4) · Workflow:
 requirements-first · Last updated: 2026-10-26
 
 ## Introduction
@@ -212,6 +212,11 @@ seconds.
 - **R10.7** IF a player has no chance of a rating (p_start + p_cameo = 0: unavailable, not in the squad or
   without a match) THEN THE SYSTEM SHALL say he won't play instead of putting him first on the bench: "start
   X; Y won't play, so put a fit forward first on the bench", or, if neither can play, that neither will.
+- **R10.8** THE SYSTEM SHALL also return, for each player: his Classic role; his match's context (the opponent,
+  his team's chances to win, draw and lose, and both sides' expected goals); each outlet's ballottaggio rivals
+  by name; whether he is his club's first penalty taker, with his penalties scored and taken; and his form
+  (appearances, rated appearances, average rating, goals, assists), so the answer can give reasons, not just
+  numbers.
 
 ### Requirement 11: The refresh plan
 
@@ -307,3 +312,6 @@ happened (method §A8).
 - **2026-10-30, same round:** Claude found only 1X2 prices for a match, which `submit_match_odds` couldn't
   take, so the answer fell back to team form. The owner approved making over/under 2.5 optional (R5.1), so the
   fit uses whichever markets the page shows, but over/under stays wanted (R5.4): it prices the bonuses.
+- **2026-10-30, the answer's shape:** the owner showed the "X or Y?" answer they want: match context first,
+  then each player with a one-line verdict and reasons (start chance and rival, penalties, scoring chance and
+  value, form). R10.8 adds the data that needs; the agent prompt's "How to answer" follows it.

@@ -94,19 +94,37 @@ class RefreshItem(BaseModel):
 
 
 class PlayerAnswer(BaseModel):
-    """One player's side of the answer (R10.3)."""
+    """One player's side of the answer, with what it takes to give reasons (R10.3, R10.8)."""
 
     name: str
     player_id: int
     club: str
+    role: str
+    """His Classic role."""
     fixture: str | None
     kickoff: dt.datetime | None
     """In Europe/Rome."""
+    opponent: str | None
+    p_win: float | None
+    p_draw: float | None
+    p_loss: float | None
+    """His team's chances, from the fitted odds or team form."""
+    team_xg: float | None
+    opponent_xg: float | None
+    team_xg_from_odds: bool
     outlets: list[OutletView]
+    """Each outlet's view, with his ballottaggio rivals by name."""
     official: OfficialView | None
     disputed: bool
-    team_xg: float | None
-    team_xg_from_odds: bool
+    penalty_taker: bool
+    """His club's first penalty taker."""
+    penalties_scored: int
+    penalties_taken: int
+    appearances: int
+    rated_appearances: int
+    average_rating: float | None
+    goals: int
+    assists: int
     value: ForwardValue
     notes: list[str]
     sources: list[Source]
@@ -375,7 +393,8 @@ class Advisor:
         result = compare(inputs[0], inputs[1], scoring_for(stored.rules, "A"))
         verdict = result.verdict
         players = [
-            self._player_answer(side, value, round) for side, value in zip(sides, result.values, strict=True)
+            self._player_answer(side, value, taker.penalty_taker, round)
+            for side, value, taker in zip(sides, result.values, inputs, strict=True)
         ]
         if not verdict.first_plays:
             message = f"Neither {verdict.first} nor {verdict.second} will play: field another forward."
@@ -457,7 +476,9 @@ class Advisor:
             p_cameo=present.p_cameo if present else 0.0,
         )
 
-    def _player_answer(self, side: _Side, value: ForwardValue, round: int) -> PlayerAnswer:
+    def _player_answer(
+        self, side: _Side, value: ForwardValue, penalty_taker: bool, round: int
+    ) -> PlayerAnswer:
         match, present, xg = side.match, side.present, side.xg
         notes: list[str] = []
         sources = [side.form.source, side.table.source, side.order.source]
@@ -478,17 +499,32 @@ class Advisor:
             elif not xg.totals:
                 notes.append("No over/under 2.5 was found: goal chances come from the 1X2 alone.")
         home = match is not None and match.home == side.player.club
+        form = side.form
         return PlayerAnswer(
             name=side.player.name,
             player_id=side.player.player_id,
             club=side.player.club,
+            role=form.role,
             fixture=f"{self.clubs.names[match.home]} v {self.clubs.names[match.away]}" if match else None,
             kickoff=match.kickoff_at.astimezone(ROME) if match else None,
+            opponent=self.clubs.names[match.away if home else match.home] if match else None,
+            p_win=(xg.p_home_win if home else xg.p_away_win) if xg else None,
+            p_draw=xg.p_draw if xg else None,
+            p_loss=(xg.p_away_win if home else xg.p_home_win) if xg else None,
+            team_xg=(xg.home_xg if home else xg.away_xg) if xg else None,
+            opponent_xg=(xg.away_xg if home else xg.home_xg) if xg else None,
+            team_xg_from_odds=bool(xg and xg.from_odds),
             outlets=present.outlets if present else [],
             official=present.official if present else None,
             disputed=bool(present and present.disputed),
-            team_xg=(xg.home_xg if home else xg.away_xg) if xg else None,
-            team_xg_from_odds=bool(xg and xg.from_odds),
+            penalty_taker=penalty_taker,
+            penalties_scored=form.penalties_scored,
+            penalties_taken=form.penalties_taken,
+            appearances=form.appearances,
+            rated_appearances=form.rated_appearances,
+            average_rating=form.average_rating,
+            goals=form.goals,
+            assists=form.assists,
             value=value,
             notes=notes,
             sources=_unique(sources),

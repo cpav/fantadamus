@@ -82,3 +82,20 @@ async def test_unresolved_name_resolves_when_profile_arrives(tmp_path: Path) -> 
     resolved = _availability(store, LATER)
     assert resolved is not None
     assert [(view.status, view.p_start) for view in resolved.outlets] == [("starter", 0.9)]
+
+
+async def test_ballottaggio_rivals_named(tmp_path: Path) -> None:
+    """mvp-x-or-y task 13.1 (R10.8): each outlet's view names the players he's contesting the place with."""
+    store = LakeStore(tmp_path)
+    async with tools(store, now=LATER) as client:
+        await send(client, "submit_player_season", page("player_season"), READ)
+        await send(
+            client, "submit_probable_lineups", probable("Uno", home_team=alfa_team("ballottaggio")), READ
+        )
+        await send(client, "submit_probable_lineups", probable("Due", home_team=alfa_team("starter")), READ)
+    nove = _availability(store, READ)
+    assert nove is not None
+    assert [(view.outlet, view.status, view.rivals) for view in nove.outlets] == [
+        ("Due", "starter", []),
+        ("Uno", "ballottaggio", ["Alfa Dodici"]),
+    ]
