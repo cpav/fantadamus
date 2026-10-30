@@ -206,3 +206,14 @@ and [design](design.md)
       `tests/integration/xy/test_odds.py::test_one_x_two_only_odds_are_used`,
       `tests/integration/xy/test_compare.py::test_missing_totals_are_asked_for`, `::test_each_match_needs_its_own_odds`;
       **P6** `tests/property/xy/test_odds_fit.py::test_p6_fit_reproduces_market`_
+
+- [x] 13. The "X or Y?" answer the owner wants
+  - Branch: `feat/xy-13-answer-format` · Depends on: 12 · ADRs: ADR-0005
+  - [x] 13.1 Lineup silver keeps each ballottaggio's contest, and each outlet's view names his rivals
+    - _Requirements: R10.8, R3.1_
+    - _Test: `tests/integration/xy/test_lineups.py::test_ballottaggio_rivals_named`_
+  - [x] 13.2 The answer gives each player's role, match context, penalties and form; the agent prompt's "How to
+    answer" follows the owner's shape
+    - _Requirements: R10.3, R10.8, R13.2_
+    - _Test: `tests/integration/xy/test_compare.py::test_answer_has_match_context_and_form`,
+      `tests/integration/xy/test_server.py::test_prompt_has_answer_shape`_

@@ -21,6 +21,8 @@ class LineupViewRow(SilverRow):
     status: Listed
     share: float | None
     """His ballottaggio percentage."""
+    contest: int | None = None
+    """Which of his team's ballottaggi he's in, so his rivals can be named (R10.8)."""
 
 
 class OfficialLineupRow(SilverRow):
@@ -42,15 +44,15 @@ def _probable_rows(payload: ProbableLineupPayload, clubs: Clubs, source: Source)
     home, away = _match(payload.home, payload.away, clubs)
     rows: list[LineupViewRow] = []
     for club, team in ((home, payload.home_team), (away, payload.away_team)):
-        listed: list[tuple[str, Listed, float | None]] = [
-            *((name, "starter", None) for name in team.starters),
+        listed: list[tuple[str, Listed, float | None, int | None]] = [
+            *((name, "starter", None, None) for name in team.starters),
             *(
-                (share.name, "ballottaggio", share.percent)
-                for contest in team.ballottaggi
+                (share.name, "ballottaggio", share.percent, index)
+                for index, contest in enumerate(team.ballottaggi)
                 for share in contest.players
             ),
-            *((name, "bench", None) for name in team.bench),
-            *((name, "unavailable", None) for name in team.unavailable),
+            *((name, "bench", None, None) for name in team.bench),
+            *((name, "unavailable", None, None) for name in team.unavailable),
         ]
         rows += [
             LineupViewRow(
@@ -62,8 +64,9 @@ def _probable_rows(payload: ProbableLineupPayload, clubs: Clubs, source: Source)
                 name=name,
                 status=status,
                 share=share,
+                contest=contest,
             )
-            for name, status, share in listed
+            for name, status, share, contest in listed
         ]
     return rows
 
@@ -86,8 +89,8 @@ LINEUP_VIEWS = Domain(
     Table(
         "lineup_views",
         f"CREATE TEMP TABLE lineup_views ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, outlet VARCHAR, "
-        "club VARCHAR, name VARCHAR, status VARCHAR, share DOUBLE)",
-        "INSERT INTO lineup_views VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "club VARCHAR, name VARCHAR, status VARCHAR, share DOUBLE, contest BIGINT)",
+        "INSERT INTO lineup_views VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 OFFICIAL_LINEUPS = Domain(

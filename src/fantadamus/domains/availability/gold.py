@@ -24,13 +24,26 @@ from fantadamus.domains.players.resolve import KnownPlayer, resolve
 _STRONGEST: tuple[Status, ...] = ("unavailable", "ballottaggio", "starter", "bench")
 
 
-def _view_of(rows: Sequence[LineupViewRow]) -> tuple[Status, float | None]:
-    """His status in one outlet's lineup: unavailable outranks a ballottaggio, a starting place, the bench."""
+def _view_of(rows: Sequence[LineupViewRow]) -> LineupViewRow | None:
+    """His row in one outlet's lineup: unavailable outranks a ballottaggio, a starting place, the bench."""
     for status in _STRONGEST:
         row = next((row for row in rows if row.status == status), None)
         if row is not None:
-            return status, row.share
-    return "not listed", None
+            return row
+    return None
+
+
+def _rivals(row: LineupViewRow, lineup: Sequence[LineupViewRow]) -> list[str]:
+    """The others in his ballottaggio in the same outlet's lineup."""
+    if row.status != "ballottaggio" or row.contest is None:
+        return []
+    return [
+        other.name
+        for other in lineup
+        if other.status == "ballottaggio"
+        and (other.club, other.contest) == (row.club, row.contest)
+        and other is not row
+    ]
 
 
 def availability(
@@ -52,8 +65,11 @@ def availability(
     outlets = []
     match_views = [row for row in views if (row.home, row.away) == (home, away)]
     for rows in latest_submissions(match_views, as_of, key=lambda row: name_key(row.outlet)).values():
-        status, share = _view_of([row for row in rows if mentions(row)])
-        outlets.append(outlet_view(rows[0].outlet, status, share, rows[0].source))
+        row = _view_of([row for row in rows if mentions(row)])
+        if row is None:
+            outlets.append(outlet_view(rows[0].outlet, "not listed", None, rows[0].source))
+        else:
+            outlets.append(outlet_view(row.outlet, row.status, row.share, row.source, _rivals(row, rows)))
 
     official = None
     match_officials = [row for row in officials if (row.home, row.away) == (home, away)]

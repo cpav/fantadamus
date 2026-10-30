@@ -75,7 +75,7 @@ possible (R7.4) and keeps one fewer copy of the data.
 | Silver table | From | Key columns |
 |---|---|---|
 | `fixtures` | `submit_fixtures` | round, home, away, kickoff |
-| `lineup_views` | probable lineups | match, outlet, club, name as written, status, ballottaggio share |
+| `lineup_views` | probable lineups | match, outlet, club, name as written, status, ballottaggio share and which ballottaggio (to name rivals) |
 | `official_lineups` | official lineups | match, player, starter or bench |
 | `odds` | match odds | match, page, de-margined 1X2, P(over 2.5), P(both score) |
 | `player_seasons` | profiles (R6.1) | player ID, name, club, roles and the R6.1 figures; a player's identity is his latest row |

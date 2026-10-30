@@ -35,6 +35,8 @@ class OutletView(BaseModel):
     status: Status
     p_start: float
     source: Source
+    rivals: list[str] = []
+    """The others in his ballottaggio, as the outlet writes them."""
 
 
 class OfficialView(BaseModel):
@@ -56,7 +58,9 @@ class Availability(BaseModel):
     official: OfficialView | None
 
 
-def outlet_view(outlet: str, status: Status, share: float | None, source: Source) -> OutletView:
+def outlet_view(
+    outlet: str, status: Status, share: float | None, source: Source, rivals: Sequence[str] = ()
+) -> OutletView:
     """One outlet's view of a player; `share` is his ballottaggio percentage."""
     if status == "ballottaggio":
         if share is None:
@@ -64,7 +68,7 @@ def outlet_view(outlet: str, status: Status, share: float | None, source: Source
         p_start = share / 100
     else:
         p_start = _P_START[status]
-    return OutletView(outlet=outlet, status=status, p_start=p_start, source=source)
+    return OutletView(outlet=outlet, status=status, p_start=p_start, source=source, rivals=sorted(rivals))
 
 
 def combine(outlets: Sequence[OutletView], official: OfficialView | None = None) -> Availability:
