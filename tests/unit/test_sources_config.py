@@ -81,3 +81,13 @@ def test_reading_list_pages_are_allowed() -> None:
 def test_reading_list_covers_each_submit_tool() -> None:
     tools = [entry["submit_tool"] for entry in _reading_list().values()]
     assert sorted(tools) == sorted(SUBMIT_TOOLS)
+
+
+def test_reading_list_has_fallbacks() -> None:
+    """mvp-x-or-y task 10.1 (R11.4): no fact rests on one page, and Wikipedia never comes first."""
+    for fact, entry in _reading_list().items():
+        pages: list[str] = entry.get("pages", [])
+        searches: list[str] = entry.get("search", [])
+        assert len(pages) + len(searches) >= 2, fact
+        assert searches, fact
+        assert not (pages and "wikipedia.org" in pages[0]), fact

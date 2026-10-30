@@ -72,8 +72,9 @@ def register(
             raise ToolError(str(rejection)) from rejection
 
     @server.tool(
-        description="Submit one round's matches and kickoff times from Wikipedia's Serie A season page. "
-        + PROVENANCE
+        description="Submit one round's matches and kickoff times from Fantacalcio.it's Serie A calendar "
+        "(or Wikipedia's season page). Pages show Italian time: give each kickoff with its offset, +01:00 in "
+        "winter and +02:00 in summer, e.g. 2026-10-31T20:45:00+01:00. " + PROVENANCE
     )
     def submit_fixtures(
         payload: FixturesPayload,
@@ -96,8 +97,8 @@ def register(
         return submit(PLAYER_SEASONS, payload, source_url, captured_at, published_at)
 
     @server.tool(
-        description="Submit the Serie A table from Wikipedia's season page: each club's matches played and "
-        "goals for and against. " + PROVENANCE
+        description="Submit the Serie A table from Fantacalcio.it's classifica (or Wikipedia's season page): "
+        "each club's matches played and goals for and against. " + PROVENANCE
     )
     def submit_team_season(
         payload: TeamSeasonPayload,

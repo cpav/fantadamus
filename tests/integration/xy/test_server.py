@@ -68,3 +68,11 @@ async def test_prompt_names_only_served_tools(tmp_path: Path) -> None:
     named = set(re.findall(r"`([a-z]+(?:_[a-z]+)+)`", server.instructions or ""))
     assert "compare_players" in named
     assert named <= served, named - served
+
+
+def test_prompt_explains_fallbacks(tmp_path: Path) -> None:
+    """mvp-x-or-y task 10.1 (R11.4): Claude works down a plan item's pages and search hints."""
+    instructions = _server(tmp_path).instructions or ""
+    assert "next listed page" in instructions
+    assert "search hint" in instructions
+    assert "never ask the user to paste" in instructions
