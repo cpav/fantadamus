@@ -9,10 +9,13 @@ depend on a pending decision (research gate, `quality.md`).
 
 ## Shape of the system
 
-- **Two releases** (see `product.md`). In the **MVP**, each user's Claude collects the data: the MCP tools
-  say what's missing or stale and where to read it, Claude browses and submits structured facts, and the
-  tools validate them, store them in a DuckDB/Parquet medallion and answer from the data products
-  ([ADR-0005](../../docs/adr/0005-mvp-claude-collects-tools-decide.md)). **v1** automates ingestion on AWS, as described below.
+- **Two releases** (see `product.md`). In the **MVP**, Fantadamus's collector fetches the round's facts from
+  the approved pages on the user's Mac, on demand and on a schedule, under ADR-0004's rules
+  ([ADR-0006](../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md), proposed). When a page can't be
+  read, each user's Claude collects it instead: the MCP tools say what's missing and where to read it, Claude
+  submits structured facts ([ADR-0005](../../docs/adr/0005-mvp-claude-collects-tools-decide.md)). The tools
+  validate everything, store it in a DuckDB/Parquet medallion and answer from the data products. **v1**
+  automates ingestion on AWS, as described below.
 - **v1: AWS, serverless-first, batch plus micro-batch.** Most data moves on a fixture-driven batch
   schedule. One path is near-real-time: **official lineups**, which need minutes, not hours.
 - **Collect once, serve many.** All facts land in a lakehouse on a refresh schedule; questions are answered
@@ -30,12 +33,12 @@ depend on a pending decision (research gate, `quality.md`).
 | Concern | MVP choice | Notes |
 |---|---|---|
 | Interface | **MCP server** exposing the Fantadamus tools to each user's Claude app | stdio on the owner's Mac first; then a remote endpoint (AWS Lambda) for the second user. Auth for the remote endpoint is decided in the `chat-agent` MVP design |
-| Collection | **The user's Claude app**, with its own web search and fetch, guided by refresh plans from our read tools | Claude reads only the MVP reading list in the source registry. No API keys on our side |
+| Collection | **Fantadamus's collector** fetches the approved pages (robots.txt honoured, one request a second per host, an identifying user agent) when `compare_players` needs a fact and on a schedule; **the user's Claude app** collects only what the collector couldn't, guided by the refresh plan | Pages, readers and cadences are in the `mvp-collect` spec; stdlib-only fetching unless its design's ADR says otherwise |
 | Submission | MCP **submit tools** whose input schemas are the pydantic contracts | Validated for contract, allowed source host, name resolution and quality rules; a rejection returns its reason |
 | Bronze | The submitted payload with its source URL, the source's publication time, `received_at` and a content hash | No page text is stored ([ADR-0005](../../docs/adr/0005-mvp-claude-collects-tools-decide.md), guardrail 4) |
 | Freshness | Per data product, for example probable lineups a few hours, fixtures a week; a refresh by one user serves both | Targets are set in Spec 1; the refresh plan lists whatever is past its target |
 | Storage | **DuckDB over Parquet**, same medallion layout and contracts as v1 | Local `data/private/` first; the same layout on a private S3 prefix once the endpoint is remote |
-| Approved for v1, unused in the MVP | Brave Search, The Odds API, API-Football (registry D-S6, D-T1); our own fetcher and extraction (ADR-0004) | They return when v1 automates collection |
+| Approved for v1, unused in the MVP | Brave Search, The Odds API, API-Football (registry D-S6, D-T1); search-driven fetching (ADR-0004) | They return when v1 automates collection; ADR-0006 brings only fetching of the approved fixed pages forward |
 
 The MVP doesn't use Iceberg, Glue, Athena, Step Functions or EventBridge. Those arrive with v1.
 
