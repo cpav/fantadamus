@@ -57,10 +57,10 @@ most of the architecture: facts are collected once and served many times (see `t
 |---|---|---|
 | Users | Two: the owner and one friend | More: friends' leagues, live-chat viewers |
 | Interface | Each person's own Claude app, calling the Fantadamus **MCP tools**: local on the owner's Mac first, then a remote endpoint on AWS | Decided in the `chat-agent` spec |
-| Ingestion | **Collected by each user's Claude.** A read tool reports what's missing or stale and where to read it; Claude browses those pages and submits structured facts; the tools validate, store and decide ([ADR-0005](../../docs/adr/0005-mvp-claude-collects-tools-decide.md)) | **Automated.** Schedules driven by the fixture calendar, licensed or permitted sources ([source registry](../../docs/source-registry.md)) |
+| Ingestion | **Collected by Fantadamus itself** from the approved pages, on demand and on a schedule ([ADR-0006](../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md), proposed); **each user's Claude collects only as the fallback** when a page can't be read: a read tool reports what's missing and where to read it, Claude submits structured facts, and the tools validate, store and decide ([ADR-0005](../../docs/adr/0005-mvp-claude-collects-tools-decide.md)) | **Automated.** Schedules driven by the fixture calendar, licensed or permitted sources ([source registry](../../docs/source-registry.md)) |
 | Storage | DuckDB over Parquet with the medallion layout; local first, the same layout on S3 once remote | Lakehouse on AWS (Iceberg, Glue, Athena), per `tech.md` |
 | Sources | The MVP reading list in the source registry: the approved sites only, enforced by the submit tools | Routes approved per source, including the licensed APIs |
-| Agent browsing | **Allowed, for collection only** (the agent prompt's MVP section) | **Not allowed:** the tools gather everything |
+| Agent browsing | **Allowed, for fallback collection only** (the agent prompt's MVP section) | **Not allowed:** the tools gather everything |
 
 The MVP keeps the medallion layers, contracts and quality rules of v1, so v1 changes how data arrives,
 not what happens to it.
@@ -112,7 +112,7 @@ question from data to answer, instead of three full specs one after another.
 |---|---|---|
 | 0 | `engineering-foundation`: repository, tooling, CI, test harness, agent hooks, walking skeleton | Built first; its AWS skeleton moved to Phase 3 |
 | 1 | `mvp-x-or-y`: "X or Y?" for two forwards in the owner's Claude Desktop: the facts it needs (submit tools, storage), the method for forwards, and the `compare_players` tool | Starts after Phase 0's gate |
-| 2 | Further slices, one small spec each: keepers and defenders; the full lineup with league rules and the bench; the formation call | Each after the previous slice has answered a real round |
+| 2 | Further slices, one small spec each: first `mvp-collect` (Fantadamus collects the round's facts itself, many sources compared, forecast-style answers); then keepers and defenders; the full lineup with league rules and the bench; the formation call | Each after the previous slice has answered a real round |
 | 3 | Online for the second player: the remote MCP endpoint, plus the AWS skeleton, budget alarm and deploy gate moved from Phase 0 | After the slices the second player needs |
 | 4 | v1: automated, scheduled pipelines on licensed or permitted sources | After the MVP has been used for real rounds |
 
