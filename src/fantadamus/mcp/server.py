@@ -7,8 +7,10 @@ import re
 import tomllib
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from mcp.server.mcpserver import MCPServer
+from mcp.types import Tool
 from pydantic import AwareDatetime, BaseModel, JsonValue
 
 from fantadamus.contracts.skeleton.tables import SkeletonRoleCount
@@ -82,6 +84,33 @@ def build_server(
     return server
 
 
+def inline_refs(schema: dict[str, Any]) -> dict[str, Any]:
+    """The schema with every local `$ref` replaced by its definition, and no `$defs` left."""
+    definitions: dict[str, Any] = schema.get("$defs", {})
+
+    def resolve(node: Any) -> Any:
+        if isinstance(node, list):
+            return [resolve(item) for item in node]
+        if not isinstance(node, dict):
+            return node
+        if "$ref" in node:
+            definition = resolve(definitions[node["$ref"].removeprefix("#/$defs/")])
+            return definition | {key: resolve(value) for key, value in node.items() if key != "$ref"}
+        return {key: resolve(value) for key, value in node.items() if key != "$defs"}
+
+    resolved: dict[str, Any] = resolve(schema)
+    return resolved
+
+
+class AdvisorServer(MCPServer):
+    """Serves each tool's input schema whole. In the first test round Claude Desktop guessed the shape of
+    payloads it could only reach through `$ref`s, and every submission was rejected."""
+
+    async def list_tools(self) -> list[Tool]:
+        tools = await super().list_tools()
+        return [tool.model_copy(update={"input_schema": inline_refs(tool.input_schema)}) for tool in tools]
+
+
 def load_instructions(path: Path = DEFAULT_PROMPT) -> str:
     """The agent prompt as the server's instructions: everything after its `---` line (R13.2)."""
     return path.read_text(encoding="utf-8").split("\n---\n", 1)[1].strip() + "\n"
@@ -100,7 +129,7 @@ def build_advisor(
     instructions: str,
 ) -> MCPServer:
     """The server Claude Desktop runs: `compare_players`, `set_league_rules` and the submit tools (R13.1)."""
-    server = MCPServer(name="fantadamus", instructions=instructions)
+    server = AdvisorServer(name="fantadamus", instructions=instructions)
     submit.register(server, lake, allowed_hosts=allowed_hosts, clock=clock, submitted_by=user, clubs=clubs)
     league.register(server, rules, user=user, clock=clock)
     advisor = compare.Advisor(

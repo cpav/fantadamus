@@ -188,3 +188,10 @@ and [design](design.md)
     - _Requirements: R11.1, R11.4_
     - _Test: `tests/unit/test_sources_config.py::test_reading_list_has_fallbacks`,
       `tests/integration/xy/test_server.py::test_prompt_explains_fallbacks`_
+
+- [x] 11. Clear tool schemas, from the first test round
+  - Branch: `fix/xy-11-clear-schemas` · Depends on: 10 · ADRs: ADR-0005
+  - [x] 11.1 The server publishes each tool's schema with its references inlined, and the nested submit tools'
+    descriptions show their payload shape
+    - _Requirements: R13.1, R7.1_
+    - _Test: `tests/integration/xy/test_server.py::test_schemas_spell_out_every_field`_
