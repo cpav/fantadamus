@@ -1,6 +1,6 @@
 # Design Document: `mvp-collect` (Phase 2, first slice)
 
-Status: **Draft for the owner's review** · From the approved [requirements](requirements.md) and
+Status: **Approved by the owner, 2026-10-30**, with both open points accepted · From the approved [requirements](requirements.md) and
 [ADR-0006](../../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md) · 2026-10-30
 
 ## Overview
@@ -298,3 +298,5 @@ scheduled refresh usually 1 to 3.
    **Recommendation:** accept, since two independent pages already check every kickoff.
 2. **Fantacalcio-Online's "Indisponibili" list counts as an outlet saying "unavailable".** That gives p_cameo 0
    (R4.3) without inventing a percentage for any outlet. **Recommendation:** accept.
+
+Both accepted by the owner with the design, 2026-10-30.
