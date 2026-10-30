@@ -11,7 +11,7 @@ depend on a pending decision (research gate, `quality.md`).
 
 - **Two releases** (see `product.md`). In the **MVP**, Fantadamus's collector fetches the round's facts from
   the approved pages on the user's Mac, on demand and on a schedule, under ADR-0004's rules
-  ([ADR-0006](../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md), proposed). When a page can't be
+  ([ADR-0006](../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md)). When a page can't be
   read, each user's Claude collects it instead: the MCP tools say what's missing and where to read it, Claude
   submits structured facts ([ADR-0005](../../docs/adr/0005-mvp-claude-collects-tools-decide.md)). The tools
   validate everything, store it in a DuckDB/Parquet medallion and answer from the data products. **v1**

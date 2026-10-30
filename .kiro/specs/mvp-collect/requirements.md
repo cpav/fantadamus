@@ -1,7 +1,7 @@
 # Requirements Document: `mvp-collect` (Phase 2, first slice)
 
-Status: **Draft for the owner's review** · Workflow: requirements-first · 2026-10-30 · Depends on:
-[ADR-0006](../../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md) (proposed with this document)
+Status: **Approved by the owner, 2026-10-30** · Workflow: requirements-first · Depends on:
+[ADR-0006](../../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md) (accepted the same day)
 
 ## Introduction
 
@@ -197,3 +197,4 @@ rather than silently skipped.
   - the collector as its own tool, called by `compare_players` and on a schedule;
   - many sources per fact, compared, with Sources listed at the bottom of every answer;
   - forecast-style answers (the "weather app"), with live in-match forecasts later in their own spec.
+- **2026-10-30:** these requirements and ADR-0006 approved.
