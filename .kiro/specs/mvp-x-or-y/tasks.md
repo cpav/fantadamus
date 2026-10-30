@@ -199,8 +199,10 @@ and [design](design.md)
 - [x] 12. 1X2-only odds, from the first test round
   - Branch: `fix/xy-12-odds-1x2` · Depends on: 11 · ADRs: ADR-0005
   - [x] 12.1 Over/under 2.5 becomes optional in `MatchOddsPayload` (a minor version); silver keeps it empty;
-    the fit uses whichever markets are present
-    - _Requirements: R5.1, R5.2, R8.3_
+    the fit uses whichever markets are present; the plan keeps asking for missing over/under until the
+    collector reports none, and the answer says when it came from the 1X2 alone
+    - _Requirements: R5.1, R5.2, R5.4, R8.3_
     - _Test: `tests/contract/test_xy_contracts.py::test_odds_without_totals`,
-      `tests/integration/xy/test_odds.py::test_one_x_two_only_odds_are_used`;
+      `tests/integration/xy/test_odds.py::test_one_x_two_only_odds_are_used`,
+      `tests/integration/xy/test_compare.py::test_missing_totals_are_asked_for`, `::test_each_match_needs_its_own_odds`;
       **P6** `tests/property/xy/test_odds_fit.py::test_p6_fit_reproduces_market`_

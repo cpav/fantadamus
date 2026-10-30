@@ -24,6 +24,8 @@ class TeamXg(BaseModel):
     p_away_win: float
     from_odds: bool
     """False when no odds were known and team form stood in (R5.3)."""
+    totals: bool
+    """Whether the odds showed over/under 2.5, which prices the bonuses (R5.4)."""
     sources: list[Source]
 
 
@@ -59,7 +61,8 @@ def team_xg(
     )
     if pages:
         home_xg, away_xg = odds.fit(_market(pages))
-        return _result(home_xg, away_xg, from_odds=True, sources=[row.source for row in pages])
+        totals = any(row.p_over is not None for row in pages)
+        return _result(home_xg, away_xg, from_odds=True, totals=totals, sources=[row.source for row in pages])
     table = latest_by(team_rows, as_of, key=lambda row: row.club)
     played = sum(row.played for row in table.values())
     if (
@@ -81,10 +84,12 @@ def team_xg(
     ]
     home_xg, away_xg = odds.form_xg(sides[0], sides[1], league)
     sources = sorted({table[home].source, table[away].source}, key=lambda source: source.captured_at)
-    return _result(home_xg, away_xg, from_odds=False, sources=sources)
+    return _result(home_xg, away_xg, from_odds=False, totals=False, sources=sources)
 
 
-def _result(home_xg: float, away_xg: float, *, from_odds: bool, sources: list[Source]) -> TeamXg:
+def _result(
+    home_xg: float, away_xg: float, *, from_odds: bool, totals: bool, sources: list[Source]
+) -> TeamXg:
     market = odds.model(home_xg, away_xg)
     return TeamXg(
         home_xg=home_xg,
@@ -93,5 +98,6 @@ def _result(home_xg: float, away_xg: float, *, from_odds: bool, sources: list[So
         p_draw=market.p_draw,
         p_away_win=market.p_away,
         from_odds=from_odds,
+        totals=totals,
         sources=sources,
     )

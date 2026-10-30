@@ -64,7 +64,8 @@ _PLAN_ORDER = {
 }
 _LATEST = dt.datetime.max.replace(tzinfo=dt.UTC)
 
-Why = Literal["missing", "stale"]
+Why = Literal["missing", "stale", "partial"]
+"""`partial`: the match's odds show no over/under 2.5, which prices the bonuses (R5.4)."""
 
 
 class ReadingItem(BaseModel):
@@ -347,15 +348,18 @@ class Advisor:
             need(
                 self._match_item("probable_lineups", "stale" if stale else "missing", match), match.kickoff_at
             )
-        odds = _fresh(facts.odds, "match_odds", as_of, match.kickoff_at)
+        fresh_odds = _fresh(facts.odds, "match_odds", as_of, match.kickoff_at)
+        odds = [row for row in fresh_odds if (row.home, row.away) == (match.home, match.away)]
         teams = _fresh(facts.teams, "team_season", as_of) if odds_unavailable else []
         xg = team_xg(odds, teams, home=match.home, away=match.away, as_of=as_of)
-        if not odds and not odds_unavailable:
+        if not odds_unavailable and not odds:
             stale = any(
                 row.home == match.home and row.away == match.away and row.captured_at <= as_of
                 for row in facts.odds
             )
             need(self._match_item("match_odds", "stale" if stale else "missing", match), match.kickoff_at)
+        elif not odds_unavailable and all(row.p_over is None for row in odds):
+            need(self._match_item("match_odds", "partial", match), match.kickoff_at)
         return present, xg
 
     def _answer(
@@ -471,6 +475,8 @@ class Advisor:
             sources += xg.sources
             if not xg.from_odds:
                 notes.append("Team xG comes from regressed team form: no match odds were found.")
+            elif not xg.totals:
+                notes.append("No over/under 2.5 was found: goal chances come from the 1X2 alone.")
         home = match is not None and match.home == side.player.club
         return PlayerAnswer(
             name=side.player.name,
