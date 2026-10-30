@@ -32,12 +32,13 @@ def _mean(values: Sequence[float]) -> float:
 
 
 def _market(rows: Sequence[OddsRow]) -> odds.Market:
+    over = [row.p_over for row in rows if row.p_over is not None]
     btts = [row.p_btts for row in rows if row.p_btts is not None]
     return odds.Market(
         p_home=_mean([row.p_home for row in rows]),
         p_draw=_mean([row.p_draw for row in rows]),
         p_away=_mean([row.p_away for row in rows]),
-        p_over=_mean([row.p_over for row in rows]),
+        p_over=_mean(over) if over else None,
         p_btts=_mean(btts) if btts else None,
     )
 

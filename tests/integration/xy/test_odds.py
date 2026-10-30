@@ -50,3 +50,18 @@ async def test_pages_kept_side_by_side(tmp_path: Path) -> None:
     assert xg.home_xg > xg.away_xg
     assert xg.p_home_win + xg.p_draw + xg.p_away_win == pytest.approx(1)
     assert gold.team_xg(rows, [], home="alfa", away="beta", as_of=READ - dt.timedelta(seconds=1)) is None
+
+
+async def test_one_x_two_only_odds_are_used(tmp_path: Path) -> None:
+    """mvp-x-or-y task 12.1 (R5.1, R5.2): prices without totals still give team xG from the odds."""
+    store = LakeStore(tmp_path)
+    only_1x2 = page("match_odds") | {"over_2_5": None, "under_2_5": None, "goal": None, "no_goal": None}
+    async with tools(store, now=READ) as client:
+        assert not (await send(client, "submit_match_odds", only_1x2, READ)).is_error
+    [row] = read_silver(store, ODDS)
+    assert (row.p_over, row.p_btts) == (None, None)
+    xg = gold.team_xg([row], [], home="alfa", away="beta", as_of=READ)
+    assert xg is not None
+    assert xg.from_odds
+    assert xg.home_xg > xg.away_xg
+    assert xg.p_home_win == pytest.approx(row.p_home, abs=0.01)

@@ -79,18 +79,36 @@
         "title": "No Goal"
       },
       "over_2_5": {
-        "description": "Decimal odds, e.g. 2.10",
-        "exclusiveMinimum": 1,
-        "maximum": 1000,
-        "title": "Over 2 5",
-        "type": "number"
+        "anyOf": [
+          {
+            "description": "Decimal odds, e.g. 2.10",
+            "exclusiveMinimum": 1,
+            "maximum": 1000,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Over 2.5 goals, when the page shows it",
+        "title": "Over 2 5"
       },
       "under_2_5": {
-        "description": "Decimal odds, e.g. 2.10",
-        "exclusiveMinimum": 1,
-        "maximum": 1000,
-        "title": "Under 2 5",
-        "type": "number"
+        "anyOf": [
+          {
+            "description": "Decimal odds, e.g. 2.10",
+            "exclusiveMinimum": 1,
+            "maximum": 1000,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Under 2.5 goals, when the page shows it",
+        "title": "Under 2 5"
       }
     },
     "required": [
@@ -99,12 +117,10 @@
       "bookmaker",
       "home_win",
       "draw",
-      "away_win",
-      "over_2_5",
-      "under_2_5"
+      "away_win"
     ],
     "title": "MatchOddsPayload",
     "type": "object"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

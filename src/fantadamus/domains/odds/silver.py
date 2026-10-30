@@ -16,7 +16,7 @@ class OddsRow(SilverRow):
     p_home: float
     p_draw: float
     p_away: float
-    p_over: float
+    p_over: float | None
     """Over 2.5 goals."""
     p_btts: float | None
     """Both teams to score, when the page shows it."""
@@ -27,7 +27,8 @@ def _rows(payload: MatchOddsPayload, clubs: Clubs, source: Source) -> list[OddsR
     if home == away:
         raise RefusedError(f"{payload.home} plays itself")
     p_home, p_draw, p_away = de_margin([payload.home_win, payload.draw, payload.away_win])
-    p_over, _ = de_margin([payload.over_2_5, payload.under_2_5])
+    totals = [payload.over_2_5, payload.under_2_5]
+    p_over = de_margin([price for price in totals if price is not None])[0] if None not in totals else None
     p_btts = de_margin([payload.goal, payload.no_goal])[0] if payload.goal and payload.no_goal else None
     return [
         OddsRow(

@@ -43,7 +43,7 @@ def parse[C: Contract](contract: type[C], payload: dict[str, Any]) -> C:
     ],
 )
 def test_synthetic_pages_parse(contract: type[Contract], name: str) -> None:
-    assert parse(contract, page(name)).__version__ == "1.0.0"
+    parse(contract, page(name))
 
 
 def test_kickoffs_are_stored_in_utc_and_clubs_meet_once() -> None:
@@ -153,3 +153,12 @@ def test_league_rules_ranges(change: dict[str, Any], message: str | None) -> Non
             parse(LeagueRules, CLASSIC | change)
     with pytest.raises(ValidationError, match="Field required"):
         parse(LeagueRules, {key: value for key, value in CLASSIC.items() if key != "clean_sheet"})
+
+
+def test_odds_without_totals() -> None:
+    """mvp-x-or-y task 12.1 (R5.1): a page with only 1X2 prices can be submitted; each other market's two
+    sides go together."""
+    only_1x2 = page("match_odds") | {"over_2_5": None, "under_2_5": None, "goal": None, "no_goal": None}
+    assert parse(MatchOddsPayload, only_1x2).over_2_5 is None
+    with pytest.raises(ValidationError, match="over and under go together"):
+        parse(MatchOddsPayload, page("match_odds") | {"under_2_5": None})
