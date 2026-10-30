@@ -1,6 +1,6 @@
 # ADR-0006: In the MVP, Fantadamus fetches the round's facts itself from approved pages; Claude collects only as a fallback
 
-- **Status:** Proposed, 2026-10-30
+- **Status:** Accepted by the owner, 2026-10-30
 - **Deciders:** the owner
 - **Amends:** ADR-0005 (each user's Claude collects): for the pages below, our server fetches them instead.
   Claude's collection stays as the fallback. ADR-0004's fetching rules apply from now, not from v1.
