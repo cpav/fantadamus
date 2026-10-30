@@ -179,3 +179,12 @@ and [design](design.md)
     - _Requirements: R13.2, R13.4_
     - _Test: `tests/integration/xy/test_server.py::test_prompt_names_only_served_tools`,
       `tests/unit/test_repo_hygiene.py::test_player_guide_setup`_
+
+- [x] 10. Reliable sources, from the first test round
+  - Branch: `fix/xy-10-reliable-sources` · Depends on: 9 · ADRs: ADR-0005
+  - [x] 10.1 Every fact in the reading list has fallbacks, best first, with a search hint; Fantacalcio.it's
+    calendar and table lead for fixtures and the table; the agent prompt and the plan say to work down the
+    list; `submit_fixtures` asks for Italian kickoffs with their offset
+    - _Requirements: R11.1, R11.4_
+    - _Test: `tests/unit/test_sources_config.py::test_reading_list_has_fallbacks`,
+      `tests/integration/xy/test_server.py::test_prompt_explains_fallbacks`_

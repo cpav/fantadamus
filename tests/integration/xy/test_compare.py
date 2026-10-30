@@ -30,7 +30,7 @@ async def test_refresh_plan_order(tmp_path: Path) -> None:
             ("team_season", "the Serie A table"),
             ("penalty_takers", "the penalty takers"),
         ]  # everything already known to be needed, so collection takes few round trips
-        assert plan["refresh"][2]["search"] == ["Delta Sette site:fantacalcio.it/serie-a/squadre"]
+        assert plan["refresh"][2]["search"][0] == "Delta Sette site:fantacalcio.it/serie-a/squadre"
 
         await send(
             client,

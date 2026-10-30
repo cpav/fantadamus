@@ -310,8 +310,9 @@ class Advisor:
         if plan or round is None or first_kickoff is None or len(sides) != 2:
             return CompareResult(
                 status="refresh",
-                message="Some facts are missing or stale: read the listed pages, submit what they say "
-                "with the named tools, then call compare_players again.",
+                message="Some facts are missing or stale. For each item, read the first listed page that "
+                "opens, or find one with its search hint, submit what it says with the named tool, then call "
+                "compare_players again.",
                 refresh=[item for _, item in sorted(plan, key=lambda entry: entry[0])],
             )
         answer = self._answer(sides, known, round, first_kickoff, as_of, stored)

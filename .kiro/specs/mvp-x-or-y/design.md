@@ -164,8 +164,9 @@ replayed. Answers are structured (a pydantic result model); the agent prompt tel
 
 ### C11. Refresh plan (`config/reading_list.toml`)
 
-The reading list as data: for each fact, the page (fixed URL or URL template), the cross-check pages, a
-search hint where no URL can be built, and the submit tool. `compare_players` fills the templates with the
+The reading list as data: for each fact, the pages (fixed URLs or URL templates) and search hints, best first,
+and the submit tool. Every fact has at least two of them, including a search hint, and Wikipedia is never
+first (R11.4): Claude works down the list until one opens. `compare_players` fills the templates with the
 clubs and players involved and orders the items lineups → odds → season figures (R11.2). The file is checked
 in a test against `config/sources.toml`, so every page it names is on the allowlist.
 

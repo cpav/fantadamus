@@ -1,6 +1,7 @@
 # Requirements Document: `mvp-x-or-y` (Phase 1)
 
-Status: **Approved by the owner, 2026-10-26**; amended the same day after the first real round (R10.7, R13.4) · Workflow:
+Status: **Approved by the owner, 2026-10-26**; amended after the first real round (R10.7, R13.4) and the first test
+round on 2026-10-30 (R11.4) · Workflow:
 requirements-first · Last updated: 2026-10-26
 
 ## Introduction
@@ -43,12 +44,12 @@ need"). The submit tools reject any other host (ADR-0005, guardrail 1).
 
 | Fact | Primary page | Cross-check | Need |
 |---|---|---|---|
-| Fixtures and kickoffs of the round | Wikipedia's Serie A season page | Fantacalcio.it calendar, where readable | N2 |
+| Fixtures and kickoffs of the round | Fantacalcio.it's Serie A calendar | Wikipedia's Serie A season page | N2 |
 | Probable lineups, with ballottaggio shares and unavailable players | `fantacalcio.it/probabili-formazioni-serie-a` | Fantacalcio-Online; SOS Fanta | N3, N8 |
 | Official lineups | Fantacalcio.it "formazioni ufficiali" article | SOS Fanta | N4 |
 | Match odds: 1X2, over/under 2.5, goal/no goal | livetipsportal and Jamma previews; Fantacalcio-Online's odds | Each against the others | N14 |
 | A player's season: appearances, average rating, goals, assists, yellow cards, penalties, Mantra role | The player's Fantacalcio.it profile | — | N1, N5, N6 |
-| Team goals for and matches played | Wikipedia's Serie A table | — | N5 |
+| Team goals for and matches played | Fantacalcio.it's Serie A table | Wikipedia's Serie A table | N5 |
 | Penalty takers | `fantacalcio.it/rigoristi-serie-a` | Profile notes | N9 |
 
 ## Requirements
@@ -221,6 +222,9 @@ stays on the approved sites.
   odds, then season figures.
 - **R11.3** WHEN the refreshed facts have been submitted and `compare_players` is called again THE SYSTEM
   SHALL answer, or return only what is still missing.
+- **R11.4** THE SYSTEM SHALL give every fact in a refresh plan more than one way to read it, best first: at least
+  two pages or search hints, including at least one search hint, so that no fact depends on a single page.
+  Wikipedia is never the first choice, since the collector may only see it through a stale cache.
 
 ### Requirement 12: League rules
 
@@ -293,3 +297,7 @@ happened (method §A8).
 - **2026-10-26, after the first real round:** R10.7 (a player who can't play isn't benched) and R13.4 (a
   Claude Project and a guide for the second player) added. When no odds are found, the flagged team-form
   fallback (R5.3) stays.
+- **2026-10-30, first test round:** Claude couldn't read Wikipedia (its reader saw a stale cache without the
+  season page), and the plan offered nothing else, so no answer was possible. The owner asked for more
+  reliable sources: Fantacalcio.it's calendar and table become the primary pages, and R11.4 rules out single
+  points of failure.
