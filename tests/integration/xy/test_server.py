@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -76,3 +77,28 @@ def test_prompt_explains_fallbacks(tmp_path: Path) -> None:
     assert "next listed page" in instructions
     assert "search hint" in instructions
     assert "never ask the user to paste" in instructions
+
+
+async def test_schemas_spell_out_every_field(tmp_path: Path) -> None:
+    """mvp-x-or-y task 11.1: Claude Desktop guessed payload shapes it had to reach through `$ref`s, so every
+    schema is served whole, and each nested submit tool shows its shape."""
+    tools = {tool.name: tool for tool in await _server(tmp_path).list_tools()}
+    for name, tool in tools.items():
+        assert "$ref" not in json.dumps(tool.input_schema), name
+    lineup = tools["submit_probable_lineups"].input_schema["properties"]["payload"]["properties"]
+    assert "starters" in lineup["home_team"]["properties"]
+    assert (
+        "percent"
+        in lineup["home_team"]["properties"]["ballottaggi"]["items"]["properties"]["players"]["items"][
+            "properties"
+        ]
+    )
+    shapes = {
+        "submit_fixtures": '"kickoff_at"',
+        "submit_probable_lineups": '"home_team"',
+        "submit_official_lineup": '"home_team"',
+        "submit_team_season": '"goals_for"',
+        "submit_penalty_takers": '"takers"',
+    }
+    for name, field in shapes.items():
+        assert field in (tools[name].description or ""), name

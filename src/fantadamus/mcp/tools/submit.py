@@ -74,7 +74,8 @@ def register(
     @server.tool(
         description="Submit one round's matches and kickoff times from Fantacalcio.it's Serie A calendar "
         "(or Wikipedia's season page). Pages show Italian time: give each kickoff with its offset, +01:00 in "
-        "winter and +02:00 in summer, e.g. 2026-10-31T20:45:00+01:00. " + PROVENANCE
+        'winter and +02:00 in summer. Shape: {"round": 10, "matches": [{"home": "Milan", '
+        '"away": "Inter", "kickoff_at": "2026-10-31T20:45:00+01:00"}, ...]}. ' + PROVENANCE
     )
     def submit_fixtures(
         payload: FixturesPayload,
@@ -98,7 +99,8 @@ def register(
 
     @server.tool(
         description="Submit the Serie A table from Fantacalcio.it's classifica (or Wikipedia's season page): "
-        "each club's matches played and goals for and against. " + PROVENANCE
+        'each club\'s matches played and goals for and against. Shape: {"teams": [{"club": "Inter", '
+        '"played": 9, "goals_for": 25, "goals_against": 10}, ...]}. ' + PROVENANCE
     )
     def submit_team_season(
         payload: TeamSeasonPayload,
@@ -110,7 +112,8 @@ def register(
 
     @server.tool(
         description="Submit each club's penalty takers, first choice first, from Fantacalcio.it's "
-        "rigoristi page. " + PROVENANCE
+        'rigoristi page. Shape: {"clubs": [{"club": "Inter", "takers": [first choice, second, '
+        "...]}, ...]}. " + PROVENANCE
     )
     def submit_penalty_takers(
         payload: PenaltyTakersPayload,
@@ -124,7 +127,12 @@ def register(
         description="Submit one outlet's probable lineups for one match, from Fantacalcio.it's probabili "
         "formazioni, Fantacalcio-Online's or SOS Fanta's page: each team's 11 expected starters, the "
         "ballottaggi with their percentages, the bench and the unavailable players. Submit each outlet "
-        "separately, naming it in `outlet`. " + PROVENANCE
+        'separately, naming it in `outlet`. Shape: {"outlet": "Fantacalcio.it", "home": "Milan", '
+        '"away": "Inter", "home_team": {"starters": [the 11 names], "ballottaggi": [{"players": '
+        '[{"name": "A", "percent": 60}, {"name": "B", "percent": 40}]}], "bench": [names], '
+        '"unavailable": [names]}, "away_team": {the same}}. A percentage next to a starter is his '
+        "ballottaggio share: keep him among the 11 and add the ballottaggio with the rival the page names. "
+        + PROVENANCE
     )
     def submit_probable_lineups(
         payload: ProbableLineupPayload,
@@ -137,7 +145,8 @@ def register(
     @server.tool(
         description="Submit the official lineups of one match, from Fantacalcio.it's or SOS Fanta's "
         "formazioni ufficiali article, out about an hour before kickoff: both teams' starters and "
-        "benches. " + PROVENANCE
+        'benches. Shape: {"home": "Milan", "away": "Inter", "home_team": {"starters": '
+        '[the 11 names], "bench": [names]}, "away_team": {the same}}. ' + PROVENANCE
     )
     def submit_official_lineup(
         payload: OfficialLineupPayload,

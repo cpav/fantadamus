@@ -181,6 +181,9 @@ otherwise. The month split keeps files small. Git-ignored, like the lake.
   two tools stay for `fantadamus skeleton run` but are **no longer served** to Claude, so its tool list only
   shows what the owner uses.
 - The server's instructions are `docs/agent-prompt.md` (R13.2), read at start-up.
+- Tool input schemas are served whole, with every `$ref` inlined, and each nested submit tool's description
+  shows its payload's shape: in the first test round Claude Desktop guessed shapes it had to reach through
+  references, and every submission was rejected.
 - `--user` sets the pseudonymous user ID (default `owner`); the league rules and every submission carry it.
 - The README gains the `claude_desktop_config.json` entry, using uv's full path, since Claude Desktop doesn't
   read the shell's PATH.

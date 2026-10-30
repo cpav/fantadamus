@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any
 
 from mcp import Client
-from mcp.server.mcpserver import MCPServer
 from mcp.types import CallToolResult
 
 from fantadamus.core.clock import fixed_clock
@@ -18,6 +17,7 @@ from fantadamus.core.clubs import Clubs
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, RulesStore
+from fantadamus.mcp.server import AdvisorServer
 from fantadamus.mcp.tools import compare, league, submit
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,7 +39,7 @@ def page(name: str) -> dict[str, Any]:
 async def tools(store: LakeStore, now: dt.datetime = NOW) -> AsyncIterator[Client]:
     """The tools over `store`, accepting pages from example.org, as user `user-1`; league rules and the
     decision log are kept under the lake's root."""
-    server = MCPServer(name="fantadamus-test")
+    server = AdvisorServer(name="fantadamus-test")
     clock = fixed_clock(now)
     submit.register(
         server, store, allowed_hosts=["example.org"], clock=clock, submitted_by="user-1", clubs=CLUBS
