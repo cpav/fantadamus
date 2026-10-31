@@ -12,6 +12,7 @@ team's win chance and xG from the odds pages; his chance of scoring takes the we
 from __future__ import annotations
 
 import datetime as dt
+import re
 from collections.abc import Callable, Iterable
 from typing import Literal
 
@@ -40,6 +41,32 @@ def _ranked(source_url: str) -> tuple[int, str]:
         if host == domain or host.endswith("." + domain):
             return position, name
     return len(_RANKED), host
+
+
+_PAGES = (
+    (
+        r"fantacalcio-online\.com/.*/probabili-formazioni/(\d+)-giornata$",
+        "Fantacalcio-Online, round {} probable lineups",
+    ),
+    (r"fantacalcio-online\.com/.*/probabili-formazioni/", "Fantacalcio-Online, probable lineups"),
+    (r"fantacalcio\.it/serie-a/squadre/[^/]+/([^/]+)/\d+$", "Fantacalcio.it, {}'s profile"),
+    (r"fantacalcio\.it/serie-a/squadre/([^/]+)$", "Fantacalcio.it, {} squad"),
+    (r"fantacalcio\.it/serie-a/calendario", "Fantacalcio.it, calendar"),
+    (r"fantacalcio\.it/serie-a/classifica", "Fantacalcio.it, table"),
+    (r"fantacalcio\.it/rigoristi-serie-a", "Fantacalcio.it, penalty takers"),
+    (r"fantacalcio\.it/probabili-formazioni-serie-a", "Fantacalcio.it, probable lineups"),
+    (r"wikipedia\.org/wiki/", "Wikipedia, season page"),
+)
+"""Address patterns and the short label each page gets in an answer's Sources list (R6.3)."""
+
+
+def describe(source_url: str) -> str:
+    """The page's label for a Sources list, e.g. "Fantacalcio-Online, round 10 probable lineups"; otherwise
+    its host."""
+    for pattern, label in _PAGES:
+        if found := re.search(pattern, source_url):
+            return label.format(*found.groups())
+    return url_host(source_url) or source_url
 
 
 def best_by[R: SilverRow, K](rows: Iterable[R], as_of: dt.datetime, key: Callable[[R], K]) -> dict[K, R]:

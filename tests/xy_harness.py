@@ -6,19 +6,22 @@ import contextlib
 import datetime as dt
 import json
 from collections.abc import AsyncIterator, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from mcp import Client
 from mcp.types import CallToolResult
 
-from fantadamus.core.clock import fixed_clock
+from fantadamus.core.clock import Clock, fixed_clock
 from fantadamus.core.clubs import Clubs
+from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, RulesStore
 from fantadamus.mcp.server import AdvisorServer
 from fantadamus.mcp.tools import compare, league, submit
+from fantadamus.web.collector import Collector
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = ROOT / "tests" / "fixtures" / "xy"
@@ -35,14 +38,30 @@ def page(name: str) -> dict[str, Any]:
     return loaded
 
 
+@dataclass
+class SetClock:
+    """A clock the test moves by setting `now`."""
+
+    now: dt.datetime
+
+    def __call__(self) -> dt.datetime:
+        return self.now
+
+
 @contextlib.asynccontextmanager
 async def tools(
-    store: LakeStore, now: dt.datetime = NOW, hosts: Sequence[str] = ("example.org",)
+    store: LakeStore,
+    now: dt.datetime = NOW,
+    hosts: Sequence[str] = ("example.org",),
+    *,
+    clock: Clock | None = None,
+    collector: Collector | None = None,
+    collect_log: CollectLog | None = None,
 ) -> AsyncIterator[Client]:
     """The tools over `store`, accepting pages from `hosts`, as user `user-1`; league rules and the decision
-    log are kept under the lake's root."""
+    log are kept under the lake's root. With a `collector`, `compare_players` collects first."""
     server = AdvisorServer(name="fantadamus-test")
-    clock = fixed_clock(now)
+    clock = clock or fixed_clock(now)
     submit.register(server, store, allowed_hosts=hosts, clock=clock, submitted_by="user-1", clubs=CLUBS)
     rules = RulesStore(store.root / "league")
     league.register(server, rules, user="user-1", clock=clock)
@@ -54,6 +73,8 @@ async def tools(
         reading=compare.load_reading_list(ROOT / "config" / "reading_list.toml"),
         user="user-1",
         clock=clock,
+        collector=collector,
+        collect_log=collect_log,
     )
     compare.register(server, advisor)
     async with Client(server) as client:

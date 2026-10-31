@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import datetime as dt
 import tomllib
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -54,11 +54,13 @@ from fantadamus.domains.season.silver import (
     PlayerSeasonRow,
     TeamSeasonRow,
 )
-from fantadamus.domains.sources import Confidence, disagreement, of_odds, of_outlets, weaker
+from fantadamus.domains.sources import Confidence, describe, disagreement, of_odds, of_outlets, weaker
 from fantadamus.engine.forwards import ForwardInputs, ForwardValue, Verdict, compare
+from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import Decision, DecisionLog, LoggedPlayer
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore, SetupStep, StoredRules, scoring_for, setup_step
+from fantadamus.web.collector import ROUND_FACTS, Collector, CollectReport
 
 ROME = ZoneInfo("Europe/Rome")
 DEFAULT_READING_LIST = Path("config/reading_list.toml")
@@ -70,6 +72,12 @@ _PLAN_ORDER = {
     "penalty_takers": 2,
 }
 _LATEST = dt.datetime.max.replace(tzinfo=dt.UTC)
+REFRESH = (
+    "Some facts are missing or stale. For each item read with `read_page`, read its pages best first until "
+    "one gives the fact; for an item read with `search`, find a page on a listed site with its search hint. "
+    "Submit what the page says with the named tool, with the page's `url` and `fetched_at`, then call "
+    "compare_players again."
+)
 
 Why = Literal["missing", "stale", "partial"]
 """`partial`: the match's odds show no over/under 2.5, which prices the bonuses (R5.4)."""
@@ -100,6 +108,36 @@ class RefreshItem(BaseModel):
     submit_tool: str
     pages: list[str]
     search: list[str]
+    read_with: Literal["read_page", "search"]
+    """`read_page` on the listed pages, best first; or, with no page listed, a search (mvp-collect C11)."""
+    collector: str | None = None
+    """What Fantadamus's collector tried for this fact, and why it didn't get it (R8.1)."""
+
+
+class SourceUsed(Source):
+    label: str
+    """The page's name for the answer's Sources list, e.g. "Fantacalcio.it, table" (mvp-collect R6.3)."""
+
+
+class Movement(BaseModel):
+    """His numbers at an earlier time and the facts that moved them since (mvp-collect R6.1)."""
+
+    since: dt.datetime
+    basis: Literal["previous answer", "24 hours earlier"]
+    """The user's previous answer that included him, or else 24 hours before this one."""
+    p_start: float | None
+    p_scores: float | None
+    p_win: float | None
+    """Each value then; None where no answer could be given then."""
+    changes: list[str]
+    """E.g. "Gazzetta 55% → 90%", "official lineup out: starter", "team xG 1.20 → 1.45"."""
+
+
+class Updated(BaseModel):
+    """When the answer's facts were last captured or confirmed unchanged, newest and oldest (R6.2)."""
+
+    newest: dt.datetime
+    oldest: dt.datetime
 
 
 class PlayerAnswer(BaseModel):
@@ -142,7 +180,8 @@ class PlayerAnswer(BaseModel):
     p_scores_confidence: Confidence | None
     """How sure his chance of scoring is: the weaker of the two."""
     notes: list[str]
-    sources: list[Source]
+    sources: list[SourceUsed]
+    movement: Movement | None = None
 
 
 class Flip(BaseModel):
@@ -164,6 +203,7 @@ class Answer(BaseModel):
     check_before_deadline: list[str]
     rules: StoredRules
     """The league rules this answer used (R12.4)."""
+    updated: Updated
     players: list[PlayerAnswer]
 
 
@@ -177,7 +217,7 @@ class CompareResult(BaseModel):
 
 
 @dataclass(frozen=True)
-class _Facts:
+class Facts:
     fixtures: list[FixtureRow]
     players: Sequence[Any]
     teams: Sequence[Any]
@@ -188,7 +228,7 @@ class _Facts:
     odds: Sequence[Any]
 
     @classmethod
-    def read(cls, lake: LakeStore) -> _Facts:
+    def read(cls, lake: LakeStore) -> Facts:
         return cls(
             fixtures=read_silver(lake, FIXTURES),
             players=read_silver(lake, PLAYER_SEASONS),
@@ -202,19 +242,34 @@ class _Facts:
 
 
 def _fresh[R: SilverRow](
-    rows: Sequence[R], fact: Fact, as_of: dt.datetime, kickoff: dt.datetime | None = None
+    rows: Sequence[R],
+    fact: Fact,
+    as_of: dt.datetime,
+    kickoff: dt.datetime | None = None,
+    confirmed: Mapping[str, dt.datetime] | None = None,
 ) -> list[R]:
+    """The rows still fresh at `as_of`. A page's newest read counts from when a later read found it unchanged
+    (`confirmed`, by page), since that read stored nothing new (mvp-collect R1.5)."""
+    known = [row for row in rows if row.captured_at <= as_of]
+    newest: dict[str, dt.datetime] = {}
+    for row in known:
+        newest[row.source_url] = max(row.captured_at, newest.get(row.source_url, row.captured_at))
+    confirmed = confirmed or {}
+
+    def seen(row: R) -> dt.datetime:
+        at = confirmed.get(row.source_url)
+        return at if at is not None and row.captured_at == newest[row.source_url] < at else row.captured_at
+
+    return [row for row in known if is_fresh(seen(row), fact, as_of=as_of, kickoff=kickoff)]
+
+
+def _unique(sources: Sequence[Source]) -> list[SourceUsed]:
     return [
-        row
-        for row in rows
-        if row.captured_at <= as_of and is_fresh(row.captured_at, fact, as_of=as_of, kickoff=kickoff)
+        SourceUsed(**source.model_dump(), label=describe(source.source_url))
+        for source in sorted(
+            set(sources), key=lambda source: (source.captured_at, source.source_url, source.content_sha256)
+        )
     ]
-
-
-def _unique(sources: Sequence[Source]) -> list[Source]:
-    return sorted(
-        set(sources), key=lambda source: (source.captured_at, source.source_url, source.content_sha256)
-    )
 
 
 @dataclass(frozen=True)
@@ -243,6 +298,10 @@ class Advisor:
     reading: dict[str, ReadingItem]
     user: str
     clock: Clock
+    collector: Collector | None = None
+    """Reads the round page when its facts are missing or stale (mvp-collect C11)."""
+    collect_log: CollectLog | None = None
+    """The collector's runs: each is logged, and a read that found a page unchanged keeps its facts fresh."""
 
     def _item(self, fact: str, why: Why, about: str, **values: str) -> RefreshItem:
         entry = self.reading[fact]
@@ -258,6 +317,7 @@ class Advisor:
             submit_tool=entry.submit_tool,
             pages=[fill(page) for page in entry.pages],
             search=[fill(hint) for hint in entry.search],
+            read_with="read_page" if entry.pages else "search",
         )
 
     def _match_item(self, fact: str, why: Why, match: FixtureRow) -> RefreshItem:
@@ -267,7 +327,38 @@ class Advisor:
     def compare(
         self, first: str, second: str, *, as_of: dt.datetime | None = None, odds_unavailable: bool = False
     ) -> CompareResult:
-        as_of = (as_of or self.clock()).astimezone(dt.UTC)
+        """The answer, after the collector has read the round page if its facts were missing or stale. A
+        replay of an earlier `as_of` never collects."""
+        when = (as_of or self.clock()).astimezone(dt.UTC)
+        result = self.answer_at(first, second, when, odds_unavailable=odds_unavailable)
+        wanted = [item for item in result.refresh if item.fact in ROUND_FACTS]
+        if as_of is None and self.collector is not None and wanted:
+            report = self.collector.collect()
+            if self.collect_log is not None:
+                self.collect_log.append(report)
+            when = self.clock().astimezone(dt.UTC)
+            result = self.answer_at(
+                first, second, when, odds_unavailable=odds_unavailable, tried=_tried(report)
+            )
+        if result.answer is None:
+            return result
+        answer = self._with_movement(result.answer, first, second, odds_unavailable)
+        self._log(answer)
+        return result.model_copy(update={"answer": answer})
+
+    def answer_at(
+        self,
+        first: str,
+        second: str,
+        as_of: dt.datetime,
+        *,
+        odds_unavailable: bool = False,
+        facts: Facts | None = None,
+        tried: str | None = None,
+    ) -> CompareResult:
+        """What the facts known at `as_of` answer, without collecting or logging; `facts`, when given, saves
+        reading the lake again."""
+        as_of = as_of.astimezone(dt.UTC)
         stored = self.rules.get(self.user)
         if stored is None:
             return CompareResult(
@@ -275,7 +366,8 @@ class Advisor:
                 message="This user has no league rules yet: ask for them, then call set_league_rules.",
                 setup=setup_step(),
             )
-        facts = _Facts.read(self.lake)
+        facts = facts or Facts.read(self.lake)
+        confirmed = self.collect_log.confirmed(as_of) if self.collect_log is not None else {}
         known = known_players(facts.players, as_of)
         plan: list[tuple[tuple[int, dt.datetime, str], RefreshItem]] = []
 
@@ -316,7 +408,7 @@ class Advisor:
             if not fresh:  # every answer needs them, whoever the players turn out to be
                 why: Why = "stale" if any(row.captured_at <= as_of for row in rows) else "missing"
                 need(self._item(fact, why, about))
-        fixtures = _fresh(facts.fixtures, "fixtures", as_of)
+        fixtures = _fresh(facts.fixtures, "fixtures", as_of, confirmed=confirmed.get(FIXTURES.table.name))
         round = next_round(fixtures, as_of)
         if round is None:
             stale = next_round(facts.fixtures, as_of) is not None
@@ -337,7 +429,7 @@ class Advisor:
                 need(self._item("penalty_takers", "stale" if stale else "missing", "the penalty takers"))
             match = fixture(fixtures, player.club, round, as_of) if round is not None else None
             present, xg = (
-                self._match_facts(player, match, facts, known, as_of, odds_unavailable, need)
+                self._match_facts(player, match, facts, known, as_of, odds_unavailable, need, confirmed)
                 if match
                 else (None, None)
             )
@@ -347,12 +439,16 @@ class Advisor:
 
         first_kickoff = deadline(fixtures, round, as_of) if round is not None else None
         if plan or round is None or first_kickoff is None or len(sides) != 2:
+            refresh = [item for _, item in sorted(plan, key=lambda entry: entry[0])]
+            if tried is not None:
+                refresh = [
+                    item.model_copy(update={"collector": tried}) if item.fact in ROUND_FACTS else item
+                    for item in refresh
+                ]
             return CompareResult(
                 status="refresh",
-                message="Some facts are missing or stale. For each item, read the first listed page that "
-                "opens, or find one with its search hint, submit what it says with the named tool, then call "
-                "compare_players again.",
-                refresh=[item for _, item in sorted(plan, key=lambda entry: entry[0])],
+                message=REFRESH,
+                refresh=refresh,
             )
         answer = self._answer(sides, known, round, first_kickoff, as_of, stored)
         return CompareResult(status="answer", message=answer.message, answer=answer)
@@ -389,11 +485,12 @@ class Advisor:
         self,
         player: KnownPlayer,
         match: FixtureRow,
-        facts: _Facts,
+        facts: Facts,
         known: list[KnownPlayer],
         as_of: dt.datetime,
         odds_unavailable: bool,
         need: Callable[[RefreshItem, dt.datetime], None],
+        confirmed: Mapping[str, Mapping[str, dt.datetime]],
     ) -> tuple[Availability | None, TeamXg | None]:
         """His availability and team xG for the match, asking for whatever is missing or stale."""
 
@@ -412,15 +509,27 @@ class Advisor:
             )
 
         present = available(
-            _fresh(facts.views, "probable_lineups", as_of, match.kickoff_at),
-            _fresh(facts.outlet_views, "probable_lineups", as_of, match.kickoff_at),
+            _fresh(
+                facts.views,
+                "probable_lineups",
+                as_of,
+                match.kickoff_at,
+                confirmed.get(LINEUP_VIEWS.table.name),
+            ),
+            _fresh(
+                facts.outlet_views,
+                "probable_lineups",
+                as_of,
+                match.kickoff_at,
+                confirmed.get(OUTLET_VIEWS.table.name),
+            ),
         )
         if present is None:
             stale = available(facts.views, facts.outlet_views) is not None
             need(
                 self._match_item("probable_lineups", "stale" if stale else "missing", match), match.kickoff_at
             )
-        fresh_odds = _fresh(facts.odds, "match_odds", as_of, match.kickoff_at)
+        fresh_odds = _fresh(facts.odds, "match_odds", as_of, match.kickoff_at, confirmed.get(ODDS.table.name))
         odds = [row for row in fresh_odds if (row.home, row.away) == (match.home, match.away)]
         teams = _fresh(facts.teams, "team_season", as_of) if odds_unavailable else []
         xg = team_xg(odds, teams, home=match.home, away=match.away, as_of=as_of)
@@ -477,14 +586,56 @@ class Advisor:
                 if part.kickoff is not None and part.kickoff == first_kickoff
             ],
             rules=stored,
+            updated=self._updated(players, as_of),
             players=players,
         )
+        return answer
+
+    def _updated(self, players: list[PlayerAnswer], as_of: dt.datetime) -> Updated:
+        """The newest and oldest time the facts were captured or a collector read found them unchanged."""
+        worked = self.collect_log.last_worked(as_of) if self.collect_log is not None else {}
+        times = [
+            max(source.captured_at, worked.get(source.source_url, source.captured_at))
+            for part in players
+            for source in part.sources
+        ]
+        return Updated(newest=max(times), oldest=min(times))
+
+    def _with_movement(self, answer: Answer, first: str, second: str, odds_unavailable: bool) -> Answer:
+        """Each player's movement since the user's previous answer that included him, or 24 hours (R6.1)."""
+        facts = Facts.read(self.lake)
+        decisions = [decision for decision in self.log.read() if decision.user == self.user]
+        earlier: dict[dt.datetime, CompareResult] = {}
+        players = []
+        for part in answer.players:
+            previous = [
+                decision.as_of
+                for decision in decisions
+                if decision.as_of < answer.as_of
+                and any(logged.player_id == part.player_id for logged in decision.players)
+            ]
+            since = max(previous, default=answer.as_of - dt.timedelta(hours=24))
+            if since not in earlier:
+                earlier[since] = self.answer_at(
+                    first, second, since, odds_unavailable=odds_unavailable, facts=facts
+                )
+            then = earlier[since].answer
+            before = next((p for p in then.players if p.player_id == part.player_id), None) if then else None
+            basis: Literal["previous answer", "24 hours earlier"] = (
+                "previous answer" if previous else "24 hours earlier"
+            )
+            players.append(part.model_copy(update={"movement": movement(before, part, since, basis)}))
+        return answer.model_copy(update={"players": players})
+
+    def _log(self, answer: Answer) -> None:
+        """One decision-log line per answer (R14.1)."""
+        players = answer.players
         self.log.append(
             Decision(
-                as_of=as_of,
+                as_of=answer.as_of,
                 logged_at=self.clock(),
                 user=self.user,
-                round=round,
+                round=answer.round,
                 players=[
                     LoggedPlayer(
                         player_id=part.player_id,
@@ -496,15 +647,14 @@ class Advisor:
                     )
                     for part in players
                 ],
-                first=verdict.first,
-                second=verdict.second,
-                margin=verdict.margin,
-                label=verdict.label,
-                rules=stored,
+                first=answer.verdict.first,
+                second=answer.verdict.second,
+                margin=answer.verdict.margin,
+                label=answer.verdict.label,
+                rules=answer.rules,
                 content_hashes=sorted({source.content_sha256 for part in players for source in part.sources}),
             )
         )
-        return answer
 
     @staticmethod
     def _inputs(side: _Side, known: list[KnownPlayer]) -> ForwardInputs:
@@ -593,6 +743,47 @@ class Advisor:
             notes=notes,
             sources=_unique(sources),
         )
+
+
+def movement(
+    before: PlayerAnswer | None,
+    now: PlayerAnswer,
+    since: dt.datetime,
+    basis: Literal["previous answer", "24 hours earlier"],
+) -> Movement:
+    """His numbers `before` (None if no answer could be given then) and the facts that moved them: an outlet's
+    view, the official lineup coming out, his team's xG."""
+    if before is None:
+        return Movement(since=since, basis=basis, p_start=None, p_scores=None, p_win=None, changes=[])
+    changes: list[str] = []
+    if now.official is not None and before.official is None:
+        changes.append(f"official lineup out: {now.official.status}")
+    views = {view.outlet: view for view in before.outlets}
+    for view in now.outlets:
+        old = views.get(view.outlet)
+        if old is None:
+            changes.append(f"{view.outlet} now {view.p_start:.0%}")
+        elif round(old.p_start, 2) != round(view.p_start, 2):
+            changes.append(f"{view.outlet} {old.p_start:.0%} → {view.p_start:.0%}")
+    if before.team_xg is not None and now.team_xg is not None and abs(now.team_xg - before.team_xg) >= 0.05:
+        changes.append(f"team xG {before.team_xg:.2f} → {now.team_xg:.2f}")
+    return Movement(
+        since=since,
+        basis=basis,
+        p_start=before.value.p_start,
+        p_scores=before.value.p_scores,
+        p_win=before.p_win,
+        changes=changes,
+    )
+
+
+def _tried(report: CollectReport) -> str:
+    """What the collector's run tried, for the refresh items it couldn't fill."""
+    page = report.pages[0]
+    if page.outcome in {"stored", "unchanged"}:
+        return f"Fantadamus read {page.url}, which doesn't give it yet"
+    reason = f" ({page.reason})" if page.reason else ""
+    return f"Fantadamus couldn't read {page.url}: {page.outcome}{reason}"
 
 
 def register(server: MCPServer, advisor: Advisor) -> None:

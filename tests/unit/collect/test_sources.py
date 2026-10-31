@@ -12,13 +12,14 @@ from fantadamus.domains.fixtures.silver import FixtureRow
 from fantadamus.domains.odds.gold import TeamXg
 from fantadamus.domains.season import gold as season
 from fantadamus.domains.season.silver import TeamSeasonRow
-from fantadamus.domains.sources import Confidence, disagreement, of_odds, of_outlets, weaker
+from fantadamus.domains.sources import Confidence, describe, disagreement, of_odds, of_outlets, weaker
 
 READ = dt.datetime(2026, 10, 26, 9, 0, tzinfo=dt.UTC)
 FCIT = "https://www.fantacalcio.it/serie-a/calendario"
 FCO = "https://www.fantacalcio-online.com/it/serie-a/2026-2027/probabili-formazioni/ultima-giornata"
 WIKI = "https://it.wikipedia.org/wiki/Serie_A_2026-2027"
 OTHER = "https://www.example.org/calendario"
+SQUAD = "https://www.fantacalcio.it/serie-a/squadre/inter"
 
 
 def _source(url: str, hours: int = 0) -> Source:
@@ -117,3 +118,19 @@ def test_confidence_labels() -> None:
     assert weaker(agree, disputed) == disputed
     assert weaker(Confidence(sources=1, spread=0.0, label="official"), agree) == agree
     assert weaker(agree, Confidence(sources=1, spread=0.0, label="one source")).label == "one source"
+
+
+def test_page_labels() -> None:
+    labels = {
+        f"{FCO.rsplit('/', 1)[0]}/10-giornata": "Fantacalcio-Online, round 10 probable lineups",
+        FCO: "Fantacalcio-Online, probable lineups",
+        FCIT: "Fantacalcio.it, calendar",
+        "https://www.fantacalcio.it/serie-a/classifica": "Fantacalcio.it, table",
+        "https://www.fantacalcio.it/rigoristi-serie-a": "Fantacalcio.it, penalty takers",
+        "https://www.fantacalcio.it/probabili-formazioni-serie-a": "Fantacalcio.it, probable lineups",
+        f"{SQUAD}/martinez-l/2764": "Fantacalcio.it, martinez-l's profile",
+        SQUAD: "Fantacalcio.it, inter squad",
+        WIKI: "Wikipedia, season page",
+        OTHER: "www.example.org",
+    }
+    assert {url: describe(url) for url in labels} == labels
