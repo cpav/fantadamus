@@ -134,14 +134,15 @@ page's read as fresh, approved 2026-10-31 · Date: 2026-10-30 · From the approv
     - _Test: `tests/integration/xy/test_server.py::test_prompt_has_forecast_shape`, `::test_served_tools`;
       `tests/unit/collect/test_fetch.py::test_block_expires`_
 
-- [ ] 7. The schedule
+- [x] 7. The schedule
   - Branch: `feat/mc-7-schedule` · Depends on: 4 · ADRs: ADR-0006
-  - [ ] 7.1 The cadence of the round page's facts and `fantadamus collect --due`
+  - [x] 7.1 The cadence of the round page's facts and `fantadamus collect --due`
     - _Requirements: R7.1_
     - _Test: `tests/unit/collect/test_cadence.py::test_cadence_table`;
       **P7** `tests/property/collect/test_cadence.py::test_p7_due_stays_due`;
+      `tests/integration/collect/test_collect_tool.py::test_command_collects_only_whats_due`;
       **AT-9** `tests/acceptance/collect/test_schedule.py::test_at9_due_collects_exactly_whats_due`_
-  - [ ] 7.2 The launchd step in `docs/player-setup.md`
+  - [x] 7.2 The launchd step in `docs/player-setup.md`
     - _Requirements: R7.2_
     - _Test: `tests/unit/test_repo_hygiene.py::test_player_guide_schedule`_
 

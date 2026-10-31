@@ -40,6 +40,10 @@ class CollectLog:
         runs = self.runs()
         return runs[-1] if runs else None
 
+    def last_attempt(self, as_of: dt.datetime) -> dt.datetime | None:
+        """When the newest run at or before `as_of` started, whatever came of it."""
+        return max((run.started_at for run in self.runs() if run.started_at <= as_of), default=None)
+
     def last_worked(self, as_of: dt.datetime | None = None) -> dict[str, dt.datetime]:
         """For each page, the newest time (at or before `as_of`) it was read and gave facts."""
         worked: dict[str, dt.datetime] = {}

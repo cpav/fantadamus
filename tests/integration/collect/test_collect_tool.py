@@ -91,3 +91,25 @@ def test_report_shows_last_run(tmp_path: Path, capsys: pytest.CaptureFixture[str
     ]
     assert cli.main(["collect", "--report", "--lake", str(tmp_path / "empty" / "lake")]) == 0
     assert capsys.readouterr().out == "No collection has run yet.\n"
+
+
+def test_command_collects_only_whats_due(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    routes = {"/robots.txt": (404, {}, b""), ROUND_ROUTE: (200, HTML, REAL_CLUBS)}
+    with local_site(routes) as site:
+        sources = tmp_path / "sources.toml"
+        sources.write_text('allowed_hosts = ["127.0.0.1"]\n', encoding="utf-8")
+        reading = tmp_path / "reading_list.toml"
+        reading.write_text(
+            f'[collector]\ncurrent_round = "{site.base_url}{ROUND_ROUTE}"\n'
+            f'round = "{site.base_url}/probabili-formazioni/{{round}}-giornata"\n',
+            encoding="utf-8",
+        )
+        command = ["collect", "--due", "--lake", str(tmp_path / "lake"), "--sources", str(sources)]
+        assert cli.main([*command, "--reading-list", str(reading)]) == 0
+        first = capsys.readouterr().out
+        assert cli.main([*command, "--reading-list", str(reading)]) == 0
+        second = capsys.readouterr().out
+    assert first.startswith("Due: fixtures\n")
+    assert f"{site.base_url}{ROUND_ROUTE}: stored" in first
+    assert second == "Nothing due.\n"
+    assert [path for path, _ in site.requests].count(ROUND_ROUTE) == 1
