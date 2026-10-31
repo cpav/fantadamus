@@ -10,6 +10,7 @@ grid, then a pattern search halving its step) takes milliseconds.
 from __future__ import annotations
 
 import functools
+import itertools
 import math
 from collections.abc import Sequence
 
@@ -50,9 +51,14 @@ def _pmf(rate: float) -> tuple[float, ...]:
 
 def model(home: float, away: float, rho: float = DIXON_COLES_RHO) -> Market:
     """The market implied by team xG `home` and `away`."""
+    p_home, p_draw, p_away, p_over, p_btts = _probabilities(home, away, rho)
+    return Market(p_home=p_home, p_draw=p_draw, p_away=p_away, p_over=p_over, p_btts=p_btts)
+
+
+def _probabilities(home: float, away: float, rho: float) -> tuple[float, float, float, float, float]:
+    """The model's 1X2, over 2.5 and both-teams-score as plain numbers, for the fit's inner loop."""
     home_pmf, away_pmf = _pmf(home), _pmf(away)
-    home_cdf = list(_running_sum(home_pmf))
-    away_cdf = list(_running_sum(away_pmf))
+    home_cdf, away_cdf = list(itertools.accumulate(home_pmf)), list(itertools.accumulate(away_pmf))
     p_home = math.fsum(home_pmf[x] * away_cdf[x - 1] for x in range(1, MAX_GOALS + 1))
     p_away = math.fsum(away_pmf[y] * home_cdf[y - 1] for y in range(1, MAX_GOALS + 1))
     p_draw = math.fsum(h * a for h, a in zip(home_pmf, away_pmf, strict=True))
@@ -60,44 +66,43 @@ def model(home: float, away: float, rho: float = DIXON_COLES_RHO) -> Market:
     p_home, p_draw, p_away = p_home + shift, p_draw - 2 * shift, p_away + shift
     total = p_home + p_draw + p_away
     goals = home + away
-    return Market(
-        p_home=p_home / total,
-        p_draw=p_draw / total,
-        p_away=p_away / total,
-        p_over=1 - math.exp(-goals) * (1 + goals + goals**2 / 2),
-        p_btts=(1 - math.exp(-home)) * (1 - math.exp(-away)) - shift,
+    return (
+        p_home / total,
+        p_draw / total,
+        p_away / total,
+        1 - math.exp(-goals) * (1 + goals + goals**2 / 2),
+        (1 - math.exp(-home)) * (1 - math.exp(-away)) - shift,
     )
 
 
-def _running_sum(values: Sequence[float]) -> list[float]:
-    total, sums = 0.0, []
-    for value in values:
-        total += value
-        sums.append(total)
-    return sums
-
-
 def _error(market: Market, home: float, away: float) -> float:
-    fitted = model(home, away)
-    pairs = [(fitted.p_home, market.p_home), (fitted.p_draw, market.p_draw), (fitted.p_away, market.p_away)]
-    for shown, model_value in ((market.p_over, fitted.p_over), (market.p_btts, fitted.p_btts)):
-        if shown is not None and model_value is not None:
-            pairs.append((model_value, shown))
+    p_home, p_draw, p_away, p_over, p_btts = _probabilities(home, away, DIXON_COLES_RHO)
+    pairs = [(p_home, market.p_home), (p_draw, market.p_draw), (p_away, market.p_away)]
+    for shown, value in ((market.p_over, p_over), (market.p_btts, p_btts)):
+        if shown is not None:
+            pairs.append((value, shown))
     return math.fsum((a - b) ** 2 for a, b in pairs)
 
 
+@functools.lru_cache(maxsize=1024)
 def fit(market: Market) -> tuple[float, float]:
-    """The team xG (home, away) whose model is closest to `market`, by least squares."""
+    """The team xG (home, away) whose model is closest to `market`, by least squares. Cached: both players
+    of a match, and every as-of read of the same odds, ask for the same fit."""
     low, high = XG_RANGE
     steps = round((high - low) / _GRID_STEP)
     grid = [round(low + index * _GRID_STEP, 6) for index in range(steps + 1)]
-    best = min(((h, a) for h in grid for a in grid), key=lambda point: _error(market, *point))
-    error, step = _error(market, *best), _GRID_STEP / 2
+
+    @functools.cache
+    def error_at(point: tuple[float, float]) -> float:  # the search revisits points
+        return _error(market, *point)
+
+    best = min(((h, a) for h in grid for a in grid), key=error_at)
+    error, step = error_at(best), _GRID_STEP / 2
     while step >= _FINEST_STEP:
         moves = [(best[0] + dh, best[1] + da) for dh, da in ((step, 0), (-step, 0), (0, step), (0, -step))]
         inside = [(h, a) for h, a in moves if low <= h <= high and low <= a <= high]
-        candidate = min(inside, key=lambda point: _error(market, *point))
-        if (candidate_error := _error(market, *candidate)) < error:
+        candidate = min(inside, key=error_at)
+        if (candidate_error := error_at(candidate)) < error:
             best, error = candidate, candidate_error
         else:
             step /= 2
