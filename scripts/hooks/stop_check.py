@@ -1,6 +1,6 @@
 """Stop: run the fast checks when the turn changed anything, and send a failure back to the agent (R17.3).
 
-The fast loop is `make test-fast` (format, lint, unit and property tests, about 15 seconds). The full
+The fast loop is `make test-fast` (format, lint, unit and property tests, about 10 seconds). The full
 `make check` runs before every task report and in CI; at the end of every turn it would cost minutes.
 
 "Changed" means the working tree differs from the last time the fast checks passed: the hash covers HEAD

@@ -4,6 +4,9 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 UV := uv run --frozen
+# Cache compiled bytecode (git-ignored) even where the environment turns it off, as agent shells do: without
+# it, every run recompiles the tests and their libraries, about 3 seconds of each pytest start.
+unexport PYTHONDONTWRITEBYTECODE
 
 .PHONY: help setup check check-audit test-fast task-check skeleton
 
@@ -24,7 +27,7 @@ check-audit: ## Dependency vulnerability audit against the allowlist
 test-fast: ## Format, lint, and unit and property tests with the fast profile (R1.4)
 	$(UV) ruff format --check .
 	$(UV) ruff check .
-	HYPOTHESIS_PROFILE=dev $(UV) pytest -m "unit or property" -p no:cacheprovider
+	HYPOTHESIS_PROFILE=dev $(UV) pytest -m "unit or property" -p no:cacheprovider -n 4 --dist worksteal
 
 task-check: ## Before a task: dependencies done, requirements and tests named, ADRs Accepted (TASK=<id> [SPEC=<spec>], R17.4)
 	@$(UV) python -m scripts.checks.task_check $(if $(SPEC),--spec $(SPEC)) $(TASK)

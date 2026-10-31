@@ -57,8 +57,9 @@ def test_formulas_by_hand() -> None:
     assert value.p_scores == pytest.approx(1 - math.exp(-goals))
     assert value.e_start == pytest.approx(vote + 3 * goals + assists - 0.5 * yellow)
     cameo_goals = 1.35 * goal_share * 0.28 + 0.15 * 0.78 * 0.28
-    assert value.e_cameo == pytest.approx(forwards.e_cameo(cameo_goals))
-    assert value.key == pytest.approx(forwards.key(0.88, value.e_start, 0.06, value.e_cameo))
+    e_cameo = (1 - math.exp(-cameo_goals)) * 9.8 + math.exp(-cameo_goals) * 0.6 * 5.75
+    assert value.e_cameo == pytest.approx(e_cameo)
+    assert value.key == pytest.approx((0.88 * value.e_start + 0.06 * e_cameo) / (0.88 + 0.06))
     assert forwards.value(striker(mantra_role=None), CLASSIC).goal_share == pytest.approx(
         (0.20 * 15 + 4) / 25
     )

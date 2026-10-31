@@ -28,6 +28,7 @@ from fantadamus.core.hashing import canonical_json
 
 DEFAULT_ROOT = Path("data/local/lake")
 TIMESTAMPTZ = "TIMESTAMP WITH TIME ZONE"
+INSERT_BATCH = 200
 
 Layer = Literal["silver", "gold"]
 Row = Sequence[object]
@@ -76,10 +77,14 @@ def connect() -> duckdb.DuckDBPyConnection:
 
 
 def fill(connection: duckdb.DuckDBPyConnection, table: Table, rows: Sequence[Row]) -> None:
-    """Create `table` in the connection and insert the rows."""
+    """Create `table` in the connection and insert the rows, up to `INSERT_BATCH` per statement: `executemany`
+    runs one statement per row, about seven times slower. Only the static placeholders are repeated."""
     connection.execute(table.create_sql)
-    if rows:
-        connection.executemany(table.insert_sql, [list(row) for row in rows])
+    placeholders = table.insert_sql[table.insert_sql.index("(") :]
+    for start in range(0, len(rows), INSERT_BATCH):
+        batch = rows[start : start + INSERT_BATCH]
+        statement = ", ".join([table.insert_sql, *[placeholders] * (len(batch) - 1)])
+        connection.execute(statement, [value for row in batch for value in row])
 
 
 def _write_parquet(table: Table, rows: Sequence[Row], path: Path) -> None:

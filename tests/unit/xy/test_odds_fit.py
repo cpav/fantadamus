@@ -85,3 +85,5 @@ def test_regressed_form_fallback() -> None:
     assert xg.away_xg == pytest.approx(1.2)
     assert xg.sources == [source]
     assert gold.team_xg([], table[:1], home="alfa", away="beta", as_of=source.captured_at) is None
+    goalless = [row.model_copy(update={"goals_for": 0, "goals_against": 0}) for row in table]
+    assert gold.team_xg([], goalless, home="alfa", away="beta", as_of=source.captured_at) is None
