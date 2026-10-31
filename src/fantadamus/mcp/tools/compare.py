@@ -75,12 +75,14 @@ Why = Literal["missing", "stale", "partial"]
 
 
 class ReadingItem(BaseModel):
-    """One fact's entry in `config/reading_list.toml` (design C11)."""
+    """One fact's entry in `config/reading_list.toml` (design C11; mvp-collect C3.2)."""
 
     need: str
     submit_tool: str
     pages: list[str] = []
     search: list[str] = []
+    patterns: list[str] = []
+    """Addresses `read_page` also accepts, reached only through a link or a search (a profile)."""
 
 
 def load_reading_list(path: Path = DEFAULT_READING_LIST) -> dict[str, ReadingItem]:

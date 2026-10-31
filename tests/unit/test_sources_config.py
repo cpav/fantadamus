@@ -67,7 +67,7 @@ def test_reading_list_pages_are_allowed() -> None:
         pages: list[str] = entry.get("pages", [])
         searches: list[str] = entry.get("search", [])
         assert pages or searches, fact
-        for page in pages:
+        for page in pages + entry.get("patterns", []):
             assert host_allowed(page, hosts), (fact, page)
         for search in searches:
             sites = re.findall(r"site:([^/\s]+)", search)
