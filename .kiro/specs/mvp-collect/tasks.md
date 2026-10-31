@@ -98,14 +98,14 @@ Status: **Approved by the owner, 2026-10-31; amended the same day** for the amen
     - _Test: `tests/integration/collect/test_collect_tool.py::test_tool_and_command_report`,
       `::test_report_shows_last_run`_
 
-- [ ] 5. Many sources, compared
+- [x] 5. Many sources, compared
   - Branch: `feat/mc-5-sources` · Depends on: 4 · ADRs: ADR-0006
-  - [ ] 5.1 Fixtures and the table come from the highest-ranked fresh source; disagreements between sources are
+  - [x] 5.1 Fixtures and the table come from the highest-ranked fresh source; disagreements between sources are
     listed for the answer
     - _Requirements: R5.1_
     - _Test: `tests/unit/collect/test_sources.py::test_ranked_source_wins`, `::test_disagreements_listed`;
       **AT-7** `tests/acceptance/collect/test_answer.py::test_at7_kickoff_disagreement_shown`_
-  - [ ] 5.2 Confidence for every published probability: sources, spread and "agree", "disputed" or "one
+  - [x] 5.2 Confidence for every published probability: sources, spread and "agree", "disputed" or "one
     source"; odds averaged across pages
     - _Requirements: R5.2, R5.3_
     - _Test: `tests/unit/collect/test_sources.py::test_confidence_labels`_

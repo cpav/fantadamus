@@ -54,6 +54,7 @@ from fantadamus.domains.season.silver import (
     PlayerSeasonRow,
     TeamSeasonRow,
 )
+from fantadamus.domains.sources import Confidence, disagreement, of_odds, of_outlets, weaker
 from fantadamus.engine.forwards import ForwardInputs, ForwardValue, Verdict, compare
 from fantadamus.lake.decision_log import Decision, DecisionLog, LoggedPlayer
 from fantadamus.lake.duckdb_store import LakeStore
@@ -134,6 +135,12 @@ class PlayerAnswer(BaseModel):
     goals: int
     assists: int
     value: ForwardValue
+    p_start_confidence: Confidence | None
+    """How sure his chance of starting (and of a cameo) is (mvp-collect R5.3)."""
+    win_confidence: Confidence | None
+    """How sure his team's chances and xG are."""
+    p_scores_confidence: Confidence | None
+    """How sure his chance of scoring is: the weaker of the two."""
     notes: list[str]
     sources: list[Source]
 
@@ -221,6 +228,8 @@ class _Side:
     match: FixtureRow | None
     present: Availability | None
     xg: TeamXg | None
+    disagreements: list[str]
+    """Where sources differ on his match's kickoff or his club's table (mvp-collect R5.1)."""
 
 
 @dataclass(frozen=True)
@@ -333,7 +342,8 @@ class Advisor:
                 else (None, None)
             )
             if form is not None and table is not None and order is not None:
-                sides.append(_Side(player, form, table, order, match, present, xg))
+                notes = self._disagreements(player, match, fixtures, teams, as_of)
+                sides.append(_Side(player, form, table, order, match, present, xg, notes))
 
         first_kickoff = deadline(fixtures, round, as_of) if round is not None else None
         if plan or round is None or first_kickoff is None or len(sides) != 2:
@@ -346,6 +356,34 @@ class Advisor:
             )
         answer = self._answer(sides, known, round, first_kickoff, as_of, stored)
         return CompareResult(status="answer", message=answer.message, answer=answer)
+
+    def _disagreements(
+        self,
+        player: KnownPlayer,
+        match: FixtureRow | None,
+        fixtures: Sequence[FixtureRow],
+        teams: Sequence[TeamSeasonRow],
+        as_of: dt.datetime,
+    ) -> list[str]:
+        """Where the sources differ on his match's kickoff or his club's table, the one used first (R5.1)."""
+        found = [
+            disagreement(
+                [row for row in teams if row.club == player.club],
+                as_of,
+                f"{self.clubs.names[player.club]}'s table",
+                lambda row: f"{row.played} played, {row.goals_for} scored, {row.goals_against} conceded",
+            )
+        ]
+        if match is not None:
+            found.append(
+                disagreement(
+                    [row for row in fixtures if (row.home, row.away) == (match.home, match.away)],
+                    as_of,
+                    f"{self.clubs.names[match.home]} v {self.clubs.names[match.away]} kickoff",
+                    lambda row: f"{row.kickoff_at.astimezone(ROME):%a %d %b %H:%M}",
+                )
+            )
+        return [f"Sources disagree, the first is used: {note}." for note in found if note is not None]
 
     def _match_facts(
         self,
@@ -496,7 +534,14 @@ class Advisor:
         self, side: _Side, value: ForwardValue, penalty_taker: bool, round: int
     ) -> PlayerAnswer:
         match, present, xg = side.match, side.present, side.xg
-        notes: list[str] = []
+        notes = list(side.disagreements)
+        start_confidence = of_outlets(present) if present is not None else None
+        win_confidence = of_odds(xg) if xg is not None else None
+        scores_confidence = (
+            weaker(start_confidence, win_confidence)
+            if start_confidence is not None and win_confidence is not None
+            else start_confidence or win_confidence
+        )
         sources = [side.form.source, side.table.source, side.order.source]
         if match is None:
             notes.append(f"{side.player.name} has no match in round {round}: counted as not playing.")
@@ -542,6 +587,9 @@ class Advisor:
             goals=form.goals,
             assists=form.assists,
             value=value,
+            p_start_confidence=start_confidence,
+            win_confidence=win_confidence,
+            p_scores_confidence=scores_confidence,
             notes=notes,
             sources=_unique(sources),
         )

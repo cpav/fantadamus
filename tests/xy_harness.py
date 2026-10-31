@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 import datetime as dt
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -36,14 +36,14 @@ def page(name: str) -> dict[str, Any]:
 
 
 @contextlib.asynccontextmanager
-async def tools(store: LakeStore, now: dt.datetime = NOW) -> AsyncIterator[Client]:
-    """The tools over `store`, accepting pages from example.org, as user `user-1`; league rules and the
-    decision log are kept under the lake's root."""
+async def tools(
+    store: LakeStore, now: dt.datetime = NOW, hosts: Sequence[str] = ("example.org",)
+) -> AsyncIterator[Client]:
+    """The tools over `store`, accepting pages from `hosts`, as user `user-1`; league rules and the decision
+    log are kept under the lake's root."""
     server = AdvisorServer(name="fantadamus-test")
     clock = fixed_clock(now)
-    submit.register(
-        server, store, allowed_hosts=["example.org"], clock=clock, submitted_by="user-1", clubs=CLUBS
-    )
+    submit.register(server, store, allowed_hosts=hosts, clock=clock, submitted_by="user-1", clubs=CLUBS)
     rules = RulesStore(store.root / "league")
     league.register(server, rules, user="user-1", clock=clock)
     advisor = compare.Advisor(

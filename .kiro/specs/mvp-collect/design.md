@@ -240,10 +240,14 @@ A sync tool blocking for a few seconds is fine for one player on stdio.
 - **Confidence:** every published probability gets a `Confidence`:
   - `sources`: how many outlets or pages gave it;
   - `spread`;
-  - `label`: "agree", "disputed" or "one source" (R5.3).
+  - `label`: "agree", "disputed" or "one source" (R5.3), or "official" once the official lineup has settled
+    p_start (added in task 5: "agree" or "one source" would undersell a confirmed lineup).
 
   p_start's comes from the outlets, team xG's and the win chance's from the odds pages, and P(scores) takes
-  the weaker of the two.
+  the weaker of the two (disputed, then one source, then agree, then official). Odds pages count as disputed
+  when their de-margined 1X2 are 0.10 or more apart, a *(start)* constant; team form alone is one source. In
+  `domains/sources.py`; the answer carries `p_start_confidence`, `win_confidence` and `p_scores_confidence`
+  per player, and each disagreement as a note.
 
 ### C13. The forecast answer (R6)
 
