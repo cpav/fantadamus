@@ -130,7 +130,7 @@ def read_round(html: str, round: int | None = None) -> RoundFacts:
 def _read_match(pane: Element, home: str, away: str, kickoff: dt.datetime, found: _Found) -> None:
     """One match's odds, outlet views and official lineup, added to `found`. A payload that fails its contract
     is left out and named in `found.problems`; the match's other payloads still count."""
-    teams = _team(pane, "home", home), _team(pane, "away", away)
+    home_team, away_team = _team(pane, "home", home), _team(pane, "away", away)
 
     def attempt[T](what: str, build: Callable[[], T]) -> T | None:
         try:
@@ -150,6 +150,11 @@ def _read_match(pane: Element, home: str, away: str, kickoff: dt.datetime, found
         )
         if payload is not None:
             found.odds.append(MatchOdds(payload, _updated_at(updated, kickoff) if updated else None))
+    if home_team is None or away_team is None:
+        if home_team is not None or away_team is not None:  # half published: wait for both
+            found.problems.append(f"{home} v {away}: only one team's lineup is published")
+        return
+    teams = home_team, away_team
     for outlet in OUTLETS:
         view = attempt(outlet, functools.partial(_outlet_view, outlet, home, away, teams))
         if view is not None:
@@ -223,11 +228,15 @@ def _updated_at(text: str, kickoff: dt.datetime) -> dt.datetime | None:
     return None
 
 
-def _team(pane: Element, side: str, club: str) -> _Team:
+def _team(pane: Element, side: str, club: str) -> _Team | None:
+    """The club's lineup, or None when its section has no tables yet: early in the week the page lists the
+    matches before their lineups. A missing section is a changed layout."""
     sections = pane.find_all("section", f"prb-squadra--{side}")
     heading = sections[0].find("h2", "prb-squadra__nome") if len(sections) == 1 else None
     if heading is None or name_key(heading.text()) != name_key(club):
         raise UnreadablePageError(f"{club}'s lineup is missing")
+    if sections[0].find("table") is None:
+        return None
     tables: dict[str, list[_Row]] = {}
     for table in sections[0].find_all("table", "prb-tabella"):
         caption = table.find("caption")
