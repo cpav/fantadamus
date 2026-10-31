@@ -53,6 +53,7 @@ _MONTHS = [
     "dicembre",
 ]
 _SIGNS = (("1", "home_win"), ("X", "draw"), ("2", "away_win"))  # the 1X2 boxes, in order
+_ROUND = re.compile(r"(\d+)\s*ª\s*Giornata", re.IGNORECASE)
 _UPDATED = re.compile(r"(\d{1,2}) (\w+) alle (\d{1,2}):(\d{2})")
 _NUMBER = re.compile(r"\d+(?:,\d+)?")
 _PERCENT = re.compile(r"(\d+(?:,\d+)?)\s*%")
@@ -96,9 +97,16 @@ class _Team:
     unavailable: list[str]
 
 
-def read_round(html: str, round: int) -> RoundFacts:
-    """The round's facts, or `UnreadablePageError` if the page lacks anything the reader relies on."""
+def read_round(html: str, round: int | None = None) -> RoundFacts:
+    """The round's facts, or `UnreadablePageError` if the page lacks anything the reader relies on. Without
+    `round`, the page's title names it ("… - 11ª Giornata"): the current-round address has no number."""
     tree = parse(html)
+    if round is None:
+        title = tree.find("title")
+        named = _ROUND.search(title.text()) if title else None
+        if named is None:
+            raise UnreadablePageError("the page's title names no round")
+        round = int(named.group(1))
     panes = [
         (pane, header)
         for pane in tree.find_all("div", "tab-pane")

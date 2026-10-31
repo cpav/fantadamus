@@ -76,21 +76,24 @@ Status: **Approved by the owner, 2026-10-31; amended the same day** for the amen
     - _Requirements: R3.4_
     - _Test: `tests/contract/test_real_pages.py::test_reading_saved_pages`_
 
-- [ ] 4. The collector
+- [x] 4. The collector
   - Branch: `feat/mc-4-collector` · Depends on: 3 · ADRs: ADR-0006
-  - [ ] 4.1 `facts.submit_many`: every payload checked first, one bronze record each, one silver rebuild per
+  - [x] 4.1 `facts.submit_many`: every payload checked first, one bronze record each, one silver rebuild per
     domain, failures reported without stopping the rest
     - _Requirements: R1.1, R1.4_
     - _Test: `tests/integration/collect/test_submit_many.py::test_one_rebuild_per_domain`_
-  - [ ] 4.2 The collector: the round page planned from needs (fetched once per run), read, stored as
-    `collector` with fetch and page times, a budget, a report; its address and the switch-off in configuration
+  - [x] 4.2 The collector: the round page planned from needs (fetched once per run), read, stored as
+    `collector` with fetch and page times, a report; its address and the switch-off in configuration (the
+    60-second budget moved to 6.1, where `compare_players` sets it, 2026-10-31)
     - _Requirements: R1.1, R1.4, R2.4, R2.5, R3.4_
     - _Test: `tests/integration/collect/test_collector.py::test_collect_round_from_local_pages`,
-      `::test_switched_off_source`;
+      `::test_switched_off_source`, `::test_failures_named`;
+      `tests/unit/collect/test_read_fco.py::test_round_from_the_page`;
+      `tests/unit/test_sources_config.py::test_collector_page_is_allowed`;
       **AT-1** `tests/acceptance/collect/test_collect.py::test_at1_one_collection_stores_everything`,
       **AT-6** `::test_at6_unexpected_layout_falls_back`;
       **P3** `tests/property/collect/test_collect.py::test_p3_same_pages_store_nothing_new`_
-  - [ ] 4.3 The collection log, the `collect` tool and `fantadamus collect` with `--round` and `--report`
+  - [x] 4.3 The collection log, the `collect` tool and `fantadamus collect` with `--round` and `--report`
     - _Requirements: R1.2, R8.2_
     - _Test: `tests/integration/collect/test_collect_tool.py::test_tool_and_command_report`,
       `::test_report_shows_last_run`_
