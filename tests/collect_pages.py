@@ -33,6 +33,7 @@ class FcoMatch:
     percents: Mapping[str, tuple[int | None, ...]] = field(default_factory=dict)  # None: the outlet's dash
     confirmed: bool = False
     lineups: bool = True  # False: the teams' sections are there, their tables not published yet
+    reversed: bool = False  # True: each table lists its players in the opposite order
 
 
 def _role(letter: str) -> str:
@@ -81,11 +82,13 @@ def _fco_team(club: str, side: str, match: FcoMatch) -> str:
     if not match.lineups:
         return f"{heading}</section>"
     players = squad(club)
+    order = reversed if match.reversed else iter
     starters = "".join(
-        _fco_row(name, match.percents.get(name, (90, 90, 95, 90)), match.confirmed) for name in players[:11]
+        _fco_row(name, match.percents.get(name, (90, 90, 95, 90)), match.confirmed)
+        for name in order(players[:11])
     )
     bench = "".join(
-        _fco_row(name, match.percents.get(name, (10, 30, 5, 30)), False) for name in players[11:13]
+        _fco_row(name, match.percents.get(name, (10, 30, 5, 30)), False) for name in order(players[11:13])
     )
     out = (
         '<div class="prb-fuori"><p class="prb-fuori__titolo">Indisponibili</p>'

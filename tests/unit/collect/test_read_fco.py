@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import datetime as dt
+from dataclasses import replace
 
 import pytest
 
+from fantadamus.domains.facts import payload_hash
 from fantadamus.web.readers import UnreadablePageError
 from fantadamus.web.readers.fco import read_round
 from tests.collect_pages import OUTLETS, FcoMatch, fco_round_page, squad
@@ -57,7 +59,8 @@ def test_page_average_skipped() -> None:
 def test_official_lineup_when_confirmed() -> None:
     [official] = read_round(PAGE, round=10).officials
     assert (official.home, official.away) == ("Gamma", "Delta")
-    assert official.home_team.starters[:2] == ["UNO G", "DUE G"]
+    assert {"UNO G", "DUE G", "UNDICI G"} <= set(official.home_team.starters)
+    assert "DODICI G" in official.home_team.bench
     assert len(official.away_team.starters) == 11
 
 
@@ -65,7 +68,9 @@ def test_dash_means_not_listed() -> None:
     dashes = dict.fromkeys(squad("Alfa")[:2], (90, None, 90, 90))  # Gazzetta doesn't list two starters
     facts = read_round(fco_round_page(FcoMatch("Alfa", "Beta", percents=dashes)), round=10)
     gazzetta = next(view for view in facts.outlets if view.outlet == "Gazzetta")
-    assert [player.name for player in gazzetta.home_team.players][:2] == ["TRE A", "QUATTRO A"]
+    names = {player.name for player in gazzetta.home_team.players}
+    assert {"UNO A", "DUE A"}.isdisjoint(names)
+    assert "TRE A" in names
     assert len(gazzetta.home_team.players) == 11
     assert facts.problems == []
 
@@ -102,3 +107,14 @@ def test_lineups_not_published_yet() -> None:
     assert {(view.home, view.away) for view in facts.outlets} == {("Gamma", "Delta")}
     assert [odds.payload.home for odds in facts.odds] == ["Gamma"]
     assert facts.problems == []
+
+
+def test_order_on_the_page_does_not_matter() -> None:
+    """Found in the real round: the page lists matches that kick off together in either order from one load to
+    the next. The same facts in another order must read the same, or each read would store them again."""
+    alfa, gamma = FcoMatch("Alfa", "Beta"), FcoMatch("Gamma", "Delta", confirmed=True)  # same kickoff
+    first = read_round(fco_round_page(alfa, gamma))
+    shuffled = read_round(fco_round_page(replace(gamma, reversed=True), replace(alfa, reversed=True)))
+    assert first.fixtures == shuffled.fixtures
+    assert sorted(map(payload_hash, first.outlets)) == sorted(map(payload_hash, shuffled.outlets))
+    assert list(map(payload_hash, first.officials)) == list(map(payload_hash, shuffled.officials))
