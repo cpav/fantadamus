@@ -53,7 +53,8 @@ def team_xg(
     away: str,
     as_of: dt.datetime,
 ) -> TeamXg | None:
-    """The match's team xG as known at `as_of`, or None without odds or a league table covering both clubs."""
+    """The match's team xG as known at `as_of`, or None without odds or a league table covering both clubs
+    with goals in it."""
     match = [row for row in odds_rows if (row.home, row.away) == (home, away)]
     pages = sorted(
         latest_by(match, as_of, key=lambda row: (row.source_url, name_key(row.bookmaker))).values(),
@@ -65,15 +66,16 @@ def team_xg(
         return _result(home_xg, away_xg, from_odds=True, totals=totals, sources=[row.source for row in pages])
     table = latest_by(team_rows, as_of, key=lambda row: row.club)
     played = sum(row.played for row in table.values())
+    goals = sum(row.goals_for for row in table.values())
     if (
         home not in table
         or away not in table
-        or not played
+        or not goals  # no goals yet: no league average to regress toward
         or not table[home].played
         or not table[away].played
     ):
         return None
-    league = sum(row.goals_for for row in table.values()) / played
+    league = goals / played
     sides = [
         (
             table[club].goals_for / table[club].played,
