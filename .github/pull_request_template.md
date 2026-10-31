@@ -1,8 +1,8 @@
 <!-- The title becomes the squash commit on main: use Conventional Commits, e.g. "feat(availability): …". -->
 
-**Task:** <!-- e.g. ef-8 (engineering-foundation, task 8) -->
-**Requirements:** <!-- e.g. R16.1, R16.10 -->
-**Tests:** <!-- e.g. tests/acceptance/test_at7_walking_skeleton.py::test_at7_walking_skeleton -->
+**Task:** <!-- e.g. mc-3 (mvp-collect, task 3) -->
+**Requirements:** <!-- e.g. R3.1, R3.5 -->
+**Tests:** <!-- e.g. tests/unit/collect/test_read_fco.py::test_round_page_facts -->
 **ADRs:** <!-- ADRs this change relies on, each Accepted; "none" if none -->
 
 ## What changed

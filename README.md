@@ -39,7 +39,7 @@ Re-planned on 2026-10-26: the work now goes in thin slices, each taking one ques
 
 | Phase | Builds | Status |
 |---|---|---|
-| 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton | Done, signed off 2026-10-26 |
+| 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton (retired 2026-10-31) | Done, signed off 2026-10-26 |
 | 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Done, signed off 2026-10-26 ([report](docs/reports/phase-1-report.md)) |
 | 2 More slices | Keepers and defenders; the full lineup with league rules and the bench; the formation | Method written |
 | 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
@@ -54,7 +54,6 @@ You need macOS or Linux, `git`, `make` and [uv](https://docs.astral.sh/uv/).
 make setup      # the locked Python environment, the pinned tools and the git hooks
 make check      # every gate, as CI runs it: one PASS or FAIL line per check
 make test-fast  # format, lint, unit and property tests with the fast profile
-make skeleton   # the walking skeleton end to end, compared with its golden file
 ```
 
 `uv run fantadamus serve` starts the MCP server on stdio: `compare_players`, `set_league_rules` and the seven

@@ -22,7 +22,7 @@ BASE_SCHEMA: Schema = {
         "role": {"enum": ["P", "D", "C", "A"], "title": "Role", "type": "string"},
     },
     "required": ["player_id", "name", "club", "role"],
-    "title": "SkeletonPlayer",
+    "title": "Player",
     "type": "object",
 }
 
@@ -135,12 +135,12 @@ def test_contract_version_rules(
 
     entries = ["## OtherContract " + _text(current_version)]
     if current_version != base_version:
-        entries.append("## SkeletonPlayer " + _text(base_version))
+        entries.append("## Player " + _text(base_version))
     if has_entry:
-        entries.append("## SkeletonPlayer " + _text(current_version) + " (2026-10-25)")
+        entries.append("## Player " + _text(current_version) + " (2026-10-25)")
     changelog = "# Changelog\n\n" + "\n\n- a change\n\n".join(entries) + "\n"
 
-    contract = "skeleton.player.SkeletonPlayer"
+    contract = "sample.player.Player"
     base = {"contract": contract, "version": _text(base_version), "schema": BASE_SCHEMA} if has_base else None
     current = {"contract": contract, "version": _text(current_version), "schema": schema}
     issues = version_rules(base, current, changelog)

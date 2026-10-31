@@ -8,7 +8,7 @@ UV := uv run --frozen
 # it, every run recompiles the tests and their libraries, about 3 seconds of each pytest start.
 unexport PYTHONDONTWRITEBYTECODE
 
-.PHONY: help setup check check-audit test-fast task-check skeleton
+.PHONY: help setup check check-audit test-fast task-check
 
 help: ## List the targets
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -31,6 +31,3 @@ test-fast: ## Format, lint, and unit and property tests with the fast profile (R
 
 task-check: ## Before a task: dependencies done, requirements and tests named, ADRs Accepted (TASK=<id> [SPEC=<spec>], R17.4)
 	@$(UV) python -m scripts.checks.task_check $(if $(SPEC),--spec $(SPEC)) $(TASK)
-
-skeleton: ## Run the walking skeleton end to end and compare gold with its golden file (R16.1, R16.6)
-	$(UV) fantadamus skeleton run --golden tests/golden/skeleton/role_counts.json

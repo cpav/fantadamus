@@ -35,7 +35,7 @@ command again.
 cd ~/fantadamus && uv run --frozen --no-dev fantadamus --help
 ```
 
-The first run downloads what it needs (a minute or so), then prints the commands `skeleton` and `serve`.
+The first run downloads what it needs (a minute or so), then prints the command `serve`.
 
 ## 4. Note two paths
 

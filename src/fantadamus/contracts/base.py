@@ -28,7 +28,7 @@ class Contract(BaseModel):
 
     @classmethod
     def contract_name(cls) -> str:
-        """Module path below the package plus the class name, e.g. `skeleton.player.SkeletonPlayer`."""
+        """Module path below the package plus the class name, e.g. `xy.fixtures.FixturesPayload`."""
         return f"{cls.__module__.removeprefix(PACKAGE + '.')}.{cls.__qualname__}"
 
     @classmethod

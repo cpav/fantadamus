@@ -12,9 +12,9 @@ from scripts.checks import contracts
 from scripts.checks._common import CheckResult
 
 from fantadamus.contracts.base import SCHEMA_DIR
-from fantadamus.contracts.skeleton.player import SkeletonPlayer
+from fantadamus.contracts.xy.fixtures import FixturesPayload
 
-PLAYER = "skeleton.player.SkeletonPlayer.json"
+FIXTURES = "xy.fixtures.FixturesPayload.json"
 
 
 @pytest.fixture
@@ -34,18 +34,18 @@ def test_committed_schemas_pass(schema_dir: Path) -> None:
 
 
 def test_stale_or_missing_schema_fails_with_the_fix(schema_dir: Path) -> None:
-    (schema_dir / PLAYER).write_text("{}\n", encoding="utf-8")
+    (schema_dir / FIXTURES).write_text("{}\n", encoding="utf-8")
     (schema_dir / "envelope.BronzeEnvelope.json").unlink()
     result = contracts.check(schema_dir=schema_dir, load_base=_no_base)
     assert not result.ok
-    assert f"{PLAYER} is out of date" in result.message
+    assert f"{FIXTURES} is out of date" in result.message
     assert "envelope.BronzeEnvelope.json is out of date" in result.message
     assert "--write" in result.message
 
 
 def test_orphan_schema_fails_and_write_repairs(schema_dir: Path) -> None:
     (schema_dir / "gone.Old.json").write_text("{}\n", encoding="utf-8")
-    (schema_dir / PLAYER).write_text("{}\n", encoding="utf-8")
+    (schema_dir / FIXTURES).write_text("{}\n", encoding="utf-8")
     assert (
         "schema files without a contract: gone.Old.json"
         in contracts.check(schema_dir=schema_dir, load_base=_no_base).message
@@ -57,7 +57,7 @@ def test_orphan_schema_fails_and_write_repairs(schema_dir: Path) -> None:
 def _base_with(**changes: Any) -> contracts.BaseLoader:
     def load(filename: str) -> str | None:
         doc = json.loads((SCHEMA_DIR / filename).read_text(encoding="utf-8"))
-        if filename == PLAYER:
+        if filename == FIXTURES:
             doc.update(changes)
         return json.dumps(doc)
 
@@ -69,7 +69,7 @@ def test_unchanged_base_passes(schema_dir: Path) -> None:
 
 
 def test_schema_change_without_bump_fails(schema_dir: Path) -> None:
-    old_schema = SkeletonPlayer.model_json_schema() | {"title": "Old title"}
+    old_schema = FixturesPayload.model_json_schema() | {"title": "Old title"}
     result = contracts.check(schema_dir=schema_dir, load_base=_base_with(schema=old_schema))
     assert not result.ok
     assert "schema changed without a version bump (still 1.0.0)" in result.message
@@ -85,7 +85,7 @@ def test_breaking_change_with_minor_bump_fails() -> None:
 
 
 def test_major_bump_and_backwards_version(schema_dir: Path) -> None:
-    old_schema = SkeletonPlayer.model_json_schema()
+    old_schema = FixturesPayload.model_json_schema()
     old_schema["properties"] = old_schema["properties"] | {"shirt": {"type": "integer"}}
     assert contracts.check(schema_dir=schema_dir, load_base=_base_with(version="0.1.0", schema=old_schema)).ok
     result = contracts.check(schema_dir=schema_dir, load_base=_base_with(version="2.0.0"))
@@ -107,14 +107,14 @@ def test_git_loader_reads_the_base_ref(monkeypatch: pytest.MonkeyPatch) -> None:
 
     def fake_run(args: list[str]) -> Any:
         calls.append(args)
-        found = args[-1].endswith(PLAYER)
+        found = args[-1].endswith(FIXTURES)
         return type("Done", (), {"returncode": 0 if found else 128, "stdout": "{}" if found else ""})()
 
     monkeypatch.setattr(contracts, "run_command", fake_run)
     load = contracts._git_loader("main", SCHEMA_DIR)
-    assert load(PLAYER) == "{}"
+    assert load(FIXTURES) == "{}"
     assert load("missing.json") is None
-    assert calls[0][-1] == f"main:src/fantadamus/contracts/schemas/{PLAYER}"
+    assert calls[0][-1] == f"main:src/fantadamus/contracts/schemas/{FIXTURES}"
 
 
 def _s(**schema: Any) -> dict[str, Any]:

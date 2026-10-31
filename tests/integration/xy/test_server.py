@@ -48,7 +48,7 @@ async def test_served_tools(tmp_path: Path) -> None:
         "submit_player_season",
         "submit_probable_lineups",
         "submit_team_season",
-    ]  # the skeleton's tools aren't served
+    ]
     for fact, entry in load_reading_list(ROOT / "config" / "reading_list.toml").items():
         sites = re.findall(r"https://(?:www\.|it\.)?([a-z-]+)\.", " ".join(entry.pages))
         sites += re.findall(r"site:(?:www\.)?([a-z-]+)\.", " ".join(entry.search))

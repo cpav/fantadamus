@@ -160,6 +160,7 @@ and [design](design.md).
       `::test_entry_requires_reason`, `::test_offline_audit_fails_not_passes`_
 
 - [x] 8. Contracts and the walking skeleton
+  - _The skeleton was retired on 2026-10-31 (requirements change log); the tests named below for it are gone._
   - Branch: `feat/ef-8-walking-skeleton` · Depends on: 5, 7 · ADRs: ADR-0001
   - [x] 8.1 `core`: canonical-JSON hashing, the injected clock, URL host matching for the allowlist
     - _Requirements: R16.2, R16.11_

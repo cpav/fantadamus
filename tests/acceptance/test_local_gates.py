@@ -1,6 +1,7 @@
 """The local gates (task 14.1, R20.1): each test hands the real gate a bad input, in a temporary directory or
 repository, and asserts that the gate fails. CI runs the same `make check`; the GitHub-side parts are the
-manual checklist of task 15.2. The agent hooks (AT-8) and the walking skeleton (AT-7) have their own files.
+manual checklist of task 15.2. The agent hooks (AT-8) have their own file; the walking skeleton (AT-7) was
+retired on 2026-10-31.
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ from scripts.checks._common import run_command
 from scripts.checks.run_all import STATIC
 
 from fantadamus.contracts.base import SCHEMA_DIR
-from fantadamus.contracts.skeleton.player import SkeletonPlayer
+from fantadamus.contracts.xy.fixtures import FixturesPayload
 from tests.conftest import Git
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -143,22 +144,22 @@ def test_at13_conventional_commits(tmp_path: Path, message: str, accepted: bool)
 def test_at14_contract_versioning(tmp_path: Path) -> None:
     schemas = tmp_path / "schemas"
     shutil.copytree(SCHEMA_DIR, schemas)
-    player = "skeleton.player.SkeletonPlayer.json"
+    fixtures = "xy.fixtures.FixturesPayload.json"
 
     def main_had_a_shirt_field(filename: str) -> str:
         doc = json.loads((SCHEMA_DIR / filename).read_text(encoding="utf-8"))
-        if filename == player:
+        if filename == fixtures:
             doc["schema"]["properties"]["shirt"] = {"type": "integer"}
         return json.dumps(doc)
 
     result = contracts.check(schema_dir=schemas, load_base=main_had_a_shirt_field)
     assert not result.ok
     assert "schema changed without a version bump" in result.message
-    base = json.loads(main_had_a_shirt_field(player))
-    minor = SkeletonPlayer.schema_document() | {"version": "1.1.0"}
-    issues = contracts.version_rules(base, minor, "## SkeletonPlayer 1.1.0\n")
+    base = json.loads(main_had_a_shirt_field(fixtures))
+    minor = FixturesPayload.schema_document() | {"version": "1.1.0"}
+    issues = contracts.version_rules(base, minor, "## FixturesPayload 1.1.0\n")
     assert issues == [
-        "skeleton.player.SkeletonPlayer: breaking change needs a major bump (1.0.0 → 1.1.0): $.shirt: removed"
+        "xy.fixtures.FixturesPayload: breaking change needs a major bump (1.0.0 → 1.1.0): $.shirt: removed"
     ]
 
 
