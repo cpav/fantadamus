@@ -8,6 +8,15 @@
 # `patterns` are addresses read_page also accepts, reached only through a link on a listed page or a search,
 # never shown in a refresh plan; each {placeholder} in them matches one path segment (mvp-collect C3.2).
 
+# The page Fantadamus reads itself (mvp-collect C6): Fantacalcio-Online's round page, which carries the
+# fixtures, four outlets' lineups, the official lineups and the odds. `current_round` serves the next round
+# whose deadline hasn't passed and names it in its title; `round` is round n's page. Set `enabled = false`
+# to switch it off (R2.5): Claude then reads those facts through read_page, from the pages below.
+[collector]
+enabled = true
+current_round = "https://www.fantacalcio-online.com/it/serie-a/2026-2027/probabili-formazioni/ultima-giornata"
+round = "https://www.fantacalcio-online.com/it/serie-a/2026-2027/probabili-formazioni/{round}-giornata"
+
 [facts.fixtures]
 need = "N2"
 submit_tool = "submit_fixtures"

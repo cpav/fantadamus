@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 import re
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -87,6 +87,42 @@ def _provenance(envelope: BronzeEnvelope) -> Source:
     )
 
 
+def payload_hash(payload: Contract) -> str:
+    """The content hash a payload's bronze record carries."""
+    return content_sha256(payload.model_dump(mode="json"))
+
+
+def _check_host(source_url: str, allowed_hosts: Iterable[str]) -> None:
+    if not host_allowed(source_url, allowed_hosts):
+        host = url_host(source_url)
+        raise RefusedError(
+            f"source_url host {host} is not on the allowlist" if host else "source_url is not a web page"
+        )
+
+
+def _envelope(
+    domain: Domain[Any, Any],
+    payload: Contract,
+    *,
+    source_url: str,
+    captured_at: dt.datetime,
+    published_at: dt.datetime | None,
+    received_at: dt.datetime,
+    submitted_by: str,
+) -> BronzeEnvelope:
+    return BronzeEnvelope(
+        source=domain.source,
+        source_url=source_url,
+        published_at=published_at,
+        captured_at=min(captured_at, received_at),  # a page can't be read after it arrives; clocks drift
+        received_at=received_at,
+        content_sha256=payload_hash(payload),
+        contract_version=payload.__version__,
+        submitted_by=submitted_by,
+        payload=payload.model_dump(mode="json"),
+    )
+
+
 def submit[P: Contract](
     store: LakeStore,
     domain: Domain[P, Any],
@@ -101,28 +137,81 @@ def submit[P: Contract](
     clubs: Clubs,
 ) -> Receipt:
     """Check the page and the clubs, append the payload to bronze and rebuild the domain's silver table."""
-    if not host_allowed(source_url, allowed_hosts):
-        host = url_host(source_url)
-        raise RefusedError(
-            f"source_url host {host} is not on the allowlist" if host else "source_url is not a web page"
-        )
-    data = payload.model_dump(mode="json")
-    received_at = clock()
-    envelope = BronzeEnvelope(
-        source=domain.source,
+    _check_host(source_url, allowed_hosts)
+    envelope = _envelope(
+        domain,
+        payload,
         source_url=source_url,
+        captured_at=captured_at,
         published_at=published_at,
-        captured_at=min(captured_at, received_at),  # a page can't be read after it arrives; clocks drift
-        received_at=received_at,
-        content_sha256=content_sha256(data),
-        contract_version=payload.__version__,
+        received_at=clock(),
         submitted_by=submitted_by,
-        payload=data,
     )
     rows = domain.to_rows(payload, clubs, _provenance(envelope))
     bronze_id = store.append_bronze(envelope)
     rebuild(store, domain, clubs)
     return Receipt(bronze_id=bronze_id, rows=len(rows))
+
+
+@dataclass(frozen=True)
+class Submission[P: Contract]:
+    """One payload read from a page, with the page's own time for it when it shows one."""
+
+    payload: P
+    published_at: dt.datetime | None = None
+
+
+class Rejection(BaseModel):
+    """A payload that couldn't be stored: its place in the submission and why."""
+
+    index: int
+    reason: str
+
+
+class Stored(BaseModel):
+    receipts: list[Receipt]
+    rejections: list[Rejection]
+
+
+def submit_many[P: Contract](
+    store: LakeStore,
+    domain: Domain[P, Any],
+    submissions: Sequence[Submission[P]],
+    *,
+    source_url: str,
+    captured_at: dt.datetime,
+    allowed_hosts: Iterable[str],
+    clock: Clock,
+    submitted_by: str,
+    clubs: Clubs,
+) -> Stored:
+    """The payloads one page gave for a domain: each checked first, one bronze record each and one silver
+    rebuild for all (design C8). A payload that fails is reported and the others still go in; a page off the
+    allowlist refuses them all."""
+    _check_host(source_url, allowed_hosts)
+    received_at = clock()
+    accepted: list[tuple[BronzeEnvelope, int]] = []
+    rejections: list[Rejection] = []
+    for index, submission in enumerate(submissions):
+        envelope = _envelope(
+            domain,
+            submission.payload,
+            source_url=source_url,
+            captured_at=captured_at,
+            published_at=submission.published_at,
+            received_at=received_at,
+            submitted_by=submitted_by,
+        )
+        try:
+            rows = domain.to_rows(submission.payload, clubs, _provenance(envelope))
+        except ValueError as rejection:
+            rejections.append(Rejection(index=index, reason=str(rejection)))
+        else:
+            accepted.append((envelope, len(rows)))
+    receipts = [Receipt(bronze_id=store.append_bronze(envelope), rows=rows) for envelope, rows in accepted]
+    if receipts:
+        rebuild(store, domain, clubs)
+    return Stored(receipts=receipts, rejections=rejections)
 
 
 def rebuild(store: LakeStore, domain: Domain[Any, Any], clubs: Clubs) -> None:
@@ -136,6 +225,13 @@ def rebuild(store: LakeStore, domain: Domain[Any, Any], clubs: Clubs) -> None:
 
 def read_silver[R: SilverRow](store: LakeStore, domain: Domain[Any, R]) -> list[R]:
     return [domain.row.model_validate(row) for row in store.read_table("silver", domain.table.name)]
+
+
+def last_read(store: LakeStore, domain: Domain[Any, Any], source_url: str) -> set[str]:
+    """The content hashes of the newest stored read of `source_url` in the domain: what the page said last."""
+    rows = [row for row in read_silver(store, domain) if row.source_url == source_url]
+    newest = max((row.captured_at for row in rows), default=None)
+    return {row.content_sha256 for row in rows if row.captured_at == newest}
 
 
 def latest_by[R: SilverRow, K](rows: Iterable[R], as_of: dt.datetime, key: Callable[[R], K]) -> dict[K, R]:
