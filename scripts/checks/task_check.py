@@ -1,7 +1,7 @@
 """Before a task starts: are its dependencies done, its requirements and tests named, its ADRs Accepted?
 (R17.4, R18.4)
 
-Reads `.kiro/specs/<spec>/tasks.md` (default: the current spec, `mvp-x-or-y`). A task or sub-task is done
+Reads `.kiro/specs/<spec>/tasks.md` (default: the current spec, `mvp-collect`). A task or sub-task is done
 when its box is ticked (`- [x]`), which happens on its own branch and reaches `main` with the owner's merge.
 Every sub-task needs a `_Test:_` line and a `_Requirements:_` line whose R-IDs exist in requirements.md; an
 **Owner** step may name a gate instead of R-IDs. If anything is missing the check fails, and the agent stops
@@ -22,7 +22,7 @@ from scripts.checks._common import CheckResult, report
 
 ROOT = Path(__file__).resolve().parents[2]
 SPECS = ROOT / ".kiro" / "specs"
-CURRENT_SPEC = "mvp-x-or-y"
+CURRENT_SPEC = "mvp-collect"
 ADR_DIR = ROOT / "docs" / "adr"
 
 _TASK = re.compile(r"^- \[(?P<done>[ xX])\] (?P<id>\d+)\. (?P<title>.*)$")

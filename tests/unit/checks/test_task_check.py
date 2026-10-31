@@ -125,9 +125,14 @@ def test_repo_tasks_are_well_formed(spec: str) -> None:
 
 
 def test_each_spec_has_its_own_tasks() -> None:
-    assert {"engineering-foundation", "mvp-x-or-y"} <= set(task_check.specs())
+    assert {"engineering-foundation", "mvp-x-or-y", "mvp-collect"} <= set(task_check.specs())
     assert task_check.check("1", "engineering-foundation").ok  # finished long ago
     assert task_check.check("99", "mvp-x-or-y").message == "mvp-x-or-y task 99: no task 99 in tasks.md"
+
+
+def test_default_is_the_current_spec(capsys: pytest.CaptureFixture[str]) -> None:
+    assert task_check.main(["1"]) == 0
+    assert capsys.readouterr().out.startswith("PASS task-check: mvp-collect task 1")
 
 
 def test_main_reports(capsys: pytest.CaptureFixture[str]) -> None:
