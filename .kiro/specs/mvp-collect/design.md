@@ -2,7 +2,8 @@
 
 Status: **Approved by the owner, 2026-10-30**, with both open points accepted; **amended 2026-10-31** for the
 amended requirements (C1, C3, C6, C7, C11, the properties, tests and cost; open points 3 and 4), **the
-amendment approved by the owner the same day**, with open points 3 and 4 accepted · From the approved [requirements](requirements.md) and
+amendment approved by the owner the same day**, with open points 3 and 4 accepted; C9, C11 and C13 then
+count an unchanged page's read as fresh (R1.5), approved 2026-10-31 · From the approved [requirements](requirements.md) and
 [ADR-0006](../../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md) · 2026-10-30
 
 ## Overview
@@ -209,7 +210,8 @@ One JSON line per run in `data/local/collect/<YYYY-MM>.jsonl`, under the git-ign
 - the request;
 - each page: its URL, outcome and rows stored.
 
-`fantadamus collect --report` prints the last run, and the last time each source worked (R8.2).
+`fantadamus collect --report` prints the last run, and the last time each source worked (R8.2). That time also
+counts as the refresh of the page's facts when the read found them unchanged (C11; R1.5).
 
 ### C10. The `collect` tool and command
 
@@ -222,7 +224,10 @@ One JSON line per run in `data/local/collect/<YYYY-MM>.jsonl`, under the git-ign
 
 1. It works out the needs as today.
 2. If there are any, it asks the collector for them, with a 60-second budget.
-3. It reads the facts again and works out what's still missing.
+3. It reads the facts again and works out what's still missing. A round-page fact counts as fresh from its
+   newest capture or from the collector's newest successful read of its page, whichever is later: a read that
+   found the page unchanged stored nothing new (R1.4), but it confirmed the facts (R1.5). The read times come
+   from the collection log (C9).
 4. Whatever remains goes into the refresh plan. Each item names `read_page`, the pages to pass it, best first,
    and the search hints for finding an address on a listed site; it also says what the collector tried, and
    why it failed (R1.3, R8.1). A fact with no listed page (official-lineup articles and betting previews,
@@ -260,7 +265,8 @@ A sync tool blocking for a few seconds is fine for one player on stdio.
   - the odds changing team xG.
 
   As-of reads make this exact and cheap (R6.1).
-- **Last update:** the newest and oldest capture times among the facts used (R6.2).
+- **Last update:** the newest and oldest times the facts used were captured or confirmed unchanged by a
+  collector read (R6.2).
 - **Sources:** per player, each page's address with a short label ("Fantacalcio-Online, round 10 probable
   lineups") from a pattern table, for the Sources list (R6.3).
 - **The agent prompt.** "How to answer" keeps the owner's shape and adds the forecast parts:
