@@ -1,15 +1,24 @@
-"""Shared by the `mvp-collect` tests: a fake web for unit tests and a real local site for acceptance tests."""
+"""Shared by the `mvp-collect` tests: a fake web for unit tests, a real local site for acceptance tests, and
+the submit tools with `read_page` on an in-process client."""
 
 from __future__ import annotations
 
 import threading
 import time
-from collections.abc import Iterator, Mapping
-from contextlib import contextmanager
+from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from fantadamus.web.fetch import Response
+from mcp import Client
+
+from fantadamus.core.clock import fixed_clock
+from fantadamus.lake.duckdb_store import LakeStore
+from fantadamus.mcp.server import AdvisorServer
+from fantadamus.mcp.tools import pages, submit
+from fantadamus.mcp.tools.compare import ReadingItem
+from fantadamus.web.fetch import Fetcher, Response
+from tests.xy_harness import CLUBS, NOW
 
 
 @dataclass
@@ -80,3 +89,17 @@ def local_site(routes: Mapping[str, tuple[int, dict[str, str], bytes]]) -> Itera
     finally:
         server.shutdown()
         server.server_close()
+
+
+@asynccontextmanager
+async def page_tools(
+    store: LakeStore, reading: dict[str, ReadingItem], fetcher: Fetcher, hosts: Sequence[str]
+) -> AsyncIterator[Client]:
+    """`read_page` over `reading` and `fetcher`, and the submit tools accepting `hosts`, as user `user-1`."""
+    server = AdvisorServer(name="fantadamus-test")
+    submit.register(
+        server, store, allowed_hosts=hosts, clock=fixed_clock(NOW), submitted_by="user-1", clubs=CLUBS
+    )
+    pages.register(server, pages.PageReader(reading, fetcher))
+    async with Client(server) as client:
+        yield client

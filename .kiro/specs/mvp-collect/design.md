@@ -2,7 +2,7 @@
 
 Status: **Approved by the owner, 2026-10-30**, with both open points accepted; **amended 2026-10-31** for the
 amended requirements (C1, C3, C6, C7, C11, the properties, tests and cost; open points 3 and 4), **the
-amendment awaiting approval** · From the approved [requirements](requirements.md) and
+amendment approved by the owner the same day**, with open points 3 and 4 accepted · From the approved [requirements](requirements.md) and
 [ADR-0006](../../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md) · 2026-10-30
 
 ## Overview
@@ -116,12 +116,14 @@ Every other page is read by the user's Claude from text Fantadamus fetched. A ne
 configuration, and a redesign breaks nothing: Claude reads the new layout as it read the old. Claude's
 browsing failed in testing (stale caches, refused links, blocked steps); its reading didn't.
 
-- **Addresses (R3.3).** Each fact in `config/reading_list.toml` lists its `pages`, best first, as fixed
-  addresses or as patterns whose placeholders each match one path segment, e.g.
-  `https://www.fantacalcio.it/serie-a/squadre/{club}/{player}/{id}` for a profile. `read_page` accepts an
-  address only if it equals a listed page or matches a pattern; anything else is refused before any request.
-  The search hints stay: Claude's web search finds an address on a listed site, which it then reads through
-  `read_page`.
+- **Addresses (R3.3).** Each fact in `config/reading_list.toml` lists its `pages`, best first, which the
+  refresh plan shows with their placeholders filled for the match, club or player. It may also list
+  `patterns`: addresses reached only through a link or a search, never shown in a plan, e.g.
+  `https://www.fantacalcio.it/serie-a/squadre/{club}/{player}/{id}` for a profile. In both, each placeholder
+  matches one path segment. `read_page` accepts an address only if a page or a pattern matches it; anything
+  else is refused before any request. The search hints stay: Claude's web search finds an address on a
+  listed site, which it then reads through `read_page`. (Pages and patterns split, 2026-10-31, in task 3:
+  a profile's address can't be filled in for a plan.)
 - **Fetching (R3.2).** The server's long-lived `Fetcher` (C1), so the rate limit holds across calls, with
   robots.txt from the same daily cache.
 - **Page text.** `page_text(tree, follow) -> str` walks the HTML tree (C2):
@@ -129,11 +131,14 @@ browsing failed in testing (stale caches, refused links, blocked steps); its rea
     and `iframe`;
   - headings become `#` lines, paragraphs and list items lines of their own, and tables rows of cells joined by
     ` | `, header row first;
-  - a link shows its address, as `text (address)`, only when that address is on the reading list (`follow`),
-    so a squad page shows its profile links and none of the menus;
-  - whitespace collapses, and text past 40,000 characters (about 10,000 tokens) is cut, with a note saying so.
-- **The result:** `{url, fetched_at, facts: [{fact, submit_tool}], text}`, where the facts are those whose
-  pages the address matches. Claude submits with `source_url` set to `url` and `captured_at` to `fetched_at`.
+  - a link with text shows its address, as `text (address)`, only when that address is on the reading list
+    (`follow`), so a squad page shows its profile links and none of the menus;
+  - whitespace collapses, and a long text is split between lines into parts of at most 40,000 characters
+    (about 10,000 tokens each). (Parts instead of a cut, 2026-10-31, in task 3: Fantacalcio.it's probable
+    lineups run to 88,000 characters, and a cut would lose half the matches.)
+- **The result:** `{url, fetched_at, facts: [{fact, submit_tool}], part, parts, text}`, where the facts are
+  those whose pages the address matches, and `part` of `parts` is the text returned; a note at its end says how
+  to ask for the next part. Claude submits with `source_url` set to `url` and `captured_at` to `fetched_at`.
   Nothing is stored (R2.4): the text exists only in the tool result.
 - **Failures:** off the reading list, disallowed, blocked or failed, as a tool error with the reason; Claude
   moves to the next listed page (R8.1).
@@ -301,7 +306,7 @@ Required Hypothesis tests:
 - **The round-page reader:** unit tests on a synthetic page built by `tests/collect_pages.py`. It copies the
   real page's structure (class names, captions, title attributes) with invented clubs and players, because
   real pages can't be committed to a public repository.
-- **Page text and `read_page`:** unit tests on small synthetic pages (tables, links, skipped menus, the cut),
+- **Page text and `read_page`:** unit tests on small synthetic pages (tables, links, skipped menus, parts),
   and integration tests through the in-process MCP client against the local server (AT-11, P8).
 - **Real pages, optionally:** a contract test runs the reader, and `page_text`, on pages saved under
   `data/private/pages/` when they exist, so a layout change shows up locally. It's skipped, with a registered
@@ -358,3 +363,5 @@ From the 2026-10-31 amendment:
   when an answer finds them older than their 7-day target, so about once a week. **Recommendation:** accept.
   Everything that moves until kickoff is on the round page, which the schedule keeps fresh; our own model
   could schedule the rest later, under its own ADR.
+
+Both accepted by the owner with the amendment, 2026-10-31.

@@ -1,7 +1,7 @@
 # Implementation Plan: `mvp-collect` (Phase 2, first slice)
 
 Status: **Approved by the owner, 2026-10-31; amended the same day** for the amended requirements and design
-(tasks 3, 4.2, 6.1, 6.3 and 7.1), **the amendment awaiting approval** · Date: 2026-10-30 · From the approved
+(tasks 3, 4.2, 6.1, 6.3 and 7.1), **the amendment approved the same day** · Date: 2026-10-30 · From the approved
 [requirements](requirements.md) and [design](design.md)
 
 ## How to read and run these tasks
@@ -52,24 +52,26 @@ Status: **Approved by the owner, 2026-10-31; amended the same day** for the amen
     - _Requirements: R3.4_
     - _Test: `tests/unit/collect/test_html.py::test_find_by_class_and_text`_
 
-- [ ] 3. Reading pages
+- [x] 3. Reading pages
   - Branch: `feat/mc-3-readers` · Depends on: 1, 2 · ADRs: ADR-0006
-  - [ ] 3.1 Fantacalcio-Online's round page: fixtures, odds and the chance of 3+ goals with the page's update time,
+  - [x] 3.1 Fantacalcio-Online's round page: fixtures, odds and the chance of 3+ goals with the page's update time,
     four outlets' percentages per team (the page's average skipped), official lineups once confirmed, the
     unavailable list; clubs and names mapped as submissions are
     - _Requirements: R3.1, R3.5, R4.2_
     - _Test: `tests/unit/collect/test_read_fco.py::test_round_page_facts`, `::test_page_average_skipped`,
-      `::test_official_lineup_when_confirmed`;
+      `::test_official_lineup_when_confirmed`, `::test_dash_means_not_listed`, `::test_outlet_short_of_eleven_left_out`,
+      `::test_no_odds_yet`;
       **P4** `tests/property/collect/test_readers.py::test_p4_partial_pages_fail`_
-  - [ ] 3.2 Page text and `read_page`: the reading list's pages as fixed addresses or patterns, only those
-    fetched; the main content as headings, lines, table rows and followable links, menus skipped, long text
-    cut; the result names the fetch time and each fact's submit tool, and stores nothing
+  - [x] 3.2 Page text and `read_page`: the reading list's pages and patterns, only those fetched; the main
+    content as headings, lines, table rows and followable links, menus skipped, long text in parts; the result
+    names the fetch time and each fact's submit tool, and stores nothing
     - _Requirements: R3.2, R3.3, R2.4_
-    - _Test: `tests/unit/collect/test_page_text.py::test_tables_links_and_menus`, `::test_long_text_cut`;
-      `tests/integration/collect/test_read_page.py::test_read_then_submit`, `::test_unlisted_address_refused`;
+    - _Test: `tests/unit/collect/test_page_text.py::test_tables_links_and_menus`, `::test_long_text_in_parts`;
+      `tests/integration/collect/test_read_page.py::test_read_then_submit`, `::test_unlisted_address_refused`,
+      `::test_long_page_in_parts`;
       **P8** `tests/property/collect/test_read_page.py::test_p8_only_listed_addresses`;
       **AT-11** `tests/acceptance/collect/test_read_page.py::test_at11_page_added_in_config_only`_
-  - [ ] 3.3 An optional check of the round-page reader and page text on real pages saved under
+  - [x] 3.3 An optional check of the round-page reader and page text on real pages saved under
     `data/private/pages/` (skipped, with a registered reason, when there are none)
     - _Requirements: R3.4_
     - _Test: `tests/contract/test_real_pages.py::test_reading_saved_pages`_

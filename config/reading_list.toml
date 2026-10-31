@@ -5,6 +5,8 @@
 # Every page, and every `site:` in a search, must be on the allowlist in config/sources.toml.
 # Placeholders, filled by compare_players: {home} and {away} (the match's clubs), {club} (a club key from
 # config/clubs.toml) and {player} (his name). The season pages change each summer, with config/clubs.toml.
+# `patterns` are addresses read_page also accepts, reached only through a link on a listed page or a search,
+# never shown in a refresh plan; each {placeholder} in them matches one path segment (mvp-collect C3.2).
 
 [facts.fixtures]
 need = "N2"
@@ -48,6 +50,10 @@ submit_tool = "submit_player_season"
 search = [
     "{player} {club} site:fantacalcio.it/serie-a/squadre",
     "{player} statistiche fantacalcio site:fantacalcio.it",
+]
+patterns = [
+    "https://www.fantacalcio.it/serie-a/squadre/{club}",
+    "https://www.fantacalcio.it/serie-a/squadre/{club}/{player}/{id}",
 ]
 
 [facts.team_season]

@@ -1,7 +1,7 @@
 # Requirements Document: `mvp-collect` (Phase 2, first slice)
 
 Status: **Approved by the owner, 2026-10-30; amended 2026-10-31** (one reader, other pages read by Claude
-through `read_page`: R1.1, R1.3, R3, R7.1, R8.1 and the acceptance tests), **the amendment awaiting approval** ·
+through `read_page`: R1.1, R1.3, R3, R7.1, R8.1 and the acceptance tests), **the amendment approved the same day** ·
 Workflow: requirements-first · Depends on:
 [ADR-0006](../../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md) (accepted the same day)
 
@@ -218,4 +218,4 @@ rather than silently skipped.
   carries the facts that move until kickoff (Fantacalcio-Online's round page), with every other page fetched
   by Fantadamus and read by the user's Claude through `read_page`. Our own model for scheduled reading of every
   page is left for later, with its own ADR. R1.1, R1.3, R3, R7.1, R8.1 and AT-1, AT-5, AT-6, AT-7 and AT-10
-  amended; AT-11 added. *The amendment awaits the owner's approval.*
+  amended; AT-11 added. The owner approved the amendment the same day.
