@@ -1,18 +1,18 @@
-"""As-of reads of the fixtures (design C6; R2.2, R7.4). A match's latest submission wins, so a postponed
-match moves to its new round or kickoff."""
+"""As-of reads of the fixtures (design C6; R2.2, R7.4). For each match the highest-ranked source wins, with
+its newest read, so a postponed match moves to its new round or kickoff (mvp-collect R5.1)."""
 
 from __future__ import annotations
 
 import datetime as dt
 from collections.abc import Sequence
 
-from fantadamus.domains.facts import latest_by
 from fantadamus.domains.fixtures.silver import FixtureRow
+from fantadamus.domains.sources import best_by
 
 
 def matches(rows: Sequence[FixtureRow], as_of: dt.datetime) -> list[FixtureRow]:
     """Every match as known at `as_of`, by kickoff."""
-    latest = latest_by(rows, as_of, key=lambda row: (row.home, row.away))
+    latest = best_by(rows, as_of, key=lambda row: (row.home, row.away))
     return sorted(latest.values(), key=lambda row: (row.kickoff_at, row.home))
 
 

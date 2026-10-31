@@ -27,6 +27,8 @@ class TeamXg(BaseModel):
     totals: bool
     """Whether the odds showed over/under 2.5, which prices the bonuses (R5.4)."""
     sources: list[Source]
+    spread: float = 0.0
+    """How far apart the odds pages' de-margined 1X2 are: 0 with one page or without odds (R5.3)."""
 
 
 def _mean(values: Sequence[float]) -> float:
@@ -63,7 +65,18 @@ def team_xg(
     if pages:
         home_xg, away_xg = odds.fit(_market(pages))
         totals = any(row.p_over is not None for row in pages)
-        return _result(home_xg, away_xg, from_odds=True, totals=totals, sources=[row.source for row in pages])
+        spread = max(
+            max(chances) - min(chances)
+            for chances in zip(*((row.p_home, row.p_draw, row.p_away) for row in pages), strict=True)
+        )
+        return _result(
+            home_xg,
+            away_xg,
+            from_odds=True,
+            totals=totals,
+            sources=[row.source for row in pages],
+            spread=spread,
+        )
     table = latest_by(team_rows, as_of, key=lambda row: row.club)
     played = sum(row.played for row in table.values())
     goals = sum(row.goals_for for row in table.values())
@@ -90,7 +103,13 @@ def team_xg(
 
 
 def _result(
-    home_xg: float, away_xg: float, *, from_odds: bool, totals: bool, sources: list[Source]
+    home_xg: float,
+    away_xg: float,
+    *,
+    from_odds: bool,
+    totals: bool,
+    sources: list[Source],
+    spread: float = 0.0,
 ) -> TeamXg:
     market = odds.model(home_xg, away_xg)
     return TeamXg(
@@ -102,4 +121,5 @@ def _result(
         from_odds=from_odds,
         totals=totals,
         sources=sources,
+        spread=spread,
     )

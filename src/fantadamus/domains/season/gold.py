@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from fantadamus.domains.facts import Source, latest_by, latest_submissions
 from fantadamus.domains.players.resolve import KnownPlayer
 from fantadamus.domains.season.silver import PenaltyTakerRow, PlayerSeasonRow, TeamSeasonRow
+from fantadamus.domains.sources import best_by
 
 
 class PenaltyOrder(BaseModel):
@@ -33,7 +34,8 @@ def player_form(
 
 
 def team_season(rows: Sequence[TeamSeasonRow], club: str, as_of: dt.datetime) -> TeamSeasonRow | None:
-    return latest_by(rows, as_of, key=lambda row: row.club).get(club)
+    """The club's row from the highest-ranked source, its newest read (mvp-collect R5.1)."""
+    return best_by(rows, as_of, key=lambda row: row.club).get(club)
 
 
 def penalty_order(rows: Sequence[PenaltyTakerRow], club: str, as_of: dt.datetime) -> PenaltyOrder | None:
