@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import plistlib
 from pathlib import Path
 
 import pytest
@@ -69,3 +70,27 @@ def test_player_guide_setup() -> None:
     assert server["args"][2:] == ["run", "--frozen", "--no-dev", "fantadamus", "serve", "--user", "your-name"]
     assert "Project" in guide
     assert "docs/agent-prompt.md" in guide
+
+
+def test_player_guide_schedule() -> None:
+    """mvp-collect task 7.2 (R7.2): the guide has the player install a launchd agent that runs `collect --due`
+    every 15 minutes, with their own paths filled in by the shell, and shows how to switch it off."""
+    guide = (ROOT / "docs" / "player-setup.md").read_text(encoding="utf-8")
+    heredoc = guide.split("<<EOF\n", 1)[1].split("\nEOF\n", 1)[0]
+    filled = heredoc.replace("$(which uv)", "/Users/you/.local/bin/uv").replace("$HOME", "/Users/you")
+    plist = plistlib.loads(filled.encode())
+    assert plist["StartInterval"] == 900
+    assert plist["ProgramArguments"] == [
+        "/Users/you/.local/bin/uv",
+        "--directory",
+        "/Users/you/fantadamus",
+        "run",
+        "--frozen",
+        "--no-dev",
+        "fantadamus",
+        "collect",
+        "--due",
+    ]
+    switch_on = guide.split("launchctl bootstrap", 1)[1].split("\n", 1)[0]
+    assert f"{plist['Label']}.plist" in switch_on
+    assert f"launchctl bootout gui/$(id -u)/{plist['Label']}" in guide

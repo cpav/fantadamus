@@ -202,6 +202,14 @@ there (R2.5).
 for the next round's matches; it fetches the round page once if anything is. The season facts aren't scheduled
 (R7.1): they're read through `read_page` when an answer needs them.
 
+Settled in task 7:
+
+- A match's facts stop being due at its kickoff: there's nothing left to forecast. P7 holds up to then.
+- Each interval counts from the collector's last attempt at the page, successful or not, so a site that
+  refuses is asked again at the fact's own interval, not every 15 minutes. An answer that needs a fact still
+  collects at once (C11).
+- With no fixtures known yet, only the fixtures can be due; that first read brings everything else.
+
 ### C8. Storing many facts at once (`domains/facts.py`)
 
 `submit_many` validates every payload first (contract, clubs, host). It appends them to bronze and rebuilds the
@@ -285,8 +293,10 @@ A sync tool blocking for a few seconds is fine for one player on stdio.
 ### C14. Schedule on the Mac (R7.2)
 
 `docs/player-setup.md` gains a step with a launchd agent (`~/Library/LaunchAgents/…fantadamus.collect.plist`,
-`StartInterval` 900) that runs `uv --directory … run --frozen --no-dev fantadamus collect --due --user NAME`.
-The player installs it with one `launchctl` command. Nothing is installed for them.
+`StartInterval` 900) that runs `uv --directory … run --frozen --no-dev fantadamus collect --due`. The player
+pastes one shell block that writes the plist with their own paths (`$HOME`, `$(which uv)`), and switches it on
+with `launchctl bootstrap`. Nothing is installed for them. (No `--user`: collecting doesn't depend on who
+runs it, task 7.)
 
 ## Error handling
 

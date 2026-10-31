@@ -115,6 +115,61 @@ In a new chat in the Fantadamus project, ask for example:
 
 If Claude answers without showing a Fantadamus tool block, say "Use Fantadamus for this".
 
+## 8. Keep the forecast fresh (optional)
+
+Your Mac can check the round's lineups and odds in the background, so answers are already fresh when you
+ask, even minutes before the deadline. Every 15 minutes it looks at what's due, and reads Fantacalcio-Online's
+round page only if something is: lineups twice a day from three days before a match, every 3 hours on the
+last day; odds daily, then every 3 hours; official lineups every 15 minutes in the 75 minutes before
+kickoff. Nothing runs while your Mac sleeps.
+
+Paste this whole block into Terminal. It writes the schedule with your own paths:
+
+```bash
+mkdir -p ~/Library/LaunchAgents ~/fantadamus/data/local/collect
+cat > ~/Library/LaunchAgents/com.github.cpav.fantadamus.collect.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.github.cpav.fantadamus.collect</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$(which uv)</string>
+    <string>--directory</string>
+    <string>$HOME/fantadamus</string>
+    <string>run</string>
+    <string>--frozen</string>
+    <string>--no-dev</string>
+    <string>fantadamus</string>
+    <string>collect</string>
+    <string>--due</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>900</integer>
+  <key>StandardOutPath</key>
+  <string>$HOME/fantadamus/data/local/collect/schedule.log</string>
+  <key>StandardErrorPath</key>
+  <string>$HOME/fantadamus/data/local/collect/schedule.log</string>
+</dict>
+</plist>
+EOF
+```
+
+Then switch it on:
+
+```bash
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.github.cpav.fantadamus.collect.plist
+```
+
+To see what it did, run `cd ~/fantadamus && uv run --frozen --no-dev fantadamus collect --report`: the last
+run, and when the page last worked. To switch it off:
+
+```bash
+launchctl bootout gui/$(id -u)/com.github.cpav.fantadamus.collect
+```
+
 ## Keeping it up to date
 
 ```bash
@@ -128,6 +183,8 @@ Then quit and reopen Claude Desktop.
 - **Claude says a fact is still missing right after submitting it:** ask again a minute later.
 - **`fantadamus` shows an error in Settings → Developer:** the log is in
   `~/Library/Logs/Claude/mcp-server-fantadamus.log`. Send the last lines to whoever shared this guide.
+- **The schedule (step 8) seems idle:** its output is in `~/fantadamus/data/local/collect/schedule.log`;
+  "Nothing due." is normal between reads.
 - **Starting over:** your league rules, the stored facts and the log of answers are in
   `~/fantadamus/data/local/`. Quitting Claude Desktop and deleting that folder resets everything.
 

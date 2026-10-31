@@ -89,6 +89,8 @@ class CollectReport(BaseModel):
     finished_at: dt.datetime
     round: int | None
     """The round asked for; None for the current one."""
+    due: list[str] = []
+    """For a scheduled run, the facts past their cadence that called for it (C7)."""
     pages: list[PageReport]
 
 

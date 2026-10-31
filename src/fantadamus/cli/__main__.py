@@ -1,7 +1,8 @@
 """The `fantadamus` command line.
 
 fantadamus serve     run the advisor's MCP server on stdio, for Claude Desktop (ADR-0005)
-fantadamus collect   read the round page now and store its facts; `--report` shows the last run (C10)
+fantadamus collect   read the round page now and store its facts; `--due` only if something is past its
+                     cadence (the schedule, C7); `--report` shows the last run (C10)
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from fantadamus.lake.duckdb_store import DEFAULT_ROOT, LakeStore
 from fantadamus.league.rules import RulesStore
 from fantadamus.mcp.server import DEFAULT_SOURCES, build_advisor, load_allowed_hosts, load_instructions
 from fantadamus.mcp.tools.compare import DEFAULT_READING_LIST, load_reading_list
+from fantadamus.web.cadence import collect_due
 from fantadamus.web.collector import Collector, CollectReport, PageReport, load_round_page
 from fantadamus.web.fetch import Fetcher
 
@@ -81,8 +83,16 @@ def _collect(args: argparse.Namespace) -> int:
         allowed_hosts=hosts,
         clock=utc_now,
     )
-    report = collector.collect(args.round)
-    log.append(report)
+    if args.due:
+        due = collect_due(collector, log)
+        if due is None:
+            print("Nothing due.")
+            return 0
+        report = due
+        print("Due: " + ", ".join(report.due))
+    else:
+        report = collector.collect(args.round)
+        log.append(report)
     print("\n".join(_run_lines(report)))
     return 0 if all(page.outcome in {"stored", "unchanged", "switched off"} for page in report.pages) else 1
 
@@ -100,7 +110,9 @@ def _parser() -> argparse.ArgumentParser:
     serve.set_defaults(handler=_serve)
 
     collect = commands.add_parser("collect", help="read the round page now and store its facts")
-    collect.add_argument("--round", type=int, help="the round to read (default: the next round)")
+    which = collect.add_mutually_exclusive_group()
+    which.add_argument("--round", type=int, help="the round to read (default: the next round)")
+    which.add_argument("--due", action="store_true", help="read only if a fact is past its cadence (launchd)")
     collect.add_argument("--report", action="store_true", help="show the last run instead of collecting")
     collect.add_argument("--lake", default=str(DEFAULT_ROOT), help="lake root directory")
     collect.add_argument("--sources", default=str(DEFAULT_SOURCES), help="allowlist (TOML)")
