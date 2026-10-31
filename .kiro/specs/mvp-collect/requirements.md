@@ -1,7 +1,8 @@
 # Requirements Document: `mvp-collect` (Phase 2, first slice)
 
 Status: **Approved by the owner, 2026-10-30; amended 2026-10-31** (one reader, other pages read by Claude
-through `read_page`: R1.1, R1.3, R3, R7.1, R8.1 and the acceptance tests), **the amendment approved the same day** ·
+through `read_page`: R1.1, R1.3, R3, R7.1, R8.1 and the acceptance tests), **the amendment approved the same day**;
+an unchanged page's read counts as fresh (R1.5, R6.2), approved 2026-10-31 ·
 Workflow: requirements-first · Depends on:
 [ADR-0006](../../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md) (accepted the same day)
 
@@ -73,6 +74,8 @@ depend on Claude managing to browse a dozen pages.
   SHALL go into the refresh plan for Claude, to be read through `read_page`.
 - **R1.4** THE SYSTEM SHALL NOT fetch a fact that is still fresh, and a page whose content hasn't changed SHALL
   store nothing new.
+- **R1.5** WHEN the collector reads a page and finds its facts unchanged THE SYSTEM SHALL count that read as their
+  refresh, so that they stay fresh without being stored again.
 
 ### Requirement 2: Polite fetching
 
@@ -148,8 +151,8 @@ why, how sure, how it has moved and how fresh it is, at a glance.
 - **R6.1** THE SYSTEM SHALL return, for each player's p_start, P(scores) and his team's chance to win, its value
   at the user's previous answer for that player (from the decision log) or, without one, 24 hours earlier (an
   as-of read), and which fact changed it.
-- **R6.2** THE SYSTEM SHALL return when the answer's facts were last updated: the newest and oldest capture
-  time, so the answer can say "updated 12 minutes ago".
+- **R6.2** THE SYSTEM SHALL return when the answer's facts were last updated: the newest and oldest time they
+  were captured or confirmed unchanged (R1.5), so the answer can say "updated 12 minutes ago".
 - **R6.3** THE SYSTEM SHALL return, for each player, the pages his facts came from, for a Sources list at the
   bottom of the answer.
 - **R6.4** THE SYSTEM SHALL tell Claude, in the agent prompt, to answer as a forecast in the owner's "X or Y?"
@@ -219,3 +222,6 @@ rather than silently skipped.
   by Fantadamus and read by the user's Claude through `read_page`. Our own model for scheduled reading of every
   page is left for later, with its own ADR. R1.1, R1.3, R3, R7.1, R8.1 and AT-1, AT-5, AT-6, AT-7 and AT-10
   amended; AT-11 added. The owner approved the amendment the same day.
+- **2026-10-31:** a page the collector finds unchanged stores nothing new (R1.4), so its facts would keep their
+  old capture time and look stale. The owner approved counting such a read as their refresh (R1.5, R6.2), taken
+  from the collection log, over storing every read again.

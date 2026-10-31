@@ -1,7 +1,8 @@
 # Implementation Plan: `mvp-collect` (Phase 2, first slice)
 
 Status: **Approved by the owner, 2026-10-31; amended the same day** for the amended requirements and design
-(tasks 3, 4.2, 6.1, 6.3 and 7.1), **the amendment approved the same day** · Date: 2026-10-30 · From the approved
+(tasks 3, 4.2, 6.1, 6.3 and 7.1), **the amendment approved the same day**; 6.1 and 6.2 then count an unchanged
+page's read as fresh, approved 2026-10-31 · Date: 2026-10-30 · From the approved
 [requirements](requirements.md) and [design](design.md)
 
 ## How to read and run these tasks
@@ -112,12 +113,12 @@ Status: **Approved by the owner, 2026-10-31; amended the same day** for the amen
 
 - [ ] 6. The forecast answer
   - Branch: `feat/mc-6-forecast` · Depends on: 4, 5 · ADRs: ADR-0006
-  - [ ] 6.1 `compare_players` asks the collector first, within 60 seconds; the refresh plan keeps only what it
-    couldn't get or doesn't read, each item naming `read_page` and its pages, and saying what was tried and why
-    that failed
-    - _Requirements: R1.3, R8.1_
+  - [ ] 6.1 `compare_players` asks the collector first, within 60 seconds; a read that found the page unchanged
+    counts its facts as fresh; the refresh plan keeps only what it couldn't get or doesn't read, each item naming
+    `read_page` and its pages, and saying what was tried and why that failed
+    - _Requirements: R1.3, R1.5, R8.1_
     - _Test: `tests/integration/collect/test_compare_collects.py::test_missing_facts_collected_first`,
-      `::test_failures_named_in_plan`;
+      `::test_unchanged_read_counts_as_fresh`, `::test_failures_named_in_plan`;
       **AT-5** `tests/acceptance/collect/test_answer.py::test_at5_one_call_answer`_
   - [ ] 6.2 Movement since the user's previous answer (or 24 hours) with the facts that changed, the last update,
     and labelled sources
