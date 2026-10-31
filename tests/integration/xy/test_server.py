@@ -16,6 +16,7 @@ from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore
 from fantadamus.mcp.server import build_advisor, load_instructions
 from fantadamus.mcp.tools.compare import load_reading_list
+from fantadamus.web.collector import load_round_page
 from tests.xy_harness import NOW, ROOT
 
 pytestmark = pytest.mark.anyio
@@ -32,13 +33,16 @@ def _server(tmp_path: Path) -> MCPServer:
         user="owner",
         clock=fixed_clock(NOW),
         instructions=load_instructions(ROOT / "docs" / "agent-prompt.md"),
+        round_page=load_round_page(ROOT / "config" / "reading_list.toml"),
     )
 
 
 async def test_served_tools(tmp_path: Path) -> None:
     tools = {tool.name: tool for tool in await _server(tmp_path).list_tools()}
     assert sorted(tools) == [
+        "collect",
         "compare_players",
+        "read_page",
         "set_league_rules",
         "submit_fixtures",
         "submit_match_odds",
@@ -109,4 +113,20 @@ def test_prompt_has_answer_shape(tmp_path: Path) -> None:
     """mvp-x-or-y task 13.2 (R10.8): the owner's "X or Y?" shape, match context then each player's reasons."""
     instructions = _server(tmp_path).instructions or ""
     for part in ("match context", "ballottaggio rival", "penalt", "chance of scoring", "form"):
+        assert part in instructions, part
+
+
+def test_prompt_has_forecast_shape(tmp_path: Path) -> None:
+    """mvp-collect task 6.3 (R6.4, R3.2): a forecast in the owner's shape, pages read through read_page."""
+    instructions = _server(tmp_path).instructions or ""
+    for part in (
+        "probability first",
+        "how sure",
+        "since",
+        "updated 12 minutes ago",
+        "Sources",
+        "`read_page`",
+        "`collect`",
+        "Sources disagree",
+    ):
         assert part in instructions, part

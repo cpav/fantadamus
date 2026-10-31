@@ -111,26 +111,28 @@ page's read as fresh, approved 2026-10-31 · Date: 2026-10-30 · From the approv
     - _Requirements: R5.2, R5.3_
     - _Test: `tests/unit/collect/test_sources.py::test_confidence_labels`_
 
-- [ ] 6. The forecast answer
+- [x] 6. The forecast answer
   - Branch: `feat/mc-6-forecast` · Depends on: 4, 5 · ADRs: ADR-0006
-  - [ ] 6.1 `compare_players` asks the collector first, within 60 seconds; a read that found the page unchanged
+  - [x] 6.1 `compare_players` asks the collector first, within 60 seconds; a read that found the page unchanged
     counts its facts as fresh; the refresh plan keeps only what it couldn't get or doesn't read, each item naming
     `read_page` and its pages, and saying what was tried and why that failed
     - _Requirements: R1.3, R1.5, R8.1_
     - _Test: `tests/integration/collect/test_compare_collects.py::test_missing_facts_collected_first`,
       `::test_unchanged_read_counts_as_fresh`, `::test_failures_named_in_plan`;
+      `tests/unit/collect/test_fetch.py::test_budget_bounds_a_run`;
       **AT-5** `tests/acceptance/collect/test_answer.py::test_at5_one_call_answer`_
-  - [ ] 6.2 Movement since the user's previous answer (or 24 hours) with the facts that changed, the last update,
+  - [x] 6.2 Movement since the user's previous answer (or 24 hours) with the facts that changed, the last update,
     and labelled sources
     - _Requirements: R6.1, R6.2, R6.3_
     - _Test: `tests/integration/collect/test_forecast.py::test_movement_since_last_answer`,
-      `::test_updated_and_sources`;
+      `::test_updated_and_sources`; `tests/unit/collect/test_sources.py::test_page_labels`;
       **AT-8** `tests/acceptance/collect/test_answer.py::test_at8_movement_named`;
       **P6** `tests/property/collect/test_forecast.py::test_p6_no_new_facts_no_movement`_
-  - [ ] 6.3 The agent prompt answers as a forecast in the owner's shape, with Sources at the bottom, and reads
+  - [x] 6.3 The agent prompt answers as a forecast in the owner's shape, with Sources at the bottom, and reads
     pages through `read_page` instead of browsing; the server serves the `collect` and `read_page` tools
     - _Requirements: R6.4, R1.2, R3.2_
-    - _Test: `tests/integration/xy/test_server.py::test_prompt_has_forecast_shape`, `::test_served_tools`_
+    - _Test: `tests/integration/xy/test_server.py::test_prompt_has_forecast_shape`, `::test_served_tools`;
+      `tests/unit/collect/test_fetch.py::test_block_expires`_
 
 - [ ] 7. The schedule
   - Branch: `feat/mc-7-schedule` · Depends on: 4 · ADRs: ADR-0006

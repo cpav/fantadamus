@@ -15,14 +15,17 @@ published copies.
 ## How it works
 
 ```text
-your Claude app ──ask──▶ read tools ──▶ answer, or a refresh plan (what's stale, where to read it)
-       │                     ▲
-       └─reads approved sites, then──▶ submit tools ──▶ checks ──▶ bronze ─▶ silver ─▶ gold ─▶ engine
+your Claude app ──ask──▶ compare_players ──▶ collector reads the round page ──▶ checks ──▶ bronze ─▶ silver ─▶ gold ─▶ engine
+       │                      │                                                           ▲
+       │                      └─▶ answer, or a plan for what's still missing              │
+       └─read_page (Fantadamus fetches the listed page) ──▶ submit tools ─────────────────┘
 ```
 
-- **Claude collects, the tools decide.** Each player's Claude reads only the approved sites and submits what
-  they say, with the link and the time. Fantadamus checks every fact, stores it, and computes every
-  probability in tested Python ([ADR-0005](docs/adr/0005-mvp-claude-collects-tools-decide.md)).
+- **Fantadamus collects, Claude fills the gaps, the tools decide.** Fantadamus reads Fantacalcio-Online's
+  round page itself, politely: fixtures, four outlets' chances of starting, official lineups and odds. For
+  the rest, Claude reads the listed pages through `read_page`, which fetches them, and submits what they say.
+  Fantadamus checks every fact, stores it, and computes every probability in tested Python
+  ([ADR-0006](docs/adr/0006-mvp-fantadamus-collects-round-facts.md)).
 - **The method** is the owner's own: [`docs/method.md`](docs/method.md). Bonuses are priced from the betting
   odds, small samples are shrunk, and source disagreement is shown rather than averaged.
 - **Storage** is a small medallion lakehouse: Parquet files read through DuckDB, bronze append-only, every
@@ -56,8 +59,9 @@ make check      # every gate, as CI runs it: one PASS or FAIL line per check
 make test-fast  # format, lint, unit and property tests with the fast profile
 ```
 
-`uv run fantadamus serve` starts the MCP server on stdio: `compare_players`, `set_league_rules` and the seven
-submit tools.
+`uv run fantadamus serve` starts the MCP server on stdio: `compare_players`, `set_league_rules`, `collect`,
+`read_page` and the submit tools. `uv run fantadamus collect` reads the round page now; `--report` shows the
+last run.
 
 ## Use it in Claude Desktop
 

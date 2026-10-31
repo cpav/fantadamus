@@ -69,6 +69,11 @@ carries the URL, the HTTP status, `fetched_at` (from the injected clock), the te
   "captcha", "Just a moment", "Access denied"), raises `HostBlockedError`. The run stops using that host and
   reports it; no retry, no workaround (R2.3).
 - **Timeout:** 15 seconds per request. One attempt; a failure is reported, not retried.
+- **Budget** (task 6.1): a fetcher may get a time budget; each request then waits at most what's left, and none
+  starts once it's gone. The collector's fetcher has 60 seconds, so `compare_players` answers within R1.3's
+  limit. A robots.txt read cut short is not cached as "fetch nothing today".
+- **Blocks that expire** (task 6.3): the fetcher behind `read_page` lives as long as the server, so a host that
+  blocks it is left alone for an hour rather than until Claude restarts the server.
 
 ### C2. HTML tree (`web/html.py`)
 

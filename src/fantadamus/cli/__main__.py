@@ -35,6 +35,7 @@ def _serve(args: argparse.Namespace) -> int:
         user=args.user,
         clock=utc_now,
         instructions=load_instructions(),
+        round_page=load_round_page(),
     )
     server.run("stdio")
     return 0

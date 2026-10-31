@@ -76,6 +76,8 @@ class PageReport(BaseModel):
     fetched_at: dt.datetime | None = None
     stored: dict[str, int] = {}
     """Silver rows stored, per table; a kind of fact left unchanged isn't listed."""
+    confirmed: list[str] = []
+    """Tables whose facts the page stated as at its last stored read: confirmed now, stored before (R1.5)."""
     problems: list[str] = []
     """Payloads left out, and why."""
     for_claude: list[str] = []
@@ -195,5 +197,6 @@ class Collector:
             outcome="stored" if stored else "unchanged",
             fetched_at=fetched.fetched_at,
             stored=stored,
+            confirmed=[domain.table.name for domain, items in new.items() if items and domain not in changed],
             problems=problems,
         )

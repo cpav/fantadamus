@@ -74,6 +74,10 @@ class FetchFailedError(FetchError):
     """A timeout, a network error or an unexpected status."""
 
 
+class OutOfTimeError(FetchFailedError):
+    """The run's time budget is used up (mvp-collect R1.3)."""
+
+
 def http_transport(url: str, headers: Mapping[str, str], timeout: float) -> Response:
     """One GET with the standard library's `http.client`, which never follows redirects by itself."""
     parts = urlsplit(url)
@@ -101,7 +105,12 @@ class Fetcher:
         robots_cache: Path = DEFAULT_ROBOTS_CACHE,
         timeout: float = 15.0,
         interval: float = 1.0,
+        budget: float | None = None,
+        block_for: float | None = None,
     ) -> None:
+        """`budget`, when given, is the seconds the fetcher may spend in all, from now: each request waits at
+        most what's left, and none starts once it's gone. A host that blocks is left alone for `block_for`
+        seconds, or for the fetcher's whole life (a collection run) without it."""
         self._allowed = tuple(allowed_hosts)
         self._clock, self._monotonic, self._sleep = clock, monotonic, sleep
         self._transport, self._cache, self._timeout, self._interval = (
@@ -110,9 +119,11 @@ class Fetcher:
             timeout,
             interval,
         )
+        self._deadline = None if budget is None else monotonic() + budget
         self._last: dict[str, float] = {}
         self._robots: dict[str, RobotFileParser] = {}
-        self._blocked: dict[str, str] = {}
+        self._block_for = block_for
+        self._blocked: dict[str, tuple[str, float]] = {}  # host: why, and until when (monotonic)
 
     def fetch(self, url: str) -> Page:
         """The page at `url`, or a `FetchError` saying why not."""
@@ -138,29 +149,47 @@ class Fetcher:
         if host is None or not host_allowed(url, self._allowed):
             raise NotAllowedError(f"{host or url} is not on the allowlist")
         if host in self._blocked:
-            raise HostBlockedError(f"{host} stopped for this run: {self._blocked[host]}")
+            why, until = self._blocked[host]
+            if self._monotonic() < until:
+                raise HostBlockedError(f"{host} stopped for now: {why}")
+            del self._blocked[host]
         if not self._rules(url, host).can_fetch(ROBOTS_AGENT, url):
             raise DisallowedError(f"robots.txt disallows {url}")
         answer = self._request(url, host)
         if answer.status in _BLOCK_STATUSES:
-            self._blocked[host] = f"it answered {answer.status}"
+            self._block(host, f"it answered {answer.status}")
             raise HostBlockedError(f"{host} answered {answer.status}; stopped for this run")
         if len(answer.body) < _BOT_CHECK_MAX_BYTES and any(
             marker in answer.body.decode("utf-8", errors="replace").lower() for marker in _BOT_CHECK_MARKERS
         ):
-            self._blocked[host] = "a bot check"
+            self._block(host, "a bot check")
             raise HostBlockedError(f"{host} showed a bot check; stopped for this run")
         return answer
+
+    def _block(self, host: str, why: str) -> None:
+        until = float("inf") if self._block_for is None else self._monotonic() + self._block_for
+        self._blocked[host] = (why, until)
 
     def _request(self, url: str, host: str) -> Response:
         wait = self._last.get(host, float("-inf")) + self._interval - self._monotonic()
         if wait > 0:
+            self._left(url, after=wait)
             self._sleep(wait)
+        timeout = min(self._timeout, self._left(url))
         self._last[host] = self._monotonic()
         try:
-            return self._transport(url, {"User-Agent": USER_AGENT}, self._timeout)
+            return self._transport(url, {"User-Agent": USER_AGENT}, timeout)
         except (OSError, ValueError) as error:  # timeouts and network errors are OSErrors
             raise FetchFailedError(f"{url}: {error}") from error
+
+    def _left(self, url: str, after: float = 0.0) -> float:
+        """The seconds the budget still allows once `after` more have passed; `OutOfTimeError` if none."""
+        if self._deadline is None:
+            return float("inf")
+        left = self._deadline - self._monotonic() - after
+        if left <= 0:
+            raise OutOfTimeError(f"{url}: out of time (the run's budget is used up)")
+        return left
 
     def _rules(self, url: str, host: str) -> RobotFileParser:
         """The host's robots.txt, from today's cache or fetched now; unreadable means nothing is allowed."""
@@ -178,6 +207,8 @@ class Fetcher:
             try:
                 answer = self._request(robots_url, host)
                 status, text = answer.status, answer.body.decode("utf-8", errors="replace")
+            except OutOfTimeError:
+                raise  # not the site's answer: nothing to remember for the day
             except FetchFailedError:
                 status, text = 0, ""
             self._cache.mkdir(parents=True, exist_ok=True)
