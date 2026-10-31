@@ -1,15 +1,22 @@
 # Design Document: `mvp-collect` (Phase 2, first slice)
 
-Status: **Approved by the owner, 2026-10-30**, with both open points accepted · From the approved [requirements](requirements.md) and
+Status: **Approved by the owner, 2026-10-30**, with both open points accepted; **amended 2026-10-31** for the
+amended requirements (C1, C3, C6, C7, C11, the properties, tests and cost; open points 3 and 4), **the
+amendment awaiting approval** · From the approved [requirements](requirements.md) and
 [ADR-0006](../../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md) · 2026-10-30
 
 ## Overview
 
 A player asks "X or Y?". `compare_players` checks what it needs. If anything is missing or stale, it asks the
-**collector**, which fetches the approved pages (politely), reads them into facts and stores them through the
-same bronze → silver flow as a submission. Then `compare_players` answers as a forecast: each probability,
-why, how sure, how it moved, how fresh, and the sources. Only facts the collector couldn't get go to Claude,
-through the refresh plan, as before.
+**collector**, which fetches Fantacalcio-Online's round page (politely), reads it into facts and stores them
+through the same bronze → silver flow as a submission. That one page carries every fact that moves until
+kickoff: the fixtures, four outlets' lineups, the official lineups and the odds.
+
+What the round page doesn't carry (the table, the penalty takers, players' season figures), or what the
+collector couldn't get, goes to Claude through the refresh plan, as before. But Claude no longer browses: it
+calls `read_page`, which fetches the listed page under the same rules and returns its text, and Claude submits
+the facts. Then `compare_players` answers as a forecast: each probability, why, how sure, how it moved, how
+fresh, and the sources.
 
 ```mermaid
 flowchart LR
@@ -17,16 +24,22 @@ flowchart LR
   C -- compare_players --> T[MCP server]
   T -- needs --> K[collector]
   S[(launchd: collect --due)] --> K
-  K -- polite fetch --> W[(approved pages)]
-  K -- readers --> F[facts] --> B[(bronze)] --> SV[(silver)]
+  K -- polite fetch --> R[(round page)]
+  K -- round-page reader --> F[facts] --> B[(bronze)] --> SV[(silver)]
+  T -- what the round page doesn't carry --> P[refresh plan] --> C
+  C -- read_page --> T
+  T -- polite fetch --> W[(other listed pages)]
+  T -- page text --> C
+  C -- submit tools --> B
   T -- as-of reads, now and before --> G[gold views] --> E[forward model]
   E --> A[forecast answer + sources]
-  T -- what the collector couldn't get --> P[refresh plan] --> C
 ```
 
 Principles: the smallest thing that meets each requirement; the Python standard library only (no new
-dependency, so ADR-0001 stands); every reader is a pure function from page text to facts, tested on synthetic
-pages shaped like the real ones.
+dependency, so ADR-0001 stands). Code reads only the page whose numbers must be exact and refreshed on a
+schedule, as a pure function from page text to facts, tested on a synthetic page shaped like the real one.
+Every other page is read by Claude from text Fantadamus fetched, so a source is added or changed in
+configuration and a redesign doesn't break collection.
 
 ## What it builds on
 
@@ -41,7 +54,8 @@ pages shaped like the real ones.
 
 ### C1. Fetcher (`web/fetch.py`)
 
-One `Fetcher` per collection run, built on `urllib.request`. It gives `fetch(url) -> Page`, where `Page`
+One `Fetcher` per collection run, and one for the server's lifetime behind `read_page` (C3.2), built on
+`http.client` with redirects followed only within these rules. It gives `fetch(url) -> Page`, where `Page`
 carries the URL, the HTTP status, `fetched_at` (from the injected clock), the text and its `content_sha256`.
 
 - **Allowlist:** `host_allowed` from `core/urls.py`; any other host is refused before a request is made (R2.3).
@@ -51,33 +65,30 @@ carries the URL, the HTTP status, `fetched_at` (from the injected clock), the te
   sleep, so tests run instantly (R2.2).
 - **User agent:** `Fantadamus/<version> (+https://github.com/cpav/fantadamus)`.
 - **Blocks:** a 401, 403, 407, 429, 451 or 503, or a page that reads as a bot check (a short list of markers:
-  "captcha", "Just a moment", "Access denied"), raises `HostBlocked`. The run stops using that host and
+  "captcha", "Just a moment", "Access denied"), raises `HostBlockedError`. The run stops using that host and
   reports it; no retry, no workaround (R2.3).
 - **Timeout:** 15 seconds per request. One attempt; a failure is reported, not retried.
 
 ### C2. HTML tree (`web/html.py`)
 
 A small element tree built with `html.parser` (standard library): `find_all(tag, class_=...)`, `find(...)`,
-`text()` and `attr(name)`. It's enough for the readers to work on the pages' structure (class names, captions,
-title attributes) rather than on raw text. About 80 lines.
+`text()` and `attr(name)`. It's enough for the round-page reader to work on the page's structure (class names,
+captions, title attributes) rather than on raw text, and for page text to walk any page. About 80 lines.
 
-### C3. Readers (`web/readers/`)
+### C3. Reading pages
 
-Each reader is a pure function `read_*(html, ...) -> list of contracts`. When the structure it relies on is
-missing it raises `UnreadablePage` with the reason, and nothing from that page is stored (R3.4). Clubs go
-through `config/clubs.toml`, players through name resolution (R3.5).
+Two ways, by what the facts need (R3, amended 2026-10-31). Clubs go through `config/clubs.toml` and players
+through name resolution either way (R3.5).
 
-| Reader | Page | Reads |
-|---|---|---|
-| `fco_round` | Fantacalcio-Online `/it/serie-a/{season}/probabili-formazioni/{n}-giornata` | See below |
-| `fcit_probables` | Fantacalcio.it `/probabili-formazioni-serie-a` | Fantacalcio.it's per-player start percentages for each match (`OutletLineupPayload`) |
-| `fcit_calendar` | Fantacalcio.it `/serie-a/calendario` (the same page also carries the table) | The next rounds' fixtures with kickoffs (`FixturesPayload`), and the table: played, goals for and against (`TeamSeasonPayload`) |
-| `fcit_takers` | Fantacalcio.it `/rigoristi-serie-a` | Each club's takers in order (`PenaltyTakersPayload`) |
-| `fcit_squad` | Fantacalcio.it `/serie-a/squadre/{club}` | Each player's profile address: `/serie-a/squadre/{club}/{slug}/{id}` |
-| `fcit_profile` | A Fantacalcio.it profile | The season figures of `mvp-x-or-y` R6.1 (`PlayerSeasonPayload`) |
-| `wiki_table` | Wikipedia's season page | The table, as a cross-check (`TeamSeasonPayload`) |
+#### C3.1 The round-page reader (`web/readers/fco.py`)
 
-**`fco_round`, the core reader.** The page has one `.prb-partita` block per match. In each:
+`read_round(page, round) -> RoundFacts` is a pure function from Fantacalcio-Online's round page
+(`/it/serie-a/{season}/probabili-formazioni/{n}-giornata`) to its facts: the fixtures, each match's odds, one
+outlet lineup per outlet per match, and the official lineups once confirmed. When the structure it relies on
+is missing it raises `UnreadablePageError` with the reason, and nothing from that page is stored (R3.4).
+
+The page has one `div.tab-pane` per match, holding a `header.prb-incontro` (the `.prb-partita` elements are
+the match tabs at the top; corrected 2026-10-31 from the real page). In each:
 
 - **The match:** the home and away names (`.prb-incontro__nome`) and the kickoff (`.prb-incontro__data`,
   "31/10/2026 15:00" in Italian time), read into `FixturesPayload`.
@@ -93,10 +104,39 @@ through `config/clubs.toml`, players through name resolution (R3.5).
   `OutletLineupPayload` per outlet per match.
 - **Official lineups:** once the official-lineup column (`.prb-tabella__conferma`) is filled for a team's 11
   starters, the reader also returns an `OfficialLineupPayload`.
-- **Unavailable players:** the page's "Indisponibili" list goes into the payloads' `unavailable` (C4).
+- **Unavailable players:** each team's "Indisponibili" list (`div.prb-fuori`, `ul.prb-fuori__elenco`) goes into
+  the payloads' `unavailable` (C4).
 
 The reader fails if a block lacks the teams, the kickoff or both teams' tables, if the outlet columns aren't
 the four expected, or if a percentage or an odd doesn't parse.
+
+#### C3.2 Page text for Claude (`web/text.py`, the `read_page` tool)
+
+Every other page is read by the user's Claude from text Fantadamus fetched. A new source is a line of
+configuration, and a redesign breaks nothing: Claude reads the new layout as it read the old. Claude's
+browsing failed in testing (stale caches, refused links, blocked steps); its reading didn't.
+
+- **Addresses (R3.3).** Each fact in `config/reading_list.toml` lists its `pages`, best first, as fixed
+  addresses or as patterns whose placeholders each match one path segment, e.g.
+  `https://www.fantacalcio.it/serie-a/squadre/{club}/{player}/{id}` for a profile. `read_page` accepts an
+  address only if it equals a listed page or matches a pattern; anything else is refused before any request.
+  The search hints stay: Claude's web search finds an address on a listed site, which it then reads through
+  `read_page`.
+- **Fetching (R3.2).** The server's long-lived `Fetcher` (C1), so the rate limit holds across calls, with
+  robots.txt from the same daily cache.
+- **Page text.** `page_text(tree, follow) -> str` walks the HTML tree (C2):
+  - it reads `main` when the page has one, otherwise `body`, and skips `nav`, `footer`, `aside`, `form`, `svg`
+    and `iframe`;
+  - headings become `#` lines, paragraphs and list items lines of their own, and tables rows of cells joined by
+    ` | `, header row first;
+  - a link shows its address, as `text (address)`, only when that address is on the reading list (`follow`),
+    so a squad page shows its profile links and none of the menus;
+  - whitespace collapses, and text past 40,000 characters (about 10,000 tokens) is cut, with a note saying so.
+- **The result:** `{url, fetched_at, facts: [{fact, submit_tool}], text}`, where the facts are those whose
+  pages the address matches. Claude submits with `source_url` set to `url` and `captured_at` to `fetched_at`.
+  Nothing is stored (R2.4): the text exists only in the tool result.
+- **Failures:** off the reading list, disallowed, blocked or failed, as a tool error with the reason; Claude
+  moves to the next listed page (R8.1).
 
 ### C4. Contracts (`contracts/xy/`)
 
@@ -125,17 +165,14 @@ the four expected, or if a percentage or an odd doesn't parse.
 
 `Collector(fetcher, lake, clubs, pages, clock, log)`. Its entry point is `collect(request, budget) ->
 CollectReport`, where a request is "what's due", "this round" or a set of needs from `compare_players`
-(fixtures, a match's lineups or odds, a player's profile, the table, the takers).
+(fixtures, a match's lineups, official lineup or odds).
 
-1. **Plan the pages.**
-   - Fixtures need the calendar and the round page.
-   - A match's lineups or odds need the round page and Fantacalcio.it's probable lineups.
-   - A player's profile needs his club's squad page, then the profile.
-   - The table needs the calendar and Wikipedia.
-   - The takers need their page.
-   - Each page is fetched once per run, even if several needs share it.
-2. **Fetch and read**, in that order, until done or until the budget (60 seconds when `compare_players` asks)
-   runs out.
+1. **Plan the page.** Fixtures, a match's lineups, official lineups and odds all need the round page: the
+   reading list's current-round address, or `…/{n}-giornata` for round n. It's fetched once per run, however
+   many needs share it. The other needs (a profile, the table, the takers) aren't the collector's: they go
+   to the refresh plan (C11).
+2. **Fetch and read** it with the round-page reader (C3.1), within the budget (60 seconds when
+   `compare_players` asks).
 3. **Store** each page's facts with `facts.submit_many(domain, payloads, ...)`: one bronze record per payload
    and one silver rebuild per domain per run. `captured_at` is the fetch time, `published_at` the page's own
    time where it shows one, and `submitted_by` is `collector`. Unchanged content stores nothing new (R1.4).
@@ -149,7 +186,8 @@ there (R2.5).
 ### C7. Cadence (`web/cadence.py`)
 
 `due(fact, last_captured, now, kickoff) -> bool` implements R7.1's table. `collect --due` works out what's due
-for the next round's matches, the season facts and the profiles of players already known.
+for the next round's matches; it fetches the round page once if anything is. The season facts aren't scheduled
+(R7.1): they're read through `read_page` when an answer needs them.
 
 ### C8. Storing many facts at once (`domains/facts.py`)
 
@@ -178,8 +216,10 @@ One JSON line per run in `data/local/collect/<YYYY-MM>.jsonl`, under the git-ign
 1. It works out the needs as today.
 2. If there are any, it asks the collector for them, with a 60-second budget.
 3. It reads the facts again and works out what's still missing.
-4. Whatever remains goes into the refresh plan as today. Each item now says what the collector tried, and why
-   it failed (R1.3, R8.1).
+4. Whatever remains goes into the refresh plan. Each item names `read_page`, the pages to pass it, best first,
+   and the search hints for finding an address on a listed site; it also says what the collector tried, and
+   why it failed (R1.3, R8.1). A fact with no listed page (official-lineup articles and betting previews,
+   found only by search) keeps `mvp-x-or-y`'s fallback, Claude's own search and fetch (open point 3).
 
 A sync tool blocking for a few seconds is fine for one player on stdio.
 
@@ -234,7 +274,9 @@ The player installs it with one `launchctl` command. Nothing is installed for th
 | Path disallowed by robots.txt | Not requested; reported; its facts go to the refresh plan |
 | Block, bot check or 429 | Stop using that host this run; reported; its facts go to the refresh plan |
 | Timeout or network error | Reported; its facts go to the refresh plan |
-| Unexpected page layout | `UnreadablePage`: nothing stored from that page; reported loudly; its facts go to the refresh plan |
+| Unexpected round-page layout | `UnreadablePageError`: nothing stored from that page; reported loudly; its facts go to the refresh plan |
+| `read_page` given an address off the reading list | Refused before any request, with the reason |
+| `read_page`'s page disallowed, blocked or failing | A tool error with the reason; Claude reads the next listed page |
 | A payload fails its contract | That payload rejected and reported; the page's other payloads stored |
 | Budget used up | Stop; what's left goes to the refresh plan |
 | Sources disagree on fixtures or the table | Fantacalcio.it's value used; the disagreement shown in the answer |
@@ -248,18 +290,22 @@ Required Hypothesis tests:
 | P1 | For any sequence of requests, two to the same host are at least one second apart | R2.2 |
 | P2 | No URL that robots.txt disallows is ever requested | R2.1 |
 | P3 | Collecting the same pages twice stores nothing new | R1.4 |
-| P4 | A reader given a page with any required part removed raises `UnreadablePage`, never returns partial facts | R3.4 |
+| P4 | The round-page reader given a page with any required part removed raises `UnreadablePageError`, never returns partial facts | R3.4 |
 | P5 | Consensus over percentage views stays in [0, 1], ignores the order of outlets, and never counts the page's average | R4 |
 | P6 | With no facts captured between two times, movement is zero and lists no changes | R6.1 |
 | P7 | A fact due at one time stays due at every later time until it is collected | R7.1 |
+| P8 | `read_page` requests an address only if the reading list names it or one of its patterns matches it | R3.3 |
 
 ## Testing strategy
 
-- **Readers:** unit tests on synthetic pages in `tests/fixtures/collect/`. They copy each real page's
-  structure (class names, captions, title attributes) with invented clubs and players, because real pages
-  can't be committed to a public repository.
-- **Real pages, optionally:** a contract test runs the readers on pages saved under `data/private/pages/` when
-  they exist, so a layout change shows up locally. It's skipped, with a registered reason, when they don't.
+- **The round-page reader:** unit tests on a synthetic page built by `tests/collect_pages.py`. It copies the
+  real page's structure (class names, captions, title attributes) with invented clubs and players, because
+  real pages can't be committed to a public repository.
+- **Page text and `read_page`:** unit tests on small synthetic pages (tables, links, skipped menus, the cut),
+  and integration tests through the in-process MCP client against the local server (AT-11, P8).
+- **Real pages, optionally:** a contract test runs the reader, and `page_text`, on pages saved under
+  `data/private/pages/` when they exist, so a layout change shows up locally. It's skipped, with a registered
+  reason, when they don't.
 - **Fetcher and collector:** integration tests against a local `http.server` on 127.0.0.1 that serves the
   synthetic pages and a robots.txt, with a fake clock and sleep. They never touch the internet (AT-1 to AT-3,
   AT-6, AT-9).
@@ -269,8 +315,9 @@ Required Hypothesis tests:
 
 ## Cost
 
-$0. Pages are fetched from the player's Mac: a cold collection is about 10 requests (10 to 15 seconds), and a
-scheduled refresh usually 1 to 3.
+$0. Pages are fetched from the player's Mac. The collector makes one request per run, scheduled or on demand.
+A cold answer also reads about four pages through `read_page` (the table, the takers, two profiles), each at
+most about 10,000 tokens of the user's own Claude plan; with the season facts fresh, it reads none.
 
 ## Build order (input to tasks.md)
 
@@ -280,7 +327,7 @@ scheduled refresh usually 1 to 3.
    - availability over percentages;
    - `submit_outlet_lineup`.
 2. **Fetching:** the fetcher (allowlist, robots.txt, rate, blocks) and the HTML tree.
-3. **Readers:** Fantacalcio-Online's round page, the Fantacalcio.it readers and Wikipedia's table.
+3. **Reading pages:** Fantacalcio-Online's round-page reader, page text and `read_page`.
 4. **The collector:** `submit_many`, the collection log, the `collect` tool and command.
 5. **Many sources:** source ranking, disagreements and confidence.
 6. **`compare_players`:**
@@ -300,3 +347,14 @@ scheduled refresh usually 1 to 3.
    (R4.3) without inventing a percentage for any outlet. **Recommendation:** accept.
 
 Both accepted by the owner with the design, 2026-10-30.
+
+From the 2026-10-31 amendment:
+
+- **3. `read_page` reads only listed pages and patterns**, not any page on an allowed host. Search-found
+  articles (official-lineup articles, betting previews) keep Claude's own search and fetch as the last
+  fallback (ADR-0005) until you approve address patterns for them. **Recommendation:** accept. It keeps
+  ADR-0006's route to fixed pages, and the round page covers both facts first.
+- **4. The season facts aren't scheduled.** The table, the takers and the profiles are read through `read_page`
+  when an answer finds them older than their 7-day target, so about once a week. **Recommendation:** accept.
+  Everything that moves until kickoff is on the round page, which the schedule keeps fresh; our own model
+  could schedule the rest later, under its own ADR.

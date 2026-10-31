@@ -1,7 +1,8 @@
 # Implementation Plan: `mvp-collect` (Phase 2, first slice)
 
-Status: **Approved by the owner, 2026-10-31** · Date: 2026-10-30 · From the approved [requirements](requirements.md)
-and [design](design.md)
+Status: **Approved by the owner, 2026-10-31; amended the same day** for the amended requirements and design
+(tasks 3, 4.2, 6.1, 6.3 and 7.1), **the amendment awaiting approval** · Date: 2026-10-30 · From the approved
+[requirements](requirements.md) and [design](design.md)
 
 ## How to read and run these tasks
 
@@ -13,8 +14,8 @@ and [design](design.md)
 - The property tests P1–P7 in the design are **required**. No task is optional.
 - Each task ends with the task report; the owner approves the pull request, the agent squash-merges it.
 - **Tests for this spec** live in a `collect/` folder in each test layer. Pages are synthetic copies of the
-  real pages' structure with invented clubs and players, in `tests/fixtures/collect/`. Tests never touch the
-  internet: the fetcher and collector run against a local server on 127.0.0.1.
+  real pages' structure with invented clubs and players, built by `tests/collect_pages.py`. Tests never touch
+  the internet: the fetcher, the collector and `read_page` run against a local server on 127.0.0.1.
 - **The order:** 1 and 2 can go in either order, then 3, 4, then 5 and 7 in either order, then 6, then 8.
 
 ## Tasks
@@ -51,7 +52,7 @@ and [design](design.md)
     - _Requirements: R3.4_
     - _Test: `tests/unit/collect/test_html.py::test_find_by_class_and_text`_
 
-- [ ] 3. Readers
+- [ ] 3. Reading pages
   - Branch: `feat/mc-3-readers` · Depends on: 1, 2 · ADRs: ADR-0006
   - [ ] 3.1 Fantacalcio-Online's round page: fixtures, odds and the chance of 3+ goals with the page's update time,
     four outlets' percentages per team (the page's average skipped), official lineups once confirmed, the
@@ -60,16 +61,18 @@ and [design](design.md)
     - _Test: `tests/unit/collect/test_read_fco.py::test_round_page_facts`, `::test_page_average_skipped`,
       `::test_official_lineup_when_confirmed`;
       **P4** `tests/property/collect/test_readers.py::test_p4_partial_pages_fail`_
-  - [ ] 3.2 Fantacalcio.it's readers: probable lineups, calendar and table, penalty takers, squad pages and
-    profiles
-    - _Requirements: R3.2, R3.3_
-    - _Test: `tests/unit/collect/test_read_fcit.py::test_probables`, `::test_calendar_and_table`, `::test_takers`,
-      `::test_squad_and_profile`_
-  - [ ] 3.3 Wikipedia's table as a cross-check, and an optional check of every reader on real pages saved under
+  - [ ] 3.2 Page text and `read_page`: the reading list's pages as fixed addresses or patterns, only those
+    fetched; the main content as headings, lines, table rows and followable links, menus skipped, long text
+    cut; the result names the fetch time and each fact's submit tool, and stores nothing
+    - _Requirements: R3.2, R3.3, R2.4_
+    - _Test: `tests/unit/collect/test_page_text.py::test_tables_links_and_menus`, `::test_long_text_cut`;
+      `tests/integration/collect/test_read_page.py::test_read_then_submit`, `::test_unlisted_address_refused`;
+      **P8** `tests/property/collect/test_read_page.py::test_p8_only_listed_addresses`;
+      **AT-11** `tests/acceptance/collect/test_read_page.py::test_at11_page_added_in_config_only`_
+  - [ ] 3.3 An optional check of the round-page reader and page text on real pages saved under
     `data/private/pages/` (skipped, with a registered reason, when there are none)
-    - _Requirements: R3.3, R3.4_
-    - _Test: `tests/unit/collect/test_read_wiki.py::test_table`;
-      `tests/contract/test_real_pages.py::test_readers_on_saved_pages`_
+    - _Requirements: R3.4_
+    - _Test: `tests/contract/test_real_pages.py::test_reading_saved_pages`_
 
 - [ ] 4. The collector
   - Branch: `feat/mc-4-collector` · Depends on: 3 · ADRs: ADR-0006
@@ -77,8 +80,8 @@ and [design](design.md)
     domain, failures reported without stopping the rest
     - _Requirements: R1.1, R1.4_
     - _Test: `tests/integration/collect/test_submit_many.py::test_one_rebuild_per_domain`_
-  - [ ] 4.2 The collector: pages planned from needs (each fetched once per run), read, stored as `collector`
-    with fetch and page times, a budget, a report per page; page addresses and the switch-off in configuration
+  - [ ] 4.2 The collector: the round page planned from needs (fetched once per run), read, stored as
+    `collector` with fetch and page times, a budget, a report; its address and the switch-off in configuration
     - _Requirements: R1.1, R1.4, R2.4, R2.5, R3.4_
     - _Test: `tests/integration/collect/test_collector.py::test_collect_round_from_local_pages`,
       `::test_switched_off_source`;
@@ -105,7 +108,8 @@ and [design](design.md)
 - [ ] 6. The forecast answer
   - Branch: `feat/mc-6-forecast` · Depends on: 4, 5 · ADRs: ADR-0006
   - [ ] 6.1 `compare_players` asks the collector first, within 60 seconds; the refresh plan keeps only what it
-    couldn't get, saying what it tried and why that failed
+    couldn't get or doesn't read, each item naming `read_page` and its pages, and saying what was tried and why
+    that failed
     - _Requirements: R1.3, R8.1_
     - _Test: `tests/integration/collect/test_compare_collects.py::test_missing_facts_collected_first`,
       `::test_failures_named_in_plan`;
@@ -117,14 +121,14 @@ and [design](design.md)
       `::test_updated_and_sources`;
       **AT-8** `tests/acceptance/collect/test_answer.py::test_at8_movement_named`;
       **P6** `tests/property/collect/test_forecast.py::test_p6_no_new_facts_no_movement`_
-  - [ ] 6.3 The agent prompt answers as a forecast in the owner's shape, with Sources at the bottom; the server
-    serves the `collect` tool
-    - _Requirements: R6.4, R1.2_
+  - [ ] 6.3 The agent prompt answers as a forecast in the owner's shape, with Sources at the bottom, and reads
+    pages through `read_page` instead of browsing; the server serves the `collect` and `read_page` tools
+    - _Requirements: R6.4, R1.2, R3.2_
     - _Test: `tests/integration/xy/test_server.py::test_prompt_has_forecast_shape`, `::test_served_tools`_
 
 - [ ] 7. The schedule
   - Branch: `feat/mc-7-schedule` · Depends on: 4 · ADRs: ADR-0006
-  - [ ] 7.1 The cadence and `fantadamus collect --due`
+  - [ ] 7.1 The cadence of the round page's facts and `fantadamus collect --due`
     - _Requirements: R7.1_
     - _Test: `tests/unit/collect/test_cadence.py::test_cadence_table`;
       **P7** `tests/property/collect/test_cadence.py::test_p7_due_stays_due`;

@@ -5,6 +5,10 @@
 - **Amends:** ADR-0005 (each user's Claude collects): for the pages below, our server fetches them instead.
   Claude's collection stays as the fallback. ADR-0004's fetching rules apply from now, not from v1.
 - **Specs affected:** `mvp-collect` (new); `mvp-x-or-y` (its refresh plan becomes the fallback)
+- **Note, 2026-10-31:** the decision stands, and Fantadamus still fetches every page. Only one page gets a
+  reader (Fantacalcio-Online's round page); the user's Claude reads the other listed pages from text that
+  Fantadamus fetched under these rules, through `read_page` (`mvp-collect` requirements R3, amended). So the
+  "each page needs a reader" consequence below applies to that one page.
 
 ## Context
 
