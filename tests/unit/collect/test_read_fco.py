@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import datetime as dt
 
+import pytest
+
+from fantadamus.web.readers import UnreadablePageError
 from fantadamus.web.readers.fco import read_round
 from tests.collect_pages import OUTLETS, FcoMatch, fco_round_page, squad
 
@@ -79,3 +82,9 @@ def test_no_odds_yet() -> None:
     facts = read_round(page, round=10)
     assert [(odds.payload.home, odds.payload.away) for odds in facts.odds] == [("Gamma", "Delta")]
     assert len(facts.outlets) == 8  # the lineups still count
+
+
+def test_round_from_the_page() -> None:
+    assert read_round(fco_round_page(FcoMatch("Alfa", "Beta"), round=11)).fixtures.round == 11
+    with pytest.raises(UnreadablePageError, match="round"):
+        read_round(fco_round_page(FcoMatch("Alfa", "Beta"), round=None))

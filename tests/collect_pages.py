@@ -122,8 +122,8 @@ def _fco_summary(match: FcoMatch) -> str:
     )
 
 
-def fco_round_page(*matches: FcoMatch) -> str:
-    """Fantacalcio-Online's round page: match tabs, then one tab pane per match."""
+def fco_round_page(*matches: FcoMatch, round: int | None = 10) -> str:
+    """Fantacalcio-Online's round page: its title naming the round, the match tabs, one tab pane per match."""
     tabs = "".join(
         f'<li class="nav-item"><a class="prb-partita nav-link" href="#lineup-{i}">{m.home} - {m.away}</a>'
         "</li>"
@@ -134,4 +134,8 @@ def fco_round_page(*matches: FcoMatch) -> str:
         f'<div class="prb-squadre">{_fco_team(m.home, "home", m)}{_fco_team(m.away, "away", m)}</div></div>'
         for i, m in enumerate(matches)
     )
-    return f'<html><body><ul class="nav">{tabs}</ul><div class="tab-content">{panes}</div></body></html>'
+    title = f"<title>Probabili Formazioni Serie A 2026/2027 - {round}ª Giornata</title>" if round else ""
+    return (
+        f"<html><head>{title}</head><body>"
+        f'<ul class="nav">{tabs}</ul><div class="tab-content">{panes}</div></body></html>'
+    )

@@ -42,21 +42,28 @@ class Element:
         return name in self.attrs.get("class", "").split()
 
     def descendants(self) -> Iterator[Element]:
-        for child in self.children:
-            if isinstance(child, Element):
-                yield child
-                yield from child.descendants()
+        """Every element below this one, in document order. A stack, not nested generators, so each element
+        is visited once however deep the page nests."""
+        stack = [child for child in reversed(self.children) if isinstance(child, Element)]
+        while stack:
+            element = stack.pop()
+            yield element
+            stack.extend(child for child in reversed(element.children) if isinstance(child, Element))
 
-    def find_all(self, tag: str | None = None, class_: str | None = None) -> list[Element]:
-        """Every element below this one with the tag and the class, in document order."""
-        return [
+    def _matching(self, tag: str | None, class_: str | None) -> Iterator[Element]:
+        return (
             element
             for element in self.descendants()
             if (tag is None or element.tag == tag) and (class_ is None or element.has_class(class_))
-        ]
+        )
+
+    def find_all(self, tag: str | None = None, class_: str | None = None) -> list[Element]:
+        """Every element below this one with the tag and the class, in document order."""
+        return list(self._matching(tag, class_))
 
     def find(self, tag: str | None = None, class_: str | None = None) -> Element | None:
-        return next(iter(self.find_all(tag, class_)), None)
+        """The first such element, found without walking the rest."""
+        return next(self._matching(tag, class_), None)
 
     def text(self) -> str:
         """All the text below this element, with whitespace collapsed to single spaces."""

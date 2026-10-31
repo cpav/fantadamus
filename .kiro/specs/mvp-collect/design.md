@@ -174,10 +174,12 @@ CollectReport`, where a request is "what's due", "this round" or a set of needs 
 
 1. **Plan the page.** Fixtures, a match's lineups, official lineups and odds all need the round page: the
    reading list's current-round address, or `…/{n}-giornata` for round n. It's fetched once per run, however
-   many needs share it. The other needs (a profile, the table, the takers) aren't the collector's: they go
+   many needs share it, with a new fetcher each run, so a host that blocks is stopped for that run only. The
+   current-round address names its round only in the page title ("… - 11ª Giornata"), so the reader takes
+   the round from there. The other needs (a profile, the table, the takers) aren't the collector's: they go
    to the refresh plan (C11).
 2. **Fetch and read** it with the round-page reader (C3.1), within the budget (60 seconds when
-   `compare_players` asks).
+   `compare_players` asks; built in task 6.1, where it's set and can be tested).
 3. **Store** each page's facts with `facts.submit_many(domain, payloads, ...)`: one bronze record per payload
    and one silver rebuild per domain per run. `captured_at` is the fetch time, `published_at` the page's own
    time where it shows one, and `submitted_by` is `collector`. Unchanged content stores nothing new (R1.4).

@@ -3,22 +3,29 @@ the submit tools with `read_page` on an in-process client."""
 
 from __future__ import annotations
 
+import datetime as dt
+import itertools
 import threading
 import time
 from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 from mcp import Client
 
-from fantadamus.core.clock import fixed_clock
+from fantadamus.core.clock import Clock, fixed_clock
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.mcp.server import AdvisorServer
 from fantadamus.mcp.tools import pages, submit
 from fantadamus.mcp.tools.compare import ReadingItem
-from fantadamus.web.fetch import Fetcher, Response
+from fantadamus.web.collector import Collector, RoundPageConfig
+from fantadamus.web.fetch import Fetcher, Response, Transport, http_transport
 from tests.xy_harness import CLUBS, NOW
+
+HTML = {"Content-Type": "text/html; charset=utf-8"}
+ROUND_ROUTE = "/probabili-formazioni/ultima-giornata"
 
 
 @dataclass
@@ -103,3 +110,44 @@ async def page_tools(
     pages.register(server, pages.PageReader(reading, fetcher))
     async with Client(server) as client:
         yield client
+
+
+def ticking(start: dt.datetime = NOW, step: dt.timedelta = dt.timedelta(minutes=1)) -> Clock:
+    """A clock that moves on by `step` each time it is read."""
+    times = itertools.count()
+    return lambda: start + next(times) * step
+
+
+def round_collector(
+    store: LakeStore,
+    base_url: str,
+    robots: Path,
+    *,
+    transport: Transport = http_transport,
+    hosts: Sequence[str] = ("127.0.0.1",),
+    enabled: bool = True,
+    clock: Clock | None = None,
+) -> Collector:
+    """The collector over `store`, reading the round page at `base_url` + `ROUND_ROUTE` (or round n's page),
+    with a fake monotonic clock so the rate limit costs no time."""
+    clock = clock or ticking()
+    time = FakeTime()
+
+    def fetcher() -> Fetcher:
+        return Fetcher(
+            allowed_hosts=hosts,
+            clock=clock,
+            monotonic=time.monotonic,
+            sleep=time.sleep,
+            transport=transport,
+            robots_cache=robots,
+        )
+
+    config = RoundPageConfig(
+        enabled=enabled,
+        current_round=base_url + ROUND_ROUTE,
+        round=base_url + "/probabili-formazioni/{round}-giornata",
+    )
+    return Collector(
+        fetcher=fetcher, lake=store, clubs=CLUBS, page=config, allowed_hosts=tuple(hosts), clock=clock
+    )

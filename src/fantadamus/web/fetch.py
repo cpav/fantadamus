@@ -8,6 +8,7 @@ rest of the run: nothing tries to get around it. Redirects are followed only wit
 
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import http.client
 import importlib.metadata
@@ -48,7 +49,7 @@ Transport = Callable[[str, Mapping[str, str], float], Response]
 class Page:
     url: str
     status: int
-    fetched_at: object
+    fetched_at: dt.datetime
     text: str
     content_sha256: str
 
