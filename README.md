@@ -33,10 +33,12 @@ your Claude app ──ask──▶ compare_players ──▶ collector reads the
 
 ## Status
 
-Phase 1 is complete and signed off ([report](docs/reports/phase-1-report.md)): "X or Y?" for two forwards runs
-locally in Claude Desktop, from the submit tools and checks to the forward model and `compare_players`. Testing
-with a second player has started ([setup guide](docs/player-setup.md)). Phase 0, the foundation, was signed off
-before it ([report](docs/reports/phase-0-report.md)).
+Phase 2 is under way. Its first slice, `mvp-collect`, is built: Fantadamus reads the round's lineups and odds
+itself, compares its sources, and answers "X or Y?" for two forwards as a forecast, with how sure each number is,
+how it moved and where it came from. The real round with a second player is running
+([setup guide](docs/player-setup.md)). Phases 0 and 1 are signed off
+([reports](docs/reports/phase-1-report.md)). The answers' shapes, from "X or Y?" to the full lineup, are in
+[docs/answer-formats.md](docs/answer-formats.md).
 
 Re-planned on 2026-10-26: the work now goes in thin slices, each taking one question from data to answer.
 
@@ -44,7 +46,7 @@ Re-planned on 2026-10-26: the work now goes in thin slices, each taking one ques
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton (retired 2026-10-31) | Done, signed off 2026-10-26 |
 | 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Done, signed off 2026-10-26 ([report](docs/reports/phase-1-report.md)) |
-| 2 More slices | Keepers and defenders; the full lineup with league rules and the bench; the formation | Method written |
+| 2 Slices | `mvp-collect` (built; the real round is running), then every role, then the full lineup with the bench and the formation | In progress |
 | 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
 
 For now each player runs Fantadamus on their own Mac; the shared online server comes with Phase 3.
