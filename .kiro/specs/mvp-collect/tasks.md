@@ -1,6 +1,6 @@
 # Implementation Plan: `mvp-collect` (Phase 2, first slice)
 
-Status: **Draft for the owner's review** · Date: 2026-10-30 · From the approved [requirements](requirements.md)
+Status: **Approved by the owner, 2026-10-31** · Date: 2026-10-30 · From the approved [requirements](requirements.md)
 and [design](design.md)
 
 ## How to read and run these tasks
@@ -19,18 +19,18 @@ and [design](design.md)
 
 ## Tasks
 
-- [ ] 1. Outlet percentages: contracts, silver and availability
+- [x] 1. Outlet percentages: contracts, silver and availability
   - Branch: `feat/mc-1-outlet-views` · Depends on: none · ADRs: ADR-0006
-  - [ ] 1.1 `OutletLineupPayload` 1.0.0 and `MatchOddsPayload` 1.2.0 (`over_2_5_percent`), with their quality
+  - [x] 1.1 `OutletLineupPayload` 1.0.0 and `MatchOddsPayload` 1.2.0 (`over_2_5_percent`), with their quality
     rules, schema snapshots and changelog entries
     - _Requirements: R4.1, R3.1_
     - _Test: `tests/contract/test_collect_contracts.py::test_outlet_lineup_rules`, `::test_odds_with_percent_over`_
-  - [ ] 1.2 The `outlet_views` domain and the `submit_outlet_lineup` tool; odds silver takes P(over 2.5) from a
+  - [x] 1.2 The `outlet_views` domain and the `submit_outlet_lineup` tool; odds silver takes P(over 2.5) from a
     page's percentage when it gives no over/under odds
     - _Requirements: R4.1, R4.2, R8.1_
     - _Test: `tests/integration/collect/test_outlet_views.py::test_outlet_lineup_bronze_to_silver`,
       `::test_percent_over_feeds_the_fit`_
-  - [ ] 1.3 Availability over percentages: an outlet's percentage is its view, the newest read of each outlet
+  - [x] 1.3 Availability over percentages: an outlet's percentage is its view, the newest read of each outlet
     counts once across both tables, unavailable lists give no cameo, an official lineup overrides
     - _Requirements: R4.1, R4.2, R4.3_
     - _Test: `tests/unit/collect/test_percent_consensus.py::test_percentages_are_views`, `::test_same_outlet_counts_once`;

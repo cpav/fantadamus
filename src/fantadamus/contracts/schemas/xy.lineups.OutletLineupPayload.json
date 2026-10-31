@@ -1,0 +1,120 @@
+{
+  "contract": "xy.lineups.OutletLineupPayload",
+  "schema": {
+    "$defs": {
+      "OutletPlayer": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "percent": {
+            "description": "The outlet's chance that he starts, in percent",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Percent",
+            "type": "number"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "P",
+                  "D",
+                  "C",
+                  "A"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Classic role, when the page shows it",
+            "title": "Role"
+          }
+        },
+        "required": [
+          "name",
+          "percent"
+        ],
+        "title": "OutletPlayer",
+        "type": "object"
+      },
+      "OutletTeam": {
+        "additionalProperties": false,
+        "properties": {
+          "players": {
+            "description": "Every player the outlet gives a percentage for",
+            "items": {
+              "$ref": "#/$defs/OutletPlayer"
+            },
+            "title": "Players",
+            "type": "array"
+          },
+          "unavailable": {
+            "default": [],
+            "description": "Players the page lists as injured or suspended",
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Unavailable",
+            "type": "array"
+          }
+        },
+        "required": [
+          "players"
+        ],
+        "title": "OutletTeam",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "One outlet's chance of starting for each player of one match (mvp-collect R4.1).",
+    "properties": {
+      "away": {
+        "description": "Away club",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Away",
+        "type": "string"
+      },
+      "away_team": {
+        "$ref": "#/$defs/OutletTeam"
+      },
+      "home": {
+        "description": "Home club",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Home",
+        "type": "string"
+      },
+      "home_team": {
+        "$ref": "#/$defs/OutletTeam"
+      },
+      "outlet": {
+        "description": "Whose percentages these are, e.g. Gazzetta, read from a page that may show several",
+        "maxLength": 60,
+        "minLength": 1,
+        "title": "Outlet",
+        "type": "string"
+      }
+    },
+    "required": [
+      "outlet",
+      "home",
+      "away",
+      "home_team",
+      "away_team"
+    ],
+    "title": "OutletLineupPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

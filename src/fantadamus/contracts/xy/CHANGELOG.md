@@ -44,3 +44,13 @@ Headings are `## <Contract> <version> (<date>)`.
 
 - `over_2_5` and `under_2_5` become optional, together, like goal/no goal: a page that shows only 1X2 prices
   can be submitted (R5.1). A widening change, so a minor version.
+
+## OutletLineupPayload 1.0.0 (2026-10-31)
+
+- First version: `outlet`, `home`, `away` and per team `players` (`name`, optional `role`, `percent`) and
+  `unavailable`; at least 11 players per team, each once, percentages 0 to 100 (mvp-collect R4.1).
+
+## MatchOddsPayload 1.2.0 (2026-10-31)
+
+- Adds an optional `over_2_5_percent`: a page's own chance of 3 or more goals, used when it gives no
+  over/under odds (mvp-collect C4). A widening change, so a minor version.

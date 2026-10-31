@@ -29,6 +29,10 @@ def _rows(payload: MatchOddsPayload, clubs: Clubs, source: Source) -> list[OddsR
     p_home, p_draw, p_away = de_margin([payload.home_win, payload.draw, payload.away_win])
     totals = [payload.over_2_5, payload.under_2_5]
     p_over = de_margin([price for price in totals if price is not None])[0] if None not in totals else None
+    if (
+        p_over is None and payload.over_2_5_percent is not None
+    ):  # the page's own chance, when it gives no odds
+        p_over = payload.over_2_5_percent / 100
     p_btts = de_margin([payload.goal, payload.no_goal])[0] if payload.goal and payload.no_goal else None
     return [
         OddsRow(

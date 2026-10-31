@@ -94,6 +94,21 @@
         "description": "Over 2.5 goals, when the page shows it",
         "title": "Over 2 5"
       },
+      "over_2_5_percent": {
+        "anyOf": [
+          {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "The page's own chance of 3 or more goals, when it gives that instead",
+        "title": "Over 2 5 Percent"
+      },
       "under_2_5": {
         "anyOf": [
           {
@@ -122,5 +137,5 @@
     "title": "MatchOddsPayload",
     "type": "object"
   },
-  "version": "1.1.0"
+  "version": "1.2.0"
 }
