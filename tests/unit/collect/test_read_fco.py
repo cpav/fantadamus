@@ -88,3 +88,17 @@ def test_round_from_the_page() -> None:
     assert read_round(fco_round_page(FcoMatch("Alfa", "Beta"), round=11)).fixtures.round == 11
     with pytest.raises(UnreadablePageError, match="round"):
         read_round(fco_round_page(FcoMatch("Alfa", "Beta"), round=None))
+
+
+def test_lineups_not_published_yet() -> None:
+    """Early in the week the round page lists the matches before their lineups and odds: the fixtures still
+    count, and a match without lineups is simply left out of the outlet views (found on the live page)."""
+    early = FcoMatch("Alfa", "Beta", odds=None, lineups=False)
+    facts = read_round(fco_round_page(early, FcoMatch("Gamma", "Delta", kickoff="31/10/2026 18:00")))
+    assert [(match.home, match.away) for match in facts.fixtures.matches] == [
+        ("Alfa", "Beta"),
+        ("Gamma", "Delta"),
+    ]
+    assert {(view.home, view.away) for view in facts.outlets} == {("Gamma", "Delta")}
+    assert [odds.payload.home for odds in facts.odds] == ["Gamma"]
+    assert facts.problems == []

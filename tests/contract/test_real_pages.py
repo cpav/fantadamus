@@ -26,6 +26,17 @@ def test_reading_saved_pages() -> None:
         assert text.strip(), path.name
         assert "\n".join(parts(text)) == text, path.name
         if path.name.startswith("fco-round"):
-            facts = read_round(html, round=1)
-            matches = {(match.home, match.away) for match in facts.fixtures.matches}
-            assert {(view.home, view.away) for view in facts.outlets} == matches, path.name
+            facts = read_round(html)  # the round from the page's title
+            assert facts.fixtures.matches, path.name
+            assert {(view.home, view.away) for view in facts.outlets} == _published(html), path.name
+
+
+def _published(html: str) -> set[tuple[str, str]]:
+    """The matches whose lineup tables the page shows, from the HTML itself: early in the week, none."""
+    published = set()
+    for pane in parse(html).find_all("div", "tab-pane"):
+        header = pane.find("header", "prb-incontro")
+        if header is not None and pane.find("table", "prb-tabella") is not None:
+            home, away = (name.text() for name in header.find_all(class_="prb-incontro__nome"))
+            published.add((home, away))
+    return published

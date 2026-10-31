@@ -32,6 +32,7 @@ class FcoMatch:
     updated: str = "quote aggiornate il 30 ottobre alle 18:13"
     percents: Mapping[str, tuple[int | None, ...]] = field(default_factory=dict)  # None: the outlet's dash
     confirmed: bool = False
+    lineups: bool = True  # False: the teams' sections are there, their tables not published yet
 
 
 def _role(letter: str) -> str:
@@ -76,6 +77,9 @@ def _fco_table(caption: str, rows: str) -> str:
 
 
 def _fco_team(club: str, side: str, match: FcoMatch) -> str:
+    heading = f'<section class="prb-squadra prb-squadra--{side}"><h2 class="prb-squadra__nome">{club}</h2>'
+    if not match.lineups:
+        return f"{heading}</section>"
     players = squad(club)
     starters = "".join(
         _fco_row(name, match.percents.get(name, (90, 90, 95, 90)), match.confirmed) for name in players[:11]
@@ -90,8 +94,7 @@ def _fco_team(club: str, side: str, match: FcoMatch) -> str:
         '<span class="fco-etichetta">Infortunato</span></li></ul></div>'
     )
     return (
-        f'<section class="prb-squadra prb-squadra--{side}"><h2 class="prb-squadra__nome">{club}</h2>'
-        f"{_fco_table('Probabili titolari: percentuale per redazione', starters)}"
+        f"{heading}{_fco_table('Probabili titolari: percentuale per redazione', starters)}"
         f"{_fco_table('Probabile panchina: percentuale per redazione', bench)}{out}</section>"
     )
 
