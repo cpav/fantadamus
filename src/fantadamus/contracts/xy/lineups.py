@@ -1,4 +1,5 @@
-"""Lineup contracts: one outlet's probable lineups for a match (R3.1) and the official lineups (R4.1)."""
+"""Lineup contracts: one outlet's probable lineups for a match (R3.1), the official lineups (R4.1), and one
+outlet's per-player start percentages (mvp-collect R4.1)."""
 
 from __future__ import annotations
 
@@ -7,7 +8,7 @@ from typing import Self
 from pydantic import Field, field_validator, model_validator
 
 from fantadamus.contracts.base import Contract, Part
-from fantadamus.contracts.types import Name
+from fantadamus.contracts.types import Name, Role
 from fantadamus.contracts.xy import once_each
 
 STARTERS = 11
@@ -80,3 +81,36 @@ class OfficialLineupPayload(Contract):
     away: Name = Field(description="Away club")
     home_team: OfficialTeam
     away_team: OfficialTeam
+
+
+class OutletPlayer(Part):
+    name: Name
+    role: Role | None = Field(default=None, description="Classic role, when the page shows it")
+    percent: float = Field(ge=0, le=100, description="The outlet's chance that he starts, in percent")
+
+
+class OutletTeam(Part):
+    players: list[OutletPlayer] = Field(description="Every player the outlet gives a percentage for")
+    unavailable: list[Name] = Field(default=[], description="Players the page lists as injured or suspended")
+
+    @field_validator("players")
+    @classmethod
+    def _enough_players(cls, players: list[OutletPlayer]) -> list[OutletPlayer]:
+        if len(players) < STARTERS:
+            raise ValueError(f"needs at least {STARTERS} players, got {len(players)}")
+        once_each((player.name for player in players), "{name} is listed twice")
+        return players
+
+
+class OutletLineupPayload(Contract):
+    """One outlet's chance of starting for each player of one match (mvp-collect R4.1)."""
+
+    __version__ = "1.0.0"
+
+    outlet: Name = Field(
+        description="Whose percentages these are, e.g. Gazzetta, read from a page that may show several"
+    )
+    home: Name = Field(description="Home club")
+    away: Name = Field(description="Away club")
+    home_team: OutletTeam
+    away_team: OutletTeam

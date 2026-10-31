@@ -17,7 +17,8 @@ from fantadamus.domains.facts import Source
 from fantadamus.engine.constants import CAMEO_SHARE, DISPUTED_SPREAD, P_START_BENCH, P_START_STARTER
 
 Listed = Literal["starter", "ballottaggio", "bench", "unavailable"]
-Status = Literal[Listed, "not listed"]
+Status = Literal[Listed, "not listed", "percentage"]
+"""`percentage`: the outlet gave its own chance that he starts (mvp-collect R4.1)."""
 OfficialStatus = Literal["starter", "bench", "not listed"]
 
 _P_START: dict[str, float] = {
@@ -61,10 +62,10 @@ class Availability(BaseModel):
 def outlet_view(
     outlet: str, status: Status, share: float | None, source: Source, rivals: Sequence[str] = ()
 ) -> OutletView:
-    """One outlet's view of a player; `share` is his ballottaggio percentage."""
-    if status == "ballottaggio":
+    """One outlet's view of a player; `share` is his ballottaggio share or the outlet's own percentage."""
+    if status in ("ballottaggio", "percentage"):
         if share is None:
-            raise ValueError("a ballottaggio view needs the player's share")
+            raise ValueError(f"a {status} view needs a percentage")
         p_start = share / 100
     else:
         p_start = _P_START[status]

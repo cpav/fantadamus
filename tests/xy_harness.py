@@ -201,3 +201,18 @@ async def ask(
     content: dict[str, Any] | None = result.structured_content
     assert content is not None
     return content
+
+
+def outlet_lineup(outlet: str, home: str = "Alfa", away: str = "Beta", **percents: float) -> dict[str, Any]:
+    """An outlet's per-player start percentages for a match: each club's first eleven at 90, two on the bench
+    at 10, the fourteenth unavailable. Keyword arguments set one player's percentage, e.g. `Alfa_Nove=55`."""
+
+    def team(club: str) -> dict[str, Any]:
+        squad = [f"{club} {word}" for word in WORDS]
+        players = [
+            {"name": name, "role": "A", "percent": percents.get(name.replace(" ", "_"), 90 if i < 11 else 10)}
+            for i, name in enumerate(squad[:13])
+        ]
+        return {"players": players, "unavailable": squad[13:]}
+
+    return {"outlet": outlet, "home": home, "away": away, "home_team": team(home), "away_team": team(away)}

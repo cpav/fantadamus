@@ -16,13 +16,13 @@ from pydantic import AwareDatetime
 
 from fantadamus.contracts.base import Contract
 from fantadamus.contracts.xy.fixtures import FixturesPayload
-from fantadamus.contracts.xy.lineups import OfficialLineupPayload, ProbableLineupPayload
+from fantadamus.contracts.xy.lineups import OfficialLineupPayload, OutletLineupPayload, ProbableLineupPayload
 from fantadamus.contracts.xy.odds import MatchOddsPayload
 from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
 from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains import facts
-from fantadamus.domains.availability.silver import LINEUP_VIEWS, OFFICIAL_LINEUPS
+from fantadamus.domains.availability.silver import LINEUP_VIEWS, OFFICIAL_LINEUPS, OUTLET_VIEWS
 from fantadamus.domains.facts import Domain, Receipt
 from fantadamus.domains.fixtures.silver import FIXTURES
 from fantadamus.domains.odds.silver import ODDS
@@ -167,3 +167,18 @@ def register(
         published_at: AwareDatetime | None = None,
     ) -> Receipt:
         return submit(ODDS, payload, source_url, captured_at, published_at)
+
+    @server.tool(
+        description="Submit one outlet's chance of starting for each player of one match, as a page shows "
+        "it, e.g. Fantacalcio-Online's round page with Fantacalcio.it, Gazzetta, SOS Fanta and Sky side by "
+        'side: submit each outlet separately, never the page\'s own average. Shape: {"outlet": "Gazzetta", '
+        '"home": "Milan", "away": "Inter", "home_team": {"players": [{"name": "A", "role": "A", "percent": '
+        '90}, ...], "unavailable": [names]}, "away_team": {the same}}. ' + PROVENANCE
+    )
+    def submit_outlet_lineup(
+        payload: OutletLineupPayload,
+        source_url: str,
+        captured_at: AwareDatetime,
+        published_at: AwareDatetime | None = None,
+    ) -> Receipt:
+        return submit(OUTLET_VIEWS, payload, source_url, captured_at, published_at)
