@@ -26,7 +26,13 @@ from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.availability.consensus import Availability, OfficialView, OutletView
 from fantadamus.domains.availability.gold import availability
-from fantadamus.domains.availability.silver import LINEUP_VIEWS, OFFICIAL_LINEUPS, LineupViewRow
+from fantadamus.domains.availability.silver import (
+    LINEUP_VIEWS,
+    OFFICIAL_LINEUPS,
+    OUTLET_VIEWS,
+    LineupViewRow,
+    OutletViewRow,
+)
 from fantadamus.domains.facts import SilverRow, Source, read_silver
 from fantadamus.domains.fixtures.gold import deadline, fixture, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES, FixtureRow
@@ -168,6 +174,7 @@ class _Facts:
     teams: Sequence[Any]
     takers: Sequence[Any]
     views: Sequence[Any]
+    outlet_views: Sequence[Any]
     officials: Sequence[Any]
     odds: Sequence[Any]
 
@@ -179,6 +186,7 @@ class _Facts:
             teams=read_silver(lake, TEAM_SEASONS),
             takers=read_silver(lake, PENALTY_TAKERS),
             views=read_silver(lake, LINEUP_VIEWS),
+            outlet_views=read_silver(lake, OUTLET_VIEWS),
             officials=read_silver(lake, OFFICIAL_LINEUPS),
             odds=read_silver(lake, ODDS),
         )
@@ -349,20 +357,26 @@ class Advisor:
     ) -> tuple[Availability | None, TeamXg | None]:
         """His availability and team xG for the match, asking for whatever is missing or stale."""
 
-        def available(views: Sequence[LineupViewRow]) -> Availability | None:
+        def available(
+            views: Sequence[LineupViewRow], outlet_views: Sequence[OutletViewRow]
+        ) -> Availability | None:
             return availability(
                 player,
                 home=match.home,
                 away=match.away,
                 views=views,
+                outlet_views=outlet_views,
                 officials=facts.officials,
                 players=known,
                 as_of=as_of,
             )
 
-        present = available(_fresh(facts.views, "probable_lineups", as_of, match.kickoff_at))
+        present = available(
+            _fresh(facts.views, "probable_lineups", as_of, match.kickoff_at),
+            _fresh(facts.outlet_views, "probable_lineups", as_of, match.kickoff_at),
+        )
         if present is None:
-            stale = available(facts.views) is not None
+            stale = available(facts.views, facts.outlet_views) is not None
             need(
                 self._match_item("probable_lineups", "stale" if stale else "missing", match), match.kickoff_at
             )

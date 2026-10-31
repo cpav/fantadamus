@@ -43,6 +43,7 @@ async def test_served_tools(tmp_path: Path) -> None:
         "submit_fixtures",
         "submit_match_odds",
         "submit_official_lineup",
+        "submit_outlet_lineup",
         "submit_penalty_takers",
         "submit_player_season",
         "submit_probable_lineups",
