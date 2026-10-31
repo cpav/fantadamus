@@ -38,6 +38,7 @@ owner says so (Q8), the exit gate has two parts:
 | 2026-10-26 | Faster checks (owner decision, 2026-10-25): the end-of-turn hook runs `make test-fast` with a 2-minute limit instead of `make check` (R17.3); `make test-fast` must finish in under 20 seconds (R1.4). Found in task 9.7: a `make check` run inside the hook took 13 minutes and was cancelled with no feedback. |
 | 2026-10-26 | Re-plan (owner approval, 2026-10-26): Requirements 14, 15, 19 and 22 move to Phase 3; R2.12 (the ruleset becomes a checklist), R18.4 and R21.2 (no PR-description check: `make task-check` checks ADRs), R20.1, R20.2, R20.4 and R20.5 (no self-test framework: ordinary acceptance tests and a one-time GitHub checklist); AT-3, AT-6, AT-8, AT-10, AT-11, AT-18, AT-20 and AT-21 updated. |
 | 2026-10-26 | Clean-up (owner request): R1.7 moves to Phase 2 with mutmut; the empty `check-infra` and the unused `check-static` and `check-tests` targets are removed; Terraform's tools and suppression scanning wait for Phase 3; tests that only restated the project's own documents are removed. |
+| 2026-10-31 | Walking skeleton retired (owner decision): `mvp-x-or-y`'s fact pipeline had replaced it. Its code, contracts, `make skeleton`, golden file and tests (AT-7) are removed. Its general guarantees stay tested on the real pipeline: bronze is append-only and rebuilding never touches it (P1, `tests/property/test_lake.py`); refused submissions write nothing (`tests/integration/xy/test_fixtures.py`); the envelope's rules (`tests/contract/test_contract_base.py`). R16 is kept as the record of Phase 0. |
 
 ## Glossary
 
@@ -356,6 +357,8 @@ mistake can't run up a bill unnoticed.
 - **R15.7** WHEN the smoke test runs THE SYSTEM SHALL check that the `Project` cost-allocation tag is active in Billing, and IF it isn't THEN THE SYSTEM SHALL fail with instructions for the owner to activate it (activation can take up to 24 hours).
 
 ### Requirement 16: Walking skeleton
+
+*Retired on 2026-10-31 (see the change log); kept as the record of Phase 0.*
 
 **User Story:** As a developer, I want a tiny end-to-end pipeline from day one, so that every layer of the
 harness is proven before real sources arrive.
