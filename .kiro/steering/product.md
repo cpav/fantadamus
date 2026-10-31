@@ -10,7 +10,8 @@ Fantadamus advises players of **Fantacalcio** (Serie A fantasy football, Classic
 The audience ranges from a group of friends to a live chat under a YouTube stream, where people post two
 names and ask which to play. **The method is [`docs/method.md`](../../docs/method.md)** (the owner's,
 2026-10-24): the `decision-engine` spec implements it and takes its acceptance tests from §A9. The chat
-agent's behaviour is [`docs/agent-prompt.md`](../../docs/agent-prompt.md). Numbers marked *(start)* are
+agent's behaviour is [`docs/agent-prompt.md`](../../docs/agent-prompt.md), and the shape of every answer, a
+forecast like a good weather app's, is [`docs/answer-formats.md`](../../docs/answer-formats.md). Numbers marked *(start)* are
 starting values, calibrated from logged predictions (§A8). The earlier hand-written playbook is not used.
 
 The product must stay **cheap per question as the number of users grows**. That single constraint drives
@@ -106,15 +107,23 @@ not what happens to it.
 ## Delivery order
 
 Re-planned on 2026-10-26 to reach a usable advisor sooner: work goes in thin vertical slices, each taking one
-question from data to answer, instead of three full specs one after another.
+question from data to answer, instead of three full specs one after another. Brought up to date on 2026-10-31.
+
+**Phases 1 to 3 are the MVP**: two players, data fetched by Fantadamus from the approved pages and the rest read
+by their Claude through `read_page`. **Phase 4 is v1.** Every feature is built once, in the MVP's slices, and
+carries over: v1 changes how the data arrives (licensed or permitted sources, on a schedule) and where it runs
+(AWS), not what the answers say.
 
 | Phase | Spec | Status rule |
 |---|---|---|
-| 0 | `engineering-foundation`: repository, tooling, CI, test harness, agent hooks, walking skeleton | Built first; its AWS skeleton moved to Phase 3 |
-| 1 | `mvp-x-or-y`: "X or Y?" for two forwards in the owner's Claude Desktop: the facts it needs (submit tools, storage), the method for forwards, and the `compare_players` tool | Starts after Phase 0's gate |
-| 2 | Further slices, one small spec each: first `mvp-collect` (Fantadamus collects the round's facts itself, many sources compared, forecast-style answers); then keepers and defenders; the full lineup with league rules and the bench; the formation call | Each after the previous slice has answered a real round |
+| 0 | `engineering-foundation`: repository, tooling, CI, test harness, agent hooks | Done, signed off 2026-10-26; its AWS skeleton moved to Phase 3 |
+| 1 | `mvp-x-or-y`: "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method for forwards, `compare_players` | Done, signed off 2026-10-26 |
+| 2 | Slices, one small spec each, toward the full lineup: **(a)** `mvp-collect`: Fantadamus collects the round's facts itself, sources compared, forecast-style answers (built; the real round is running); **(b)** every role: "X or Y?" and one player's outlook for keepers, defenders and midfielders, with players' season figures read in bulk; **(c)** the full lineup: the user's squad, the league's full rules, the eleven, the bench order and the formation, simulated to give the expected score and the chance of each threshold; **(d)** later, match cards | Each after the previous slice has answered a real round |
 | 3 | Online for the second player: the remote MCP endpoint, plus the AWS skeleton, budget alarm and deploy gate moved from Phase 0 | After the slices the second player needs |
-| 4 | v1: automated, scheduled pipelines on licensed or permitted sources | After the MVP has been used for real rounds |
+| 4 | v1: automated, scheduled pipelines on licensed or permitted sources; more users | After the MVP has been used for real rounds |
+
+Live forecasts during a match, and alerts such as "the official lineup changes your call", come in their own
+specs once the full lineup works.
 
 Gates and the Definition of Done are in `quality.md`.
 
