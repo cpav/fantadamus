@@ -37,9 +37,9 @@ and [design](design.md)
       **P5** `tests/property/collect/test_percent_consensus.py::test_p5_percent_consensus`;
       **AT-4** `tests/acceptance/collect/test_collect.py::test_at4_four_outlets_disputed`_
 
-- [ ] 2. Polite fetching
+- [x] 2. Polite fetching
   - Branch: `feat/mc-2-fetcher` · Depends on: none · ADRs: ADR-0004, ADR-0006
-  - [ ] 2.1 The fetcher: the allowlist before any request, robots.txt cached once a day per host, one request a
+  - [x] 2.1 The fetcher: the allowlist before any request, robots.txt cached once a day per host, one request a
     second per host, the user agent, blocks and bot checks stop the host, one attempt with a timeout
     - _Requirements: R2.1, R2.2, R2.3_
     - _Test: `tests/unit/collect/test_fetch.py::test_allowlist_robots_and_blocks`;
@@ -47,7 +47,7 @@ and [design](design.md)
       **P2** `::test_p2_robots_never_broken`;
       **AT-2** `tests/acceptance/collect/test_fetching.py::test_at2_disallowed_never_requested`,
       **AT-3** `::test_at3_rate_and_too_many_requests`_
-  - [ ] 2.2 The HTML tree on `html.parser`: find by tag and class, text, attributes
+  - [x] 2.2 The HTML tree on `html.parser`: find by tag and class, text, attributes
     - _Requirements: R3.4_
     - _Test: `tests/unit/collect/test_html.py::test_find_by_class_and_text`_
 
