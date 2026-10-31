@@ -5,6 +5,9 @@ kickoff in Italian time), the 1X2 odds, the chance of 3 or more goals with the t
 each team's two tables ("Probabili titolari", "Probabile panchina") with one column per outlet, the page's own
 average and the official-lineup column. The average is skipped; a dash means the outlet doesn't list him.
 Names stay as the page writes them ("SKORUPSKI L"); clubs and players are mapped when the facts are stored.
+Matches, players and lineups come out in a fixed order, kickoff then club, and names alphabetically: the page
+lists matches that kick off together in either order from one load to the next, and the same facts must read
+the same, or each read would store them again (R1.4).
 """
 
 from __future__ import annotations
@@ -121,7 +124,8 @@ def read_round(html: str, round: int | None = None) -> RoundFacts:
         fixtures.append(Fixture(home=home, away=away, kickoff_at=kickoff))
         _read_match(pane, home, away, kickoff, found)
     try:
-        round_fixtures = FixturesPayload(round=round, matches=fixtures)
+        in_order = sorted(fixtures, key=lambda match: (match.kickoff_at, match.home, match.away))
+        round_fixtures = FixturesPayload(round=round, matches=in_order)
     except ValidationError as error:
         raise UnreadablePageError(f"the fixtures don't hold together: {error.errors()[0]['msg']}") from error
     return RoundFacts(round_fixtures, found.odds, found.outlets, found.officials, found.problems)
@@ -299,11 +303,13 @@ def _outlet_view(outlet: str, home: str, away: str, teams: tuple[_Team, _Team]) 
 def _outlet_team(team: _Team, outlet: str) -> OutletTeam:
     players = [
         OutletPlayer(name=row.name, role=row.role, percent=row.percents[outlet])
-        for row in team.starters + team.bench
+        for row in sorted(team.starters + team.bench, key=lambda row: row.name)
         if outlet in row.percents
     ]
-    return OutletTeam(players=players, unavailable=team.unavailable)
+    return OutletTeam(players=players, unavailable=sorted(team.unavailable))
 
 
 def _official_team(team: _Team) -> OfficialTeam:
-    return OfficialTeam(starters=[row.name for row in team.starters], bench=[row.name for row in team.bench])
+    return OfficialTeam(
+        starters=sorted(row.name for row in team.starters), bench=sorted(row.name for row in team.bench)
+    )
