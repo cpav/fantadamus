@@ -1,6 +1,7 @@
 # Requirements Document: `mvp-roles` (Phase 2, second slice)
 
-Status: **Approved by the owner, 2026-11-03** · Workflow: requirements-first · Depends on:
+Status: **Approved by the owner, 2026-11-03**; R1.1, R7.2 and AT-1 **amended the same day** with the design,
+for the owner's review · Workflow: requirements-first · Depends on:
 `mvp-x-or-y` and `mvp-collect` (built; code for this slice starts after `mvp-collect`'s sign-off, owner decision
 2026-11-03) · Method: [`docs/method.md`](../../../docs/method.md) §A3, §A4 and §A6 · Answers:
 [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 1 and 4
@@ -56,9 +57,9 @@ penalties saved, assists, and yellow and red cards. It doesn't give appearances 
 **User Story:** As a player, I want every player's figures read once for everyone, so that a question about any
 player, or a whole squad, doesn't wait for Claude to read a profile per player.
 
-- **R1.1** THE SYSTEM SHALL read the statistics page with a reader of its own and store each player's season
-  figures as a `player_season` fact, with the page's URL, through the same flow as `mvp-collect`'s collector
-  (`submitted_by` `collector`).
+- **R1.1** THE SYSTEM SHALL read the statistics page with a reader of its own and store every player's season
+  figures as one record per read, with the page's URL, through the same flow as `mvp-collect`'s collector
+  (`submitted_by` `collector`). Answers SHALL read them as they read the season figures Claude submits.
 - **R1.2** THE SYSTEM SHALL take from each row: the player's ID (from his profile link), name, club, Classic role,
   first Mantra role, rated appearances, average rating, goals, goals conceded, penalties scored and taken,
   assists and yellow cards. It SHALL ignore the fantamedia: the method prices bonuses apart from the vote
@@ -186,14 +187,14 @@ owner's shapes.
 - **R7.1** THE SYSTEM SHALL tell Claude, in the agent prompt, that "X or Y?" works for any two players of the same
   role and `player_outlook` for any player, that the full lineup and the formation aren't supported yet, and
   how to render answer formats 1 and 4, with a keeper's clean-sheet chance in place of the chance to score.
-- **R7.2** THE SYSTEM SHALL add the statistics page to the reading list (first for season figures), the source
-  registry and the data-product catalog.
+- **R7.2** THE SYSTEM SHALL add the statistics page to the reading list (first for season figures) and to the
+  source registry.
 
 ## Acceptance tests
 
 | ID | Acceptance test | Proves |
 |---|---|---|
-| AT-1 | Method §A9 test 3: two keepers whose clubs' raw five-game form gives one of them +0.9 come out within about 0.1 on regressed team form | R3.2, R3.3 |
+| AT-1 | Method §A9 test 3, at the method's own weights: two keepers of equal skill, whose clubs conceded 6 and 9 in five matches, differ by about +0.9 on raw team form, by about 0.3 on regressed team form, and by under 0.1 once the odds price both matches alike | R3.2, R3.3 |
 | AT-2 | Two keepers with the same skill behind different defences (average 6.0 conceding 2 per game, 6.35 conceding 1 per game, in the same number of games) get the same expected vote in the same match | R3.3 |
 | AT-3 | A keeper facing an opponent expected to score about 1.0 has a clean-sheet chance of about 37%, from the same fit as his team's chance to win | R3.1, R3.2 |
 | AT-4 | Without goals or games, a `T`'s goal share is 0.15, a `C`'s 0.06 and a full-back's 0.03 with a weight of 25; and a forward's values are the same as before this slice | R2.1 to R2.3, R2.6 |
