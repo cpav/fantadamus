@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-roles` (Phase 2, second slice)
 
-Status: **Proposed 2026-11-03, for the owner's review** · Workflow: requirements-first · Depends on:
+Status: **Approved by the owner, 2026-11-03** · Workflow: requirements-first · Depends on:
 `mvp-x-or-y` and `mvp-collect` (built; code for this slice starts after `mvp-collect`'s sign-off, owner decision
 2026-11-03) · Method: [`docs/method.md`](../../../docs/method.md) §A3, §A4 and §A6 · Answers:
 [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 1 and 4
@@ -208,3 +208,12 @@ owner's shapes.
 
 - **2026-11-03:** the owner asked to write this spec's requirements now, while `mvp-collect`'s real round runs; no
   code for it until `mvp-collect` is signed off.
+- **2026-11-03:** these requirements approved, with two choices:
+  - Fantadamus reads the statistics page itself, with a reader of its own (R1.1), and the user's Claude is the
+    fallback. This makes a second reader, for this page only, beside the round page's (`mvp-collect`'s "one
+    reader" decision of 2026-10-31). One request a day gives every player's figures to every user, and the full
+    lineup will need a whole squad's.
+  - A question between two roles gets both players' outlooks and no verdict (R4.2) until the full lineup's
+    formation call.
+  - The starting values the method doesn't give (R2.1's †, the assist priors' split, R3.3's prior, R3.4) are
+    calibrated from the decision log like the others.
