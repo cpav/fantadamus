@@ -16,6 +16,9 @@
 enabled = true
 current_round = "https://www.fantacalcio-online.com/it/serie-a/2026-2027/probabili-formazioni/ultima-giornata"
 round = "https://www.fantacalcio-online.com/it/serie-a/2026-2027/probabili-formazioni/{round}-giornata"
+# Fantacalcio.it's statistics page: every player's season figures, read daily (mvp-roles R1). Set
+# `statistics_enabled = false` to switch it off: Claude then reads them through read_page.
+statistics = "https://www.fantacalcio.it/statistiche-serie-a"
 
 [facts.fixtures]
 need = "N2"

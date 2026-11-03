@@ -1,18 +1,18 @@
-"""The collector: Fantadamus reads Fantacalcio-Online's round page itself and stores its facts (mvp-collect
-design C6; R1.1, R1.4, R2.4, R2.5, R3.4).
+"""The collector: Fantadamus reads Fantacalcio-Online's round page and Fantacalcio.it's statistics page itself
+and stores their facts (mvp-collect design C6; R1.1, R1.4, R2.4, R2.5, R3.4; mvp-roles design C4).
 
-A run fetches the round page once, politely (C1), reads it with the round-page reader (C3.1), and stores each
-kind of fact with `facts.submit_many` as `collector`: the fetch time is `captured_at`, and the odds carry the
-page's own update time. A kind of fact whose payloads are the same as at the page's last stored read stores
-nothing new (R1.4). The report says what was stored or why nothing was, and when the page couldn't be used it
-names the facts Claude reads instead (R8.1).
+A run fetches each page its facts call for once, politely (C1), with one fetcher for the run, reads it with
+its reader (C3.1), and stores each kind of fact with `facts.submit_many` as `collector`: the fetch time is
+`captured_at`, and the odds carry the page's own update time. A kind of fact whose payloads are the same as at
+the page's last stored read stores nothing new (R1.4). Each page gets its own report, which says what was
+stored or why nothing was, and when the page couldn't be used names the facts Claude reads instead (R8.1).
 """
 
 from __future__ import annotations
 
 import datetime as dt
 import tomllib
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -32,15 +32,21 @@ from fantadamus.domains.facts import (
 )
 from fantadamus.domains.fixtures.silver import FIXTURES
 from fantadamus.domains.odds.silver import ODDS
+from fantadamus.domains.season.silver import SEASON_STATS
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.web.fetch import DisallowedError, Fetcher, FetchError, HostBlockedError, NotAllowedError
+from fantadamus.web.fetch import DisallowedError, Fetcher, FetchError, HostBlockedError, NotAllowedError, Page
 from fantadamus.web.readers import UnreadablePageError
+from fantadamus.web.readers.fcit_stats import StatsFacts, read_stats
 from fantadamus.web.readers.fco import RoundFacts, read_round
 
 DEFAULT_READING_LIST = Path("config/reading_list.toml")
 COLLECTOR = "collector"
 ROUND_FACTS = ("fixtures", "probable_lineups", "official_lineups", "match_odds")
 """The reading list's facts the round page carries: Claude's to read when the page can't be used."""
+STATS_FACTS = ("player_season",)
+"""And the statistics page's (mvp-roles R1.6)."""
+FACTS = ROUND_FACTS + STATS_FACTS
+PageKind = Literal["round", "statistics"]
 
 Outcome = Literal[
     "stored",
@@ -56,21 +62,27 @@ Outcome = Literal[
 Submissions = dict[Domain[Any, Any], list[Submission[Any]]]
 
 
-class RoundPageConfig(BaseModel):
-    """The `[collector]` table in `config/reading_list.toml`: where the round page is, and if it's read."""
+class CollectorConfig(BaseModel):
+    """The `[collector]` table in `config/reading_list.toml`: where the pages are, and if each is read."""
 
     enabled: bool = True
+    """Whether the round page is read."""
     current_round: str
     round: str
     """The address of round n, with `{round}` for n."""
+    statistics: str | None = None
+    """The statistics page; None reads none (mvp-roles R1.1)."""
+    statistics_enabled: bool = True
 
 
-def load_round_page(path: Path = DEFAULT_READING_LIST) -> RoundPageConfig:
-    return RoundPageConfig.model_validate(tomllib.loads(path.read_text(encoding="utf-8"))["collector"])
+def load_collector(path: Path = DEFAULT_READING_LIST) -> CollectorConfig:
+    return CollectorConfig.model_validate(tomllib.loads(path.read_text(encoding="utf-8"))["collector"])
 
 
 class PageReport(BaseModel):
     url: str
+    page: PageKind = "round"
+    """Which page this is; lines logged before the statistics page was read are the round page's."""
     outcome: Outcome
     reason: str | None = None
     fetched_at: dt.datetime | None = None
@@ -104,6 +116,11 @@ def submissions(facts: RoundFacts) -> Submissions:
     }
 
 
+def season_submissions(facts: StatsFacts) -> Submissions:
+    """The statistics page's one read, ready to store (mvp-roles C1)."""
+    return {SEASON_STATS: [Submission(facts.payload)]}
+
+
 def to_store(new: Submissions, last: Mapping[str, set[str]]) -> Submissions:
     """The kinds of fact whose payloads differ from the page's last stored read (`last`, content hashes by
     domain source): the rest would store nothing new."""
@@ -130,40 +147,61 @@ class Collector:
     """A new fetcher for each run: a host that blocks is stopped for that run only (R2.3)."""
     lake: LakeStore
     clubs: Clubs
-    page: RoundPageConfig
+    config: CollectorConfig
     allowed_hosts: tuple[str, ...]
     clock: Clock
 
-    def collect(self, round: int | None = None) -> CollectReport:
-        """Read round `round`'s page, or the current round's, and store what's new."""
-        started = self.clock()
-        report = self._round_page(round)
-        return CollectReport(started_at=started, finished_at=self.clock(), round=round, pages=[report])
+    def reads(self, fact: str) -> bool:
+        """Whether a page this collector reads carries `fact`."""
+        return fact in ROUND_FACTS or (fact in STATS_FACTS and self.config.statistics is not None)
 
-    def _round_page(self, round: int | None) -> PageReport:
-        url = self.page.round.format(round=round) if round is not None else self.page.current_round
-        if not self.page.enabled:
+    def collect(self, round: int | None = None, facts: Collection[str] | None = None) -> CollectReport:
+        """Read the pages that carry `facts`, by default the round page and, without `round`, the statistics
+        page: round `round`'s page, or the current round's. Store what's new."""
+        started = self.clock()
+        wanted = set(facts) if facts is not None else set(ROUND_FACTS if round is not None else FACTS)
+        fetcher = self.fetcher()
+        reports = []
+        if wanted & set(ROUND_FACTS):
+            reports.append(self._round_page(fetcher, round))
+        if wanted & set(STATS_FACTS) and self.config.statistics is not None:
+            reports.append(self._statistics_page(fetcher, self.config.statistics))
+        return CollectReport(started_at=started, finished_at=self.clock(), round=round, pages=reports)
+
+    def _round_page(self, fetcher: Fetcher, round: int | None) -> PageReport:
+        url = self.config.round.format(round=round) if round is not None else self.config.current_round
+        if not self.config.enabled:
             return PageReport(url=url, outcome="switched off", for_claude=list(ROUND_FACTS))
-        try:
-            fetched = self.fetcher().fetch(url)
-        except FetchError as error:
-            return PageReport(
-                url=url, outcome=_outcome(error), reason=str(error), for_claude=list(ROUND_FACTS)
-            )
+        fetched = _fetch(fetcher, url, "round", ROUND_FACTS)
+        if isinstance(fetched, PageReport):
+            return fetched
         try:
             facts = read_round(fetched.text, round)
         except UnreadablePageError as error:
+            return _unreadable(fetched, "round", ROUND_FACTS, error)
+        return self._store(fetched, "round", ROUND_FACTS, submissions(facts), facts.problems)
+
+    def _statistics_page(self, fetcher: Fetcher, url: str) -> PageReport:
+        if not self.config.statistics_enabled:
             return PageReport(
-                url=fetched.url,
-                outcome="unreadable",
-                reason=str(error),
-                fetched_at=fetched.fetched_at,
-                for_claude=list(ROUND_FACTS),
+                url=url, page="statistics", outcome="switched off", for_claude=list(STATS_FACTS)
             )
-        new = submissions(facts)
+        fetched = _fetch(fetcher, url, "statistics", STATS_FACTS)
+        if isinstance(fetched, PageReport):
+            return fetched
+        try:
+            facts = read_stats(fetched.text)
+        except UnreadablePageError as error:
+            return _unreadable(fetched, "statistics", STATS_FACTS, error)
+        return self._store(fetched, "statistics", STATS_FACTS, season_submissions(facts), facts.problems)
+
+    def _store(
+        self, fetched: Page, page: PageKind, carried: tuple[str, ...], new: Submissions, found: list[str]
+    ) -> PageReport:
+        """Store each kind of fact that changed since the page's last stored read (R1.4)."""
         last = {domain.source: last_read(self.lake, domain, fetched.url) for domain in new}
         stored: dict[str, int] = {}
-        problems = list(facts.problems)
+        problems = list(found)
         changed = to_store(new, last)
         try:
             for domain, items in changed.items():
@@ -183,22 +221,46 @@ class Collector:
                 problems += [f"{domain.source} {item.index}: {item.reason}" for item in result.rejections]
         except RefusedError as error:
             return PageReport(
-                url=fetched.url, outcome="not allowed", reason=str(error), for_claude=list(ROUND_FACTS)
+                url=fetched.url, page=page, outcome="not allowed", reason=str(error), for_claude=list(carried)
             )
         if changed and not stored:  # something new, and every payload refused: the facts are Claude's
             return PageReport(
                 url=fetched.url,
+                page=page,
                 outcome="rejected",
                 reason="every payload was refused",
                 fetched_at=fetched.fetched_at,
                 problems=problems,
-                for_claude=list(ROUND_FACTS),
+                for_claude=list(carried),
             )
         return PageReport(
             url=fetched.url,
+            page=page,
             outcome="stored" if stored else "unchanged",
             fetched_at=fetched.fetched_at,
             stored=stored,
             confirmed=[domain.table.name for domain, items in new.items() if items and domain not in changed],
             problems=problems,
         )
+
+
+def _fetch(fetcher: Fetcher, url: str, page: PageKind, carried: tuple[str, ...]) -> Page | PageReport:
+    try:
+        return fetcher.fetch(url)
+    except FetchError as error:
+        return PageReport(
+            url=url, page=page, outcome=_outcome(error), reason=str(error), for_claude=list(carried)
+        )
+
+
+def _unreadable(
+    fetched: Page, page: PageKind, carried: tuple[str, ...], error: UnreadablePageError
+) -> PageReport:
+    return PageReport(
+        url=fetched.url,
+        page=page,
+        outcome="unreadable",
+        reason=str(error),
+        fetched_at=fetched.fetched_at,
+        for_claude=list(carried),
+    )

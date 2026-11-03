@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from fantadamus.core.clubs import Clubs
 from tests.xy_harness import CLUBS
 
 ROLES = (("P", "Por"), ("D", "Dc"), ("C", "C"), ("A", "Pc"))
@@ -33,13 +34,13 @@ def stats_row(club: str, role: str, mantra_role: str, player_id: int, **change: 
     } | change
 
 
-def stats_read(*, without: tuple[str | tuple[str, str], ...] = ()) -> dict[str, Any]:
-    """A full read: every test club with a player of each role, leaving out the clubs and the (club, role)
-    pairs named."""
+def stats_read(*, without: tuple[str | tuple[str, str], ...] = (), clubs: Clubs = CLUBS) -> dict[str, Any]:
+    """A full read: every club (the test clubs by default) with a player of each role, leaving out the clubs
+    and the (club, role) pairs named. Clubs go by name; the page's links write that in lower case, its key."""
     players = [
-        stats_row(CLUBS.names[club], role, mantra, 7000 + 10 * index + number)
-        for index, club in enumerate(sorted(CLUBS.names))
+        stats_row(clubs.names[club], role, mantra, 7000 + 10 * index + number)
+        for index, club in enumerate(sorted(clubs.names))
         for number, (role, mantra) in enumerate(ROLES)
-        if (CLUBS.names[club], role) not in without and CLUBS.names[club] not in without
+        if (clubs.names[club], role) not in without and clubs.names[club] not in without
     ]
     return {"players": players}

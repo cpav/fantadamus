@@ -46,7 +46,7 @@ CLEAR = 0.5  # above this, clear; in between, a lean
 FRESH_FOR_HOURS = {
     "probable_lineups": 12,
     "match_odds": 24,
-    "player_season": 7 * 24,
+    "player_season": 48,  # a round's ratings count before the next round (mvp-roles R1.4)
     "team_season": 7 * 24,
     "penalty_takers": 7 * 24,
     "fixtures": 7 * 24,

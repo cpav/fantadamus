@@ -20,12 +20,13 @@ from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.mcp.server import AdvisorServer
 from fantadamus.mcp.tools import pages, submit
 from fantadamus.mcp.tools.compare import ReadingItem
-from fantadamus.web.collector import Collector, RoundPageConfig
+from fantadamus.web.collector import Collector, CollectorConfig
 from fantadamus.web.fetch import Fetcher, Response, Transport, http_transport
 from tests.xy_harness import CLUBS, NOW
 
 HTML = {"Content-Type": "text/html; charset=utf-8"}
 ROUND_ROUTE = "/probabili-formazioni/ultima-giornata"
+STATS_ROUTE = "/statistiche-serie-a"
 
 
 @dataclass
@@ -127,9 +128,12 @@ def round_collector(
     hosts: Sequence[str] = ("127.0.0.1",),
     enabled: bool = True,
     clock: Clock | None = None,
+    statistics: bool = False,
+    statistics_enabled: bool = True,
 ) -> Collector:
     """The collector over `store`, reading the round page at `base_url` + `ROUND_ROUTE` (or round n's page),
-    with a fake monotonic clock so the rate limit costs no time."""
+    and with `statistics` the statistics page at `base_url` + `STATS_ROUTE`, with a fake monotonic clock so
+    the rate limit costs no time."""
     clock = clock or ticking()
     time = FakeTime()
 
@@ -143,11 +147,13 @@ def round_collector(
             robots_cache=robots,
         )
 
-    config = RoundPageConfig(
+    config = CollectorConfig(
         enabled=enabled,
         current_round=base_url + ROUND_ROUTE,
         round=base_url + "/probabili-formazioni/{round}-giornata",
+        statistics=base_url + STATS_ROUTE if statistics else None,
+        statistics_enabled=statistics_enabled,
     )
     return Collector(
-        fetcher=fetcher, lake=store, clubs=CLUBS, page=config, allowed_hosts=tuple(hosts), clock=clock
+        fetcher=fetcher, lake=store, clubs=CLUBS, config=config, allowed_hosts=tuple(hosts), clock=clock
     )

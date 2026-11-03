@@ -20,7 +20,7 @@ from fantadamus.league.rules import RulesStore
 from fantadamus.mcp.server import DEFAULT_SOURCES, build_advisor, load_allowed_hosts, load_instructions
 from fantadamus.mcp.tools.compare import DEFAULT_READING_LIST, load_reading_list
 from fantadamus.web.cadence import collect_due
-from fantadamus.web.collector import Collector, CollectReport, PageReport, load_round_page
+from fantadamus.web.collector import FACTS, Collector, CollectReport, PageReport, load_collector
 from fantadamus.web.fetch import Fetcher
 
 DEFAULT_CLUBS = Path("config/clubs.toml")
@@ -37,7 +37,7 @@ def _serve(args: argparse.Namespace) -> int:
         user=args.user,
         clock=utc_now,
         instructions=load_instructions(),
-        round_page=load_round_page(),
+        collector=load_collector(),
     )
     server.run("stdio")
     return 0
@@ -79,7 +79,7 @@ def _collect(args: argparse.Namespace) -> int:
         fetcher=lambda: Fetcher(allowed_hosts=hosts, clock=utc_now, robots_cache=log.root / "robots"),
         lake=LakeStore(lake_root),
         clubs=Clubs.from_toml(DEFAULT_CLUBS.read_text(encoding="utf-8")),
-        page=load_round_page(Path(args.reading_list)),
+        config=load_collector(Path(args.reading_list)),
         allowed_hosts=hosts,
         clock=utc_now,
     )
@@ -91,7 +91,7 @@ def _collect(args: argparse.Namespace) -> int:
         report = due
         print("Due: " + ", ".join(report.due))
     else:
-        report = collector.collect(args.round)
+        report = collector.collect(args.round, [args.fact] if args.fact else None)
         log.append(report)
     print("\n".join(_run_lines(report)))
     return 0 if all(page.outcome in {"stored", "unchanged", "switched off"} for page in report.pages) else 1
@@ -109,10 +109,13 @@ def _parser() -> argparse.ArgumentParser:
     )
     serve.set_defaults(handler=_serve)
 
-    collect = commands.add_parser("collect", help="read the round page now and store its facts")
+    collect = commands.add_parser(
+        "collect", help="read the round and statistics pages now and store their facts"
+    )
     which = collect.add_mutually_exclusive_group()
     which.add_argument("--round", type=int, help="the round to read (default: the next round)")
     which.add_argument("--due", action="store_true", help="read only if a fact is past its cadence (launchd)")
+    which.add_argument("--fact", choices=FACTS, help="read only the page that carries this fact")
     collect.add_argument("--report", action="store_true", help="show the last run instead of collecting")
     collect.add_argument("--lake", default=str(DEFAULT_ROOT), help="lake root directory")
     collect.add_argument("--sources", default=str(DEFAULT_SOURCES), help="allowlist (TOML)")

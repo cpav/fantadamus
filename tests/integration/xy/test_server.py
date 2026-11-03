@@ -16,7 +16,7 @@ from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore
 from fantadamus.mcp.server import build_advisor, load_instructions
 from fantadamus.mcp.tools.compare import load_reading_list
-from fantadamus.web.collector import load_round_page
+from fantadamus.web.collector import load_collector
 from tests.xy_harness import NOW, ROOT
 
 pytestmark = pytest.mark.anyio
@@ -33,7 +33,7 @@ def _server(tmp_path: Path) -> MCPServer:
         user="owner",
         clock=fixed_clock(NOW),
         instructions=load_instructions(ROOT / "docs" / "agent-prompt.md"),
-        round_page=load_round_page(ROOT / "config" / "reading_list.toml"),
+        collector=load_collector(ROOT / "config" / "reading_list.toml"),
     )
 
 

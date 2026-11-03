@@ -121,7 +121,8 @@ Your Mac can check the round's lineups and odds in the background, so answers ar
 ask, even minutes before the deadline. Every 15 minutes it looks at what's due, and reads Fantacalcio-Online's
 round page only if something is: lineups twice a day from three days before a match, every 3 hours on the
 last day; odds daily, then every 3 hours; official lineups every 15 minutes in the 75 minutes before
-kickoff. Nothing runs while your Mac sleeps.
+kickoff. Once a day it also reads Fantacalcio.it's statistics page, with every player's season figures.
+Nothing runs while your Mac sleeps.
 
 Paste this whole block into Terminal. It writes the schedule with your own paths:
 
