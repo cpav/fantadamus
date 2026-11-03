@@ -97,16 +97,18 @@ real rounds are tested together in task 8
     - _Requirements: R1.4_
     - _Test: `tests/integration/roles/test_collect_tool.py::test_tool_and_command_choose_the_fact`_
 
-- [ ] 4. The engine for every role
+- [x] 4. The engine for every role
   - Branch: `feat/mr-4-engine` · Depends on: none · ADRs: none
-  - [ ] 4.1 `engine/rank.py`, from `forwards.py`:
+  - [x] 4.1 `engine/rank.py`, from `forwards.py`:
     - the option, key, cover, label and verdict;
     - the flip search, for any value function and bound.
-    - The forward tests pass unchanged, apart from their imports.
+    - The forward tests keep their scenarios and expected numbers; only the names they use moved (`forwards` to
+      `outfield` and `rank`), and each input now names its role.
     - _Requirements: R2.6, R4.1_
-    - _Test: `tests/unit/xy/test_forwards.py` (unchanged); `tests/acceptance/xy/test_method.py` (unchanged);
+    - _Test: `tests/unit/xy/test_forwards.py`, `tests/property/xy/test_forwards.py` and
+      `tests/acceptance/xy/test_method.py` (same numbers);
       **P7** `tests/property/roles/test_rank.py::test_p7_order_asked_doesnt_matter`_
-  - [ ] 4.2 The outfield model:
+  - [x] 4.2 The outfield model:
     - the priors table by Mantra role, with its fallbacks and weights;
     - the penalty term at his own minutes;
     - the flat 5.5 cameo;
@@ -117,11 +119,12 @@ real rounds are tested together in task 8
       **AT-5** `::test_at5_defenders_bench_advice`;
       **P5** `tests/property/roles/test_outfield.py::test_p5_priors_without_games`,
       **P6** `::test_p6_goal_bonus_never_lowers`_
-  - [ ] 4.3 The keeper model:
+  - [x] 4.3 The keeper model:
     - skill, its prior and its shrinkage;
     - the expected vote, P(clean sheet) and E_start;
     - no cameo;
-    - the flip on the opponent's xG.
+    - the flip on the opponent's xG;
+    - an average defence assumed when his goals conceded are unknown.
     - `Scoring` gains the clean sheet and the goal conceded.
     - _Requirements: R3.1, R3.2, R3.3, R3.4, R4.1_
     - _Test: `tests/unit/roles/test_keepers.py::test_keeper_value_steps`, `::test_flip_on_opponent_xg`;
@@ -129,7 +132,7 @@ real rounds are tested together in task 8
       **AT-2** `::test_at2_same_skill_same_vote`, **AT-3** `::test_at3_clean_sheet_from_the_fit`;
       **P3** `tests/property/roles/test_keepers.py::test_p3_skill_net_of_conceded`,
       **P4** `::test_p4_clean_sheet_falls_with_opponent_xg`_
-  - [ ] 4.4 Two keepers of the same club: the likelier starter first, labelled `covered`
+  - [x] 4.4 Two keepers of the same club: the likelier starter first, labelled `covered`
     - _Requirements: R3.6_
     - _Test: `tests/unit/roles/test_rank.py::test_same_club_keepers_covered`_
 
@@ -144,7 +147,8 @@ real rounds are tested together in task 8
     - _Test: `tests/integration/roles/test_compare_roles.py::test_season_figures_collected_first`,
       `::test_statistics_failure_in_plan`_
   - [ ] 5.2 Same-role verdicts from the matching model:
-    - a keeper's answer carries P(clean sheet), his expected goals conceded and his goals conceded;
+    - a keeper's answer carries P(clean sheet), his expected goals conceded and his goals conceded, and says when
+      an average defence was assumed;
     - movement adds P(clean sheet);
     - the "won't play" advice names the role.
     - _Requirements: R3.5, R4.1, R4.3_

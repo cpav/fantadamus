@@ -55,7 +55,8 @@ from fantadamus.domains.season.silver import (
     read_player_seasons,
 )
 from fantadamus.domains.sources import Confidence, describe, disagreement, of_odds, of_outlets, weaker
-from fantadamus.engine.forwards import ForwardInputs, ForwardValue, Verdict, compare
+from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue, compare
+from fantadamus.engine.rank import Verdict
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import Decision, DecisionLog, LoggedPlayer
 from fantadamus.lake.duckdb_store import LakeStore
@@ -172,7 +173,7 @@ class PlayerAnswer(BaseModel):
     average_rating: float | None
     goals: int
     assists: int
-    value: ForwardValue
+    value: OutfieldValue
     p_start_confidence: Confidence | None
     """How sure his chance of starting (and of a cameo) is (mvp-collect R5.3)."""
     win_confidence: Confidence | None
@@ -657,13 +658,14 @@ class Advisor:
         )
 
     @staticmethod
-    def _inputs(side: _Side, known: list[KnownPlayer]) -> ForwardInputs:
+    def _inputs(side: _Side, known: list[KnownPlayer]) -> OutfieldInputs:
         """The forward model's inputs; a player without a match has no chance of a rating (R2.3)."""
         mates = [mate for mate in known if mate.club == side.player.club]
         home = side.match is not None and side.match.home == side.player.club
         xg, present = side.xg, side.present
-        return ForwardInputs(
+        return OutfieldInputs(
             name=side.player.name,
+            role=side.form.role,
             mantra_role=side.form.mantra_role,
             appearances=side.form.appearances,
             rated_appearances=side.form.rated_appearances,
@@ -681,7 +683,7 @@ class Advisor:
         )
 
     def _player_answer(
-        self, side: _Side, value: ForwardValue, penalty_taker: bool, round: int
+        self, side: _Side, value: OutfieldValue, penalty_taker: bool, round: int
     ) -> PlayerAnswer:
         match, present, xg = side.match, side.present, side.xg
         notes = list(side.disagreements)
