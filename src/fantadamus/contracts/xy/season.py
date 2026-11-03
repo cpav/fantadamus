@@ -1,4 +1,5 @@
-"""Season contracts: a player's profile (R6.1), the league table (R6.2) and penalty takers (R6.3)."""
+"""Season contracts: a player's profile (R6.1), a read of the statistics page (mvp-roles R1.1), the league
+table (R6.2) and penalty takers (R6.3)."""
 
 from __future__ import annotations
 
@@ -12,21 +13,25 @@ from fantadamus.contracts.xy import once_each
 
 ROUNDS = 38
 GOALS_PER_MATCH = 5
+CONCEDED_PER_MATCH = 10
+STATS_PLAYERS = 1000
 
 MantraRole = Literal["Por", "Ds", "Dc", "Dd", "B", "E", "M", "C", "T", "W", "A", "Pc"]
 
 
-class PlayerSeasonPayload(Contract):
-    """A player's Serie A season so far, from his Fantacalcio.it profile."""
-
-    __version__ = "1.0.0"
+class PlayerSeason(Part):
+    """A player's Serie A season so far: the figures and checks a profile and a statistics-page row share."""
 
     player_id: int = Field(gt=0, description="The numeric ID at the end of his profile URL")
     name: Name = Field(description="His name as the profile writes it")
     club: Name
     role: Role = Field(description="Classic role: P keeper, D defender, C midfielder, A forward")
     mantra_role: MantraRole | None = Field(default=None, description="The first Mantra role on the profile")
-    appearances: int = Field(ge=0, le=ROUNDS, description="Presenze")
+    appearances: int = Field(
+        ge=0,
+        le=ROUNDS,
+        description="Presenze; from the statistics page, which gives none, the same as rated appearances",
+    )
     rated_appearances: int = Field(ge=0, le=ROUNDS, description="Appearances with a rating (presenze a voto)")
     average_rating: float | None = Field(
         default=None,
@@ -39,6 +44,11 @@ class PlayerSeasonPayload(Contract):
     yellow_cards: int = Field(ge=0)
     penalties_scored: int = Field(ge=0)
     penalties_taken: int = Field(ge=0)
+    goals_conceded: int | None = Field(
+        default=None,
+        ge=0,
+        description="A keeper's goals conceded (gol subiti); none where the page doesn't say",
+    )
 
     @model_validator(mode="after")
     def _plausible(self) -> Self:
@@ -50,6 +60,36 @@ class PlayerSeasonPayload(Contract):
             raise ValueError("an average rating goes with rated appearances, and only with them")
         if self.penalties_scored > self.penalties_taken:
             raise ValueError(f"{self.penalties_scored} penalties scored out of {self.penalties_taken} taken")
+        conceded = self.goals_conceded or 0
+        if conceded and self.role != "P":
+            raise ValueError(f"only a keeper concedes goals, and {self.name} isn't one")
+        if conceded > self.rated_appearances * CONCEDED_PER_MATCH:
+            raise ValueError(
+                f"{conceded} goals conceded in {self.rated_appearances} rated appearances is impossible"
+            )
+        return self
+
+
+class PlayerSeasonPayload(PlayerSeason, Contract):
+    """A player's Serie A season so far, from his Fantacalcio.it profile or the statistics page."""
+
+    __version__ = "1.1.0"
+
+
+class SeasonStatsPayload(Contract):
+    """One read of Fantacalcio.it's statistics page: every player it lists, with his season so far."""
+
+    __version__ = "1.0.0"
+
+    players: list[PlayerSeason] = Field(min_length=1, max_length=STATS_PLAYERS)
+
+    @model_validator(mode="after")
+    def _each_player_once(self) -> Self:
+        seen: set[int] = set()
+        for player in self.players:
+            if player.player_id in seen:
+                raise ValueError(f"player {player.player_id} is listed twice")
+            seen.add(player.player_id)
         return self
 
 

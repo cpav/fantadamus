@@ -1,7 +1,8 @@
 # Implementation Plan: `mvp-roles` (Phase 2, second slice)
 
 Status: **Approved by the owner, 2026-11-03** · From the approved [requirements](requirements.md) and
-[design](design.md) · No task starts until `mvp-collect` is signed off
+[design](design.md) · Started before `mvp-collect`'s sign-off, at the owner's request (2026-11-03): both slices'
+real rounds are tested together in task 8
 
 ## How to read and run these tasks
 
@@ -9,7 +10,7 @@ Status: **Approved by the owner, 2026-11-03** · From the approved [requirements
   steps inside it, each with its own test, written first and seen failing (red → green).
 - **Before a task**, run `make task-check TASK=<n> SPEC=mvp-roles`. It checks that the task's dependencies are
   ticked, that every step names its requirements and test, and that its ADRs are Accepted. Task 1's branch
-  switches `CURRENT_SPEC` in `scripts/checks/task_check.py` to this spec, after `mvp-collect`'s sign-off.
+  made this spec the default (`CURRENT_SPEC` in `scripts/checks/task_check.py`).
 - **A ticked box** (`- [x]`) marks a task or step as done; the agent ticks it on the task's branch.
 - **The property tests P1–P7 in the design are required.** No task is optional.
 - **Each task ends with the task report**; the owner approves the pull request, the agent squash-merges it.
@@ -21,9 +22,9 @@ Status: **Approved by the owner, 2026-11-03** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. Contracts and storage for the statistics page
+- [x] 1. Contracts and storage for the statistics page
   - Branch: `feat/mr-1-season-stats` · Depends on: none · ADRs: ADR-0006
-  - [ ] 1.1 `PlayerSeasonPayload` 1.1.0 and `SeasonStatsPayload` 1.0.0:
+  - [x] 1.1 `PlayerSeasonPayload` 1.1.0 and `SeasonStatsPayload` 1.0.0:
     - `goals_conceded`, and the appearances description;
     - the goals-conceded rules;
     - one shared definition of a player's row and its checks, each player once per read;
@@ -31,18 +32,18 @@ Status: **Approved by the owner, 2026-11-03** · From the approved [requirements
     - _Requirements: R6.1, R6.2, R1.3_
     - _Test: `tests/contract/test_roles_contracts.py::test_goals_conceded_rules`, `::test_season_stats_players_once`,
       `::test_profile_without_goals_conceded_still_valid`_
-  - [ ] 1.2 The `season_stats` domain:
+  - [x] 1.2 The `season_stats` domain:
     - one bronze record per read;
     - `silver.season_stats`, with `goals_conceded` on both season tables;
     - a read missing a club, with a club without a keeper, or naming an unknown club is refused with the reason.
     - _Requirements: R1.1, R1.6, R6.1_
     - _Test: `tests/integration/roles/test_season_stats.py::test_one_record_per_read`, `::test_incomplete_read_refused`_
-  - [ ] 1.3 Gold reads both season tables as one:
+  - [x] 1.3 Gold reads both season tables as one:
     - the newest row of a player wins, whichever page it came from;
     - every player read is known to name resolution;
-    - the cost of reading the larger table is measured.
+    - the cost of reading the larger table is measured: 0.8 s for a season's 46,000 rows (2026-11-03).
     - _Requirements: R1.1_
-    - _Test: `tests/unit/roles/test_season_gold.py::test_newest_figures_win`, `::test_every_player_known`_
+    - _Test: `tests/integration/roles/test_season_stats.py::test_newest_figures_win`, `::test_every_player_known`_
 
 - [ ] 2. The statistics reader
   - Branch: `feat/mr-2-stats-reader` · Depends on: 1 · ADRs: ADR-0006
@@ -128,6 +129,8 @@ Status: **Approved by the owner, 2026-11-03** · From the approved [requirements
 - [ ] 5. `compare_players` for every role
   - Branch: `feat/mr-5-every-role` · Depends on: 3, 4 · ADRs: ADR-0006
   - [ ] 5.1 The advisor's reads take one name or two:
+    - the lake's facts are read once per call, and again only after the collector stored something (task 1.3's
+      measurement);
     - stale or missing season figures call the collector for the statistics page, inside the 60-second budget;
     - the refresh plan lists the statistics page first.
     - _Requirements: R1.4, R1.6, R5.2_
@@ -176,7 +179,8 @@ Status: **Approved by the owner, 2026-11-03** · From the approved [requirements
 
 - [ ] 8. The real round and the slice gate
   - Branch: `docs/mr-8-report` · Depends on: 7 · ADRs: ADR-0006
-  - [ ] 8.1 **Owner:** in Claude Desktop, on a real round:
+  - [ ] 8.1 **Owner:** in Claude Desktop, on a real round, with `mvp-collect`'s deferred task 8.1:
+    - ask "X or Y?" for two forwards, before and after an official lineup, on each Mac (`mvp-collect` AT-10);
     - ask "X or Y?" for two keepers, two defenders and two midfielders;
     - ask for one player's outlook;
     - check that the season figures came from the statistics page.

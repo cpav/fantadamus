@@ -49,10 +49,10 @@ from fantadamus.domains.season.gold import (
 )
 from fantadamus.domains.season.silver import (
     PENALTY_TAKERS,
-    PLAYER_SEASONS,
     TEAM_SEASONS,
     PlayerSeasonRow,
     TeamSeasonRow,
+    read_player_seasons,
 )
 from fantadamus.domains.sources import Confidence, describe, disagreement, of_odds, of_outlets, weaker
 from fantadamus.engine.forwards import ForwardInputs, ForwardValue, Verdict, compare
@@ -231,7 +231,7 @@ class Facts:
     def read(cls, lake: LakeStore) -> Facts:
         return cls(
             fixtures=read_silver(lake, FIXTURES),
-            players=read_silver(lake, PLAYER_SEASONS),
+            players=read_player_seasons(lake),
             teams=read_silver(lake, TEAM_SEASONS),
             takers=read_silver(lake, PENALTY_TAKERS),
             views=read_silver(lake, LINEUP_VIEWS),
