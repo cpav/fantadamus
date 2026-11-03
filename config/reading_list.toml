@@ -56,6 +56,9 @@ search = [
 [facts.player_season]
 need = "N5"
 submit_tool = "submit_player_season"
+# Every player's season in one table (mvp-roles R1, R7.2): Fantadamus reads it itself; Claude reads it only when
+# the collector couldn't, then a player's own profile.
+pages = ["https://www.fantacalcio.it/statistiche-serie-a"]
 search = [
     "{player} {club} site:fantacalcio.it/serie-a/squadre",
     "{player} statistiche fantacalcio site:fantacalcio.it",

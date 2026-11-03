@@ -3,8 +3,9 @@ players, for the reader's tests. Real pages can't be committed to a public repos
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from typing import Any
 
 from tests.xy_harness import WORDS
 
@@ -156,4 +157,109 @@ def fco_round_page(*matches: FcoMatch, round: int | None = 10) -> str:
     return (
         f"<html><head>{title}</head><body>"
         f'<ul class="nav">{tabs}</ul><div class="tab-content">{panes}</div></body></html>'
+    )
+
+
+STATS_TITLE = "Statistiche Fantacalcio Serie A - Stagione 2026/27"
+STATS_COLUMNS = (
+    ("sq", "Squadra", "Sq"),
+    ("pg", "Partite a voto", "PV"),
+    ("mv", "Media voto", "MV"),
+    ("mfv", "Fantamedia", "FM"),
+    ("gol", "Gol segnati", "Gol"),
+    ("gs", "Gol subiti", "GS"),
+    ("rig", "Rigori segnati / tirati", "Rig"),
+    ("rp", "Rigori parati", "RP"),
+    ("ass", "Assist", "Ass"),
+    ("amm", "Ammonizioni", "Amm"),
+    ("esp", "Espulsioni", "Esp"),
+)
+_STATS_CELL_CLASS = {
+    "sq": "player-team",
+    "pg": "player-match-playeds",
+    "mv": "player-grade-avg",
+    "mfv": "player-fanta-grade-avg",
+    "ass": "player-assists",
+    "amm": "player-yellows",
+    "esp": "player-reds",
+}
+
+
+def _decimal(value: float | None) -> str:
+    """The page's decimals: a comma, and `0,0` without a rating."""
+    return "0,0" if value is None else f"{value:g}".replace(".", ",")
+
+
+def stats_cells(row: Mapping[str, Any]) -> dict[str, str]:
+    """A player's cells as the statistics page writes them, from his figures as the contract has them. The
+    fantamedia, penalties saved and red cards are made up: nothing reads them."""
+    return {
+        "sq": row["club"][:3].upper(),
+        "pg": str(row["rated_appearances"]),
+        "mv": _decimal(row["average_rating"]),
+        "mfv": "7,5",
+        "gol": str(row["goals"]),
+        "gs": str(row.get("goals_conceded") or 0),
+        "rig": f"{row['penalties_scored']} / {row['penalties_taken']}",
+        "rp": "1",
+        "ass": str(row["assists"]),
+        "amm": str(row["yellow_cards"]),
+        "esp": "1",
+    }
+
+
+def _stats_row(index: int, row: Mapping[str, Any], cells: Mapping[str, str]) -> str:
+    club, mantra = row["club"].lower(), [row["mantra_role"].lower()] if row["mantra_role"] else []
+    if row["role"] == "A" and mantra != ["a"]:
+        mantra.append("a")  # forwards often have a second Mantra role; the first is the one read
+    slug = row["name"].lower().replace(" ", "-")
+    roles = "".join(
+        f'<span class="role role-mantra" data-value="{code}" title="{code}"></span>' for code in mantra
+    )
+    tds = "".join(
+        f'<td class="{_STATS_CELL_CLASS.get(key, "player-scoreds")}" data-col-key="{key}"> {text} </td>'
+        for key, text in cells.items()
+    )
+    return (
+        f'<tr class="player-row" data-index="{index}" data-filter-keywords="{row["name"]}" '
+        f'data-filter-role-classic="{row["role"].lower()}" data-filter-role-mantra="{"|".join(mantra)}">'
+        '<th class="player-championship"> </th>'
+        '<th class="player-role-classic player-role">'
+        f'<span class="role" data-value="{row["role"].lower()}"></span></th>'
+        '<th class="player-role-mantra player-role">'
+        f'<div class="pill role-pill theme-dark">{roles}</div></th>'
+        '<th class="player-name"><a class="player-name player-link" '
+        f'href="https://www.fantacalcio.it/serie-a/squadre/{club}/{slug}/{row["player_id"]}" target="_self">'
+        f'<span>{row["name"]}</span></a></th>{tds}<td class="tail"> </td></tr>'
+    )
+
+
+def stats_page(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    title: str = STATS_TITLE,
+    columns: Sequence[tuple[str, str, str]] = STATS_COLUMNS,
+    cells: Mapping[int, Mapping[str, str | None]] | None = None,
+) -> str:
+    """Fantacalcio.it's statistics page: its title, then `table#stats`, with a header naming each column and
+    one row per player. `cells` rewrites a player's cells by ID, and None leaves that cell out."""
+    changed = cells or {}
+    keys = [key for key, _, _ in columns]
+    head = "".join(
+        f'<th data-col-key="{key}" data-sorter-type="numeric"><a href="#" title="{name}">{short}</a></th>'
+        for key, name, short in columns
+    )
+    body = ""
+    for index, row in enumerate(rows):
+        written: dict[str, str | None] = {**stats_cells(row), **changed.get(row["player_id"], {})}
+        kept = {key: text for key in keys if (text := written.get(key)) is not None}
+        body += _stats_row(index, row, kept)
+    return (
+        f"<html><head><title>{title}</title></head><body><main>"
+        '<table id="stats" class="pills-table sticky-header-col"><thead class="compact"><tr>'
+        '<th class="sticky-header player-championship"><a class="overflow-label" href="#">Calciatore</a></th>'
+        '<th class="sticky-header player-role player-role-classic"></th>'
+        '<th class="sticky-header player-role player-role-mantra"></th>'
+        '<th class="sticky-header player-name"></th>'
+        f'{head}<th class="tail"></th></tr></thead><tbody>{body}</tbody></table></main></body></html>'
     )

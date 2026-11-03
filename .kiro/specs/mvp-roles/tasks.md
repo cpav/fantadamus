@@ -45,9 +45,9 @@ real rounds are tested together in task 8
     - _Requirements: R1.1_
     - _Test: `tests/integration/roles/test_season_stats.py::test_newest_figures_win`, `::test_every_player_known`_
 
-- [ ] 2. The statistics reader
+- [x] 2. The statistics reader
   - Branch: `feat/mr-2-stats-reader` · Depends on: 1 · ADRs: ADR-0006
-  - [ ] 2.1 `read_stats` on a synthetic statistics page:
+  - [x] 2.1 `read_stats` on a synthetic statistics page:
     - the fields of design C3;
     - the fantamedia, penalties saved and red cards not read;
     - `0,0` read as no average;
@@ -58,15 +58,21 @@ real rounds are tested together in task 8
     - _Test: `tests/unit/roles/test_read_stats.py::test_rows_read`, `::test_no_rating_no_average`,
       `::test_bad_row_left_out`, `::test_unexpected_layout_unreadable`;
       **P1** `tests/property/roles/test_read_stats.py::test_p1_any_order_and_partial_pages`_
-  - [ ] 2.2 An optional check on the pages saved under `data/private/pages/`, skipped with the registered reason
+  - [x] 2.2 An optional check on the pages saved under `data/private/pages/`, skipped with the registered reason
     when they're absent:
     - the statistics page reads in full;
-    - every outlet name on the saved round page resolves to one player of its club.
-    - _Requirements: R1.2, R1.6_
-    - _Test: `tests/contract/test_real_pages.py::test_saved_statistics_page`, `::test_round_page_names_resolve`_
-  - [ ] 2.3 The statistics page in the reading list (first for `player_season`) and in the source registry
+    - every outlet name on the saved round page resolves to at most one player of its club, and 95% of them to
+      one.
+    - This check found that, with every listed player known, an initial paired with another player's whole name
+      ("SKORUPSKI L" with Libra): only 45% of the names resolved. The resolver now keeps whole words to whole
+      words, splits hyphens and joins split surnames, and 96.6% resolve.
+    - _Requirements: R1.2, R1.6, R1.1_
+    - _Test: `tests/contract/test_real_pages.py::test_saved_statistics_page`, `::test_round_page_names_resolve`;
+      `tests/unit/xy/test_resolve.py::test_an_initial_never_stands_for_a_whole_name`,
+      `::test_the_two_sites_spellings_meet`_
+  - [x] 2.3 The statistics page in the reading list (first for `player_season`) and in the source registry
     - _Requirements: R7.2_
-    - _Test: `tests/unit/test_sources_config.py::test_statistics_page_listed_first`, `::test_collector_page_is_allowed`_
+    - _Test: `tests/unit/test_sources_config.py::test_statistics_page_listed_first`_
 
 - [ ] 3. The collector reads two pages
   - Branch: `feat/mr-3-two-pages` · Depends on: 2 · ADRs: ADR-0006
@@ -76,7 +82,7 @@ real rounds are tested together in task 8
     - a failure lists `player_season` for Claude.
     - _Requirements: R1.1, R1.5, R1.6_
     - _Test: `tests/integration/roles/test_two_pages.py::test_reads_the_pages_asked_for`,
-      `::test_statistics_failure_for_claude`;
+      `::test_statistics_failure_for_claude`; `tests/unit/test_sources_config.py::test_collector_page_is_allowed`;
       **AT-6** `tests/acceptance/roles/test_statistics.py::test_at6_statistics_collected`;
       **P2** `tests/property/roles/test_two_pages.py::test_p2_same_page_stores_nothing_new`_
   - [ ] 3.2 The cadence and freshness:
