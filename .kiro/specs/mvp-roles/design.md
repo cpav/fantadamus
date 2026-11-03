@@ -1,8 +1,8 @@
 # Design Document: `mvp-roles` (Phase 2, second slice)
 
 Status: **Approved by the owner, 2026-11-03**, with both open points accepted · From the approved
-[requirements](requirements.md), with the three corrections of open point 1 · No code until `mvp-collect` is
-signed off
+[requirements](requirements.md), with the three corrections of open point 1 · Built before `mvp-collect`'s sign-off, at the
+owner's request (2026-11-03)
 
 ## Overview
 
@@ -71,7 +71,9 @@ Principles, as in `mvp-collect`:
   page it came from (both are Fantacalcio.it). Every player on the statistics page is then known to name
   resolution, so a name that matches several players returns the candidates, as today.
 - **Size.** The table grows by about 600 rows at each changed read, roughly 46,000 rows by May. Reading it adds
-  an estimated 0.3 s to an answer, acceptable for the MVP; the task measures it.
+  0.8 s to each read of the lake's facts by May (measured 2026-11-03: 0.44 s loading the file, 0.29 s
+  checking the rows). `compare_players` reads them up to three times a call today, so C9 reads them once, and
+  again only after the collector stored something.
 
 ### C3. The statistics reader (`web/readers/fcit_stats.py`)
 
@@ -178,7 +180,8 @@ p_start first, with the label `covered` and no margin.
 ### C9. `compare_players` for every role (`mcp/tools/compare.py`)
 
 - **The `Advisor`'s reads take one name or two**, so `compare_players` and `player_outlook` share every step:
-  the setup step, resolution, freshness, collecting and the refresh plan.
+  the setup step, resolution, freshness, collecting and the refresh plan. The lake's facts are read once a call,
+  and again only after the collector stored something (C2's measurement).
 - **Collecting.** A stale or missing `player_season` now calls the collector too, for the statistics page, in the
   same 60-second budget (R1.4). Only what it couldn't get goes to Claude. The plan lists the statistics page
   first, then the profile searches.

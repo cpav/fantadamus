@@ -2,7 +2,7 @@
 
 Status: **Approved by the owner, 2026-11-03**; R1.1, R7.2 and AT-1 **amended the same day** with the design,
 **the amendment approved the same day** · Workflow: requirements-first · Depends on:
-`mvp-x-or-y` and `mvp-collect` (built; code for this slice starts after `mvp-collect`'s sign-off, owner decision
+`mvp-x-or-y` and `mvp-collect` (built; code for this slice started before `mvp-collect`'s sign-off, owner decision
 2026-11-03) · Method: [`docs/method.md`](../../../docs/method.md) §A3, §A4 and §A6 · Answers:
 [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 1 and 4
 
@@ -224,3 +224,6 @@ owner's shapes.
   - R7.2: no data-product catalog, since none exists yet;
   - AT-1 restated at the method's own weights: regressing five matches with n / (n + 12) keeps 5/17 of a raw
     gap, so the two keepers come within 0.1 only once the odds price their matches alike.
+- **2026-11-03, later:** the owner started this slice's tasks before `mvp-collect`'s sign-off. `mvp-collect`'s
+  real round (its task 8) is deferred, and both slices are tested together in a real round once this one is
+  built. This replaces the first decision above.

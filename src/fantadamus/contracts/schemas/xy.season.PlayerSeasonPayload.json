@@ -2,10 +2,10 @@
   "contract": "xy.season.PlayerSeasonPayload",
   "schema": {
     "additionalProperties": false,
-    "description": "A player's Serie A season so far, from his Fantacalcio.it profile.",
+    "description": "A player's Serie A season so far, from his Fantacalcio.it profile or the statistics page.",
     "properties": {
       "appearances": {
-        "description": "Presenze",
+        "description": "Presenze; from the statistics page, which gives none, the same as rated appearances",
         "maximum": 38,
         "minimum": 0,
         "title": "Appearances",
@@ -41,6 +41,20 @@
         "minimum": 0,
         "title": "Goals",
         "type": "integer"
+      },
+      "goals_conceded": {
+        "anyOf": [
+          {
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "A keeper's goals conceded (gol subiti); none where the page doesn't say",
+        "title": "Goals Conceded"
       },
       "mantra_role": {
         "anyOf": [
@@ -132,5 +146,5 @@
     "title": "PlayerSeasonPayload",
     "type": "object"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

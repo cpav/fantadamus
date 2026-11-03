@@ -1,16 +1,24 @@
-"""Silver `player_seasons`, `team_seasons` and `penalty_takers`, clubs by canonical key (R1.1, R6).
+"""Silver `player_seasons`, `season_stats`, `team_seasons` and `penalty_takers`, clubs by canonical key (R1.1,
+R6; mvp-roles R1.1).
 
-A player's identity (name, club, roles) is read from his latest profile row, so there is no separate
-`players` table: a transfer shows up as soon as his new profile is submitted.
+A player's identity (name, club, roles) is read from his latest row, so there is no separate `players` table:
+a transfer shows up as soon as his new profile or the next statistics read is stored. A profile is one record
+per player; a read of the statistics page is one record for every player it lists (mvp-roles C2), and gold
+reads both tables as one.
 """
 
 from __future__ import annotations
 
 from fantadamus.contracts.xy import once_each
-from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
+from fantadamus.contracts.xy.season import (
+    PenaltyTakersPayload,
+    PlayerSeasonPayload,
+    SeasonStatsPayload,
+    TeamSeasonPayload,
+)
 from fantadamus.core.clubs import Clubs
-from fantadamus.domains.facts import PROVENANCE_COLUMNS, Domain, SilverRow, Source
-from fantadamus.lake.duckdb_store import Table
+from fantadamus.domains.facts import PROVENANCE_COLUMNS, Domain, SilverRow, Source, read_silver
+from fantadamus.lake.duckdb_store import LakeStore, Table
 
 
 class PlayerSeasonRow(SilverRow):
@@ -27,6 +35,8 @@ class PlayerSeasonRow(SilverRow):
     yellow_cards: int
     penalties_scored: int
     penalties_taken: int
+    goals_conceded: int | None = None
+    """A keeper's; none where the page doesn't say, and on rows stored before it was read."""
 
 
 class TeamSeasonRow(SilverRow):
@@ -45,6 +55,24 @@ class PenaltyTakerRow(SilverRow):
 def _player_rows(payload: PlayerSeasonPayload, clubs: Clubs, source: Source) -> list[PlayerSeasonRow]:
     figures = payload.model_dump(exclude={"club"})
     return [PlayerSeasonRow(**source.model_dump(), **figures, club=clubs.key(payload.club))]
+
+
+def _stats_rows(payload: SeasonStatsPayload, clubs: Clubs, source: Source) -> list[PlayerSeasonRow]:
+    """Every player of one read. A read that misses a club, or a club's keepers, is refused (mvp-roles
+    R1.6)."""
+    rows = [
+        PlayerSeasonRow(
+            **source.model_dump(), **player.model_dump(exclude={"club"}), club=clubs.key(player.club)
+        )
+        for player in payload.players
+    ]
+    for key, name in clubs.names.items():
+        roles = {row.role for row in rows if row.club == key}
+        if not roles:
+            raise ValueError(f"the read has no players of {name}")
+        if "P" not in roles:
+            raise ValueError(f"the read has no keeper of {name}")
+    return rows
 
 
 def _team_rows(payload: TeamSeasonPayload, clubs: Clubs, source: Source) -> list[TeamSeasonRow]:
@@ -66,6 +94,13 @@ def _taker_rows(payload: PenaltyTakersPayload, clubs: Clubs, source: Source) -> 
     return rows
 
 
+_SEASON_COLUMNS = (
+    "player_id BIGINT, name VARCHAR, club VARCHAR, role VARCHAR, mantra_role VARCHAR, appearances BIGINT, "
+    "rated_appearances BIGINT, average_rating DOUBLE, goals BIGINT, assists BIGINT, yellow_cards BIGINT, "
+    "penalties_scored BIGINT, penalties_taken BIGINT, goals_conceded BIGINT"
+)
+
+
 PLAYER_SEASONS = Domain(
     "player_season",
     PlayerSeasonPayload,
@@ -73,11 +108,19 @@ PLAYER_SEASONS = Domain(
     _player_rows,
     Table(
         "player_seasons",
-        f"CREATE TEMP TABLE player_seasons ({PROVENANCE_COLUMNS}, player_id BIGINT, name VARCHAR, "
-        "club VARCHAR, role VARCHAR, mantra_role VARCHAR, appearances BIGINT, rated_appearances BIGINT, "
-        "average_rating DOUBLE, goals BIGINT, assists BIGINT, yellow_cards BIGINT, penalties_scored BIGINT, "
-        "penalties_taken BIGINT)",
-        "INSERT INTO player_seasons VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        f"CREATE TEMP TABLE player_seasons ({PROVENANCE_COLUMNS}, {_SEASON_COLUMNS})",
+        "INSERT INTO player_seasons VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ),
+)
+SEASON_STATS = Domain(
+    "season_stats",
+    SeasonStatsPayload,
+    PlayerSeasonRow,
+    _stats_rows,
+    Table(
+        "season_stats",
+        f"CREATE TEMP TABLE season_stats ({PROVENANCE_COLUMNS}, {_SEASON_COLUMNS})",
+        "INSERT INTO season_stats VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 TEAM_SEASONS = Domain(
@@ -103,3 +146,8 @@ PENALTY_TAKERS = Domain(
         "INSERT INTO penalty_takers VALUES (?, ?, ?, ?, ?, ?)",
     ),
 )
+
+
+def read_player_seasons(store: LakeStore) -> list[PlayerSeasonRow]:
+    """Every season-figures row, from profiles and statistics-page reads alike (mvp-roles C2)."""
+    return [*read_silver(store, PLAYER_SEASONS), *read_silver(store, SEASON_STATS)]

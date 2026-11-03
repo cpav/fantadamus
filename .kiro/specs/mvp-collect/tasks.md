@@ -149,7 +149,8 @@ page's read as fresh, approved 2026-10-31 · Date: 2026-10-30 · From the approv
 - [ ] 8. The real round and the slice gate
   - Branch: `docs/mc-8-report` · Depends on: 6, 7 · ADRs: ADR-0006
   - [ ] 8.1 **Owner:** with the second player, ask a real "X or Y?" on each Mac, before and after an official
-    lineup; only `compare_players` should be called
+    lineup; only `compare_players` should be called. Deferred by the owner on 2026-11-03, to run with
+    `mvp-roles`' real round (its task 8.1)
     - _Requirements: AT-10; R1.3, R6.4, R7.2_
     - _Test: what each answer used and the collection log, recorded in the slice report (no page text)_
   - [ ] 8.2 Short slice report in `docs/reports/`: tests, coverage, acceptance tests, the collection log's
