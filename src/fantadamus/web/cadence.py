@@ -7,11 +7,12 @@ design C7; R7.1, R7.2).
 | Official lineups | Every 15 minutes from 75 minutes before each kickoff until confirmed |
 | Match odds | Daily from 72 hours before the match; every 3 hours in the last 24 |
 | Fixtures | Weekly |
+| Players' season figures | Daily (mvp-roles R1.4) |
 
-A match's facts stop being due at its kickoff: there's nothing left to forecast. The round page carries them
-all, so each interval counts from the collector's last attempt at it, successful or not: a site that refuses
-is asked again at the fact's own interval, not every 15 minutes. The matches are the next round's, whose
-deadline is still ahead.
+A match's facts stop being due at its kickoff: there's nothing left to forecast. Each interval counts from the
+collector's last attempt at the page that carries the fact, successful or not: a site that refuses is asked
+again at the fact's own interval, not every 15 minutes. The matches are the next round's, whose deadline is
+still ahead. A scheduled run reads only the pages whose facts are due.
 """
 
 from __future__ import annotations
@@ -26,8 +27,10 @@ from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.web.collector import Collector, CollectReport
 
-SCHEDULED = ("fixtures", "probable_lineups", "official_lineups", "match_odds")
+SCHEDULED = ("fixtures", "probable_lineups", "official_lineups", "match_odds", "player_season")
 _HOUR = dt.timedelta(hours=1)
+_ALWAYS = {"fixtures": 7 * 24 * _HOUR, "player_season": 24 * _HOUR}
+"""Due at these intervals whatever the matches."""
 _WINDOW = {
     "probable_lineups": 72 * _HOUR,
     "match_odds": 72 * _HOUR,
@@ -51,8 +54,8 @@ def due(
 ) -> bool:
     """Whether `fact`, last read at `last_read` (None: never), is due at `now` for the match kicking off at
     `kickoff`; `confirmed` means the match's official lineup is already in."""
-    if fact == "fixtures":
-        every = 7 * 24 * _HOUR
+    if fact in _ALWAYS:
+        every = _ALWAYS[fact]
     elif (
         kickoff is None
         or now >= kickoff
@@ -68,8 +71,9 @@ def due(
 
 
 def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]:
-    """The round page's facts past their cadence at `now`, in the table's order."""
+    """The facts past their cadence at `now`, in the table's order."""
     last_read = log.last_attempt(now)
+    statistics_read = log.last_attempt(now, "statistics")
     fixtures = read_silver(lake, FIXTURES)
     round = next_round(fixtures, now)
     upcoming = [row for row in matches(fixtures, now) if row.round == round] if round is not None else []
@@ -78,8 +82,8 @@ def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]
     }
     found = []
     for fact in SCHEDULED:
-        if fact == "fixtures":
-            if due(fact, last_read, now, None):
+        if fact in _ALWAYS:
+            if due(fact, statistics_read if fact == "player_season" else last_read, now, None):
                 found.append(fact)
         elif any(
             due(fact, last_read, now, row.kickoff_at, confirmed=(row.home, row.away) in confirmed)
@@ -90,11 +94,11 @@ def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]
 
 
 def collect_due(collector: Collector, log: CollectLog) -> CollectReport | None:
-    """`fantadamus collect --due`: read the round page if anything is due, and log the run; None when nothing
-    is (R7.2: a scheduled run does nothing then)."""
-    facts = what_is_due(collector.lake, log, collector.clock())
+    """`fantadamus collect --due`: read the pages whose facts are due, and log the run; None when nothing is
+    (R7.2: a scheduled run does nothing then). A fact no page of this collector carries isn't due."""
+    facts = [fact for fact in what_is_due(collector.lake, log, collector.clock()) if collector.reads(fact)]
     if not facts:
         return None
-    report = collector.collect().model_copy(update={"due": facts})
+    report = collector.collect(facts=facts).model_copy(update={"due": facts})
     log.append(report)
     return report

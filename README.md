@@ -62,8 +62,8 @@ make test-fast  # format, lint, unit and property tests with the fast profile
 ```
 
 `uv run fantadamus serve` starts the MCP server on stdio: `compare_players`, `set_league_rules`, `collect`,
-`read_page` and the submit tools. `uv run fantadamus collect` reads the round page now; `--report` shows the
-last run.
+`read_page` and the submit tools. `uv run fantadamus collect` reads the round page and Fantacalcio.it's
+statistics page now (`--fact` picks one fact's page); `--report` shows the last run.
 
 ## Use it in Claude Desktop
 

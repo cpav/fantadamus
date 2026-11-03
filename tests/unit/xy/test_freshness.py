@@ -1,4 +1,4 @@
-"""Task 7.1: how long each fact stays fresh (R7.3)."""
+"""Task 7.1: how long each fact stays fresh (R7.3; season figures: mvp-roles R1.4)."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ HOUR, DAY = dt.timedelta(hours=1), dt.timedelta(days=1)
     [
         ("probable_lineups", 12 * HOUR, 3 * HOUR),
         ("match_odds", 24 * HOUR, 6 * HOUR),
-        ("player_season", 7 * DAY, 7 * DAY),
+        ("player_season", 2 * DAY, 2 * DAY),  # 48 hours from mvp-roles R1.4
         ("team_season", 7 * DAY, 7 * DAY),
         ("penalty_takers", 7 * DAY, 7 * DAY),
         ("fixtures", 7 * DAY, 7 * DAY),

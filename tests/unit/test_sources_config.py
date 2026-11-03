@@ -13,7 +13,7 @@ import pytest
 
 from fantadamus.core.urls import host_allowed
 from fantadamus.mcp.server import load_allowed_hosts
-from fantadamus.web.collector import load_round_page
+from fantadamus.web.collector import load_collector
 
 ROOT = Path(__file__).resolve().parents[2]
 SUBMIT_TOOLS = {
@@ -96,8 +96,12 @@ def test_reading_list_has_fallbacks() -> None:
 
 def test_collector_page_is_allowed() -> None:
     hosts = load_allowed_hosts(ROOT / "config" / "sources.toml")
-    page = load_round_page(ROOT / "config" / "reading_list.toml")
+    page = load_collector(ROOT / "config" / "reading_list.toml")
     assert page.enabled
+    assert page.statistics_enabled
+    assert page.statistics is not None
+    assert page.statistics == _reading_list()["player_season"]["pages"][0]  # mvp-roles R1.1
+    assert host_allowed(page.statistics, hosts)
     assert host_allowed(page.current_round, hosts)
     assert host_allowed(page.round.format(round=10), hosts)
     assert page.round.format(round=10).endswith("/10-giornata")

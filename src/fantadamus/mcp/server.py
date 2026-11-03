@@ -19,7 +19,7 @@ from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore
 from fantadamus.mcp.tools import collect, compare, league, pages, submit
 from fantadamus.mcp.tools.compare import ReadingItem
-from fantadamus.web.collector import Collector, RoundPageConfig
+from fantadamus.web.collector import Collector, CollectorConfig
 from fantadamus.web.fetch import Fetcher
 
 DEFAULT_SOURCES = Path("config/sources.toml")
@@ -83,7 +83,7 @@ def build_advisor(
     user: str,
     clock: Clock,
     instructions: str,
-    round_page: RoundPageConfig,
+    collector: CollectorConfig,
 ) -> MCPServer:
     """The server Claude Desktop runs: `compare_players`, `set_league_rules`, the submit tools (R13.1), and
     `collect` and `read_page` (mvp-collect C10, C3.2). The collection log and robots.txt cache sit next to the
@@ -98,15 +98,15 @@ def build_advisor(
             allowed_hosts=hosts, clock=clock, robots_cache=collect_dir / "robots", budget=COLLECT_BUDGET
         )
 
-    collector = Collector(
-        fetcher=run_fetcher, lake=lake, clubs=clubs, page=round_page, allowed_hosts=hosts, clock=clock
+    reader = Collector(
+        fetcher=run_fetcher, lake=lake, clubs=clubs, config=collector, allowed_hosts=hosts, clock=clock
     )
     page_fetcher = Fetcher(
         allowed_hosts=hosts, clock=clock, robots_cache=collect_dir / "robots", block_for=READ_PAGE_BLOCK
     )
     submit.register(server, lake, allowed_hosts=hosts, clock=clock, submitted_by=user, clubs=clubs)
     league.register(server, rules, user=user, clock=clock)
-    collect.register(server, collector, collect_log)
+    collect.register(server, reader, collect_log)
     pages.register(server, pages.PageReader(reading, page_fetcher))
     advisor = compare.Advisor(
         lake=lake,
@@ -116,7 +116,7 @@ def build_advisor(
         reading=reading,
         user=user,
         clock=clock,
-        collector=collector,
+        collector=reader,
         collect_log=collect_log,
     )
     compare.register(server, advisor)

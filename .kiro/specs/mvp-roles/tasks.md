@@ -74,25 +74,26 @@ real rounds are tested together in task 8
     - _Requirements: R7.2_
     - _Test: `tests/unit/test_sources_config.py::test_statistics_page_listed_first`_
 
-- [ ] 3. The collector reads two pages
+- [x] 3. The collector reads two pages
   - Branch: `feat/mr-3-two-pages` · Depends on: 2 · ADRs: ADR-0006
-  - [ ] 3.1 The `[collector]` table's `statistics` and `statistics_enabled`:
+  - [x] 3.1 The `[collector]` table's `statistics` and `statistics_enabled`:
     - `collect(round, facts)` reads the pages the facts need, with one report each and one fetcher per run;
     - an unchanged read confirms the figures;
     - a failure lists `player_season` for Claude.
     - _Requirements: R1.1, R1.5, R1.6_
     - _Test: `tests/integration/roles/test_two_pages.py::test_reads_the_pages_asked_for`,
       `::test_statistics_failure_for_claude`; `tests/unit/test_sources_config.py::test_collector_page_is_allowed`;
-      **AT-6** `tests/acceptance/roles/test_statistics.py::test_at6_statistics_collected`;
+      **AT-6** `tests/acceptance/roles/test_statistics.py::test_at6_statistics_collected` (its refresh plan in 5.1);
       **P2** `tests/property/roles/test_two_pages.py::test_p2_same_page_stores_nothing_new`_
-  - [ ] 3.2 The cadence and freshness:
+  - [x] 3.2 The cadence and freshness:
     - `player_season` due daily, counted from its own page's last attempt;
     - the season figures fresh for 48 hours;
     - `collect --due` reads only the pages due.
     - _Requirements: R1.4_
-    - _Test: `tests/unit/roles/test_cadence.py::test_statistics_daily`, `::test_last_attempt_per_page`,
-      `::test_season_figures_fresh_for_48_hours`_
-  - [ ] 3.3 `collect` and `fantadamus collect` take the fact, and read both pages by default
+    - _Test: `tests/unit/roles/test_cadence.py::test_statistics_daily`, `::test_season_figures_fresh_for_48_hours`;
+      `tests/integration/roles/test_two_pages.py::test_last_attempt_per_page`, `::test_due_reads_only_the_pages_due`;
+      `tests/unit/xy/test_freshness.py::test_targets_tighten_near_the_match`_
+  - [x] 3.3 `collect` and `fantadamus collect` take the fact, and read both pages by default
     - _Requirements: R1.4_
     - _Test: `tests/integration/roles/test_collect_tool.py::test_tool_and_command_choose_the_fact`_
 

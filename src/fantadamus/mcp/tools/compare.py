@@ -333,7 +333,7 @@ class Advisor:
         result = self.answer_at(first, second, when, odds_unavailable=odds_unavailable)
         wanted = [item for item in result.refresh if item.fact in ROUND_FACTS]
         if as_of is None and self.collector is not None and wanted:
-            report = self.collector.collect()
+            report = self.collector.collect(facts=sorted({item.fact for item in wanted}))
             if self.collect_log is not None:
                 self.collect_log.append(report)
             when = self.clock().astimezone(dt.UTC)
