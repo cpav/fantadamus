@@ -34,6 +34,7 @@ class FcoMatch:
     confirmed: bool = False
     lineups: bool = True  # False: the teams' sections are there, their tables not published yet
     reversed: bool = False  # True: each table lists its players in the opposite order
+    pending: tuple[str, ...] = ()  # outlets that haven't published: a note on the column, dashes in its cells
 
 
 def _role(letter: str) -> str:
@@ -57,9 +58,13 @@ def _fco_row(name: str, percents: tuple[int | None, ...], confirmed: bool) -> st
     )
 
 
-def _fco_table(caption: str, rows: str) -> str:
+PENDING_NOTE = " \u2014 non ha ancora pubblicato per questa giornata"  # as on the live page, 2026-11-03
+
+
+def _fco_table(caption: str, rows: str, pending: tuple[str, ...] = ()) -> str:
     sources = "".join(
-        f'<th scope="col" class="prb-tabella__fonte " title="{outlet}">{outlet[:3]}</th>'
+        f'<th scope="col" class="prb-tabella__fonte " '
+        f'title="{outlet}{PENDING_NOTE if outlet in pending else ""}">{outlet[:3]}</th>'
         for outlet in OUTLETS
     )
     average = (
@@ -82,13 +87,20 @@ def _fco_team(club: str, side: str, match: FcoMatch) -> str:
     if not match.lineups:
         return f"{heading}</section>"
     players = squad(club)
+
+    def shown(percents: tuple[int | None, ...]) -> tuple[int | None, ...]:
+        return tuple(
+            None if outlet in match.pending else p for outlet, p in zip(OUTLETS, percents, strict=True)
+        )
+
     order = reversed if match.reversed else iter
     starters = "".join(
-        _fco_row(name, match.percents.get(name, (90, 90, 95, 90)), match.confirmed)
+        _fco_row(name, shown(match.percents.get(name, (90, 90, 95, 90))), match.confirmed)
         for name in order(players[:11])
     )
     bench = "".join(
-        _fco_row(name, match.percents.get(name, (10, 30, 5, 30)), False) for name in order(players[11:13])
+        _fco_row(name, shown(match.percents.get(name, (10, 30, 5, 30))), False)
+        for name in order(players[11:13])
     )
     out = (
         '<div class="prb-fuori"><p class="prb-fuori__titolo">Indisponibili</p>'
@@ -97,8 +109,8 @@ def _fco_team(club: str, side: str, match: FcoMatch) -> str:
         '<span class="fco-etichetta">Infortunato</span></li></ul></div>'
     )
     return (
-        f"{heading}{_fco_table('Probabili titolari: percentuale per redazione', starters)}"
-        f"{_fco_table('Probabile panchina: percentuale per redazione', bench)}{out}</section>"
+        f"{heading}{_fco_table('Probabili titolari: percentuale per redazione', starters, match.pending)}"
+        f"{_fco_table('Probabile panchina: percentuale per redazione', bench, match.pending)}{out}</section>"
     )
 
 
