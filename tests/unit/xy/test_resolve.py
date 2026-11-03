@@ -44,3 +44,36 @@ def test_ambiguous_or_unknown_returns_candidates() -> None:
     for unknown in ("Neri", "Paolo Rossi", "", "  .  "):
         resolution = resolve(unknown, PLAYERS)
         assert (resolution.player, resolution.candidates) == (None, [])
+
+
+def test_an_initial_never_stands_for_a_whole_name() -> None:
+    """mvp-roles task 2.2: with every listed player known, an outlet's "SKORUPSKI L" finds Skorupski, not also
+    Libra, whose name its initial would pair with."""
+    skorupski, libra, pessina, mbangula = (
+        KnownPlayer(player_id=number, name=name, club="bologna")
+        for number, name in enumerate(("Skorupski", "Libra", "Pessina Mas.", "Mbangula"), start=1)
+    )
+    squad = [skorupski, libra, pessina, mbangula]
+    assert resolve("SKORUPSKI L", squad).player == skorupski
+    assert resolve("PESSINA M", squad).player == pessina
+    assert resolve("LIBRA ALVARADO M", squad).player == libra
+    assert resolve("MBANGULA S", squad).player == mbangula
+
+
+def test_the_two_sites_spellings_meet() -> None:
+    """mvp-roles task 2.2: Fantacalcio-Online's names against the statistics page's, as on the real pages: a
+    hyphenated surname written in part, and a surname written as two words. A first name that disagrees with
+    an initial still rules a player out, so "ANGUISSA A" can't find "Zambo Anguissa": from the words alone,
+    Zambo could be a first name."""
+    keeper, defender, midfielder, other = (
+        KnownPlayer(player_id=number, name=name, club="napoli")
+        for number, name in enumerate(
+            ("Milinkovic-Savic V.", "Delprato", "Zambo Anguissa", "Rossi L."), start=1
+        )
+    )
+    squad = [keeper, defender, midfielder, other]
+    assert resolve("MILINKOVIC V", squad).player == keeper
+    assert resolve("DEL PRATO E", squad).player == defender
+    assert resolve("Anguissa", squad).player == midfielder
+    assert resolve("ANGUISSA A", squad).player is None
+    assert resolve("ROSSI M", squad).player is None

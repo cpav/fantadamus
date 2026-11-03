@@ -101,3 +101,9 @@ def test_collector_page_is_allowed() -> None:
     assert host_allowed(page.current_round, hosts)
     assert host_allowed(page.round.format(round=10), hosts)
     assert page.round.format(round=10).endswith("/10-giornata")
+
+
+def test_statistics_page_listed_first() -> None:
+    """mvp-roles task 2.3 (R7.2): every player's season figures are read from the statistics page first."""
+    pages = _reading_list()["player_season"]["pages"]
+    assert pages[0] == "https://www.fantacalcio.it/statistiche-serie-a"
