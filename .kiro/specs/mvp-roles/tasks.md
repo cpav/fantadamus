@@ -1,6 +1,6 @@
 # Implementation Plan: `mvp-roles` (Phase 2, second slice)
 
-Status: **Proposed 2026-11-03, for the owner's review** · From the approved [requirements](requirements.md) and
+Status: **Approved by the owner, 2026-11-03** · From the approved [requirements](requirements.md) and
 [design](design.md) · No task starts until `mvp-collect` is signed off
 
 ## How to read and run these tasks
