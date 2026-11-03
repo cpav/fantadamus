@@ -59,6 +59,7 @@ _SIGNS = (("1", "home_win"), ("X", "draw"), ("2", "away_win"))  # the 1X2 boxes,
 _ROUND = re.compile(r"(\d+)\s*ª\s*Giornata", re.IGNORECASE)
 _UPDATED = re.compile(r"(\d{1,2}) (\w+) alle (\d{1,2}):(\d{2})")
 _NUMBER = re.compile(r"\d+(?:,\d+)?")
+_NOTE = re.compile(r"\s+[\u2013\u2014-]\s+")  # "Sky — non ha ancora pubblicato…": the outlet, then a note
 _PERCENT = re.compile(r"(\d+(?:,\d+)?)\s*%")
 
 
@@ -160,6 +161,8 @@ def _read_match(pane: Element, home: str, away: str, kickoff: dt.datetime, found
         return
     teams = home_team, away_team
     for outlet in OUTLETS:
+        if not any(outlet in row.percents for team in teams for row in team.starters + team.bench):
+            continue  # it hasn't published this match: a note on its column, dashes in every cell
         view = attempt(outlet, functools.partial(_outlet_view, outlet, home, away, teams))
         if view is not None:
             found.outlets.append(view)
@@ -259,7 +262,9 @@ def _team(pane: Element, side: str, club: str) -> _Team | None:
 def _rows(table: Element, club: str) -> list[_Row]:
     columns = table.find_all("th", "prb-tabella__fonte")
     kinds = [
-        "confirmed" if column.has_class("prb-tabella__conferma") else column.attr("title") or "?"
+        "confirmed"
+        if column.has_class("prb-tabella__conferma")
+        else _NOTE.split(column.attr("title") or "?")[0]
         for column in columns
     ]
     if sorted(kinds) != sorted((*OUTLETS, AVERAGE, "confirmed")):

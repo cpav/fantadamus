@@ -118,3 +118,13 @@ def test_order_on_the_page_does_not_matter() -> None:
     assert first.fixtures == shuffled.fixtures
     assert sorted(map(payload_hash, first.outlets)) == sorted(map(payload_hash, shuffled.outlets))
     assert list(map(payload_hash, first.officials)) == list(map(payload_hash, shuffled.officials))
+
+
+def test_outlet_not_published_yet() -> None:
+    """Found on the live page (2026-11-03): an outlet that hasn't published shows a note in its column's title
+    and dashes in every cell. Its column still counts as that outlet, and it gives no view of the match."""
+    facts = read_round(fco_round_page(FcoMatch("Alfa", "Beta", pending=("Sky",)), FcoMatch("Gamma", "Delta")))
+    alfa = sorted(view.outlet for view in facts.outlets if view.home == "Alfa")
+    assert alfa == ["Fantacalcio.it", "Gazzetta", "SOS Fanta"]
+    assert len([view for view in facts.outlets if view.home == "Gamma"]) == 4
+    assert facts.problems == []
