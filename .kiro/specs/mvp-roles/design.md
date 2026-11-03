@@ -1,7 +1,8 @@
 # Design Document: `mvp-roles` (Phase 2, second slice)
 
-Status: **Proposed 2026-11-03, for the owner's review** · From the approved [requirements](requirements.md),
-with three corrections to them proposed below (open point 1) · No code until `mvp-collect` is signed off
+Status: **Approved by the owner, 2026-11-03**, with both open points accepted · From the approved
+[requirements](requirements.md), with the three corrections of open point 1 · No code until `mvp-collect` is
+signed off
 
 ## Overview
 
@@ -316,3 +317,5 @@ collector can't read it, Claude reads it through `read_page`: two parts of about
 
 2. **The statistics page's figures win when they're newest**, over a profile Claude submitted earlier: both are
    Fantacalcio.it's own figures, and the daily read keeps them current. **Recommendation:** accept.
+
+Both accepted by the owner with the design, 2026-11-03.

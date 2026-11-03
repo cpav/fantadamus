@@ -1,7 +1,7 @@
 # Requirements Document: `mvp-roles` (Phase 2, second slice)
 
 Status: **Approved by the owner, 2026-11-03**; R1.1, R7.2 and AT-1 **amended the same day** with the design,
-for the owner's review · Workflow: requirements-first · Depends on:
+**the amendment approved the same day** · Workflow: requirements-first · Depends on:
 `mvp-x-or-y` and `mvp-collect` (built; code for this slice starts after `mvp-collect`'s sign-off, owner decision
 2026-11-03) · Method: [`docs/method.md`](../../../docs/method.md) §A3, §A4 and §A6 · Answers:
 [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 1 and 4
@@ -218,3 +218,9 @@ owner's shapes.
     formation call.
   - The starting values the method doesn't give (R2.1's †, the assist priors' split, R3.3's prior, R3.4) are
     calibrated from the decision log like the others.
+- **2026-11-03, with the design:** the owner approved three corrections:
+  - R1.1: the statistics page is stored as one record per read, not one per player, which would have put about
+    45,000 files in bronze by May;
+  - R7.2: no data-product catalog, since none exists yet;
+  - AT-1 restated at the method's own weights: regressing five matches with n / (n + 12) keeps 5/17 of a raw
+    gap, so the two keepers come within 0.1 only once the odds price their matches alike.
