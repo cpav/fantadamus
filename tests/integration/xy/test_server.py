@@ -131,3 +131,26 @@ def test_prompt_has_forecast_shape(tmp_path: Path) -> None:
         "Sources disagree",
     ):
         assert part in instructions, part
+
+
+def test_prompt_names_every_role(tmp_path: Path) -> None:
+    """mvp-roles task 7.1 (R7.1): Claude knows what Fantadamus can now answer, and how to answer it."""
+    instructions = " ".join((_server(tmp_path).instructions or "").split())  # wherever the lines break
+    for part in (
+        "two players of the same role",
+        "`player_outlook`",
+        "`outlooks`",  # two roles
+        "formation call",
+        "A full lineup and the formation aren't supported yet",
+        "`covered`",  # two keepers of one club
+        "clean sheet",
+        "expected to concede",
+        "rated games",
+        "statistics page",
+        "the name it writes",  # a name the tools don't know
+        "matched by surname",
+        "average defence",
+    ):
+        assert part in instructions, part
+    for stale in ("two forwards", "Keepers, defenders, midfielders"):
+        assert stale not in instructions, stale

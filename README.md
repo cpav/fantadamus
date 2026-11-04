@@ -1,8 +1,8 @@
 # Fantadamus
 
 A Fantacalcio advisor (Serie A fantasy football, Classic rules). It answers "who do I field?": "X or Y?"
-with a verdict and its reasons, the best eleven and bench under a league's own rules, and the formation
-call. You ask in your own Claude app; Fantadamus's MCP tools hold the data and do the arithmetic.
+with a verdict and its reasons, one player's outlook, the best eleven and bench under a league's own rules,
+and the formation call. You ask in your own Claude app; Fantadamus's MCP tools hold the data and do the arithmetic.
 
 - **For players:** what it answers, how it decides and what it costs, in
   [`docs/presentation/product.html`](docs/presentation/product.html).
@@ -15,15 +15,15 @@ published copies.
 ## How it works
 
 ```text
-your Claude app ──ask──▶ compare_players ──▶ collector reads the round page ──▶ checks ──▶ bronze ─▶ silver ─▶ gold ─▶ engine
+your Claude app ──ask──▶ compare_players ──▶ collector reads its two pages ──▶ checks ──▶ bronze ─▶ silver ─▶ gold ─▶ engine
        │                      │                                                           ▲
        │                      └─▶ answer, or a plan for what's still missing              │
        └─read_page (Fantadamus fetches the listed page) ──▶ submit tools ─────────────────┘
 ```
 
-- **Fantadamus collects, Claude fills the gaps, the tools decide.** Fantadamus reads Fantacalcio-Online's
-  round page itself, politely: fixtures, four outlets' chances of starting, official lineups and odds. For
-  the rest, Claude reads the listed pages through `read_page`, which fetches them, and submits what they say.
+- **Fantadamus collects, Claude fills the gaps, the tools decide.** Fantadamus reads two pages itself,
+  politely: Fantacalcio-Online's round page (fixtures, four outlets' chances of starting, official lineups and
+  odds) and Fantacalcio.it's statistics page (every player's season figures). For the rest, Claude reads the listed pages through `read_page`, which fetches them, and submits what they say.
   Fantadamus checks every fact, stores it, and computes every probability in tested Python
   ([ADR-0006](docs/adr/0006-mvp-fantadamus-collects-round-facts.md)).
 - **The method** is the owner's own: [`docs/method.md`](docs/method.md). Bonuses are priced from the betting
@@ -33,10 +33,10 @@ your Claude app ──ask──▶ compare_players ──▶ collector reads the
 
 ## Status
 
-Phase 2 is under way. Its first slice, `mvp-collect`, is built: Fantadamus reads the round's lineups and odds
-itself, compares its sources, and answers "X or Y?" for two forwards as a forecast, with how sure each number is,
-how it moved and where it came from. The real round with a second player is running
-([setup guide](docs/player-setup.md)). Phases 0 and 1 are signed off
+Phase 2 is under way. Its first two slices are built. `mvp-collect`: Fantadamus reads the round's lineups and odds
+itself, compares its sources, and answers as a forecast, with how sure each number is, how it moved and where it
+came from. `mvp-roles`: "X or Y?" for any two players of the same role, and one player's outlook. Both slices'
+real round, with a second player, comes next ([setup guide](docs/player-setup.md)). Phases 0 and 1 are signed off
 ([reports](docs/reports/phase-1-report.md)). The answers' shapes, from "X or Y?" to the full lineup, are in
 [docs/answer-formats.md](docs/answer-formats.md).
 
@@ -46,7 +46,7 @@ Re-planned on 2026-10-26: the work now goes in thin slices, each taking one ques
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton (retired 2026-10-31) | Done, signed off 2026-10-26 |
 | 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Done, signed off 2026-10-26 ([report](docs/reports/phase-1-report.md)) |
-| 2 Slices | `mvp-collect` (built; the real round is running), then every role, then the full lineup with the bench and the formation | In progress |
+| 2 Slices | `mvp-collect` and `mvp-roles` (every role; built, their real round is next), then the full lineup with the bench and the formation | In progress |
 | 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
 
 For now each player runs Fantadamus on their own Mac; the shared online server comes with Phase 3.
@@ -61,8 +61,8 @@ make check      # every gate, as CI runs it: one PASS or FAIL line per check
 make test-fast  # format, lint, unit and property tests with the fast profile
 ```
 
-`uv run fantadamus serve` starts the MCP server on stdio: `compare_players`, `set_league_rules`, `collect`,
-`read_page` and the submit tools. `uv run fantadamus collect` reads the round page and Fantacalcio.it's
+`uv run fantadamus serve` starts the MCP server on stdio: `compare_players`, `player_outlook`,
+`set_league_rules`, `collect`, `read_page` and the submit tools. `uv run fantadamus collect` reads the round page and Fantacalcio.it's
 statistics page now (`--fact` picks one fact's page); `--report` shows the last run.
 
 ## Use it in Claude Desktop
@@ -85,7 +85,7 @@ statistics page now (`--fact` picks one fact's page); `--report` shows the last 
 
 4. Create a Claude **Project** called Fantadamus and paste the agent prompt (everything below the `---` line in
    [`docs/agent-prompt.md`](docs/agent-prompt.md)) as its instructions, so Claude uses the tools unasked.
-5. In that project, ask "X or Y?" for two forwards. The first time, Claude asks for your league's bonuses and
+5. In that project, ask "X or Y?" for two players of the same role. The first time, Claude asks for your league's bonuses and
    maluses, with the Fantacalcio Classic values offered. When facts are missing or stale, Claude reads the
    approved pages, submits what they say, and asks again.
 

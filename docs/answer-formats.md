@@ -31,7 +31,8 @@ Rules for all of them:
 
 ## 1. "X or Y?"
 
-Built in `mvp-x-or-y` and `mvp-collect`, for forwards. The next slice extends it to every role.
+Built in `mvp-x-or-y` and `mvp-collect` for forwards, and in `mvp-roles` for every role. Two players of different
+roles get each player's outlook (format 4) and no verdict: that choice is the formation call (format 3).
 
 ```text
 Round 11 · locks Fri 6 Nov 20:45 at Venezia–Udinese · updated 12 minutes ago
@@ -54,6 +55,22 @@ Would flip it: Rossi on the bench in the official lineup (about 17:00 Sunday).
 Before the lock: neither plays in the deadline match.
 
 Sources: Fantacalcio-Online, round 11 probable lineups · Fantacalcio.it, table · Fantacalcio.it, penalty takers
+```
+
+For a keeper, a clean sheet takes the place of the chance to score:
+
+```text
+Ferrari (Napoli, keeper): starts in the easier match
+  • Starts 97%: four outlets agree.
+  • 34% chance of a clean sheet; expected to concede about 1.1; worth about 5.4.
+  • Form: average rating 6.4 in 9 rated games, 9 goals conceded. Unchanged since Wednesday.
+```
+
+Two keepers of one club are covered, so there's no margin:
+
+```text
+Field Ferrari, the likelier starter. Moretti, of the same club, plays exactly when he doesn't, so the place is
+covered.
 ```
 
 ## 2. The full lineup
@@ -122,7 +139,7 @@ Would flip it: Conti on the bench in the official lineup; then De Luca comes in,
 
 ## 4. One player: "Will he start? Is he worth it?"
 
-Every-role slice: one player's outlook, and the start of every other answer.
+Built in `mvp-roles`, with `player_outlook`: one player's outlook, and the start of every other answer.
 
 ```text
 Round 11 · Inter–Como, Sun 8 Nov 18:00 · updated 12 minutes ago
@@ -132,6 +149,18 @@ Rossi starts 92%: four outlets agree. Bianchi, his rival, is at 35%.
 Up from 85% on Wednesday: Sky now has him starting.
 Official lineup: about 17:00 Sunday, after your lock; field him.
 Sources: Fantacalcio-Online, round 11 probable lineups
+```
+
+For a keeper:
+
+```text
+Round 11 · Napoli–Lazio, Sun 8 Nov 12:30 · updated 12 minutes ago
+
+Ferrari starts 97%: four outlets agree.
+34% chance of a clean sheet; expected to concede about 1.1; worth about 5.4.
+Unchanged since Wednesday.
+Official lineup: about 11:30 Sunday, after your lock; field him.
+Sources: Fantacalcio-Online, round 11 probable lineups · Fantacalcio.it, statistics
 ```
 
 ## 5. The match card

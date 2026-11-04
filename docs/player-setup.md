@@ -1,15 +1,15 @@
 # Set up Fantadamus on your Mac
 
-Fantadamus answers "X or Y?" for two Serie A forwards, inside your own Claude Desktop. Fantadamus reads the
-round's lineups and odds itself, and Claude reads the few other pages it needs from a short list of approved
-sites; Fantadamus checks every fact, stores it on your Mac and does the arithmetic. This guide takes about 15
+Fantadamus answers "X or Y?" for two Serie A players, inside your own Claude Desktop. Fantadamus reads the
+round's lineups and odds and every player's season figures itself, and Claude reads the few other pages it needs
+from a short list of approved sites; Fantadamus checks every fact, stores it on your Mac and does the arithmetic. This guide takes about 15
 minutes.
 
 **You need:** a Mac, [Claude Desktop](https://claude.ai/download) signed in to a Claude plan with web search,
 and the Terminal app (in Applications → Utilities). Windows isn't supported yet.
 
-**What it does for now:** "X or Y?" between two forwards for the next round. Keepers, defenders,
-midfielders, full lineups and formations come in later versions.
+**What it does for now:** for the next round, "X or Y?" between two players of the same role, and one player's
+outlook ("Will he start? Is he worth it?"). Full lineups and formations come in later versions.
 
 ## 1. Install uv
 

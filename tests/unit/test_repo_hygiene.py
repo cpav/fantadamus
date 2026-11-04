@@ -94,3 +94,13 @@ def test_player_guide_schedule() -> None:
     switch_on = guide.split("launchctl bootstrap", 1)[1].split("\n", 1)[0]
     assert f"{plist['Label']}.plist" in switch_on
     assert f"launchctl bootout gui/$(id -u)/{plist['Label']}" in guide
+
+
+def test_docs_name_every_role() -> None:
+    """mvp-roles task 7.1 (R7.1): the answer formats give a keeper's lines, and the README the new tool."""
+    formats = (ROOT / "docs" / "answer-formats.md").read_text(encoding="utf-8")
+    assert "clean sheet" in formats.split("## 2. The full lineup")[0]
+    assert "clean sheet" in formats.split("## 4. One player")[1].split("## 5.")[0]
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "`player_outlook`" in readme
+    assert "statistics page" in readme.split("## Status")[0]

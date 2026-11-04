@@ -186,9 +186,9 @@ real rounds are tested together in task 8
       `tests/integration/xy/test_server.py::test_served_tools`;
       **AT-9** `tests/acceptance/roles/test_answers.py::test_at9_outlook_in_one_call`_
 
-- [ ] 7. The agent prompt and docs
+- [x] 7. The agent prompt and docs
   - Branch: `docs/mr-7-prompt` · Depends on: 6 · ADRs: none
-  - [ ] 7.1 The agent prompt:
+  - [x] 7.1 The agent prompt:
     - every role, `player_outlook`, and two roles answered with outlooks;
     - a keeper's lines, and rated games in a player's form;
     - the MVP section names the statistics page;
@@ -196,7 +196,8 @@ real rounds are tested together in task 8
       read the statistics page, and ask again with the name it writes.
     - Also: a keeper's line in `docs/answer-formats.md`, and the README's tool list.
     - _Requirements: R7.1_
-    - _Test: `tests/integration/xy/test_server.py::test_prompt_names_every_role`_
+    - _Test: `tests/integration/xy/test_server.py::test_prompt_names_every_role`;
+      `tests/unit/test_repo_hygiene.py::test_docs_name_every_role`_
 
 - [ ] 8. The real round and the slice gate
   - Branch: `docs/mr-8-report` · Depends on: 7 · ADRs: ADR-0006
