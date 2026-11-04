@@ -69,6 +69,7 @@ async def tools(
     submit.register(server, store, allowed_hosts=hosts, clock=clock, submitted_by="user-1", clubs=CLUBS)
     rules = RulesStore(store.root / "league")
     league.register(server, rules, user="user-1", clock=clock)
+    squads = SquadStore(store.root / "league")
     advisor = Advisor(
         lake=store,
         rules=rules,
@@ -79,10 +80,10 @@ async def tools(
         clock=clock,
         collector=collector,
         collect_log=collect_log,
+        squads=squads,
     )
     compare.register(server, advisor)
     outlook.register(server, advisor)
-    squads = SquadStore(store.root / "league")
     squad.register(server, advisor, squads)
     lineup_tool.register(server, advisor, squads, rounds=lineup_rounds)
     async with Client(server) as client:

@@ -161,21 +161,26 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Test: `tests/integration/lineup/test_best_lineup.py::test_lineup_logged`, `::test_a_replay_is_not_logged`,
       `::test_earlier_lines_still_read`_
 
-- [ ] 6. Overrides and calls
+- [x] 6. Overrides and calls
   - Branch: `feat/ml-6-overrides` · Depends on: 5 · ADRs: none
-  - [ ] 6.1 `calls`, the two or three that matter: the formation, from the marginal players of each role, and the closest
+  - [x] 6.1 `calls`, the two or three that matter: the formation, from the marginal players of each role, and the closest
     choices between a starter and the player behind him, each with what it's worth. Within 0.15 points the formation is a coin
     flip, and the answer says which has the higher ceiling.
     - _Requirements: R3.4, R5.2_
-    - _Test: `tests/integration/lineup/test_calls.py::test_calls_that_matter`, `::test_coin_flip_names_the_ceiling`_
-  - [ ] 6.2 `start`, `leave_out` and `formation`: that lineup, with its cost against the recommendation in points and
-    threshold chances, from the same simulated rounds. An override that can't be fielded is refused with the reason.
-    - _Requirements: R3.5_
-    - _Test: **AT-10** `tests/acceptance/lineup/test_overrides.py::test_at10_an_override_and_its_cost`;
-      `tests/integration/lineup/test_calls.py::test_override_refused`_
-  - [ ] 6.3 `compare_players`' two-role message points to `best_lineup` when the user has a squad.
+    - _Test: `tests/integration/lineup/test_calls.py::test_calls_that_matter`, `::test_coin_flip_names_the_ceiling`,
+      `::test_a_formation_call_names_who_it_comes_down_to`, `::test_place_calls_are_the_closest_choices_with_what_each_is_worth`,
+      `::test_a_keepers_call_skips_his_club_mate`_
+  - [x] 6.2 `start`, `leave_out` and `formation`: that lineup, with its cost against the recommendation in points and
+    threshold chances, from the same simulated rounds. An override that can't be fielded is refused with the reason, and a
+    name that could be several players is asked about. The log gains who was fielded, as R7.1 asks, and what the advice was.
+    - _Requirements: R3.5, R7.1_
+    - _Test: **AT-10** `tests/acceptance/lineup/test_overrides.py::test_at10_an_override_and_its_cost`,
+      `::test_at10_another_formation`, `::test_at10_leaving_a_player_out`, `::test_at10_an_override_is_logged_with_its_cost`,
+      `::test_override_refused`, `::test_a_name_that_could_be_two_players_is_asked_about`_
+  - [x] 6.3 `compare_players`' two-role message points to `best_lineup` when the user has a squad.
     - _Requirements: R6.2_
-    - _Test: `tests/integration/lineup/test_calls.py::test_two_roles_with_a_squad`_
+    - _Test: `tests/integration/lineup/test_calls.py::test_two_roles_with_a_squad`,
+      `::test_two_roles_without_a_squad_says_how_to_get_there`_
 
 - [ ] 7. Calibration
   - Branch: `feat/ml-7-calibration` · Depends on: 5 · ADRs: ADR-0006

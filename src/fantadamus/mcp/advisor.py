@@ -67,6 +67,7 @@ from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import Decision, DecisionLog, LoggedPlayer
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore, SetupStep, StoredRules, scoring_for, setup_step
+from fantadamus.league.squads import SquadStore
 from fantadamus.web.cadence import may_read
 from fantadamus.web.collector import ROUND_FACTS, STATS_FACTS, Collector, CollectReport
 
@@ -381,6 +382,8 @@ class Advisor:
     """Reads the round page when its facts are missing or stale (mvp-collect C11)."""
     collect_log: CollectLog | None = None
     """The collector's runs: each is logged, and a read that found a page unchanged keeps its facts fresh."""
+    squads: SquadStore | None = None
+    """Whether the user has a squad changes where a two-role question points (mvp-lineup R6.2)."""
 
     def refresh_item(self, fact: str, why: Why, about: str, **values: str) -> RefreshItem:
         entry = self.reading[fact]
@@ -680,7 +683,7 @@ class Advisor:
         if verdict is not None:
             message = _verdict_message(verdict, sides[0].form.role)
         else:
-            message = _outlook_message(players[0]) if len(players) == 1 else _outlooks_message(sides)
+            message = _outlook_message(players[0]) if len(players) == 1 else self._outlooks_message(sides)
         answer = Answer(
             message=message,
             round=round,
@@ -700,6 +703,18 @@ class Advisor:
             players=players,
         )
         return answer
+
+    def _outlooks_message(self, sides: Sequence[PlayerFacts]) -> str:
+        """Two roles: that choice is the formation call, which the lineup makes (mvp-lineup R6.2)."""
+        who = " and ".join(f"{side.player.name} ({_ROLE_WORDS[side.form.role]})" for side in sides)
+        has_squad = self.squads is not None and self.squads.get(self.user) is not None
+        where = (
+            "best_lineup makes it for this squad" if has_squad else "set_squad, then best_lineup, makes it"
+        )
+        return (
+            f"{who} play different roles: a choice between roles is the formation call, and {where}. "
+            "Here is each player's outlook."
+        )
 
     def _updated(self, players: list[PlayerAnswer], as_of: dt.datetime) -> Updated:
         """The newest and oldest time the facts were captured or a collector read found them unchanged."""
@@ -972,14 +987,6 @@ def _outlook_message(part: PlayerAnswer) -> str:
     if value.p_start + value.p_cameo == 0:
         return f"{who} won't play this round."
     return f"{who}: {value.p_start:.0%} to start, worth about {value.e_start:.1f} if he does."
-
-
-def _outlooks_message(sides: Sequence[PlayerFacts]) -> str:
-    who = " and ".join(f"{side.player.name} ({_ROLE_WORDS[side.form.role]})" for side in sides)
-    return (
-        f"{who} play different roles: a choice between roles is the formation call, which comes with the "
-        "full lineup. Here is each player's outlook."
-    )
 
 
 def _kind(answer: Answer) -> Literal["compare", "outlooks", "outlook"]:

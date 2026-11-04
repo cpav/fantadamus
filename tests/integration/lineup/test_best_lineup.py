@@ -156,6 +156,8 @@ async def test_lineup_logged(tmp_path: Path) -> None:
         mark["points"]: mark["chance"] for mark in lineup["thresholds"]
     }
     assert decision.as_of == NOW
+    assert decision.starters == [part["player_id"] for part in lineup["starters"]]
+    assert decision.bench == [part["player_id"] for part in lineup["bench"]]
     assert {logged.name for logged in decision.players} == set(SQUAD)
     keeper = next(logged for logged in decision.players if logged.name == "Alfa Uno")
     assert keeper.p_clean_sheet is not None

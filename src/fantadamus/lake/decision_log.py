@@ -52,6 +52,13 @@ class Decision(BaseModel):
     expected: float | None = None
     thresholds: dict[str, float] | None = None
     """The chance of reaching each threshold, by its points."""
+    starters: list[int] | None = None
+    bench: list[int] | None = None
+    """A lineup's players, by ID, in order (mvp-lineup R7.1)."""
+    override_cost: float | None = None
+    """What the user's own choice cost against the advice, in expected points (mvp-lineup R3.5)."""
+    advised_starters: list[int] | None = None
+    """With an override: who the advice would have fielded."""
 
 
 class DecisionLog:

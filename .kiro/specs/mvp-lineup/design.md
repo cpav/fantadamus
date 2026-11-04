@@ -166,7 +166,8 @@ expected fantasy goals, and the chance of each threshold.
 ### C8. `best_lineup` (`mcp/tools/lineup.py`; R3, R5, R6)
 
 `best_lineup(team="mine", start=[], leave_out=[], formation=None, as_of=None)`, with the statuses `setup`, `squad` (no squad
-yet), `refresh` and `lineup`, and `choose` once it takes names to start or leave out. A replay never collects and isn't logged.
+yet), `choose` (a name to start or leave out could be several players), `refused` (an override that can't be fielded, with the
+reason), `refresh` and `lineup`. A replay never collects and isn't logged.
 
 | Part | What it holds |
 |---|---|
@@ -177,7 +178,7 @@ yet), `refresh` and `lineup`, and `choose` once it takes names to start or leave
 | `out_and_doubtful` | Who, and whether the bench covers him |
 | `likely_scorers`, `moved`, `check_before_lock` | Format 2's closing lines. `moved` compares with the previous lineup's log entry for this team, with no replay |
 | `warnings`, `improve` | Every number on basic data, and what could improve it (R5.5, R5.6) |
-| `override` | With `start`, `leave_out` or `formation`: the cost against the recommendation, from the same simulated rounds (R3.5) |
+| `override` | With `start`, `leave_out` or `formation`: the cost against the recommendation, from the same simulated rounds (R3.5). Without a formation, the choice goes wherever it does best. Whoever is left out of the eleven stays available for the bench |
 | `last_round` | One line on how the last scored round's forecasts did, or nothing yet (R7.6) |
 | `sources` | Each page once, by label (R5.4) |
 
@@ -190,7 +191,7 @@ player, much of it repeated sources, and the target here is about 300 bytes per 
 ### C9. The decision log (`lake/decision_log.py`; R7.1)
 
 `Decision` gains `kind="lineup"`, and the optional `team`, `formation`, `expected`, `thresholds` (each threshold's chance)
-and `override_cost`. Every squad player's published chances are logged. Earlier lines still read.
+`starters`, `bench`, `override_cost` and, with an override, `advised_starters`. Every squad player's published chances are logged. Earlier lines still read.
 
 ### C10. Calibration (`domains/calibration.py`, `cli/`; R7.2 to R7.6)
 

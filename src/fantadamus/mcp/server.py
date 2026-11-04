@@ -109,6 +109,7 @@ def build_advisor(
     league.register(server, rules, user=user, clock=clock)
     collect.register(server, reader, collect_log)
     pages.register(server, pages.PageReader(reading, page_fetcher))
+    squads = SquadStore(rules.root)
     advisor = Advisor(
         lake=lake,
         rules=rules,
@@ -119,10 +120,10 @@ def build_advisor(
         clock=clock,
         collector=reader,
         collect_log=collect_log,
+        squads=squads,
     )
     compare.register(server, advisor)
     outlook.register(server, advisor)
-    squads = SquadStore(rules.root)
     squad.register(server, advisor, squads)
     lineup.register(server, advisor, squads)
     return server
