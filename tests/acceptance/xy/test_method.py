@@ -74,8 +74,9 @@ def test_at3_bench_cover_changes_verdict() -> None:
     y = Option(name="Y", p_start=0.95, p_cameo=0.02, e_start=6.6, e_cameo=6.0)
     verdict = rank.verdict(y, x)
     assert (verdict.first, verdict.second) == ("X", "Y")
-    assert verdict.margin == pytest.approx(7.309 - 6.588, abs=0.002)
-    assert verdict.label == "clear"
+    assert verdict.key_margin == pytest.approx(7.309 - 6.588, abs=0.002)
+    assert verdict.margin == pytest.approx(0.55 * 0.97 * verdict.key_margin)  # mvp-lineup R8.1
+    assert verdict.label == "lean"
     assert rank.no_cover(**x.figures()) == pytest.approx(4.02)
     assert rank.no_cover(**y.figures()) == pytest.approx(6.39)
     assert verdict.no_cover_first == "Y"

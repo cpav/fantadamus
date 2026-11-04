@@ -212,7 +212,9 @@ async def test_outfield_players_compared(tmp_path: Path, first: str, second: str
         )
         assert value["e_cameo"] == 5.5 or part["name"] == "Gamma Sei"  # his Mantra role is T: priced
     keys = [part["value"]["key"] for part in result["answer"]["players"]]
-    assert result["answer"]["verdict"]["margin"] == pytest.approx(abs(keys[0] - keys[1]))  # the same bonus
+    assert result["answer"]["verdict"]["key_margin"] == pytest.approx(
+        abs(keys[0] - keys[1])
+    )  # the same bonus
 
 
 async def test_defenders_compared(tmp_path: Path) -> None:

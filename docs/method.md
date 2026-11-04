@@ -35,6 +35,11 @@ key = (p_start × E_start + p_cameo × E_cameo) / (p_start + p_cameo)
   matters.
 - The rule breaks only when the bench can't cover: no bench player left in that role, or the substitution
   cap reached. The simulation (§A7) handles both.
+- **What a choice is worth.** With the bench covering both, fielding a before b is worth
+  r_a × k_a + (1 − r_a) × r_b × k_b, where r is the chance of a rating and k the key. The two orders differ by exactly
+  r_a × r_b × (k_a − k_b), because the choice only matters when both get a rating. The order follows the key, and the margin
+  and its label come from that difference, so a rarely used backup who's ahead on the key is a coin flip, not a clear
+  choice.
 
 ## A4. Expected score if he starts
 
