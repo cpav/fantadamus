@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-lineup` (Phase 2, third slice)
 
-Status: **Proposed 2026-11-04, for the owner's review** · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
+Status: **Approved by the owner, 2026-11-04**, with the amendment to R5.5 and R5.6 · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
 `mvp-collect` and `mvp-roles` (signed off) · Method: [`docs/method.md`](../../../docs/method.md) §A1 to §A3, §A7, §A8,
 §A9 tests 1 and 5 · Answers: [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 2, 3 and 6
 
@@ -135,8 +135,13 @@ head-to-head match.
   moved since the user's previous lineup, and what to check before the lock (§A7).
 - **R5.4** THE SYSTEM SHALL list each source once for the whole answer, and SHALL keep the answer under 15 KB for a
   25-player squad. A player's full breakdown stays with `player_outlook`.
-- **R5.5** WHERE a match's odds show no over/under THE SYSTEM SHALL answer from the 1X2 and say which matches, instead
-  of holding back the whole lineup for them (see Owner decisions).
+- **R5.5** THE SYSTEM SHALL answer from the best data it has, and SHALL warn about every number that rests on something
+  more basic, naming the match or player and what it affects: a match priced from the 1X2 without over/under, or from
+  team form without odds; a player no outlet lists, at the default chance; a player without rated games, on his role's
+  priors; a keeper whose goals conceded aren't known; an outlet's name matched by surname.
+- **R5.6** WHERE better data could be read THE SYSTEM SHALL list it with the answer, with its pages and search hints, as
+  a refresh plan does. Claude SHALL try once to read it and ask again. If it can't get it, the answer stands with its
+  warning: the lineup is never held back for it.
 
 ### Requirement 6: The bench order and the formation call on their own
 
@@ -196,6 +201,7 @@ answer.
 | AT-10 | Defence modifier and captain: hand-worked rounds give the right score; a league rule this spec leaves out is named in the answer | R2.3, R3.5, R4.4 |
 | AT-11 | Worth of a choice: a 12% backup keeper ahead of a 92% starter on the key is a coin flip, not "clear"; the order doesn't change | R8 |
 | AT-12 | `fantadamus calibrate` on a scripted round gives the right Brier scores and buckets, and names what it couldn't score | R7 |
+| AT-14 | A squad with a player in a match without over/under gets its lineup in one call, with a warning naming the match and the pages that could improve it; once better odds are submitted, the warning goes and the numbers use them. A player without rated games and one no outlet lists each get their warning | R5.5, R5.6 |
 | AT-13 | Manual: the owner gives a real squad and rules in Claude Desktop, and gets a lineup for a real round to compare with their own choice | All |
 
 Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
@@ -204,14 +210,11 @@ Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
 
 - **2026-11-04:** the owner signed off `mvp-collect` and `mvp-roles` and asked to move on to close Phase 2.
 
-Proposed, for the owner's review:
-
-1. **Which rules to build (R2).** The thresholds, bench, substitutions and formations, plus the defence modifier and
-   the captain, leaving out anything that needs the opponent. *Recommendation:* build these, and correct the list to
-   what your league and your friend's actually use.
-2. **What a choice is worth (R8).** Base the margin and label on what the choice is worth. Method §A9 test 6 would read
-   "lean" rather than "clear". *Recommendation:* yes.
-3. **A lineup doesn't wait for over/under (R5.5).** Two of round 11's ten matches show no over/under on the round page.
-   For "X or Y?" you chose to keep asking Claude to look for it (2026-10-30), but a squad nearly always includes a
-   player from such a match, so a lineup would almost always stop to search. *Recommendation:* answer from the 1X2, and
-   say so.
+- **2026-11-04:** these requirements approved, with three decisions:
+  1. **Which rules to build (R2):** the owner said they added context on where to find their league's rules, but the
+     agent couldn't find it in the repository, the private configuration or the owner's artifacts. The list in R2
+     stands until that's found; R2 takes each league's own values, so what changes would be which options exist.
+  2. **What a choice is worth (R8):** approved. Method §A9 test 6 now reads "lean" rather than "clear".
+  3. **A lineup and basic data (R5.5, R5.6):** the agent proposed answering from the 1X2 and saying so. The owner wants
+     the best statistics, or a warning when the answer rests on something basic. So Claude tries once for better data,
+     and any number left on basic data carries a warning, wider than over/under alone.
