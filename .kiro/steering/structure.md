@@ -32,7 +32,7 @@ src/fantadamus/
   domains/<domain>/    bronze.py, silver.py, gold.py: one module set per data domain
   quality/             data-quality rule definitions (defined once, rendered for DuckDB and Glue DQ)
   engine/              the method's arithmetic: odds fit, player models, starting constants (pure)
-  league/              each user's league rules (stored privately, under data/local/)
+  league/              each user's league rules and squads (stored privately, under data/local/)
   lake/                storage adapters: DuckDB/Parquet (MVP, local or S3), S3/Iceberg (v1)
   mcp/                 the MCP server: read tools, refresh plans and submit tools (ADR-0005)
   web/                 polite fetcher and page readers (ADR-0004, ADR-0006); the search client is v1 only

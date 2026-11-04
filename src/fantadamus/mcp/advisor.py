@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import datetime as dt
 import tomllib
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -381,7 +381,7 @@ class Advisor:
     collect_log: CollectLog | None = None
     """The collector's runs: each is logged, and a read that found a page unchanged keeps its facts fresh."""
 
-    def _item(self, fact: str, why: Why, about: str, **values: str) -> RefreshItem:
+    def refresh_item(self, fact: str, why: Why, about: str, **values: str) -> RefreshItem:
         entry = self.reading[fact]
         fields = {"home": "", "away": "", "club": "", "player": ""} | values
 
@@ -400,7 +400,22 @@ class Advisor:
 
     def _match_item(self, fact: str, why: Why, match: FixtureRow) -> RefreshItem:
         home, away = self.clubs.names[match.home], self.clubs.names[match.away]
-        return self._item(fact, why, f"{home} v {away}", home=home, away=away)
+        return self.refresh_item(fact, why, f"{home} v {away}", home=home, away=away)
+
+    def collect_now(self, facts: Collection[str], now: dt.datetime) -> CollectReport | None:
+        """Ask the collector for those of `facts` its pages carry and may read now, and log the run; None if
+        there are none (mvp-collect C11)."""
+        if self.collector is None:
+            return None
+        wanted = {
+            fact for fact in facts if self.collector.reads(fact) and may_read(fact, self.collect_log, now)
+        }
+        if not wanted:
+            return None
+        report = self.collector.collect(facts=sorted(wanted))
+        if self.collect_log is not None:
+            self.collect_log.append(report)
+        return report
 
     def compare(
         self, first: str, second: str, *, as_of: dt.datetime | None = None, odds_unavailable: bool = False
@@ -421,22 +436,14 @@ class Advisor:
         when = (as_of or self.clock()).astimezone(dt.UTC)
         facts = Facts.read(self.lake, when)
         result = self.answer_at(names, when, odds_unavailable=odds_unavailable, facts=facts)
-        if as_of is None and self.collector is not None:
-            wanted = {
-                item.fact
-                for item in result.refresh
-                if self.collector.reads(item.fact) and may_read(item.fact, self.collect_log, when)
-            }
-            if wanted:
-                report = self.collector.collect(facts=sorted(wanted))
-                if self.collect_log is not None:
-                    self.collect_log.append(report)
-                when = self.clock().astimezone(dt.UTC)
-                if any(page.stored for page in report.pages):
-                    facts = Facts.read(self.lake, when)
-                result = self.answer_at(
-                    names, when, odds_unavailable=odds_unavailable, facts=facts, tried=_tried(report)
-                )
+        report = self.collect_now({item.fact for item in result.refresh}, when) if as_of is None else None
+        if report is not None:
+            when = self.clock().astimezone(dt.UTC)
+            if any(page.stored for page in report.pages):
+                facts = Facts.read(self.lake, when)
+            result = self.answer_at(
+                names, when, odds_unavailable=odds_unavailable, facts=facts, tried=_tried(report)
+            )
         if result.answer is None:
             return result
         answer = self._with_movement(result.answer, names, odds_unavailable, facts)
@@ -473,7 +480,7 @@ class Advisor:
                 candidates[name] = resolution.candidates
             elif resolution.player is None:
                 unknown.append(
-                    self._item("player_season", "missing", f"{name}'s season figures", player=name)
+                    self.refresh_item("player_season", "missing", f"{name}'s season figures", player=name)
                 )
             else:
                 players.append(resolution.player)
@@ -530,12 +537,12 @@ class Advisor:
         ):
             if not fresh:  # every answer needs them, whoever the players turn out to be
                 why: Why = "stale" if any(row.captured_at <= as_of for row in rows) else "missing"
-                need(self._item(fact, why, about))
+                need(self.refresh_item(fact, why, about))
         fixtures = _fresh(facts.fixtures, "fixtures", as_of, confirmed=confirmed.get(FIXTURES.table.name))
         round = next_round(fixtures, as_of)
         if round is None:
             stale = next_round(facts.fixtures, as_of) is not None
-            need(self._item("fixtures", "stale" if stale else "missing", "the next round's fixtures"))
+            need(self.refresh_item("fixtures", "stale" if stale else "missing", "the next round's fixtures"))
         sides: list[_Side] = []
         for player in players:
             form = forms[player.player_id]
@@ -543,15 +550,17 @@ class Advisor:
                 [form], "player_season", as_of, confirmed=confirmed.get(SEASON_STATS.table.name)
             ):
                 about = f"{player.name}'s season figures"
-                need(self._item("player_season", "stale", about, player=player.name, club=player.club))
+                need(self.refresh_item("player_season", "stale", about, player=player.name, club=player.club))
             table = team_season(teams, player.club, as_of)
             if table is None:
                 stale = team_season(facts.teams, player.club, as_of) is not None
-                need(self._item("team_season", "stale" if stale else "missing", "the Serie A table"))
+                need(self.refresh_item("team_season", "stale" if stale else "missing", "the Serie A table"))
             order = penalty_order(takers, player.club, as_of)
             if order is None:
                 stale = penalty_order(facts.takers, player.club, as_of) is not None
-                need(self._item("penalty_takers", "stale" if stale else "missing", "the penalty takers"))
+                need(
+                    self.refresh_item("penalty_takers", "stale" if stale else "missing", "the penalty takers")
+                )
             match = fixture(fixtures, player.club, round, as_of) if round is not None else None
             present, xg = (
                 self._match_facts(player, match, facts, known, teams, as_of, odds_unavailable, need, recent)

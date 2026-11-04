@@ -64,28 +64,34 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
       `::test_an_answer_reads_what_the_collector_just_stored`, `::test_each_name_resolved_once_per_call`,
       `::test_a_whole_squad_reads_quickly`; `tests/integration/lineup/test_gather.py::test_freshness_is_each_match_own`_
 
-- [ ] 3. Rules and squads
+- [x] 3. Rules and squads
   - Branch: `feat/ml-3-rules-squads` · Depends on: 2 · ADRs: none
-  - [ ] 3.1 `LeagueRules` 1.1.0 with an optional `lineup: LineupRules`:
+  - [x] 3.1 `LeagueRules` 1.1.0 with an optional `lineup: LineupRules`:
     - format, thresholds, bench size, substitutions and their mode, formations, the no-rating vote and other rules;
     - impossible values refused with the reason;
     - the schema snapshot and changelog entry.
     - _Requirements: R2.1, R2.3, R2.4_
     - _Test: `tests/contract/test_lineup_contracts.py::test_lineup_rules`, `::test_impossible_values_refused`,
       `::test_stored_rules_without_lineup_stay_valid`_
-  - [ ] 3.2 `set_league_rules` takes them, and `lineup_setup_step` offers the most common values for what's unset, while
+  - [x] 3.2 `set_league_rules` takes them, and `lineup_setup_step` offers the most common values for what's unset, while
     "X or Y?" keeps working with only bonuses and maluses.
     - _Requirements: R2.1, R2.2, R2.4_
-    - _Test: **AT-8** `tests/acceptance/lineup/test_rules.py::test_at8_setup_step_only_for_what_is_missing`_
-  - [ ] 3.3 `set_squad(players, team="mine")`:
+    - _Test: `tests/unit/lineup/test_league_setup.py::test_asks_for_just_what_is_unset`,
+      `::test_thresholds_not_asked_of_a_total_points_league`, `::test_a_partial_lineup_fills_in_the_stored_one`;
+      **AT-8** `tests/acceptance/lineup/test_rules.py::test_at8_setup_step_only_for_what_is_missing`,
+      `::test_at8_an_impossible_value_is_rejected_with_the_reason`; `best_lineup` returning the step is in task 5.1_
+  - [x] 3.3 `set_squad(players, team="mine")`:
     - a name with an optional club, resolved among the club's players;
     - any name that doesn't resolve stores nothing and comes back with its candidates;
     - it returns the squad by role, and says if an allowed formation can't be fielded;
     - several squads per user by team name, stored in git-ignored `data/local/league/`;
     - if nobody is known yet, it first asks the collector for the statistics page.
     - _Requirements: R1.1, R1.2, R1.3, R1.5_
-    - _Test: **P8** `tests/property/lineup/test_squads.py::test_p8_any_order_and_all_or_nothing`;
-      **AT-7** `tests/acceptance/lineup/test_squad.py::test_at7_set_squad`_
+    - _Test: **P8** `tests/property/lineup/test_squads.py::test_p8_any_order_gives_the_same_players`,
+      `::test_p8_any_name_that_fails_stores_nobody`;
+      `tests/unit/lineup/test_squads.py::test_a_formation_short_in_one_line_cannot_be_fielded`;
+      **AT-7** `tests/acceptance/lineup/test_squad.py::test_at7_set_squad`, `::test_at7_says_what_it_cannot_field`,
+      `::test_at7_reads_the_statistics_page_if_nobody_is_known`_
 
 - [ ] 4. The engine
   - Branch: `feat/ml-4-engine` · Depends on: 1 · ADRs: none

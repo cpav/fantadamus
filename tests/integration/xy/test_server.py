@@ -45,6 +45,7 @@ async def test_served_tools(tmp_path: Path) -> None:
         "player_outlook",
         "read_page",
         "set_league_rules",
+        "set_squad",
         "submit_fixtures",
         "submit_match_odds",
         "submit_official_lineup",

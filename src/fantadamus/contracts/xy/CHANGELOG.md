@@ -70,3 +70,8 @@ Headings are `## <Contract> <version> (<date>)`.
 
 - Adds an optional `unnamed_starters` per team, at most 1: a source can name only 10 of a team's 11 starters. The lineup
   must still account for 11 (mvp-x-or-y R8.1). A widening change, so a minor version.
+
+## LeagueRules 1.1.0 (2026-11-04)
+
+- Adds an optional `lineup`: what a lineup needs beyond bonuses and maluses, any of it still unset (mvp-lineup R2).
+  Rules stored before it stay valid, and "X or Y?" doesn't need it. A widening change, so a minor version.

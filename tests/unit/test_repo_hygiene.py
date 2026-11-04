@@ -12,6 +12,7 @@ from scripts.checks._common import run_command
 ROOT = Path(__file__).resolve().parents[2]
 
 MUST_BE_IGNORED = [
+    "data/local/league/owner-squads.json",
     "private.toml",
     "config.private.toml",
     ".env",
