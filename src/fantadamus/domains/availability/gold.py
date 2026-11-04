@@ -1,7 +1,7 @@
 """As-of availability of one player for one match (design C5, C6; R3, R4.2, R7.4).
 
 Each outlet counts with its latest lineup for the match; the latest official lineup, once out, decides.
-Names are matched against the player's club-mates with profiles (design C4). When no row of a lineup names
+Names are matched against the player's club-mates (design C4). When no row of a lineup names
 him, a row counts if he is the one club-mate with its surname, and the answer says so (mvp-roles R4.4).
 """
 
@@ -22,6 +22,7 @@ from fantadamus.domains.availability.consensus import (
 from fantadamus.domains.availability.silver import LineupViewRow, OfficialLineupRow, OutletViewRow
 from fantadamus.domains.facts import latest_submissions
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
+from fantadamus.engine.constants import CONTESTED_PERCENT
 
 _STRONGEST: tuple[Status, ...] = ("unavailable", "ballottaggio", "starter", "bench")
 
@@ -52,17 +53,35 @@ def _stamp(row: LineupViewRow) -> tuple[dt.datetime, str]:
     return row.captured_at, row.content_sha256
 
 
+def _contested(percent: float | None) -> bool:
+    return percent is not None and CONTESTED_PERCENT[0] <= percent <= CONTESTED_PERCENT[1]
+
+
+def _percent_rivals(row: OutletViewRow, sheet: Sequence[OutletViewRow]) -> list[str]:
+    """Who he seems to be in a ballottaggio with: a sheet names none, but shows one as two players of one role
+    whose percentages make 100, like 55 and 45."""
+    if row.percent is None or row.role is None or not _contested(row.percent):
+        return []
+    return [
+        other.name
+        for other in sheet
+        if other is not row
+        and other.percent is not None
+        and _contested(other.percent)
+        and (other.club, other.role) == (row.club, row.role)
+        and abs(other.percent + row.percent - 100) < 0.5
+    ]
+
+
 def _percentage_view(sheet: Sequence[OutletViewRow], his: Sequence[OutletViewRow]) -> OutletView:
     """One outlet's percentage for him, its word that he's unavailable, or that it didn't list him."""
     outlet, source = sheet[0].outlet, sheet[0].source
     if any(row.unavailable for row in his):
         return outlet_view(outlet, "unavailable", None, source)
-    percent = next((row.percent for row in his if row.percent is not None), None)
-    return (
-        outlet_view(outlet, "percentage", percent, source)
-        if percent is not None
-        else outlet_view(outlet, "not listed", None, source)
-    )
+    row = next((row for row in his if row.percent is not None), None)
+    if row is None:
+        return outlet_view(outlet, "not listed", None, source)
+    return outlet_view(outlet, "percentage", row.percent, source, _percent_rivals(row, sheet))
 
 
 def availability(

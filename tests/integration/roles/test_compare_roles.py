@@ -113,7 +113,7 @@ async def test_statistics_failure_in_plan(tmp_path: Path, stats: Response, said:
         result = await ask(client, "Alfa Uno", "Gamma Uno")
     assert result["status"] == "refresh", result
     items = {item["about"]: item for item in result["refresh"]}
-    item = items["Alfa Uno's profile"]
+    item = items["Alfa Uno's season figures"]
     assert (item["fact"], item["read_with"], item["pages"][0]) == ("player_season", "read_page", STATISTICS)
     assert said in item["collector"]
     assert f"{BASE}{STATS_ROUTE}" in item["collector"]
@@ -276,3 +276,27 @@ async def test_keeper_without_a_match(tmp_path: Path) -> None:
     alfa, gamma = DecisionLog(store.root / "decisions").read()[0].players
     assert alfa.p_clean_sheet is not None
     assert (gamma.p_clean_sheet, gamma.expected_conceded) == (None, None)
+
+
+async def test_a_page_just_read_is_not_read_again(tmp_path: Path) -> None:
+    """Testing on the real tools: asking about a name nobody knows, or a match whose odds show no over/under,
+    read the same page again on every question. An answer leaves it alone within its interval."""
+    web, clock = _web(Response(200, HTML, STATS)), SetClock(NOW)
+    store = LakeStore(tmp_path / "lake")
+
+    def reads(route: str) -> int:
+        return [url for url, _, _ in web.calls].count(f"{BASE}{route}")
+
+    async with tools(store, **_collecting(store, tmp_path, web, clock)) as client:
+        await _table_and_takers(client)
+        await ask(client, "Alfa Uno", "Gamma Uno")
+        assert (reads(STATS_ROUTE), reads(ROUND_ROUTE)) == (1, 1)
+        unknown = await ask(client, "Lautaro", "Gamma Uno")
+        assert unknown["status"] == "refresh"
+        assert [item["fact"] for item in unknown["refresh"]] == ["player_season"]
+        clock.now += dt.timedelta(hours=23)  # the page is read once a day at most
+        assert (await ask(client, "Lautaro", "Gamma Uno"))["status"] == "refresh"
+        assert reads(STATS_ROUTE) == 1
+        clock.now += dt.timedelta(hours=2)
+        assert (await ask(client, "Lautaro", "Gamma Uno"))["status"] == "refresh"
+        assert reads(STATS_ROUTE) == 2

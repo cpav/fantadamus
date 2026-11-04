@@ -41,7 +41,7 @@ async def test_outlook_statuses(tmp_path: Path) -> None:
         await set_classic(client)
         missing = await _outlook(client, "Alfa Uno")
         assert missing["status"] == "refresh"
-        assert "Alfa Uno's profile" in [item["about"] for item in missing["refresh"]]
+        assert "Alfa Uno's season figures" in [item["about"] for item in missing["refresh"]]
         await collect(client, READ)
         for player in ROLE_PLAYERS:
             assert not (await send(client, "submit_player_season", player, READ)).is_error

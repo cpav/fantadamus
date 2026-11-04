@@ -12,6 +12,8 @@ P_START_STARTER = 0.90  # an outlet lists him among the starters
 P_START_BENCH = 0.05  # an outlet lists him on the bench, or doesn't mention him
 CAMEO_SHARE = 0.5  # p_cameo = 0.5 * (1 - p_start) for an available player
 DISPUTED_SPREAD = 0.30  # outlets at least this far apart mark him disputed
+CONTESTED_PERCENT = (31, 69)  # two of one role between these, making 100, are in a ballottaggio (the sheets'
+# defaults, 90 and 30 or 95 and 5, also make 100, and would pair every starter with every bench player)
 
 # Many sources, compared (mvp-collect R5.3, design C12)
 ODDS_DISPUTED_SPREAD = 0.10  # odds pages' de-margined 1X2 at least this far apart are disputed

@@ -12,7 +12,7 @@ from fantadamus.web.readers.fcit_stats import COLUMNS, read_stats
 from tests.collect_pages import STATS_COLUMNS, stats_page
 from tests.roles_data import stats_read
 
-ROWS = stats_read()["players"]
+ROWS = stats_read()["players"][:6]  # each example builds and parses a page: enough to shuffle
 EXPECTED = read_stats(stats_page(ROWS)).payload
 BAD = {
     "pg": ["x", "-1", "1,5", ""],

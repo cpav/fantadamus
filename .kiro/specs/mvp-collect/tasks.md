@@ -146,17 +146,18 @@ page's read as fresh, approved 2026-10-31 · Date: 2026-10-30 · From the approv
     - _Requirements: R7.2_
     - _Test: `tests/unit/test_repo_hygiene.py::test_player_guide_schedule`_
 
-- [ ] 8. The real round and the slice gate
+- [x] 8. The real round and the slice gate
   - Branch: `docs/mc-8-report` · Depends on: 6, 7 · ADRs: ADR-0006
-  - [ ] 8.1 **Owner:** with the second player, ask a real "X or Y?" on each Mac, before and after an official
+  - [x] 8.1 **Owner:** with the second player, ask a real "X or Y?" on each Mac, before and after an official
     lineup; only `compare_players` should be called. Deferred by the owner on 2026-11-03, to run with
-    `mvp-roles`' real round (its task 8.1)
+    `mvp-roles`' real round (its task 8.1). Closed by the owner on 2026-11-04 on the owner's Mac alone, before the
+    lineups: no official lineup and no second player (see the slice report)
     - _Requirements: AT-10; R1.3, R6.4, R7.2_
     - _Test: what each answer used and the collection log, recorded in the slice report (no page text)_
-  - [ ] 8.2 Short slice report in `docs/reports/`: tests, coverage, acceptance tests, the collection log's
+  - [x] 8.2 Short slice report in `docs/reports/`: tests, coverage, acceptance tests, the collection log's
     record, open risks
     - _Requirements: R8.2, slice gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 8.3 **Owner:** sign off the slice → the next slice may start
+  - [x] 8.3 **Owner:** sign off the slice → the next slice may start
     - _Requirements: Slice gate (`quality.md`)_
     - _Test: sign-off recorded in the slice report_

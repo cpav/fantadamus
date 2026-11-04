@@ -33,10 +33,11 @@ your Claude app ──ask──▶ compare_players ──▶ collector reads its
 
 ## Status
 
-Phase 2 is under way. Its first two slices are built. `mvp-collect`: Fantadamus reads the round's lineups and odds
+Phase 2 is under way. Its first two slices are signed off ([report](docs/reports/slices-mvp-collect-and-roles.md)).
+`mvp-collect`: Fantadamus reads the round's lineups and odds
 itself, compares its sources, and answers as a forecast, with how sure each number is, how it moved and where it
-came from. `mvp-roles`: "X or Y?" for any two players of the same role, and one player's outlook. Both slices'
-real round, with a second player, comes next ([setup guide](docs/player-setup.md)). Phases 0 and 1 are signed off
+came from. `mvp-roles`: "X or Y?" for any two players of the same role, and one player's outlook. A second player can install
+it from the [setup guide](docs/player-setup.md). Phases 0 and 1 are signed off
 ([reports](docs/reports/phase-1-report.md)). The answers' shapes, from "X or Y?" to the full lineup, are in
 [docs/answer-formats.md](docs/answer-formats.md).
 
@@ -46,7 +47,7 @@ Re-planned on 2026-10-26: the work now goes in thin slices, each taking one ques
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton (retired 2026-10-31) | Done, signed off 2026-10-26 |
 | 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Done, signed off 2026-10-26 ([report](docs/reports/phase-1-report.md)) |
-| 2 Slices | `mvp-collect` and `mvp-roles` (every role; built, their real round is next), then the full lineup with the bench and the formation | In progress |
+| 2 Slices | `mvp-collect` and `mvp-roles` (every role), signed off 2026-11-04; then the full lineup with the bench and the formation | In progress |
 | 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
 
 For now each player runs Fantadamus on their own Mac; the shared online server comes with Phase 3.

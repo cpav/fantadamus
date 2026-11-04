@@ -26,7 +26,7 @@ async def test_refresh_plan_order(tmp_path: Path) -> None:
         assert [(item["fact"], item["about"]) for item in plan["refresh"]] == [
             ("probable_lineups", "Alfa v Beta"),
             ("match_odds", "Alfa v Beta"),
-            ("player_season", "Delta Sette's profile"),
+            ("player_season", "Delta Sette's season figures"),
             ("team_season", "the Serie A table"),
             ("penalty_takers", "the penalty takers"),
         ]  # everything already known to be needed, so collection takes few round trips
