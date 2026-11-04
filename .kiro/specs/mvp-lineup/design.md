@@ -49,6 +49,18 @@ rating and `k` the key. The difference between the two orders is exactly `r_a·r
 - `docs/method.md` §A3 gets the formula. `mvp-x-or-y` R10.2 gets a note. AT-3 of `mvp-x-or-y` (method §A9 test 6) moves
   from "clear" to "lean", with its order unchanged.
 
+**A forward's cameo (R8.3).** The key needs a chance of a rating and what the rating is worth. `outfield.value` takes his chance
+of coming on, and returns the two the method's §A2 means:
+
+| | Before | Now |
+|---|---|---|
+| `p_cameo` | Chance of coming on | Chance of coming on × chance of a rating once on |
+| `e_cameo` | Value of coming on, counting no rating as 0 | What a rating is worth |
+
+Their product doesn't change, so neither does `no_cover`. The key rises for a forward who often comes on, and his chance of a
+rating falls to what it really is, which also makes it what calibration should score. The simulation draws from his chance of
+coming on, as it already did. A flat cameo always gets a rating, so nothing changes for other roles.
+
 ### C2. League rules (`contracts/xy/league.py`, `league/rules.py`; R2)
 
 `LeagueRules` 1.1.0 gains an optional `lineup: LineupRules`, so stored rules stay valid and "X or Y?" keeps working
@@ -306,6 +318,7 @@ These Hypothesis tests are required:
 | P7 | A choice's worth never exceeds the difference in keys, doesn't depend on the order asked, and never changes who comes first | R8 |
 | P8 | `set_squad` resolves the same players whatever order the names arrive in, and stores nothing if any name fails | R1.2 |
 | P9 | Brier scores stay between 0 and 1, and a forecast that was right every time scores 0 | R7.2 |
+| P11 | For any forward, the chance of a rating and the key reproduce his simulated mean, starting or coming on, so they can be trusted for ordering | R8.3 |
 | P10 | Scoring never uses a chance logged, or a fact captured, after a player's kickoff, and an official lineup never feeds the model on everyone | R7.4 |
 
 ## Testing strategy

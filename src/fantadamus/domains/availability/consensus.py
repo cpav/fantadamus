@@ -52,6 +52,7 @@ class Availability(BaseModel):
 
     p_start: float
     p_cameo: float
+    """His chance of coming on. Whether he then gets a rating is the model's to price."""
     spread: float
     """Highest outlet view minus lowest."""
     disputed: bool

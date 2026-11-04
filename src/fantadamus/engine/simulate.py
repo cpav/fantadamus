@@ -54,6 +54,7 @@ class Outfielder:
     side: Side | None
     p_start: float
     p_cameo: float
+    """His chance of coming on: whether he then gets a rating is drawn in the round."""
     lowered_vote: float
     """His expected vote less the lift his expected goals will add back, so that it doesn't change."""
     per_goal: float
@@ -91,7 +92,7 @@ def outfield_player(
         player_id=player_id,
         side=side,
         p_start=value.p_start,
-        p_cameo=value.p_cameo,
+        p_cameo=inputs.p_cameo,
         lowered_vote=value.expected_vote - GOAL_VOTE_LIFT * value.e_goals,
         per_goal=value.goal_share * prior.minutes,
         per_assist=value.assist_share * prior.minutes,

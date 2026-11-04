@@ -186,6 +186,9 @@ the starting values get better (method §A8), and because Phase 2's gate needs i
   label from that. This amends `mvp-x-or-y` R10.2.
 - **R8.2** WHERE one of the two players has no chance of a rating THE SYSTEM SHALL keep the "won't play" advice, with the
   difference in keys as today.
+- **R8.3** THE SYSTEM SHALL price a forward's cameo by the method's three outcomes (§A2): his chance of a rating counts only
+  the cameos that get one, and his key counts only what a rating is worth. A cameo with no rating isn't a low score, since
+  his substitute comes in. This amends `mvp-x-or-y` R9.7.
 
 ### Requirement 9: The agent prompt and the docs
 
@@ -220,6 +223,7 @@ the starting values get better (method §A8), and because Phase 2's gate needs i
 | AT-12 | A scripted finished round is scored at the next question with no command, once: the page is read one time and the answer is otherwise the same. Both sets give the right Brier scores and buckets, it names what it couldn't score, the next lineup carries the line, and `fantadamus calibrate` prints the report | R7 |
 | AT-14 | A squad with a player in a match without over/under gets its lineup in one call, with a warning naming the match and the pages that could improve it; once better odds are submitted, the warning goes and the numbers use them. A player without rated games and one no outlet lists each get their warning | R5.5, R5.6 |
 | AT-15 | The blank profile names every setting `set_league_rules` takes, so the two can't drift apart, and holds no user's details; the agent prompt tells Claude to use it | R9.3, R9.4 |
+| AT-16 | A forward's cameo: by hand, his chance of a rating and what it's worth; for two forwards in either order, those numbers give the simulated mean; the higher key is the better one to field; his expected points without bench cover don't change; a defender's flat cameo doesn't change | R8.3 |
 | AT-13 | Manual: the owner gives a real squad and rules in Claude Desktop, and gets a lineup for a real round to compare with their own choice | All |
 
 Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
@@ -251,3 +255,8 @@ Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
 - **2026-11-04, building task 3:** R2.2 gained three details the requirement had left open. A total-points league isn't asked
   for thresholds. The no-rating vote and other rules are asked about but don't hold a lineup back. And a later call that leaves
   a lineup setting out keeps it, so a change of bonuses doesn't lose the lineup rules.
+- **2026-11-04, a finding from task 6:** forcing a forward who was 40% to start, in place of one with a clearly higher key, cost
+  about nothing on a real squad. R9.7 had folded a cameo's 40% chance of no rating into its price, while the key treated
+  that price as a rating. In the simulation a cameo with no rating is replaced, as §A2 says, so the key undervalued forwards who
+  often come on. The owner chose to fix it before calibration (R8.3). No constant changes, and neither does a player's
+  expected score without bench cover.

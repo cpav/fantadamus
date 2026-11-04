@@ -187,8 +187,10 @@ consistent and testable.
   E[goals] *(start)*.
 - **R9.6** THE SYSTEM SHALL take P(yellow) from his yellow cards per appearance, shrunk toward 0.15 with a
   weight of 10 appearances *(start)*.
-- **R9.7** THE SYSTEM SHALL value a forward's cameo with a minutes share of 0.28: P(scores in a cameo) × 9.8 +
-  (1 − P(scores in a cameo)) × 0.6 × 5.75 *(start)*, with P(scores) = 1 − e^(−E[goals]).
+- **R9.7** THE SYSTEM SHALL value a forward's cameo with a minutes share of 0.28. Once on, he gets a rating with a
+  goal, or else 60% of the time *(start)*, with P(scores) = 1 − e^(−E[goals]). His p_cameo is his chance of coming on times
+  that chance of a rating (method §A2), and his E_cameo is what a rating is then worth: (P(scores in a cameo) × 9.8 +
+  (1 − P(scores in a cameo)) × 0.6 × 5.75) / that chance. `mvp-lineup` R8.3 amended this on 2026-11-04.
 - **R9.8** THE SYSTEM SHALL rank the two players by the key, and keep every intermediate value for the
   answer's breakdown.
 

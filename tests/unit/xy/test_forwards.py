@@ -45,7 +45,11 @@ def test_formulas_by_hand() -> None:
     assert outfield.penalty_goals(minutes=0.85, taker=True) == pytest.approx(0.15 * 0.78 * 0.85)
     assert outfield.penalty_goals(minutes=0.85, taker=False) == 0
     assert outfield.p_yellow(2, appearances=8) == pytest.approx(3.5 / 18)
-    assert outfield.e_cameo(0.2) == pytest.approx((1 - math.exp(-0.2)) * 9.8 + math.exp(-0.2) * 0.6 * 5.75)
+    scored = 1 - math.exp(-0.2)
+    rated = scored + (1 - scored) * 0.6
+    assert outfield.cameo_rating(0.2) == pytest.approx(
+        (rated, (scored * 9.8 + (1 - scored) * 0.6 * 5.75) / rated)
+    )
 
     value = outfield.value(striker(penalty_taker=True), CLASSIC)
     vote = 6 + 5 / 15 * 0.6 + 0.3 * 0.25
@@ -59,9 +63,12 @@ def test_formulas_by_hand() -> None:
     assert value.p_scores == pytest.approx(1 - math.exp(-goals))
     assert value.e_start == pytest.approx(vote + 3 * goals + assists - 0.5 * yellow)
     cameo_goals = 1.35 * goal_share * 0.28 + 0.15 * 0.78 * 0.28
-    e_cameo = (1 - math.exp(-cameo_goals)) * 9.8 + math.exp(-cameo_goals) * 0.6 * 5.75
-    assert value.e_cameo == pytest.approx(e_cameo)
-    assert value.key == pytest.approx((0.88 * value.e_start + 0.06 * e_cameo) / (0.88 + 0.06))
+    scored = 1 - math.exp(-cameo_goals)
+    rated = scored + (1 - scored) * 0.6
+    worth = scored * 9.8 + (1 - scored) * 0.6 * 5.75
+    assert value.p_cameo == pytest.approx(0.06 * rated)
+    assert value.e_cameo == pytest.approx(worth / rated)
+    assert value.key == pytest.approx((0.88 * value.e_start + 0.06 * worth) / (0.88 + 0.06 * rated))
     assert outfield.value(striker(mantra_role=None), CLASSIC).goal_share == pytest.approx(
         (0.20 * 15 + 4) / 25
     )

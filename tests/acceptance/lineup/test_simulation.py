@@ -128,7 +128,8 @@ def test_at3_a_cameo_can_end_with_no_rating_and_then_is_replaced(taker: bool) ->
     scores = [scores[1] for scores, _ in draw_rounds([player], [(1.4, 1.0)], rounds=40_000, seed=3)]
     rated = [score for score in scores if score is not None]
     assert 0 < len(rated) < len(scores)
-    assert sum(rated) / len(scores) == pytest.approx(value.e_cameo, abs=0.05)
+    assert len(rated) / len(scores) == pytest.approx(value.p_cameo, abs=0.01)
+    assert sum(rated) / len(scores) == pytest.approx(value.p_cameo * value.e_cameo, abs=0.05)
 
 
 def test_at3_a_defenders_flat_cameo_always_counts() -> None:
