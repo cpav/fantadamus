@@ -1,6 +1,6 @@
 # Implementation Plan: `mvp-lineup` (Phase 2, third slice)
 
-Status: **Proposed 2026-11-04, for the owner's review** · From the approved [requirements](requirements.md) and
+Status: **Approved by the owner, 2026-11-04** · From the approved [requirements](requirements.md) and
 [design](design.md)
 
 ## How to read and run these tasks
@@ -22,9 +22,9 @@ Status: **Proposed 2026-11-04, for the owner's review** · From the approved [re
 
 ## Tasks
 
-- [ ] 1. What a choice is worth
+- [x] 1. What a choice is worth
   - Branch: `feat/ml-1-worth` · Depends on: none · ADRs: none
-  - [ ] 1.1 `verdict` keeps ordering by key:
+  - [x] 1.1 `verdict` keeps ordering by key:
     - `margin` becomes `r_a·r_b·(k_a − k_b)`, and `label` comes from it;
     - the difference in keys stays as `key_margin`, for the flip search and the breakdown;
     - a player with no chance of a rating keeps today's message and the difference in keys.
@@ -32,14 +32,15 @@ Status: **Proposed 2026-11-04, for the owner's review** · From the approved [re
     - _Test: `tests/unit/lineup/test_worth.py::test_margin_is_what_the_choice_is_worth`, `::test_no_chance_of_a_rating`;
       **P7** `tests/property/lineup/test_worth.py::test_p7_worth_is_bounded_and_keeps_the_order`;
       **AT-11** `tests/acceptance/lineup/test_worth.py::test_at11_backup_keeper_is_a_coin_flip`_
-  - [ ] 1.2 The documents and tests that move:
+  - [x] 1.2 The documents and tests that move:
     - the formula in `docs/method.md` §A3, and a note on `mvp-x-or-y` R10.2;
     - `mvp-x-or-y` AT-3 (method §A9 test 6) moves from "clear" to "lean", with its order unchanged;
-    - the agent prompt's wording of the margin, if it needs it;
+    - the agent prompt's wording of the margin stays as it is: it's still true, and task 8 rewrites the prompt, so players
+      re-paste it once;
     - this spec becomes the default for `make task-check` (`CURRENT_SPEC`, `CLAUDE.md`).
     - _Requirements: R8.1_
     - _Test: `tests/acceptance/xy/test_method.py::test_at3_bench_cover_changes_verdict`;
-      `tests/unit/test_task_check.py` with the new default_
+      `tests/unit/checks/test_task_check.py::test_default_is_the_current_spec`_
 
 - [ ] 2. Tidy and speed up
   - Branch: `refactor/ml-2-advisor` · Depends on: 1 · ADRs: none

@@ -200,7 +200,8 @@ seconds.
 - **R10.1** WHEN both players resolve and their facts are fresh THE SYSTEM SHALL return the verdict "start X,
   put Y first on the bench", with X the higher key.
 - **R10.2** THE SYSTEM SHALL return the margin in points with its label: coin flip (under 0.15), lean (0.15 to
-  0.5) or clear (over 0.5).
+  0.5) or clear (over 0.5). `mvp-lineup` R8.1 amends the margin: it's the difference in keys times both players' chances
+  of a rating, so AT-3 is now a lean.
 - **R10.3** THE SYSTEM SHALL return, for each player: p_start with each outlet's value and the disputed flag,
   P(scores), the expected vote, team xG, the fixture, and the facts' sources and capture times.
 - **R10.4** THE SYSTEM SHALL return what would flip the verdict: the p_start or team xG at which the order

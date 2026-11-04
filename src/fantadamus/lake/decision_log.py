@@ -42,6 +42,7 @@ class Decision(BaseModel):
     first: str | None = None
     second: str | None = None
     margin: float | None = None
+    """What the choice was worth (mvp-lineup R8.1); in lines older than that, the difference in keys."""
     label: str | None = None
     rules: StoredRules
     content_hashes: list[str]

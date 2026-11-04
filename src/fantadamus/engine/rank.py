@@ -58,8 +58,13 @@ class Verdict(BaseModel):
     second: str
     """Put him first on the bench."""
     margin: float
-    """The difference in keys, in points."""
+    """What the choice is worth, in points: the difference in keys times both chances of a rating, since it
+    matters only when both get one (mvp-lineup R8.1). With a player who can't get a rating, the difference in
+    keys (R8.2)."""
+    key_margin: float
+    """The difference in keys, in points, for the breakdown."""
     label: Label
+    """From `margin`."""
     no_cover_first: str
     """Who to start if the bench can't cover (R10.6)."""
     no_cover_differs: bool
@@ -85,6 +90,11 @@ def label(margin: float) -> Label:
     return "lean" if margin <= CLEAR else "clear"
 
 
+def _rating(option: Option) -> float:
+    """His chance of a rating."""
+    return option.p_start + option.p_cameo
+
+
 def _rank(option: Option) -> tuple[float, float, str]:
     return key(**option.figures()), no_cover(**option.figures()), option.name
 
@@ -93,15 +103,19 @@ def verdict(a: Option, b: Option) -> Verdict:
     """Start the higher key, put the other first on the bench (R10.1, R10.2, R10.6, R10.7)."""
     first, second = sorted((a, b), key=_rank, reverse=True)
     covered = max((a, b), key=lambda option: (no_cover(**option.figures()), option.name))
+    key_margin = _rank(first)[0] - _rank(second)[0]
+    both_rated = _rating(first) * _rating(second)
+    margin = both_rated * key_margin if both_rated else key_margin
     return Verdict(
         first=first.name,
         second=second.name,
-        margin=_rank(first)[0] - _rank(second)[0],
-        label=label(_rank(first)[0] - _rank(second)[0]),
+        margin=margin,
+        key_margin=key_margin,
+        label=label(margin),
         no_cover_first=covered.name,
         no_cover_differs=covered.name != first.name,
-        first_plays=first.p_start + first.p_cameo > 0,
-        second_plays=second.p_start + second.p_cameo > 0,
+        first_plays=_rating(first) > 0,
+        second_plays=_rating(second) > 0,
     )
 
 
@@ -113,6 +127,7 @@ def covering(a: Option, b: Option) -> Verdict:
         first=first.name,
         second=second.name,
         margin=0.0,
+        key_margin=0.0,
         label="covered",
         no_cover_first=first.name,
         no_cover_differs=False,

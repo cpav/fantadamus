@@ -13,7 +13,8 @@ keep moving until the deadline, and, once live forecasts exist, until somebody s
 1. **One context line first:** the round, when it locks and at which match, and how fresh the facts are.
    `Round 11 · locks Fri 6 Nov 20:45 at Venezia–Udinese · updated 12 minutes ago`
 2. **The headline:** the decision in one line, with its margin and a plain label: *coin flip* (under about 0.15
-   points), *lean* (0.15 to 0.5) or *clear* (over 0.5).
+   points), *lean* (0.15 to 0.5) or *clear* (over 0.5). The margin is what the choice is worth, which counts only when
+   both players get a rating.
 3. **Why, in one line**, then the few numbers that carry it.
 4. **How sure:** each chance carries its confidence: *official*, *agree* (how many sources), *disputed* (how far
    apart) or *one source*.
