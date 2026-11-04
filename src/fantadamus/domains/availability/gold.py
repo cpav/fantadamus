@@ -94,19 +94,22 @@ def availability(
     players: Sequence[KnownPlayer],
     as_of: dt.datetime,
     outlet_views: Sequence[OutletViewRow] = (),
+    names: dict[tuple[str, str], KnownPlayer | None] | None = None,
 ) -> Availability | None:
     """His p_start and p_cameo for the match, or None if no lineup for it is known yet. Each outlet counts
-    once, from its newest read, whether it gave a lineup or its own percentages (mvp-collect R4.2)."""
+    once, from its newest read, whether it gave a lineup or its own percentages (mvp-collect R4.2). A caller
+    asking about a whole match can share `names`, so that each name is matched once in all."""
     mates = [known for known in players if known.club == player.club]
 
     by_surname: set[str] = set()
-    resolved: dict[str, KnownPlayer | None] = {}
+    resolved = {} if names is None else names
 
     def who(name: str) -> KnownPlayer | None:
         """Outlets repeat one another's names, so each is matched once (mvp-lineup C4)."""
-        if name not in resolved:
-            resolved[name] = resolve(name, mates).player
-        return resolved[name]
+        key = (player.club, name)
+        if key not in resolved:
+            resolved[key] = resolve(name, mates).player
+        return resolved[key]
 
     def his[R: LineupViewRow | OfficialLineupRow | OutletViewRow](rows: Sequence[R]) -> list[R]:
         """The rows about him in one lineup."""

@@ -20,6 +20,7 @@ from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.league import LineupRules
 from fantadamus.core.names import name_key
 from fantadamus.domains.availability.consensus import Availability
+from fantadamus.domains.calibration import summary_line
 from fantadamus.domains.facts import Source
 from fantadamus.domains.fixtures.gold import matches as round_matches
 from fantadamus.domains.fixtures.silver import FixtureRow
@@ -184,6 +185,8 @@ class Lineup(BaseModel):
     """Every allowed formation that can be fielded, best first, as advised (R6.1)."""
     calls: list[Call]
     override: Override | None = None
+    last_round: str | None = None
+    """How the last scored round's forecasts did, in a line (R7.6)."""
     out_and_doubtful: list[Concern]
     likely_scorers: list[Scorer]
     moved: list[str]
@@ -609,11 +612,17 @@ def _logged(part: _Priced) -> LoggedPlayer:
         name=part.facts.player.name,
         p_start=value.p_start,
         p_cameo=value.p_cameo,
+        p_rating=value.p_start + value.p_cameo,
         p_scores=value.p_scores if isinstance(value, OutfieldValue) else None,
         key=value.key,
         p_clean_sheet=value.p_clean_sheet if isinstance(value, KeeperValue) and playing else None,
         expected_conceded=value.expected_conceded if isinstance(value, KeeperValue) and playing else None,
     )
+
+
+def last_round(advisor: Advisor) -> str | None:
+    report = advisor.scores.latest() if advisor.scores is not None else None
+    return summary_line(report) if report is not None else None
 
 
 def _rounded(result: Simulated) -> Simulated:
@@ -689,6 +698,8 @@ def lineup_for(
             facts = Facts.read(advisor.lake, when)
             known = known_players(facts.players, when)
         gathered = advisor.gather(_squad_players(known, wanted), when, facts=facts, known=known)
+    if as_of is None:
+        advisor.get_ready(when)
 
     def noted(items: Sequence[RefreshItem]) -> list[RefreshItem]:
         return [
@@ -871,6 +882,7 @@ def _answer(
         formations=[_rounded(result) for result in results],
         calls=calls,
         override=override,
+        last_round=last_round(advisor),
         out_and_doubtful=_concerns(by_id, arranged),
         likely_scorers=_scorers(by_id, arranged),
         moved=moved,

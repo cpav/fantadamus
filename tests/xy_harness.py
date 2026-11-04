@@ -15,12 +15,14 @@ from mcp.types import CallToolResult
 
 from fantadamus.core.clock import Clock, fixed_clock
 from fantadamus.core.clubs import Clubs
+from fantadamus.domains.calibration import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, RulesStore
 from fantadamus.league.squads import SquadStore
 from fantadamus.mcp.advisor import Advisor, load_reading_list
+from fantadamus.mcp.calibrate import Calibrator
 from fantadamus.mcp.server import AdvisorServer
 from fantadamus.mcp.tools import compare, league, outlook, squad, submit
 from fantadamus.mcp.tools import lineup as lineup_tool
@@ -70,10 +72,20 @@ async def tools(
     rules = RulesStore(store.root / "league")
     league.register(server, rules, user="user-1", clock=clock)
     squads = SquadStore(store.root / "league")
+    scores = CalibrationStore(store.root / "calibration")
+    decisions = DecisionLog(store.root / "decisions")
+    calibrator = Calibrator(
+        lake=store,
+        log=decisions,
+        store=scores,
+        clock=clock,
+        collector=collector,
+        collect_log=collect_log,
+    )
     advisor = Advisor(
         lake=store,
         rules=rules,
-        log=DecisionLog(store.root / "decisions"),
+        log=decisions,
         clubs=CLUBS,
         reading=load_reading_list(ROOT / "config" / "reading_list.toml"),
         user="user-1",
@@ -81,6 +93,8 @@ async def tools(
         collector=collector,
         collect_log=collect_log,
         squads=squads,
+        scores=scores,
+        before_answering=calibrator.if_due,
     )
     compare.register(server, advisor)
     outlook.register(server, advisor)

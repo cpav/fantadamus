@@ -13,11 +13,13 @@ from typing import Any
 from mcp import Client
 
 from fantadamus.contracts.types import Role
+from fantadamus.domains.calibration import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC
 from fantadamus.league.squads import SquadStore
+from fantadamus.mcp.calibrate import Calibrator
 from fantadamus.web.fetch import Response
 from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE, FakeWeb, round_collector
 from tests.collect_pages import FcoMatch, fco_round_page, stats_page
@@ -88,6 +90,10 @@ class Round:
     routes: dict[str, Response | Exception]
     squads: SquadStore
     log: DecisionLog
+    collect_log: CollectLog
+    scores: CalibrationStore
+    calibrator: Calibrator
+    squad_names: Sequence[str] = tuple(SQUAD)
     base: str = "https://example.org"
 
     def round_page(self, *matches: FcoMatch) -> None:
@@ -141,6 +147,8 @@ async def a_round(
     async with tools(
         store, clock=clock, collector=collector, collect_log=log, hosts=("example.org",), lineup_rounds=rounds
     ) as client:
+        decisions = DecisionLog(store.root / "decisions")
+        scores = CalibrationStore(store.root / "calibration")
         here = Round(
             client,
             store,
@@ -148,7 +156,17 @@ async def a_round(
             web,
             routes,
             SquadStore(store.root / "league"),
-            DecisionLog(store.root / "decisions"),
+            decisions,
+            log,
+            scores,
+            Calibrator(
+                lake=store,
+                log=decisions,
+                store=scores,
+                clock=clock,
+                collector=collector,
+                collect_log=log,
+            ),
         )
         if table:
             for tool, payload in (("submit_team_season", TEAM_TABLE), ("submit_penalty_takers", TAKERS)):
@@ -158,3 +176,25 @@ async def a_round(
         if squad:
             await here.set_squad()
         yield here
+
+
+def the_next_round() -> str:
+    """The current-round page once this round has been played: round 11, with its lineups out."""
+    return fco_round_page(
+        FcoMatch("Alfa", "Gamma", kickoff="07/11/2026 15:00"),
+        FcoMatch("Beta", "Delta", kickoff="07/11/2026 18:00"),
+        round=11,
+    )
+
+
+def stats_after() -> str:
+    """The statistics page after the round: everyone listed as a starter by the outlets has one rating more,
+    Alfa Nove and Beta Nove a goal more, and Alfa's keeper a goal conceded more."""
+    changed: dict[str, dict[str, Any]] = {}
+    for club in CLUBS:
+        for word in WORDS[:11]:
+            changed[f"{club}_{word}"] = {"rated_appearances": 9, "appearances": 9}
+    changed["Alfa_Nove"] |= {"goals": 3}
+    changed["Beta_Nove"] |= {"goals": 3}
+    changed["Alfa_Uno"] |= {"goals_conceded": 10}
+    return stats_page(rows(**changed))
