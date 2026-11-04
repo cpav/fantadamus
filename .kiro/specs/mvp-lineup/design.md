@@ -148,6 +148,13 @@ For each simulated round:
 **New starting values** *(start)*, in `constants.py` and calibrated later: `VOTE_NOISE = 0.6`, `KEEPER_VOTE_NOISE = 0.75`
 and `GOAL_VOTE_LIFT = 0.85`.
 
+**Measured on 2026-11-04:** 10,000 rounds with 25 players and seven formations took 0.63 s on the owner's Mac, whichever the
+substitution mode. A seeded generator needs suppression S-014, because the linter's `S311` rule can't tell a simulation from
+a secret.
+
+**A club's keepers in a round.** If their chances add up to more than one place, as 92% and 12% do, they share it in proportion.
+If they add up to less, neither may play.
+
 **AT-2 and the method's numbers.** A striker's goal against the user's own keeper is +3, plus the lift to the scorer's vote,
 less 1 for the goal conceded, less 0.35 off the keeper's vote. Method §A9 test 5 says about +2.5, and +1.5 if it breaks the
 clean sheet. Those hold with a lift of 0.85, which is about what a goal should do to a rating. The method doesn't give the
