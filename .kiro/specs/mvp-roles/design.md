@@ -169,13 +169,15 @@ What both models share moves here from `forwards.py`, unchanged:
 - the flip search, generalised: given a value function and a bound, it finds where the leader's key meets the
   trailer's.
   - Outfield players use their p_start (down to 0.01) and team xG (down to 0), as today.
-  - Keepers use their p_start, and the opponent's expected goals, up to the top of `XG_RANGE` (R4.1).
+  - Keepers use the opponent's expected goals, up to the top of `XG_RANGE` (R4.1). A keeper's p_start can't flip
+    the order: with no cameo, his key doesn't depend on it, so only not playing would.
 
 `compare(a, b, scoring)` takes two inputs of the same kind.
 
 **Two keepers of the same club (R3.6).** One plays exactly when the other doesn't, so fielding either gives the
 same expected score, and fielding the likelier starter saves a substitution. The verdict puts the higher
-p_start first, with the label `covered` and no margin.
+p_start first, with the label `covered`, no margin and no flip point: they share one match, so no opponent
+changes it.
 
 ### C9. `compare_players` for every role (`mcp/tools/compare.py`)
 
@@ -241,6 +243,7 @@ Its tool description names answer format 4.
 | Two players of different roles | `outlooks`: two outlooks, no verdict |
 | Two keepers of the same club | The likelier starter first, label `covered` |
 | A keeper without a rating | His skill is the prior; the answer says he has no rated games |
+| A keeper's goals conceded unknown (a profile that doesn't give them) | An average defence is assumed; the answer says so |
 | No odds for the match | Regressed team form, flagged, as today |
 
 ## Correctness properties

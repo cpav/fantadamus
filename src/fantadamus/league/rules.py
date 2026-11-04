@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from fantadamus.contracts.types import Role, UtcDatetime
 from fantadamus.contracts.xy.league import GoalByRole, LeagueRules
-from fantadamus.engine.forwards import Scoring
+from fantadamus.engine.rank import Scoring
 
 DEFAULT_ROOT = Path("data/local/league")
 _USER = re.compile(r"[a-z0-9][a-z0-9_-]{0,39}")
@@ -72,10 +72,15 @@ def setup_step() -> SetupStep:
 
 
 def scoring_for(rules: LeagueRules, role: Role) -> Scoring:
-    """The values the player model uses for a player of `role` (R12.5)."""
+    """The values the models use for a player of `role` (R12.5; mvp-roles R2.5, R3.1)."""
     goal = getattr(rules.goal, _ROLE_FIELDS[role]) if isinstance(rules.goal, GoalByRole) else rules.goal
     return Scoring(
-        goal=goal, penalty_scored=rules.penalty_scored, assist=rules.assist, yellow=rules.yellow_card
+        goal=goal,
+        penalty_scored=rules.penalty_scored,
+        assist=rules.assist,
+        yellow=rules.yellow_card,
+        clean_sheet=rules.clean_sheet,
+        goal_conceded=rules.goal_conceded,
     )
 
 

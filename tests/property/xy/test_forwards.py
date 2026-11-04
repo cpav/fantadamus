@@ -5,8 +5,8 @@ from __future__ import annotations
 from hypothesis import given
 from hypothesis import strategies as st
 
-from fantadamus.engine import forwards
-from fantadamus.engine.forwards import Option
+from fantadamus.engine import rank
+from fantadamus.engine.rank import Option
 
 probability = st.floats(min_value=0, max_value=1, allow_nan=False)
 score = st.floats(min_value=0, max_value=20, allow_nan=False)
@@ -22,5 +22,5 @@ def options(draw: st.DrawFn, name: str) -> Option:
 @given(options("A"), options("B"), st.floats(min_value=0, max_value=5, allow_nan=False))
 def test_p7_higher_e_start_never_ranks_lower(a: Option, b: Option, raise_by: float) -> None:
     raised = a.model_copy(update={"e_start": a.e_start + raise_by})
-    if forwards.verdict(a, b).first == "A":
-        assert forwards.verdict(raised, b).first == "A"
+    if rank.verdict(a, b).first == "A":
+        assert rank.verdict(raised, b).first == "A"

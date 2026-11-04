@@ -1,4 +1,5 @@
-"""Shared by the `mvp-roles` tests: a statistics-page read for the test clubs, as rows the reader would give.
+"""Shared by the `mvp-roles` tests: a statistics-page read for the test clubs, as rows the reader would give,
+and the engine's inputs for a player of each role.
 
 The clubs are `tests.xy_harness.CLUBS`; the players are invented, one of each role per club.
 """
@@ -7,7 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from fantadamus.contracts.types import Role
 from fantadamus.core.clubs import Clubs
+from fantadamus.engine.keepers import KeeperInputs
+from fantadamus.engine.outfield import OutfieldInputs
 from tests.xy_harness import CLUBS
 
 ROLES = (("P", "Por"), ("D", "Dc"), ("C", "C"), ("A", "Pc"))
@@ -44,3 +48,42 @@ def stats_read(*, without: tuple[str | tuple[str, str], ...] = (), clubs: Clubs 
         if (clubs.names[club], role) not in without and clubs.names[club] not in without
     ]
     return {"players": players}
+
+
+def outfield(role: Role, mantra_role: str | None, **changes: Any) -> OutfieldInputs:
+    """An outfield player of `role` without goals, assists or games, unless `changes` give them: what's left
+    is his role's priors."""
+    base = OutfieldInputs(
+        name=f"{role} {mantra_role}",
+        role=role,
+        mantra_role=mantra_role,
+        appearances=0,
+        rated_appearances=0,
+        average_rating=None,
+        goals=0,
+        assists=0,
+        yellow_cards=0,
+        club_goals_per_match=1.5,
+        penalty_taker=False,
+        team_xg=1.4,
+        p_win=0.45,
+        p_loss=0.30,
+        p_start=0.9,
+        p_cameo=0.05,
+    )
+    return base.model_copy(update=changes)
+
+
+def keeper(**changes: Any) -> KeeperInputs:
+    """A keeper with eight rated games, nine goals conceded, facing an opponent expected to score 1.1."""
+    base = KeeperInputs(
+        name="Keeper",
+        club="alfa",
+        rated_appearances=8,
+        average_rating=6.2,
+        goals_conceded=9,
+        league_goals_per_match=1.3,
+        opponent_xg=1.1,
+        p_start=0.95,
+    )
+    return base.model_copy(update=changes)
