@@ -1,7 +1,7 @@
 # Requirements Document: `mvp-roles` (Phase 2, second slice)
 
 Status: **Approved by the owner, 2026-11-03**; R1.1, R7.2 and AT-1 **amended the same day** with the design,
-**the amendment approved the same day** · Workflow: requirements-first · Depends on:
+**the amendment approved the same day**; R4.4 added 2026-11-04, for the owner's review · Workflow: requirements-first · Depends on:
 `mvp-x-or-y` and `mvp-collect` (built; code for this slice started before `mvp-collect`'s sign-off, owner decision
 2026-11-03) · Method: [`docs/method.md`](../../../docs/method.md) §A3, §A4 and §A6 · Answers:
 [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 1 and 4
@@ -151,6 +151,9 @@ forwards' answer.
   full lineup.
 - **R4.3** IF a player has no chance of a rating THEN the answer SHALL name his role in its advice: "put a fit
   defender first on the bench" (`mvp-x-or-y` R10.7).
+- **R4.4** IF no row of an outlet's lineup names a player, and a row has his surname and he is the only club-mate
+  with it, THEN THE SYSTEM SHALL count that row as his, and the answer SHALL say he was matched by surname. An outlet's "ANGUISSA A" is the statistics page's "Zambo Anguissa"; without this he
+  gets the 5% of a player nobody mentions.
 
 ### Requirement 5: One player's outlook
 
@@ -227,3 +230,6 @@ owner's shapes.
 - **2026-11-03, later:** the owner started this slice's tasks before `mvp-collect`'s sign-off. `mvp-collect`'s
   real round (its task 8) is deferred, and both slices are tested together in a real round once this one is
   built. This replaces the first decision above.
+- **2026-11-04, building task 5:** asking on the saved real pages showed a first-choice midfielder at 5% to start
+  against the outlets' 90–95%, because they write his compound surname in part, and a verdict of "clear" that
+  should have been "lean". R4.4 added; proposed to the owner with the task's report.

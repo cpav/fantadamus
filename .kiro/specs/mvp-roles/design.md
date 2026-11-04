@@ -195,6 +195,10 @@ changes it.
   answer carries his goals conceded, P(clean sheet) and expected goals conceded (R3.5).
 - **Movement** adds P(clean sheet) beside P(scores), and the opponent's xG among the changes.
 - **The "won't play" advice names the role**: keeper, defender, midfielder or forward (R4.3).
+- **Outlet names by surname (R4.4).** When no row of a lineup names him, `availability` counts a row if he is the
+  one club-mate with its surname (`same_surname`). Rows that name him strictly
+  always win, and his answer's notes say when it was used. Only among club-mates, and only for outlets' rows:
+  a user's "Rossi P." stays strict.
 
 ### C10. `player_outlook` (`mcp/tools/outlook.py`)
 
@@ -244,6 +248,7 @@ Its tool description names answer format 4.
 | Two keepers of the same club | The likelier starter first, label `covered` |
 | A keeper without a rating | His skill is the prior; the answer says he has no rated games |
 | A keeper's goals conceded unknown (a profile that doesn't give them) | An average defence is assumed; the answer says so |
+| An outlet writes a player's name differently | Matched by surname if he's the one club-mate with it, and the answer says so; otherwise he counts as not mentioned |
 | No odds for the match | Regressed team form, flagged, as today |
 
 ## Correctness properties

@@ -54,6 +54,7 @@ _PAGES = (
     (r"fantacalcio\.it/serie-a/calendario", "Fantacalcio.it, calendar"),
     (r"fantacalcio\.it/serie-a/classifica", "Fantacalcio.it, table"),
     (r"fantacalcio\.it/rigoristi-serie-a", "Fantacalcio.it, penalty takers"),
+    (r"fantacalcio\.it/statistiche-serie-a", "Fantacalcio.it, statistics"),
     (r"fantacalcio\.it/probabili-formazioni-serie-a", "Fantacalcio.it, probable lineups"),
     (r"wikipedia\.org/wiki/", "Wikipedia, season page"),
 )

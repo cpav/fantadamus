@@ -17,7 +17,7 @@ from tests.xy_harness import CLUBS
 ROLES = (("P", "Por"), ("D", "Dc"), ("C", "C"), ("A", "Pc"))
 
 
-def stats_row(club: str, role: str, mantra_role: str, player_id: int, **change: Any) -> dict[str, Any]:
+def stats_row(club: str, role: str, mantra_role: str | None, player_id: int, **change: Any) -> dict[str, Any]:
     """One player's row: eight rated games, a keeper's with nine goals conceded."""
     keeper = role == "P"
     return {
@@ -87,3 +87,46 @@ def keeper(**changes: Any) -> KeeperInputs:
         p_start=0.95,
     )
     return base.model_copy(update=changes)
+
+
+def season(name: str, role: Role, mantra_role: str | None, player_id: int, **changes: Any) -> dict[str, Any]:
+    """A player's season, as Claude submits it from a profile; his club is the first word of his name. The
+    synthetic lineups list `<Club> Uno` to `<Club> Undici` as starters, `Dodici` and `Tredici` on the bench
+    and `Quattordici` unavailable."""
+    return stats_row(name.split()[0], role, mantra_role, player_id, name=name) | changes
+
+
+ROLE_PLAYERS = (
+    season("Alfa Uno", "P", "Por", 9101, average_rating=6.6),
+    season("Gamma Uno", "P", "Por", 9103, goals_conceded=14),
+    season(
+        "Alfa Dodici",
+        "P",
+        "Por",
+        9111,
+        rated_appearances=1,
+        appearances=1,
+        average_rating=6.0,
+        goals_conceded=1,
+    ),
+    season("Alfa Due", "D", "Dc", 9201),
+    season("Gamma Due", "D", "Dd", 9203),
+    season("Alfa Quattordici", "D", "Dc", 9214),
+    season("Alfa Sei", "C", "C", 9301),
+    season("Gamma Sei", "C", "T", 9303),
+)
+
+
+def squad_stats(clubs: Clubs = CLUBS) -> list[dict[str, Any]]:
+    """The statistics page's rows for every club, under the names the synthetic lineups use: its keeper, a
+    defender, a midfielder and its forward."""
+    rows = []
+    for index, club in enumerate(sorted(clubs.names)):
+        name = clubs.names[club]
+        rows += [
+            season(f"{name} Uno", "P", "Por", 8000 + 10 * index),
+            season(f"{name} Due", "D", "Dc", 8001 + 10 * index),
+            season(f"{name} Sei", "C", "C", 8002 + 10 * index),
+            season(f"{name} Nove", "A", "Pc", 8003 + 10 * index),
+        ]
+    return rows

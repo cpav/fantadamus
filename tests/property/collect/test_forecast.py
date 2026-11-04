@@ -23,6 +23,7 @@ from fantadamus.domains.availability.silver import LINEUP_VIEWS
 from fantadamus.domains.fixtures.silver import FIXTURES
 from fantadamus.domains.odds.silver import ODDS
 from fantadamus.domains.season.silver import PENALTY_TAKERS, PLAYER_SEASONS, TEAM_SEASONS
+from fantadamus.engine.outfield import OutfieldValue
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, RulesStore
@@ -83,12 +84,13 @@ def test_p6_no_new_facts_no_movement(
 ) -> None:
     advisor, known = lake
     earlier, later = (READ + dt.timedelta(minutes=minute) for minute in sorted(minutes))
-    before = advisor.answer_at("Alfa Nove", "Gamma Nove", earlier, facts=known).answer
-    now = advisor.answer_at("Alfa Nove", "Gamma Nove", later, facts=known).answer
+    before = advisor.answer_at(("Alfa Nove", "Gamma Nove"), earlier, facts=known).answer
+    now = advisor.answer_at(("Alfa Nove", "Gamma Nove"), later, facts=known).answer
     assert before is not None
     assert now is not None
     for then, part in zip(before.players, now.players, strict=True):
         moved = compare.movement(then, part, earlier, "previous answer")
+        assert isinstance(part.value, OutfieldValue)
         assert (moved.p_start, moved.p_scores, moved.p_win) == (
             part.value.p_start,
             part.value.p_scores,

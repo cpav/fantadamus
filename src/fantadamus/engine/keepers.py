@@ -10,6 +10,7 @@ Poisson's e^(-xG). A keeper gets no cameo, so his key is his value if he starts.
 from __future__ import annotations
 
 import math
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -37,6 +38,7 @@ class KeeperInputs(BaseModel):
 class KeeperValue(Option):
     """An option with every intermediate value, for the answer's breakdown (R3.5)."""
 
+    kind: Literal["keeper"] = "keeper"
     skill: float
     expected_vote: float
     p_clean_sheet: float

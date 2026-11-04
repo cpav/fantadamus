@@ -136,35 +136,43 @@ real rounds are tested together in task 8
     - _Requirements: R3.6_
     - _Test: `tests/unit/roles/test_rank.py::test_same_club_keepers_covered`_
 
-- [ ] 5. `compare_players` for every role
+- [x] 5. `compare_players` for every role
   - Branch: `feat/mr-5-every-role` · Depends on: 3, 4 · ADRs: ADR-0006
-  - [ ] 5.1 The advisor's reads take one name or two:
+  - [x] 5.1 The advisor's reads take one name or two:
     - the lake's facts are read once per call, and again only after the collector stored something (task 1.3's
       measurement);
     - stale or missing season figures call the collector for the statistics page, inside the 60-second budget;
     - the refresh plan lists the statistics page first.
     - _Requirements: R1.4, R1.6, R5.2_
     - _Test: `tests/integration/roles/test_compare_roles.py::test_season_figures_collected_first`,
-      `::test_statistics_failure_in_plan`_
-  - [ ] 5.2 Same-role verdicts from the matching model:
+      `::test_statistics_failure_in_plan` (AT-6's refresh plan), `::test_facts_read_once_a_call`_
+  - [x] 5.2 Same-role verdicts from the matching model:
     - a keeper's answer carries P(clean sheet), his expected goals conceded and his goals conceded, and says when
       an average defence was assumed;
     - movement adds P(clean sheet);
-    - the "won't play" advice names the role.
-    - _Requirements: R3.5, R4.1, R4.3_
-    - _Test: `tests/integration/roles/test_compare_roles.py::test_keepers_compared`, `::test_defenders_compared`,
-      `::test_wont_play_names_the_role`;
+    - the "won't play" advice names the role;
+    - an outlet's name matched by surname, as a last resort, and the answer says so (found on the real pages).
+    - _Requirements: R2.5, R3.3, R3.5, R4.1, R4.3, R4.4_
+    - _Test: `tests/integration/roles/test_compare_roles.py::test_keepers_compared`, `::test_keeper_movement`,
+      `::test_outfield_players_compared`, `::test_defenders_compared`, `::test_wont_play_names_the_role`,
+      `::test_outlets_name_by_surname`, `::test_keeper_without_a_match`;
+      `tests/unit/roles/test_season_gold.py::test_league_goals_per_match`;
+      `tests/unit/xy/test_resolve.py::test_one_club_mate_with_the_surname`;
+      `tests/contract/test_real_pages.py::test_round_page_names_resolve`;
+      `tests/unit/collect/test_sources.py::test_page_labels`;
       **AT-8** `tests/acceptance/roles/test_answers.py::test_at8_same_club_keepers`_
-  - [ ] 5.3 Two roles get the status `outlooks`, no verdict and the formation-call message; `forwards only` goes
+  - [x] 5.3 Two roles get the status `outlooks`, no verdict and the formation-call message; `forwards only` goes
     - _Requirements: R4.2_
-    - _Test: **AT-7** `tests/acceptance/roles/test_answers.py::test_at7_two_roles_two_outlooks`_
-  - [ ] 5.4 The decision log:
+    - _Test: **AT-7** `tests/acceptance/roles/test_answers.py::test_at7_two_roles_two_outlooks`;
+      `tests/integration/xy/test_compare.py::test_two_roles_get_outlooks`_
+  - [x] 5.4 The decision log:
     - each entry's kind;
     - optional verdict fields;
     - a keeper's P(clean sheet) and expected goals conceded;
     - earlier lines still read.
     - _Requirements: R6.3, R5.3_
-    - _Test: `tests/unit/roles/test_decision_log.py::test_keeper_probabilities_logged`, `::test_earlier_lines_read`_
+    - _Test: `tests/integration/roles/test_decision_log.py::test_keeper_probabilities_logged`,
+      `::test_earlier_lines_read`_
 
 - [ ] 6. One player's outlook
   - Branch: `feat/mr-6-outlook` · Depends on: 5 · ADRs: ADR-0006

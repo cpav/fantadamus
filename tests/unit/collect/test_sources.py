@@ -127,6 +127,7 @@ def test_page_labels() -> None:
         FCIT: "Fantacalcio.it, calendar",
         "https://www.fantacalcio.it/serie-a/classifica": "Fantacalcio.it, table",
         "https://www.fantacalcio.it/rigoristi-serie-a": "Fantacalcio.it, penalty takers",
+        "https://www.fantacalcio.it/statistiche-serie-a": "Fantacalcio.it, statistics",
         "https://www.fantacalcio.it/probabili-formazioni-serie-a": "Fantacalcio.it, probable lineups",
         f"{SQUAD}/martinez-l/2764": "Fantacalcio.it, martinez-l's profile",
         SQUAD: "Fantacalcio.it, inter squad",
