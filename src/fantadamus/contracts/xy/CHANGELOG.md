@@ -65,3 +65,8 @@ Headings are `## <Contract> <version> (<date>)`.
 
 - First version: one read of Fantacalcio.it's statistics page, `players`, each with the same fields and checks as
   `PlayerSeasonPayload`, each player ID once (mvp-roles R1.1).
+
+## OfficialLineupPayload 1.1.0 (2026-11-04)
+
+- Adds an optional `unnamed_starters` per team, at most 1: a source can name only 10 of a team's 11 starters. The lineup
+  must still account for 11 (mvp-x-or-y R8.1). A widening change, so a minor version.

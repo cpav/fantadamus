@@ -103,7 +103,8 @@ actually happened.
 - **R4.1** THE SYSTEM SHALL provide `submit_official_lineup` for one match: both teams' starters and benches.
 - **R4.2** WHEN an official lineup exists for a player's match THE SYSTEM SHALL use it over every probable
   lineup: p_start 1 for a starter; p_start 0 and the R3.4 p_cameo for a substitute; 0 and 0 for a player
-  not in the squad.
+  not in the squad. A player the lineup doesn't name is not in the squad, unless it says one of his team's starters
+  is unnamed; then it can't settle his chance, and the probable lineups still decide.
 
 ### Requirement 5: Match odds and team xG
 
@@ -158,8 +159,8 @@ challenge an answer.
 
 **User Story:** As the owner, I want collection mistakes caught before they reach an answer.
 
-- **R8.1** IF a probable lineup or official lineup has other than 11 starters for a team THEN THE SYSTEM SHALL
-  reject it with the reason.
+- **R8.1** IF a probable lineup has other than 11 starters for a team, or an official lineup doesn't account for 11
+  (the starters it names, plus at most one it says is unnamed), THEN THE SYSTEM SHALL reject it with the reason.
 - **R8.2** IF a ballottaggio's shares don't sum to between 95 % and 105 % THEN THE SYSTEM SHALL reject it.
 - **R8.3** IF a set of odds implies a bookmaker margin outside 0 % to 15 % THEN THE SYSTEM SHALL reject it.
 - **R8.4** IF a season figure is impossible (more goals than appearances × 5, an average rating outside 3 to
@@ -315,3 +316,6 @@ happened (method §A8).
 - **2026-10-30, the answer's shape:** the owner showed the "X or Y?" answer they want: match context first,
   then each player with a one-line verdict and reasons (start chance and rival, penalties, scoring chance and
   value, form). R10.8 adds the data that needs; the agent prompt's "How to answer" follows it.
+- **2026-11-04, finished rounds' pages:** Fantacalcio-Online's page marks 11 starters for most teams but only 10 for some,
+  because the eleventh isn't on the page (`mvp-collect` R3.1). So an official lineup may say one starter is unnamed (R8.1),
+  and a player it doesn't name isn't ruled out in that case (R4.2).

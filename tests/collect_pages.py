@@ -32,7 +32,8 @@ class FcoMatch:
     over3: str = "53%"
     updated: str = "quote aggiornate il 30 ottobre alle 18:13"
     percents: Mapping[str, tuple[int | None, ...]] = field(default_factory=dict)  # None: the outlet's dash
-    confirmed: bool = False
+    confirmed: bool = False  # True: the 11 probable starters are the real ones, all marked
+    marked: tuple[str, ...] = ()  # players marked as real starters, whichever table lists them
     lineups: bool = True  # False: the teams' sections are there, their tables not published yet
     reversed: bool = False  # True: each table lists its players in the opposite order
     pending: tuple[str, ...] = ()  # outlets that haven't published: a note on the column, dashes in its cells
@@ -96,11 +97,13 @@ def _fco_team(club: str, side: str, match: FcoMatch) -> str:
 
     order = reversed if match.reversed else iter
     starters = "".join(
-        _fco_row(name, shown(match.percents.get(name, (90, 90, 95, 90))), match.confirmed)
+        _fco_row(
+            name, shown(match.percents.get(name, (90, 90, 95, 90))), match.confirmed or name in match.marked
+        )
         for name in order(players[:11])
     )
     bench = "".join(
-        _fco_row(name, shown(match.percents.get(name, (10, 30, 5, 30))), False)
+        _fco_row(name, shown(match.percents.get(name, (10, 30, 5, 30))), name in match.marked)
         for name in order(players[11:13])
     )
     out = (

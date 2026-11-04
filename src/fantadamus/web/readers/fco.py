@@ -24,6 +24,7 @@ from pydantic import ValidationError
 from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.fixtures import Fixture, FixturesPayload
 from fantadamus.contracts.xy.lineups import (
+    STARTERS,
     OfficialLineupPayload,
     OfficialTeam,
     OutletLineupPayload,
@@ -56,6 +57,9 @@ _MONTHS = [
     "dicembre",
 ]
 _SIGNS = (("1", "home_win"), ("X", "draw"), ("2", "away_win"))  # the 1X2 boxes, in order
+_FEWEST_MARKS = STARTERS - 1
+"""The page marks a team's real starters: on ten finished rounds' pages (4 November), 177 of 200 teams had 11
+marks and 23 had 10, because the eleventh wasn't on the page. Fewer means the lineup isn't out yet."""
 _ROUND = re.compile(r"(\d+)\s*ª\s*Giornata", re.IGNORECASE)
 _UPDATED = re.compile(r"(\d{1,2}) (\w+) alle (\d{1,2}):(\d{2})")
 _NUMBER = re.compile(r"\d+(?:,\d+)?")
@@ -166,7 +170,7 @@ def _read_match(pane: Element, home: str, away: str, kickoff: dt.datetime, found
         view = attempt(outlet, functools.partial(_outlet_view, outlet, home, away, teams))
         if view is not None:
             found.outlets.append(view)
-    if all(row.confirmed for team in teams for row in team.starters):
+    if all(sum(row.confirmed for row in team.starters + team.bench) >= _FEWEST_MARKS for team in teams):
         official = attempt(
             "official lineup",
             lambda: OfficialLineupPayload(
@@ -315,6 +319,12 @@ def _outlet_team(team: _Team, outlet: str) -> OutletTeam:
 
 
 def _official_team(team: _Team) -> OfficialTeam:
+    """The marked players start, whichever table lists them. The page gives no real bench, so the rest of the
+    two tables stand for it."""
+    listed = team.starters + team.bench
+    starters = sorted(row.name for row in listed if row.confirmed)
     return OfficialTeam(
-        starters=sorted(row.name for row in team.starters), bench=sorted(row.name for row in team.bench)
+        starters=starters,
+        bench=sorted(row.name for row in listed if not row.confirmed),
+        unnamed_starters=max(STARTERS - len(starters), 0),
     )

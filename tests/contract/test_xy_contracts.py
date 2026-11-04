@@ -73,6 +73,28 @@ def test_eleven_starters(contract: type[Contract], name: str) -> None:
         parse(contract, repeated)
 
 
+def test_official_team_accounts_for_eleven() -> None:
+    """A source may say it can't name one starter; the lineup must still account for 11 (mvp-x-or-y R8.1)."""
+    ten = page("official_lineup")
+    ten["home_team"]["starters"].pop()
+    ten["home_team"]["unnamed_starters"] = 1
+    assert parse(OfficialLineupPayload, ten).home_team.unnamed_starters == 1
+    eleven_and_one = page("official_lineup")
+    eleven_and_one["home_team"]["unnamed_starters"] = 1
+    with pytest.raises(ValidationError, match="needs 11 starters, got 12"):
+        parse(OfficialLineupPayload, eleven_and_one)
+    nine = page("official_lineup")
+    del nine["away_team"]["starters"][:2]
+    nine["away_team"]["unnamed_starters"] = 1
+    with pytest.raises(ValidationError, match="needs 11 starters, got 10"):
+        parse(OfficialLineupPayload, nine)
+    two_unnamed = page("official_lineup")
+    del two_unnamed["away_team"]["starters"][:2]
+    two_unnamed["away_team"]["unnamed_starters"] = 2
+    with pytest.raises(ValidationError, match="less than or equal to 1"):
+        parse(OfficialLineupPayload, two_unnamed)
+
+
 @pytest.mark.parametrize(
     ("first", "second", "ok"), [(60, 40, True), (50, 48, True), (50, 30, False), (70, 40, False)]
 )
