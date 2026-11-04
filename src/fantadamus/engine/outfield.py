@@ -59,6 +59,7 @@ class OutfieldInputs(BaseModel):
     p_loss: float
     p_start: float
     p_cameo: float
+    """His chance of coming on, from the outlets. His value's `p_cameo` is his chance of a rating that way."""
 
 
 class OutfieldValue(Option):
@@ -123,10 +124,12 @@ def p_yellow(cards: int, *, appearances: int) -> float:
     return (YELLOW_PRIOR * YELLOW_WEIGHT + cards) / (YELLOW_WEIGHT + appearances)
 
 
-def e_cameo(goals: float) -> float:
-    """An attacker's cameo: 9.8 with a goal, else a 60 % chance of a 5.75 rating (R9.7)."""
+def cameo_rating(goals: float) -> tuple[float, float]:
+    """An attacker's cameo: his chance of a rating once he's on, and what it's worth. He gets one with a goal,
+    at 9.8, or else 60% of the time, at 5.75 (R9.7; mvp-lineup R8.3)."""
     scored = p_scores(goals)
-    return scored * CAMEO_GOAL_VALUE + (1 - scored) * CAMEO_RATED * CAMEO_RATING
+    rated = scored + (1 - scored) * CAMEO_RATED
+    return rated, (scored * CAMEO_GOAL_VALUE + (1 - scored) * CAMEO_RATED * CAMEO_RATING) / rated
 
 
 def value(player: OutfieldInputs, scoring: Scoring) -> OutfieldValue:
@@ -153,11 +156,12 @@ def value(player: OutfieldInputs, scoring: Scoring) -> OutfieldValue:
     cameo_goals = expected_goals(player.team_xg, goal_share, minutes=MINUTES_CAMEO) + penalty_goals(
         minutes=MINUTES_CAMEO, taker=player.penalty_taker
     )
-    cameo = e_cameo(cameo_goals) if prior.priced_cameo else CAMEO_FLAT
+    rated, cameo = cameo_rating(cameo_goals) if prior.priced_cameo else (1.0, CAMEO_FLAT)
+    p_cameo = player.p_cameo * rated
     return OutfieldValue(
         name=player.name,
         p_start=player.p_start,
-        p_cameo=player.p_cameo,
+        p_cameo=p_cameo,
         e_start=start,
         e_cameo=cameo,
         expected_vote=vote,
@@ -169,8 +173,8 @@ def value(player: OutfieldInputs, scoring: Scoring) -> OutfieldValue:
         p_yellow=yellow,
         cameo_e_goals=cameo_goals,
         p_scores_cameo=p_scores(cameo_goals),
-        key=key(player.p_start, start, player.p_cameo, cameo),
-        no_cover=no_cover(player.p_start, start, player.p_cameo, cameo),
+        key=key(player.p_start, start, p_cameo, cameo),
+        no_cover=no_cover(player.p_start, start, p_cameo, cameo),
     )
 
 

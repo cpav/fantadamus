@@ -11,14 +11,14 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
   every step names its requirements and test, and that its ADRs are Accepted. Task 1's branch makes this spec the default
   (`CURRENT_SPEC` in `scripts/checks/task_check.py`).
 - **A ticked box** (`- [x]`) marks a task or step as done; the agent ticks it on the task's branch.
-- **The property tests P1–P10 in the design are required.** No task is optional.
+- **The property tests P1–P11 in the design are required.** No task is optional.
 - **Each task ends with the task report**; the owner approves the pull request, the agent squash-merges it.
 - **Breaking the code on purpose** has found tests that couldn't fail, in every slice so far. Each code task does it once before
   its report, and says what it found.
 - **Tests for this spec** live in a `lineup/` folder in each test layer:
   - squads are invented, and a real squad never reaches the repository, fixtures or committed logs;
   - tests never touch the internet: the collector runs against the local server on 127.0.0.1.
-- **The order:** 1 and 2 in turn; then 3 and 4 in either order, since the engine is pure; then 5, 6, 7, 8 and 9.
+- **The order:** 1 and 2 in turn; then 3 and 4 in either order, since the engine is pure; then 5, 6, 10, 7, 8 and 9.
 
 ## Tasks
 
@@ -182,8 +182,21 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Test: `tests/integration/lineup/test_calls.py::test_two_roles_with_a_squad`,
       `::test_two_roles_without_a_squad_says_how_to_get_there`_
 
+- [x] 10. A forward's cameo, priced as the method defines it (added 2026-11-04, a finding from task 6)
+  - Branch: `fix/ml-10-cameo` · Depends on: 6 · ADRs: none
+  - [x] 10.1 `outfield.value` returns a forward's chance of a rated cameo and what the rating is worth; the simulation draws
+    from his chance of coming on.
+    - _Requirements: R8.3_
+    - _Test: **P11** `tests/property/lineup/test_cameo.py::test_p11_chance_and_key_reproduce_the_simulated_mean`;
+      **AT-16** `tests/acceptance/lineup/test_cameo.py::test_at16_a_cameo_by_hand`, `::test_at16_either_order_matches_the_simulation`,
+      `::test_at16_the_higher_key_is_the_better_one_to_field`, `::test_at16_expected_points_without_cover_dont_change`,
+      `::test_at16_a_flat_cameo_doesnt_change`_
+  - [x] 10.2 What it changes on a real squad, in the task report without players' figures.
+    - _Requirements: R8.3_
+    - _Test: the same questions before and after, on real data_
+
 - [ ] 7. Calibration
-  - Branch: `feat/ml-7-calibration` · Depends on: 5 · ADRs: ADR-0006
+  - Branch: `feat/ml-7-calibration` · Depends on: 5, 10 · ADRs: ADR-0006
   - [ ] 7.1 The finished round's page: read once, 12 hours after the round's last kickoff, as its own page kind, so it never
     delays a read of the current round's page. A failed read is tried again, no more often than every 15 minutes.
     - _Requirements: R7.2_

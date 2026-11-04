@@ -48,11 +48,11 @@ async def test_at12_the_marks_decide(tmp_path: Path) -> None:
 
     assert swapped["status"] == "answer", swapped
     nove, dodici = (player for player in swapped["answer"]["players"])
-    assert (nove["name"], nove["value"]["p_start"], nove["value"]["p_cameo"]) == (
-        "Alfa Nove",
-        0.0,
-        CAMEO_SHARE,
-    )
+    assert (nove["name"], nove["value"]["p_start"]) == ("Alfa Nove", 0.0)
+    scored = nove["value"][
+        "p_scores_cameo"
+    ]  # on the bench he may come on, and a forward's cameo may get a rating
+    assert nove["value"]["p_cameo"] == pytest.approx(CAMEO_SHARE * (scored + (1 - scored) * 0.6))
     assert nove["official"]["status"] == "bench"
     assert (dodici["name"], dodici["value"]["p_start"], dodici["value"]["p_cameo"]) == (
         "Alfa Dodici",

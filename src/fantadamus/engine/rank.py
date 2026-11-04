@@ -40,8 +40,10 @@ class Option(BaseModel):
     name: str
     p_start: float
     p_cameo: float
+    """His chance of coming on and getting a rating (method §A2)."""
     e_start: float
     e_cameo: float
+    """What that rating is worth."""
 
     def figures(self) -> dict[str, float]:
         return {

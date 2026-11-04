@@ -87,6 +87,8 @@ P(scores)  = 1 − e^(−E[goals])
 - Attackers need a priced cameo. Their chance of scoring in about 25 minutes uses the same formula with
   minutes share ≈ 0.28. A cameo with a goal is worth about 9.8. Without a goal he gets a rating about 60%
   of the time, worth about 5.75 *(start)*.
+- So an attacker's p_cameo in §A2 is his chance of coming on times his chance of a rating once on, and his
+  E_cameo is what that rating is worth. A cameo with no rating isn't a low score: his substitute comes in.
 - Replace these with the player's own substitute record (`bench_impact`) once there's enough of it.
 
 ## A5. Shrink and regress everything
