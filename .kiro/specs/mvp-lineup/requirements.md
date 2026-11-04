@@ -1,7 +1,8 @@
 # Requirements Document: `mvp-lineup` (Phase 2, third slice)
 
 Status: **Approved by the owner, 2026-11-04**, with the amendment to R5.5 and R5.6; R1.5, R2.1, R2.3, R3.3 to R3.5, R4.4
-and AT-6, AT-7, AT-10 amended the same day from the owner's league notes, R9.3, R9.4 and AT-15 added, and R7 amended so a round scores itself, **for the owner's review** · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
+and AT-6, AT-7, AT-10 amended the same day from the owner's league notes, R9.3, R9.4 and AT-15 added, and R7 and AT-12
+amended so a round scores itself, **all approved the same day** · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
 `mvp-collect` and `mvp-roles` (signed off) · Method: [`docs/method.md`](../../../docs/method.md) §A1 to §A3, §A7, §A8,
 §A9 tests 1 and 5 · Answers: [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 2, 3 and 6
 

@@ -1,7 +1,7 @@
 # Design Document: `mvp-lineup` (Phase 2, third slice)
 
-Status: **Proposed 2026-11-04, for the owner's review** · From the [requirements](requirements.md), with the amendments
-proposed below (open point 1)
+Status: **Approved by the owner, 2026-11-04**, with all three open points accepted · From the approved
+[requirements](requirements.md), with the amendments of open point 1
 
 ## Overview
 
@@ -339,3 +339,5 @@ $0. No new pages or requests: a lineup reads the same two pages as today, within
    is the most used one, so many other leagues' scores would come with a warning. **Recommendation:** keep it out of this slice
    to close Phase 2 sooner, and build the defence modifier as soon as a real user's league needs it, starting with your
    friend's if it does.
+
+All three accepted by the owner with the design, 2026-11-04.
