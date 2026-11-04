@@ -166,6 +166,7 @@ yet), `choose`, `refresh` and `lineup`.
 | `likely_scorers`, `moved`, `check_before_lock` | Format 2's closing lines. `moved` compares with the previous lineup's log entry for this team, with no replay |
 | `warnings`, `improve` | Every number on basic data, and what could improve it (R5.5, R5.6) |
 | `override` | With `start`, `leave_out` or `formation`: the cost against the recommendation, from the same simulated rounds (R3.5) |
+| `last_round` | One line on how the last scored round's forecasts did, or nothing yet (R7.6) |
 | `sources` | Each page once, by label (R5.4) |
 
 The formation is the one with the most expected fantasy goals, or the highest expected score in a total-points league
@@ -179,19 +180,64 @@ player, much of it repeated sources, and the target here is about 300 bytes per 
 `Decision` gains `kind="lineup"`, and the optional `team`, `formation`, `thresholds` (each threshold's chance) and
 `override_cost`. Every squad player's published chances are logged. Earlier lines still read.
 
-### C10. Calibration (`domains/calibration.py`, `cli/`; R7.2, R7.3)
+### C10. Calibration (`domains/calibration.py`, `cli/`; R7.2 to R7.6)
 
-`fantadamus calibrate --round N` takes, for each player in the round's decisions, the last logged chances before his kickoff.
+Calibration asks a player for nothing, so it fits the routine of a draft, a check before the lock and a look back:
 
-| Chance | Scored against |
-|---|---|
-| Starting | The official lineup stored for his match |
-| Scoring | Whether his goals rose between the statistics page's last read before the round and its first after, if he started |
-| Clean sheet | Whether a starting keeper's goals conceded stayed the same across those reads |
+| The player's routine | What they do | What Fantadamus does |
+|---|---|---|
+| The draft | Ask for the lineup | Logs the chances. Its read of the statistics page separates the last round from this one |
+| The check before the lock | Ask again | Logs again. The last chances before each kickoff are the ones scored |
+| After the round | Nothing | At the next scheduled run or question, reads the finished round's page and scores the round |
+| The next draft | Read one line | The lineup says how the last round's forecasts did |
 
-It reports the Brier score and reliability by probability bucket, and counts what it couldn't score and why, such as no
-official lineup stored (R7.3). The results are aggregates, so they can go in a committed report; the per-player detail stays
-in `data/local/`. Comparing with the market, which §A8 also asks for, waits for the market's chances to be logged.
+Chances don't depend on a league's rules, so calibration is the same for every user and adds nothing to the league profile.
+
+**When.** A round is finished 12 hours after its last kickoff *(start)*, so the statistics page has had time to update. Both
+`collect --due` and an answer check for a finished, unscored round. An answer scores it first, so the first question after a
+round takes a few seconds longer, once; step 7 measures it against a 5-second budget, and if scoring everyone runs over, that
+set moves to `collect --due` and the command. It's skipped in the last hour before a deadline, when speed matters most. A failed
+read is tried again at the next run or question, no more often than every 15 minutes, and the answer carries on without it.
+
+**The finished round's page.** `Collector.collect(round=N)` already reads a past round's page. Its reads are logged as a new
+page kind, `finished_round`, so they don't count as an attempt at the current round's page and delay its reads (C7 of
+`mvp-collect`).
+
+**What's scored.**
+
+| Chance | Against | Needs |
+|---|---|---|
+| Starting | The page's marks | The finished round's page |
+| Getting a rating | Whether his rated appearances rose | Statistics reads before and after the round |
+| Scoring, if he started | Whether his goals rose | The same reads |
+| Clean sheet, if he started | Whether a keeper's goals conceded stayed the same | The same reads |
+
+The "before" read is the last before the round's first kickoff, and the "after" read the first once the round has finished,
+if it comes before the next round starts. The player's own draft normally gives both. Otherwise those chances count as
+unscored, with the reason (R7.3); so do a postponed match's, which has no marks.
+
+**Two sets (R7.4).**
+
+- **What users were told:** the decision log's last chances for each player before his kickoff. It's the honest record of what
+  was published, and small: about 25 players per squad asked about.
+- **The model on everyone:** `_gather` (C5) and the engine, for every player the page lists, as of his kickoff, with the
+  official lineup left out so that it scores the forecast and not the answer. It's the current model on the facts held then, so
+  it can test a changed constant on past rounds. Starting needs no model: it's the mean of the outlets' percentages on the
+  page. A player whose facts weren't held before kickoff counts as unscored.
+
+**Output.** Each set's Brier score and reliability by bucket, next to always guessing the set's average, and what's unscored and
+why. It's stored as `data/local/calibration/round-<N>.json` and never appended to the decision log, because it's derived and can
+be recomputed. `fantadamus calibrate --round N` prints it, with `--again` to recompute it. The aggregates can go in a committed
+report; per-player detail stays in `data/local/`.
+
+**Left out of this slice.**
+
+- **The market:** comparing with it, which §A8 also asks for, waits for the market's chances to be logged.
+- **Overrides:** the report counts them and the costs stated at the time. Whether they paid off needs each player's score for
+  the round, so it comes with the review of a user's lineup (open point 2).
+
+**An assumption to check.** The two rounds read so far suggest a finished page keeps the outlets' last percentages from before
+the lineups. Round 11 can prove it, against the same page read before kickoff.
 
 ### C11. The league profile (R9.3, R9.4)
 
@@ -229,7 +275,8 @@ two-role message says so too. The README and the player guide say how to give a 
 | A match has no odds, or only the 1X2 | Team form or the 1X2, with a warning and an `improve` item |
 | A match has no lineups yet | Its players at the default chance, with a warning and an `improve` item |
 | No match of the squad has lineups, or a needed fact is missing | A refresh plan, as today |
-| A chance can't be scored in `calibrate` | Counted, with the reason |
+| A chance can't be scored | Counted, with the reason |
+| A finished round's page can't be read | The answer is unaffected, and it's tried again later |
 
 ## Correctness properties
 
@@ -246,6 +293,7 @@ These Hypothesis tests are required:
 | P7 | A choice's worth never exceeds the difference in keys, doesn't depend on the order asked, and never changes who comes first | R8 |
 | P8 | `set_squad` resolves the same players whatever order the names arrive in, and stores nothing if any name fails | R1.2 |
 | P9 | Brier scores stay between 0 and 1, and a forecast that was right every time scores 0 | R7.2 |
+| P10 | Scoring never uses a chance logged, or a fact captured, after a player's kickoff, and an official lineup never feeds the model on everyone | R7.4 |
 
 ## Testing strategy
 
@@ -272,7 +320,7 @@ $0. No new pages or requests: a lineup reads the same two pages as today, within
 4. **The engine:** `arrange` and `simulate`, with AT-1 to AT-4.
 5. **`best_lineup`:** the answer, warnings and `improve`, the log.
 6. **Overrides and calls:** `start`, `leave_out`, `formation`, and the cost.
-7. **Calibration:** `fantadamus calibrate`.
+7. **Calibration:** a finished round scored by itself, both sets, and `fantadamus calibrate`.
 8. **The agent prompt, the league profile and the docs.**
 9. **The real round and Phase 2's gate:** testing from Claude Code, AT-13, the first calibration report, a mutation-testing
    run on the core modules, and the phase report.
@@ -281,11 +329,12 @@ $0. No new pages or requests: a lineup reads the same two pages as today, within
 
 1. **The requirements amended from your notes.** Squads can be kept for league-mates. A club's keepers are one place. A close
    call names the higher ceiling. An override's cost is given once. A blank league profile holds what's specific to each
-   user (C11). **Recommendation:** accept.
-2. **The review after the round.** Your routine ends with one that judges decisions, not results. `fantadamus calibrate` scores
-   the forecasts, which Phase 2's gate needs, but it isn't a review of your lineup: what you chose, what the advice was, and
-   what each decision cost at the time. That's its own small piece of work. **Recommendation:** leave it out of this slice,
-   and do it right after Phase 2's gate, once the logged lineups exist to review.
+   user (C11). A finished round scores itself, with nothing for you to do (R7, C10). **Recommendation:** accept.
+2. **The review after the round.** Your routine ends with one that judges decisions, not results. Calibration scores the forecasts,
+   which Phase 2's gate needs, but it isn't a review of your lineup: what you chose, what the advice was, what each decision
+   cost at the time, and whether your overrides paid off. The same statistics reads should give each player's rating, goals
+   and assists, so it needs no new source. **Recommendation:** leave it out of this slice, and do it right after Phase 2's
+   gate, once the logged lineups exist to review.
 3. **Modifiers, now that other leagues matter.** Your league has none, so this slice leaves them out. But the defence modifier
    is the most used one, so many other leagues' scores would come with a warning. **Recommendation:** keep it out of this slice
    to close Phase 2 sooner, and build the defence modifier as soon as a real user's league needs it, starting with your

@@ -1,7 +1,7 @@
 # Requirements Document: `mvp-lineup` (Phase 2, third slice)
 
 Status: **Approved by the owner, 2026-11-04**, with the amendment to R5.5 and R5.6; R1.5, R2.1, R2.3, R3.3 to R3.5, R4.4
-and AT-6, AT-7, AT-10 amended the same day from the owner's league notes, and R9.3, R9.4 and AT-15 added, **for the owner's review** · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
+and AT-6, AT-7, AT-10 amended the same day from the owner's league notes, R9.3, R9.4 and AT-15 added, and R7 amended so a round scores itself, **for the owner's review** · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
 `mvp-collect` and `mvp-roles` (signed off) · Method: [`docs/method.md`](../../../docs/method.md) §A1 to §A3, §A7, §A8,
 §A9 tests 1 and 5 · Answers: [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 2, 3 and 6
 
@@ -156,16 +156,23 @@ answer.
 
 ### Requirement 7: The decision log and calibration
 
-**User Story:** As the owner, I want the forecasts scored against what happened, so that the starting values get better
-(method §A8), and because Phase 2's gate needs it.
+**User Story:** As the owner, I want the forecasts scored against what happened with nothing to do or remember, so that
+the starting values get better (method §A8), and because Phase 2's gate needs it.
 
 - **R7.1** WHEN `best_lineup` answers THE SYSTEM SHALL append to the decision log: the as-of time, the recommended lineup
   and formation, each starter's published chances, the threshold chances, the rules used and the content hashes.
-- **R7.2** THE SYSTEM SHALL provide `fantadamus calibrate --round N`, which scores the round's logged chances against
-  what happened: chance of starting against the official lineups, chance of scoring and of a clean sheet against what
-  the statistics page's figures gained over the round. It SHALL report the Brier score and reliability by probability
-  bucket (§A8).
-- **R7.3** THE SYSTEM SHALL report which logged chances it couldn't score, and why, and SHALL store no page text.
+- **R7.2** WHEN a round has finished THE SYSTEM SHALL score it by itself, at the next scheduled run or question, once: it
+  reads that round's page for who really started, whenever that is, and takes the rest from what the statistics page's
+  figures gained over the round. It SHALL report the Brier score and reliability by probability bucket (§A8). A failure
+  SHALL never stop or change an answer; it tries again later.
+- **R7.3** THE SYSTEM SHALL report which chances it couldn't score, and why, and SHALL store no page text.
+- **R7.4** THE SYSTEM SHALL score two sets, kept apart: **what users were told**, each player's last logged chances before
+  his kickoff; and **the model on everyone**, every listed player's chances from the facts held before his kickoff. Each
+  set scores the chance of starting, of getting a rating, of scoring if he started, and of a clean sheet if he started.
+- **R7.5** THE SYSTEM SHALL provide `fantadamus calibrate --round N`, which prints a round's report and scores it again if
+  asked, so a changed constant can be tried on past rounds.
+- **R7.6** WHEN `best_lineup` answers and a round has been scored THE SYSTEM SHALL include one line on how that round's
+  forecasts did. It SHALL NOT change a constant by itself: the owner approves any change, from the report.
 
 ### Requirement 8: What a choice is worth
 
@@ -207,7 +214,7 @@ answer.
 | AT-9 | The same facts give the same lineup; a 25-player squad and seven formations take under 3 seconds; the answer is under 15 KB | R4.6, R5.4 |
 | AT-10 | An override: forcing a player into the eleven, or another formation, returns that lineup with its cost in points and threshold chances; a league rule this spec leaves out is named in the answer | R2.3, R3.5 |
 | AT-11 | Worth of a choice: a 12% backup keeper ahead of a 92% starter on the key is a coin flip, not "clear"; the order doesn't change | R8 |
-| AT-12 | `fantadamus calibrate` on a scripted round gives the right Brier scores and buckets, and names what it couldn't score | R7 |
+| AT-12 | A scripted finished round is scored at the next question with no command, once: the page is read one time and the answer is otherwise the same. Both sets give the right Brier scores and buckets, it names what it couldn't score, the next lineup carries the line, and `fantadamus calibrate` prints the report | R7 |
 | AT-14 | A squad with a player in a match without over/under gets its lineup in one call, with a warning naming the match and the pages that could improve it; once better odds are submitted, the warning goes and the numbers use them. A player without rated games and one no outlet lists each get their warning | R5.5, R5.6 |
 | AT-15 | The blank profile names every setting `set_league_rules` takes, so the two can't drift apart, and holds no user's details; the agent prompt tells Claude to use it | R9.3, R9.4 |
 | AT-13 | Manual: the owner gives a real squad and rules in Claude Desktop, and gets a lineup for a real round to compare with their own choice | All |
@@ -234,3 +241,7 @@ Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
   part of the Project they set up, so a blank league profile holds it (R9.3, R9.4). The owner's notes are that profile,
   filled in, and stay outside this repository. Modifiers aren't modelled in this slice for now; the profile records them
   and the lineup says its score leaves them out. Whether to build them sooner is an open point in the design.
+- **2026-11-04, how calibration runs:** the owner asked that calibration be as smooth as possible next to their routine.
+  A finished round's page still marks who really started (`mvp-collect` R3.1), so nothing has to be caught live and a round
+  can score itself (R7.2). Scoring only the players someone asked about would give about 20 a round, so the model is also
+  scored on everyone (R7.4). A command is no longer needed, but stays for reports and for trying a changed constant (R7.5).
