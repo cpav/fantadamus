@@ -1,5 +1,5 @@
 """`compare_players`: "X or Y?" for two players of one role (design C10; R1 to R4, R7, R9 to R12, R14;
-mvp-roles design C9, R4).
+mvp-roles design C9, R4), and the advisor behind `player_outlook` (C10, R5).
 
 1. A user without league rules gets the setup step.
 2. Both names resolve to players with season figures, or the candidates come back.
@@ -85,7 +85,7 @@ REFRESH = (
     "Some facts are missing or stale. For each item read with `read_page`, read its pages best first until "
     "one gives the fact; for an item read with `search`, find a page on a listed site with its search hint. "
     "Submit what the page says with the named tool, with the page's `url` and `fetched_at`, then call "
-    "compare_players again."
+    "the same tool again."
 )
 
 Why = Literal["missing", "stale", "partial"]
@@ -224,7 +224,7 @@ class Answer(BaseModel):
     players: list[PlayerAnswer]
 
 
-Status = Literal["setup", "choose", "refresh", "answer", "outlooks"]
+Status = Literal["setup", "choose", "refresh", "answer", "outlooks", "outlook"]
 
 
 class CompareResult(BaseModel):
@@ -349,6 +349,12 @@ class Advisor:
     ) -> CompareResult:
         """The answer on two players."""
         return self._ask((first, second), as_of, odds_unavailable)
+
+    def outlook(
+        self, player: str, *, as_of: dt.datetime | None = None, odds_unavailable: bool = False
+    ) -> CompareResult:
+        """One player's forecast (mvp-roles R5)."""
+        return self._ask((player,), as_of, odds_unavailable)
 
     def _ask(self, names: Sequence[str], as_of: dt.datetime | None, odds_unavailable: bool) -> CompareResult:
         """The answer, after the collector has read the pages of what was missing or stale. A replay of an
@@ -476,8 +482,10 @@ class Advisor:
             )
         league = league_goals_per_match(teams, as_of)
         answer = self._answer(sides, known, round, first_kickoff, as_of, stored, league)
-        status: Status = "answer" if answer.verdict is not None else "outlooks"
-        return CompareResult(status=status, message=answer.message, answer=answer)
+        kind = _kind(answer)
+        return CompareResult(
+            status="answer" if kind == "compare" else kind, message=answer.message, answer=answer
+        )
 
     def _disagreements(
         self,
@@ -591,9 +599,10 @@ class Advisor:
         ]
         judged = _judged(inputs, scoring_for(stored.rules, sides[0].form.role))
         verdict, flip = judged if judged is not None else (None, None)
-        message = (
-            _verdict_message(verdict, sides[0].form.role) if verdict is not None else _outlooks_message(sides)
-        )
+        if verdict is not None:
+            message = _verdict_message(verdict, sides[0].form.role)
+        else:
+            message = _outlook_message(players[0]) if len(players) == 1 else _outlooks_message(sides)
         answer = Answer(
             message=message,
             round=round,
@@ -654,7 +663,7 @@ class Advisor:
         verdict = answer.verdict
         self.log.append(
             Decision(
-                kind="compare" if verdict is not None else "outlooks",
+                kind=_kind(answer),
                 as_of=answer.as_of,
                 logged_at=self.clock(),
                 user=self.user,
@@ -880,12 +889,25 @@ def _verdict_message(verdict: Verdict, role: str) -> str:
     return message + f" Margin {verdict.margin:.2f} points: {verdict.label}."
 
 
+def _outlook_message(part: PlayerAnswer) -> str:
+    who, value = f"{part.name} ({_ROLE_WORDS[part.role]})", part.value
+    if value.p_start + value.p_cameo == 0:
+        return f"{who} won't play this round."
+    return f"{who}: {value.p_start:.0%} to start, worth about {value.e_start:.1f} if he does."
+
+
 def _outlooks_message(sides: Sequence[_Side]) -> str:
     who = " and ".join(f"{side.player.name} ({_ROLE_WORDS[side.form.role]})" for side in sides)
     return (
         f"{who} play different roles: a choice between roles is the formation call, which comes with the "
         "full lineup. Here is each player's outlook."
     )
+
+
+def _kind(answer: Answer) -> Literal["compare", "outlooks", "outlook"]:
+    if answer.verdict is not None:
+        return "compare"
+    return "outlooks" if len(answer.players) == 2 else "outlook"
 
 
 def _logged(part: PlayerAnswer) -> LoggedPlayer:

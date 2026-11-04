@@ -17,7 +17,7 @@ from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore
-from fantadamus.mcp.tools import collect, compare, league, pages, submit
+from fantadamus.mcp.tools import collect, compare, league, outlook, pages, submit
 from fantadamus.mcp.tools.compare import ReadingItem
 from fantadamus.web.collector import Collector, CollectorConfig
 from fantadamus.web.fetch import Fetcher
@@ -85,9 +85,9 @@ def build_advisor(
     instructions: str,
     collector: CollectorConfig,
 ) -> MCPServer:
-    """The server Claude Desktop runs: `compare_players`, `set_league_rules`, the submit tools (R13.1), and
-    `collect` and `read_page` (mvp-collect C10, C3.2). The collection log and robots.txt cache sit next to the
-    lake, as for `fantadamus collect`."""
+    """The server Claude Desktop runs: `compare_players`, `player_outlook`, `set_league_rules`, the submit
+    tools (R13.1), and `collect` and `read_page` (mvp-collect C10, C3.2). The collection log and robots.txt
+    cache sit next to the lake, as for `fantadamus collect`."""
     server = AdvisorServer(name="fantadamus", instructions=instructions)
     hosts = tuple(allowed_hosts)
     collect_dir = lake.root.parent / "collect"
@@ -120,4 +120,5 @@ def build_advisor(
         collect_log=collect_log,
     )
     compare.register(server, advisor)
+    outlook.register(server, advisor)
     return server

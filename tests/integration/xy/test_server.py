@@ -42,6 +42,7 @@ async def test_served_tools(tmp_path: Path) -> None:
     assert sorted(tools) == [
         "collect",
         "compare_players",
+        "player_outlook",
         "read_page",
         "set_league_rules",
         "submit_fixtures",
