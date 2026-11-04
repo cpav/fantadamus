@@ -13,8 +13,9 @@ instead of a guess.
 
 from __future__ import annotations
 
+import functools
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 from pydantic import BaseModel, ConfigDict
 
@@ -41,20 +42,24 @@ class Resolution(BaseModel):
 _SEPARATORS = re.compile(r"[\s\-]+")
 
 
-def _words(name: str) -> list[str]:
-    return [key for key in map(name_key, _SEPARATORS.split(name)) if key]
+@functools.cache
+def _words(name: str) -> tuple[str, ...]:
+    return tuple(key for key in map(name_key, _SEPARATORS.split(name)) if key)
 
 
-def _whole(words: list[str]) -> list[str]:
+def _whole(words: Sequence[str]) -> list[str]:
     return [word for word in words if len(word) > 1]
 
 
-def _spellings(words: list[str]) -> list[list[str]]:
-    """The words as written, and with the whole words run together: "Del Prato" is also "Delprato"."""
+@functools.cache
+def _spellings(name: str) -> tuple[tuple[str, ...], ...]:
+    """The name's words as written, and with the whole words run together: "Del Prato" is also "Delprato". A
+    squad's names are matched thousands of times per answer, so each is worked out once (mvp-lineup C4)."""
+    words = _words(name)
     whole = _whole(words)
-    return (
-        [words, ["".join(whole), *(word for word in words if len(word) == 1)]] if len(whole) > 1 else [words]
-    )
+    if len(whole) < 2:
+        return (words,)
+    return (words, ("".join(whole), *(word for word in words if len(word) == 1)))
 
 
 def _pairs(a: str, b: str) -> bool:
@@ -62,7 +67,7 @@ def _pairs(a: str, b: str) -> bool:
     return a == b or ((len(a) == 1) != (len(b) == 1) and a[0] == b[0])
 
 
-def _covers(small: list[str], large: list[str]) -> bool:
+def _covers(small: Sequence[str], large: Sequence[str]) -> bool:
     """Every word of `small` pairs with its own word of `large`, whole words first."""
     free = list(large)
     for word in sorted(small, key=len, reverse=True):
@@ -74,7 +79,7 @@ def _covers(small: list[str], large: list[str]) -> bool:
     return True
 
 
-def _whole_words(a: list[str], b: list[str]) -> bool:
+def _whole_words(a: Sequence[str], b: Sequence[str]) -> bool:
     """The name with fewer whole words (more than one letter) has each of them in the other."""
     small, large = sorted((_whole(a), _whole(b)), key=len)
     free = list(large)
@@ -85,7 +90,7 @@ def _whole_words(a: list[str], b: list[str]) -> bool:
     return True
 
 
-def _match(a: list[str], b: list[str]) -> bool:
+def _match(a: Sequence[str], b: Sequence[str]) -> bool:
     return _whole_words(a, b) and (_covers(a, b) or _covers(b, a))
 
 
@@ -98,9 +103,7 @@ def resolve(name: str, players: Iterable[KnownPlayer]) -> Resolution:
         player
         for player in known
         if words
-        and any(
-            _match(ours, theirs) for ours in _spellings(words) for theirs in _spellings(_words(player.name))
-        )
+        and any(_match(ours, theirs) for ours in _spellings(name) for theirs in _spellings(player.name))
     ]
     if len(matches) == 1:
         return Resolution(player=matches[0], candidates=[])

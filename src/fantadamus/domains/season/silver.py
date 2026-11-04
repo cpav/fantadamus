@@ -9,6 +9,8 @@ reads both tables as one.
 
 from __future__ import annotations
 
+import datetime as dt
+
 from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy import once_each
 from fantadamus.contracts.xy.season import (
@@ -149,6 +151,12 @@ PENALTY_TAKERS = Domain(
 )
 
 
-def read_player_seasons(store: LakeStore) -> list[PlayerSeasonRow]:
-    """Every season-figures row, from profiles and statistics-page reads alike (mvp-roles C2)."""
-    return [*read_silver(store, PLAYER_SEASONS), *read_silver(store, SEASON_STATS)]
+def read_player_seasons(
+    store: LakeStore, since: dt.datetime | None = None, until: dt.datetime | None = None
+) -> list[PlayerSeasonRow]:
+    """The season-figures rows captured from `since` to `until`, or all of them, from profiles and
+    statistics-page reads alike (mvp-roles C2)."""
+    return [
+        *read_silver(store, PLAYER_SEASONS, since, until),
+        *read_silver(store, SEASON_STATS, since, until),
+    ]

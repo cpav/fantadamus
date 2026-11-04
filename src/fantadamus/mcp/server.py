@@ -17,8 +17,8 @@ from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore
+from fantadamus.mcp.advisor import Advisor, ReadingItem
 from fantadamus.mcp.tools import collect, compare, league, outlook, pages, submit
-from fantadamus.mcp.tools.compare import ReadingItem
 from fantadamus.web.collector import Collector, CollectorConfig
 from fantadamus.web.fetch import Fetcher
 
@@ -108,7 +108,7 @@ def build_advisor(
     league.register(server, rules, user=user, clock=clock)
     collect.register(server, reader, collect_log)
     pages.register(server, pages.PageReader(reading, page_fetcher))
-    advisor = compare.Advisor(
+    advisor = Advisor(
         lake=lake,
         rules=rules,
         log=log,

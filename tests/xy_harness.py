@@ -19,6 +19,7 @@ from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, RulesStore
+from fantadamus.mcp.advisor import Advisor, load_reading_list
 from fantadamus.mcp.server import AdvisorServer
 from fantadamus.mcp.tools import compare, league, outlook, submit
 from fantadamus.web.collector import Collector
@@ -65,12 +66,12 @@ async def tools(
     submit.register(server, store, allowed_hosts=hosts, clock=clock, submitted_by="user-1", clubs=CLUBS)
     rules = RulesStore(store.root / "league")
     league.register(server, rules, user="user-1", clock=clock)
-    advisor = compare.Advisor(
+    advisor = Advisor(
         lake=store,
         rules=rules,
         log=DecisionLog(store.root / "decisions"),
         clubs=CLUBS,
-        reading=compare.load_reading_list(ROOT / "config" / "reading_list.toml"),
+        reading=load_reading_list(ROOT / "config" / "reading_list.toml"),
         user="user-1",
         clock=clock,
         collector=collector,
