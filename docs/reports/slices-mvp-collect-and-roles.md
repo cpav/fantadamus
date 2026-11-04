@@ -1,6 +1,7 @@
 # Slice report: `mvp-collect` and `mvp-roles`
 
-2026-11-04 · Phase 2, slices (a) and (b) · **For the owner's sign-off** (task 8.3 of each spec)
+2026-11-04 · Phase 2, slices (a) and (b) · **Signed off by the owner on 2026-11-04** (task 8.3 of each spec),
+accepting the gaps listed under "Not tested in a real round"
 
 The owner deferred `mvp-collect`'s real round on 2026-11-03, so that both slices are tested together. This is
 one report for both.

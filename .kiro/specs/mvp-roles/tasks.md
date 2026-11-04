@@ -199,20 +199,22 @@ real rounds are tested together in task 8
     - _Test: `tests/integration/xy/test_server.py::test_prompt_names_every_role`;
       `tests/unit/test_repo_hygiene.py::test_docs_name_every_role`_
 
-- [ ] 8. The real round and the slice gate
+- [x] 8. The real round and the slice gate
   - Branch: `docs/mr-8-report` · Depends on: 7 · ADRs: ADR-0006
-  - [ ] 8.1 **Owner:** in Claude Desktop, on a real round, with `mvp-collect`'s deferred task 8.1:
+  - [x] 8.1 **Owner:** in Claude Desktop, on a real round, with `mvp-collect`'s deferred task 8.1:
     - ask "X or Y?" for two forwards, before and after an official lineup, on each Mac (`mvp-collect` AT-10);
     - ask "X or Y?" for two keepers, two defenders and two midfielders;
     - ask for one player's outlook;
     - check that the season figures came from the statistics page.
+    - Done 2026-11-04 for the three roles. Closed by the owner without an official lineup, the second player's run
+      or an outlook in Claude Desktop; the outlook was asked from the agent's session (see the slice report).
     - _Requirements: AT-10; R1.1, R4.1, R5.1_
     - _Test: what each answer used and the collection log, recorded in the slice report (no page text)_
   - [x] 8.2 A short slice report in `docs/reports/`: tests, coverage, acceptance tests, the decision log's
     record, open risks
     - _Requirements: R5.3, slice gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 8.3 **Owner:** sign off the slice → the full-lineup slice may start
+  - [x] 8.3 **Owner:** sign off the slice → the full-lineup slice may start
     - _Requirements: Slice gate (`quality.md`)_
     - _Test: sign-off recorded in the slice report_
   - [x] 8.4 Fixes from calling the real tools: an answer leaves alone a page it just tried, and a percentage sheet's
