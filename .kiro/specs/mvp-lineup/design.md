@@ -65,7 +65,9 @@ rating and `k` the key. The difference between the two orders is exactly `r_a·r
 | `other_rules` | Names of rules this spec leaves out, repeated in every lineup's warnings (R2.3) |
 
 A formation change comes with the mode: `same_role` never changes it; the other two may, into an allowed formation only.
-`lineup_setup_step` offers the most common values for what's unset. Impossible values are refused with the reason (R2.4).
+`lineup_setup_step` offers the most common values for what's unset, and asks about the no-rating vote and other rules at the
+same time without waiting for them (R2.2). `with_stored_lineup` keeps what's stored when a call leaves a setting out. Impossible
+values are refused with the reason (R2.4).
 
 ### C3. Squads (`league/squads.py`, `mcp/tools/squad.py`; R1)
 
@@ -76,6 +78,7 @@ and team name in `data/local/league/<user>-squads.json`, git-ignored, by player 
 - Names resolve with `resolve`, among the club's players when one is given. Any name that doesn't resolve stores nothing,
   and comes back with its candidates (R1.2).
 - It returns the squad by role, and says if an allowed formation can't be fielded (R1.3).
+- A player listed under two names comes back too, so that the squad never holds him twice.
 
 Team names and rosters are personal data about league members, so they never reach the repository, fixtures or logs that
 are committed. Tests use invented squads.

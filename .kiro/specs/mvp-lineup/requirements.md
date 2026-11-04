@@ -81,8 +81,10 @@ There is no single official rulebook: Fantacalcio.it says each league writes its
   goal thresholds, the bench size, the substitutions per match, the substitution mode, the allowed formations, the vote a
   player without a rating keeps if the league gives one, and any other rules the league uses (R2.3).
 - **R2.2** IF a user asks for a lineup and any of those is unset THEN THE SYSTEM SHALL return the setup step for just
-  those settings, offering the most common values above. It SHALL never assume them. Users who set only bonuses and
-  maluses SHALL keep getting "X or Y?" answers.
+  those settings, offering the most common values above. It SHALL never assume them. A total-points league SHALL NOT be
+  asked for thresholds, which don't matter there. The no-rating vote and other rules SHALL be asked about at the same
+  time, but a lineup SHALL NOT wait for them, since many leagues have neither. Users who set only bonuses and maluses
+  SHALL keep getting "X or Y?" answers. A later call that leaves a lineup setting out SHALL keep the stored one.
 - **R2.3** WHERE a league uses rules this spec leaves out, such as a modifier or a home factor, THE SYSTEM SHALL take their
   names, and every lineup SHALL say that its score doesn't include them.
 - **R2.4** IF a value is impossible (thresholds not rising, a formation that isn't eleven players with one keeper, a
@@ -246,3 +248,6 @@ Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
   A finished round's page still marks who really started (`mvp-collect` R3.1), so nothing has to be caught live and a round
   can score itself (R7.2). Scoring only the players someone asked about would give about 20 a round, so the model is also
   scored on everyone (R7.4). A command is no longer needed, but stays for reports and for trying a changed constant (R7.5).
+- **2026-11-04, building task 3:** R2.2 gained three details the requirement had left open. A total-points league isn't asked
+  for thresholds. The no-rating vote and other rules are asked about but don't hold a lineup back. And a later call that leaves
+  a lineup setting out keeps it, so a change of bonuses doesn't lose the lineup rules.

@@ -39,10 +39,140 @@
         ],
         "title": "GoalByRole",
         "type": "object"
+      },
+      "LineupRules": {
+        "additionalProperties": false,
+        "description": "What a lineup needs beyond bonuses and maluses. Any of it may still be unset: the setup step asks for\nwhat is (mvp-lineup R2.2).",
+        "properties": {
+          "bench_size": {
+            "anyOf": [
+              {
+                "maximum": 25,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Places on the bench",
+            "title": "Bench Size"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "enum": [
+                  "head_to_head",
+                  "total_points"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Head to head, where thresholds decide; or total points, where they don't",
+            "title": "Format"
+          },
+          "formations": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Allowed formations, as defenders-midfielders-forwards: 3-4-3",
+            "title": "Formations"
+          },
+          "no_rating_vote": {
+            "anyOf": [
+              {
+                "maximum": 10,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The vote a player without a rating keeps when nobody replaces him, if the league gives one",
+            "title": "No Rating Vote"
+          },
+          "other_rules": {
+            "default": [],
+            "description": "Rules this league uses that Fantadamus leaves out, such as a modifier or a captain; every lineup says its score doesn't include them",
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "Other Rules",
+            "type": "array"
+          },
+          "substitution_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "same_role",
+                  "role_first",
+                  "bench_order"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "How a player without a rating is replaced: same role only (the formation never changes); role first, then bench order; or bench order first. The last two may change the formation, into an allowed one",
+            "title": "Substitution Mode"
+          },
+          "substitutions": {
+            "anyOf": [
+              {
+                "maximum": 11,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Substitutions per match",
+            "title": "Substitutions"
+          },
+          "thresholds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Rising points for the 1st, 2nd and later fantasy goals; past the last, its last step repeats",
+            "title": "Thresholds"
+          }
+        },
+        "title": "LineupRules",
+        "type": "object"
       }
     },
     "additionalProperties": false,
-    "description": "The league's bonus and malus table. Bonuses are 0 to 10, maluses -10 to 0.",
+    "description": "The league's bonus and malus table, and what a lineup needs. Bonuses are 0 to 10, maluses -10 to 0.",
     "properties": {
       "assist": {
         "description": "An assist",
@@ -78,6 +208,18 @@
         "minimum": -10,
         "title": "Goal Conceded",
         "type": "number"
+      },
+      "lineup": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/LineupRules"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "What a lineup needs: thresholds, the bench, substitutions and formations. Not needed for 'X or Y?'. A call without it, or with only some of it, keeps what's stored"
       },
       "own_goal": {
         "description": "An own goal",
@@ -137,5 +279,5 @@
     "title": "LeagueRules",
     "type": "object"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

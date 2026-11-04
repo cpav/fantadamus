@@ -29,6 +29,7 @@ def test_serve_runs_the_server_on_stdio(monkeypatch: pytest.MonkeyPatch, tmp_pat
             "player_outlook",
             "read_page",
             "set_league_rules",
+            "set_squad",
             "submit_fixtures",
             "submit_match_odds",
             "submit_official_lineup",
