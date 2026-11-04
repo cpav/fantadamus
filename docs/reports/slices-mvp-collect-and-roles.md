@@ -99,7 +99,7 @@ Method §A9: tests 2, 3, 4 and 6 pass. Tests 1 and 5 belong to the full lineup.
 - **A surname match could be the wrong player**, such as a youth player the statistics page doesn't list. The answer
   says when it was used.
 - **Rivals are inferred.** The page names no ballottaggi, so a player can show more than one rival.
-- **Answers are large:** about 12 KB for two players, mostly repeated sources. A full lineup can't repeat them like
+- **Answers are large:** about 10 KB for two players, much of it repeated sources. A full lineup can't repeat them like
   this, so its design must be compact.
 - **Two of round 11's ten matches show no over/under** on the round page, so a question about their players needs
   Claude to search, or the 1X2 alone.
