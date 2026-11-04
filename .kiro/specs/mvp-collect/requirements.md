@@ -104,7 +104,9 @@ be added or changed in configuration.
   - each match's 1X2 odds and its chance of 3 or more goals, the latter used as P(over 2.5);
   - each listed player's start percentage per outlet (Fantacalcio.it, Gazzetta, SOS Fanta, Sky) for both
     teams;
-  - the official lineup, once the page confirms it.
+  - the official lineup, once the page confirms it: the page marks each real starter, in whichever table lists him. A
+    match's lineup is out once both teams have 11 marks, or 10 when the page doesn't list the eleventh, and the other
+    players listed count as substitutes.
 - **R3.2** THE SYSTEM SHALL provide an MCP tool `read_page` that fetches a page on the reading list under R2
   and returns its page text (headings, paragraphs, lists, tables as rows, and links to other pages on the
   reading list with their addresses), the fetch time and the submit tool for each fact the page carries. The
@@ -204,6 +206,7 @@ rather than silently skipped.
 | AT-7 | When Fantacalcio.it's calendar and Fantacalcio-Online's round page disagree on a kickoff, the answer uses Fantacalcio.it's and says so | R5.1 |
 | AT-8 | After an outlet moves a player to the bench, the next answer shows his p_start falling from the previous answer's value and names the change | R6.1 |
 | AT-9 | At a given time, `collect --due` fetches exactly the facts past their cadence | R7.1 |
+| AT-12 | On a synthetic page with marks in both tables, the marked starters count, whichever table lists them: one marked in the bench table starts, and a probable starter without a mark doesn't. A team with 10 marks still counts, and a player its lineup doesn't name isn't ruled out | R3.1, R4.3 |
 | AT-10 | Manual: the owner, and the second player on his Mac, ask a real "X or Y?" before and after an official lineup; the round's facts come from the collector, and Claude reads any other page through `read_page`, never its own browsing | All |
 | AT-11 | `read_page` on a synthetic page added only in configuration returns its headings, table rows and listed links with the fetch time, and a submission of its facts with that address is stored; an address off the reading list is refused before any request | R3.2, R3.3 |
 
@@ -225,3 +228,7 @@ rather than silently skipped.
 - **2026-10-31:** a page the collector finds unchanged stores nothing new (R1.4), so its facts would keep their
   old capture time and look stale. The owner approved counting such a read as their refresh (R1.5, R6.2), taken
   from the collection log, over storing every read again.
+- **2026-11-04:** while checking how calibration could work, reading ten finished rounds' pages showed the reader
+  misunderstood the marks. It waited for all 11 probable starters to be marked, but the page marks the real starters
+  wherever it lists them, so only 1 of 20 matches in the two rounds tested was read as official. Across the ten rounds, 177 of 200 teams
+  have 11 marks and 23 have 10, because the eleventh starter isn't on the page. R3.1 and AT-12 say what the marks mean.

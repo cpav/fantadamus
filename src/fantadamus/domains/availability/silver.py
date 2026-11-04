@@ -31,6 +31,8 @@ class OfficialLineupRow(SilverRow):
     club: str
     name: str
     status: Literal["starter", "bench"]
+    unnamed_starters: int
+    """His club's starters this lineup can't name: a player it leaves out may be one (mvp-x-or-y R4.2)."""
 
 
 def _match(home: str, away: str, clubs: Clubs) -> tuple[str, str]:
@@ -74,7 +76,15 @@ def _probable_rows(payload: ProbableLineupPayload, clubs: Clubs, source: Source)
 def _official_rows(payload: OfficialLineupPayload, clubs: Clubs, source: Source) -> list[OfficialLineupRow]:
     home, away = _match(payload.home, payload.away, clubs)
     return [
-        OfficialLineupRow(**source.model_dump(), home=home, away=away, club=club, name=name, status=status)
+        OfficialLineupRow(
+            **source.model_dump(),
+            home=home,
+            away=away,
+            club=club,
+            name=name,
+            status=status,
+            unnamed_starters=team.unnamed_starters,
+        )
         for club, team in ((home, payload.home_team), (away, payload.away_team))
         for status, names in (("starter", team.starters), ("bench", team.bench))
         for name in names
@@ -101,8 +111,8 @@ OFFICIAL_LINEUPS = Domain(
     Table(
         "official_lineups",
         f"CREATE TEMP TABLE official_lineups ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, "
-        "club VARCHAR, name VARCHAR, status VARCHAR)",
-        "INSERT INTO official_lineups VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "club VARCHAR, name VARCHAR, status VARCHAR, unnamed_starters BIGINT)",
+        "INSERT INTO official_lineups VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 

@@ -12,7 +12,7 @@ page's read as fresh, approved 2026-10-31 · Date: 2026-10-30 · From the approv
 - Before a task, `make task-check TASK=<n>` (this spec is the default) checks that its dependencies are
   ticked, that every step names its requirements and test, and that its ADRs are Accepted.
 - A ticked box (`- [x]`) marks a task or step as done; the agent ticks it on the task's branch.
-- The property tests P1–P7 in the design are **required**. No task is optional.
+- The property tests P1–P9 in the design are **required**. No task is optional.
 - Each task ends with the task report; the owner approves the pull request, the agent squash-merges it.
 - **Tests for this spec** live in a `collect/` folder in each test layer. Pages are synthetic copies of the
   real pages' structure with invented clubs and players, built by `tests/collect_pages.py`. Tests never touch
@@ -161,3 +161,17 @@ page's read as fresh, approved 2026-10-31 · Date: 2026-10-30 · From the approv
   - [x] 8.3 **Owner:** sign off the slice → the next slice may start
     - _Requirements: Slice gate (`quality.md`)_
     - _Test: sign-off recorded in the slice report_
+
+- [x] 9. Official lineups read from the marks, in either table
+  - Branch: `fix/mc-9-official-marks` · Depends on: 8 · ADRs: ADR-0006
+  - [x] 9.1 `OfficialTeam.unnamed_starters`, carried into silver; a player the lineup doesn't name isn't ruled out when
+    his team has an unnamed starter
+    - _Requirements: R4.3_
+    - _Test: `tests/contract/test_xy_contracts.py::test_official_team_accounts_for_eleven`;
+      `tests/integration/xy/test_lineups.py::test_unnamed_starter_leaves_the_unnamed_to_the_outlets`_
+  - [x] 9.2 The reader takes the starters from the marks in both tables
+    - _Requirements: R3.1_
+    - _Test: `tests/unit/collect/test_read_fco.py::test_official_lineup_marks_in_either_table`;
+      **P9** `tests/property/collect/test_collect.py::test_p9_the_marks_are_the_starters`;
+      `tests/contract/test_real_pages.py::test_finished_rounds_give_every_official_lineup`;
+      **AT-12** `tests/acceptance/collect/test_official_marks.py::test_at12_the_marks_decide`_

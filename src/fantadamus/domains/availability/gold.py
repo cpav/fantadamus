@@ -136,9 +136,10 @@ def availability(
         match_officials, as_of, key=lambda row: (row.home, row.away)
     ).values():
         named = his(team_sheet)
-        official = OfficialView(
-            status=named[0].status if named else "not listed", source=team_sheet[0].source
-        )
+        if named or not any(row.club == player.club and row.unnamed_starters for row in team_sheet):
+            official = OfficialView(
+                status=named[0].status if named else "not listed", source=team_sheet[0].source
+            )
 
     if not outlets and official is None:
         return None

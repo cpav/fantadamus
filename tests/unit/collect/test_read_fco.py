@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Iterable
 from dataclasses import replace
 
 import pytest
@@ -62,6 +63,47 @@ def test_official_lineup_when_confirmed() -> None:
     assert {"UNO G", "DUE G", "UNDICI G"} <= set(official.home_team.starters)
     assert "DODICI G" in official.home_team.bench
     assert len(official.away_team.starters) == 11
+
+
+def _written(names: Iterable[str]) -> list[str]:
+    """The names as the page writes them, sorted: `Alfa Dodici` is `DODICI A`."""
+    return sorted(f"{name.split()[1].upper()} {name[0]}" for name in names)
+
+
+ALFA, BETA = squad("Alfa"), squad("Beta")
+
+
+def test_official_lineup_marks_in_either_table() -> None:
+    """The page marks the real starters: here a probable starter is left out and a bench player comes in."""
+    marked = (*ALFA[:10], ALFA[11], *BETA[:11])
+    [official] = read_round(fco_round_page(FcoMatch("Alfa", "Beta", marked=marked)), round=10).officials
+    assert official.home_team.starters == _written((*ALFA[:10], ALFA[11]))
+    assert official.home_team.bench == _written((ALFA[10], ALFA[12]))  # the rest of both tables
+    assert official.home_team.unnamed_starters == 0
+    assert official.away_team.starters == _written(BETA[:11])
+
+
+def test_ten_marks_leave_one_starter_unnamed() -> None:
+    """Some teams have 10 marks, because the page doesn't list the eleventh starter."""
+    marked = (*ALFA[:11], *BETA[:10])
+    [official] = read_round(fco_round_page(FcoMatch("Alfa", "Beta", marked=marked)), round=10).officials
+    assert official.home_team.unnamed_starters == 0
+    assert official.away_team.starters == _written(BETA[:10])
+    assert official.away_team.unnamed_starters == 1
+
+
+@pytest.mark.parametrize("marked", [(*ALFA[:11], *BETA[:9]), tuple(ALFA[:11]), ()])
+def test_no_official_lineup_until_both_teams_have_theirs(marked: tuple[str, ...]) -> None:
+    facts = read_round(fco_round_page(FcoMatch("Alfa", "Beta", marked=marked)), round=10)
+    assert facts.officials == []
+    assert facts.problems == []  # not a fault: it's just not out yet
+
+
+def test_too_many_marks_are_named_as_a_problem() -> None:
+    marked = (*ALFA[:12], *BETA[:11])
+    facts = read_round(fco_round_page(FcoMatch("Alfa", "Beta", marked=marked)), round=10)
+    assert facts.officials == []
+    assert facts.problems == ["Alfa v Beta, official lineup: Value error, needs 11 starters, got 12"]
 
 
 def test_dash_means_not_listed() -> None:

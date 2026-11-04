@@ -17,7 +17,7 @@
             "type": "array"
           },
           "starters": {
-            "description": "The 11 starters",
+            "description": "The 11 starters, less any that `unnamed_starters` counts",
             "items": {
               "maxLength": 60,
               "minLength": 1,
@@ -25,6 +25,14 @@
             },
             "title": "Starters",
             "type": "array"
+          },
+          "unnamed_starters": {
+            "default": 0,
+            "description": "A starter the source doesn't name: a page can list only 10 of the 11",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Unnamed Starters",
+            "type": "integer"
           }
         },
         "required": [
@@ -67,5 +75,5 @@
     "title": "OfficialLineupPayload",
     "type": "object"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
