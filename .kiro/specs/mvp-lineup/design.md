@@ -193,10 +193,27 @@ It reports the Brier score and reliability by probability bucket, and counts wha
 official lineup stored (R7.3). The results are aggregates, so they can go in a committed report; the per-player detail stays
 in `data/local/`. Comparing with the market, which §A8 also asks for, waits for the market's chances to be logged.
 
-### C11. The agent prompt and docs (R9, R6.2)
+### C11. The league profile (R9.3, R9.4)
 
-`set_squad` and `best_lineup`; formats 2, 3 and 6; give warnings and try `improve` once; state an override's cost once, then
-help with the user's choice. When a user with a squad asks about two roles, point to `best_lineup`. `compare_players`'
+Nothing about one user's league is fixed in the code or the prompt. A player sets up their own Claude Project, which has two
+parts: the agent prompt, the same for everyone, and their filled-in [league profile](../../../docs/league-profile-template.md).
+
+| What | Where it lives | Who uses it |
+|---|---|---|
+| Bonuses, thresholds, bench, substitutions, formations | The profile, then the private rules store, through `set_league_rules` | The tools, for the arithmetic |
+| Squads, the user's and league-mates' | The profile, then the private squad store, through `set_squad` | The tools |
+| Rules Fantadamus doesn't model | The profile, then `other_rules` | The tools, for the warning |
+| Preferences: ceiling or floor, formation habits, overrides, routine, language | The profile only | Claude, to explain and prioritise; never the numbers |
+
+So the stores stay the source of truth for the numbers: the tools work the same with or without a profile, and a player can
+fill either one by talking to Claude. A test ties the template to `LineupRules` and `LeagueRules`, so a new setting can't be
+forgotten (AT-15). Once the server is online (Phase 3), it can offer the blank template itself, since a remote player won't
+have this repository.
+
+### C12. The agent prompt and docs (R9.1, R9.2, R6.2)
+
+`set_squad` and `best_lineup`; using the profile when the Project has one (C11); formats 2, 3 and 6; give warnings and try
+`improve` once; state an override's cost once, then help with the user's choice. When a user with a squad asks about two roles, point to `best_lineup`. `compare_players`'
 two-role message says so too. The README and the player guide say how to give a squad and rules.
 
 ## Error handling
@@ -256,17 +273,20 @@ $0. No new pages or requests: a lineup reads the same two pages as today, within
 5. **`best_lineup`:** the answer, warnings and `improve`, the log.
 6. **Overrides and calls:** `start`, `leave_out`, `formation`, and the cost.
 7. **Calibration:** `fantadamus calibrate`.
-8. **The agent prompt and docs.**
+8. **The agent prompt, the league profile and the docs.**
 9. **The real round and Phase 2's gate:** testing from Claude Code, AT-13, the first calibration report, a mutation-testing
    run on the core modules, and the phase report.
 
 ## Open points for the owner
 
-1. **The requirements amended from your notes.** Modifiers are out, since your league has none. Squads can be kept for
-   league-mates. A club's keepers are one place. A close call names the higher ceiling. An override's cost is given once. Your
-   friend's league is still unknown: if it has a modifier, the lineup will say the score leaves it out, and we add it then.
-   **Recommendation:** accept.
+1. **The requirements amended from your notes.** Squads can be kept for league-mates. A club's keepers are one place. A close
+   call names the higher ceiling. An override's cost is given once. A blank league profile holds what's specific to each
+   user (C11). **Recommendation:** accept.
 2. **The review after the round.** Your routine ends with one that judges decisions, not results. `fantadamus calibrate` scores
    the forecasts, which Phase 2's gate needs, but it isn't a review of your lineup: what you chose, what the advice was, and
    what each decision cost at the time. That's its own small piece of work. **Recommendation:** leave it out of this slice,
    and do it right after Phase 2's gate, once the logged lineups exist to review.
+3. **Modifiers, now that other leagues matter.** Your league has none, so this slice leaves them out. But the defence modifier
+   is the most used one, so many other leagues' scores would come with a warning. **Recommendation:** keep it out of this slice
+   to close Phase 2 sooner, and build the defence modifier as soon as a real user's league needs it, starting with your
+   friend's if it does.

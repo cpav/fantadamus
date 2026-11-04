@@ -1,7 +1,7 @@
 # Requirements Document: `mvp-lineup` (Phase 2, third slice)
 
 Status: **Approved by the owner, 2026-11-04**, with the amendment to R5.5 and R5.6; R1.5, R2.1, R2.3, R3.3 to R3.5, R4.4
-and AT-6, AT-7, AT-10 amended the same day from the owner's league notes, **for the owner's review** · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
+and AT-6, AT-7, AT-10 amended the same day from the owner's league notes, and R9.3, R9.4 and AT-15 added, **for the owner's review** · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
 `mvp-collect` and `mvp-roles` (signed off) · Method: [`docs/method.md`](../../../docs/method.md) §A1 to §A3, §A7, §A8,
 §A9 tests 1 and 5 · Answers: [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 2, 3 and 6
 
@@ -185,6 +185,12 @@ answer.
   in formats 2, 3 and 6.
 - **R9.2** THE SYSTEM SHALL say in the README and the player guide what Fantadamus now answers, and how a player gives
   their squad and rules.
+- **R9.3** THE SYSTEM SHALL provide a blank league profile (`docs/league-profile-template.md`) that any player fills in and
+  keeps in their own Claude Project, beside the agent prompt: their league's rules, their squads and how they like to
+  play. It SHALL hold every setting of R2, and no user's details.
+- **R9.4** THE SYSTEM SHALL tell Claude, in the agent prompt, to use the profile when the Project has one: to save its rules
+  and squads with the tools on first use, instead of asking; to ask only for what it leaves out; and to let its
+  preferences shape the explanation, never the numbers. Without a profile, Claude asks, as it does today.
 
 ## Acceptance tests
 
@@ -203,6 +209,7 @@ answer.
 | AT-11 | Worth of a choice: a 12% backup keeper ahead of a 92% starter on the key is a coin flip, not "clear"; the order doesn't change | R8 |
 | AT-12 | `fantadamus calibrate` on a scripted round gives the right Brier scores and buckets, and names what it couldn't score | R7 |
 | AT-14 | A squad with a player in a match without over/under gets its lineup in one call, with a warning naming the match and the pages that could improve it; once better odds are submitted, the warning goes and the numbers use them. A player without rated games and one no outlet lists each get their warning | R5.5, R5.6 |
+| AT-15 | The blank profile names every setting `set_league_rules` takes, so the two can't drift apart, and holds no user's details; the agent prompt tells Claude to use it | R9.3, R9.4 |
 | AT-13 | Manual: the owner gives a real squad and rules in Claude Desktop, and gets a lineup for a real round to compare with their own choice | All |
 
 Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
@@ -223,3 +230,7 @@ Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
 - **2026-11-04, from the same notes, for the owner's review:** a player also asks on behalf of league-mates (R1.5); a
   club's keepers are one place, because on a real squad an unrated backup had the higher key (R3.3); a close call says
   which option has the higher ceiling (R3.4); and an override's cost is given once, as the method asks (R3.5).
+- **2026-11-04, the owner again:** nothing about one user's league should be fixed. What a user knows about their league is
+  part of the Project they set up, so a blank league profile holds it (R9.3, R9.4). The owner's notes are that profile,
+  filled in, and stay outside this repository. Modifiers aren't modelled in this slice for now; the profile records them
+  and the lineup says its score leaves them out. Whether to build them sooner is an open point in the design.
