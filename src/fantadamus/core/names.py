@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import functools
 import unicodedata
 
 
+@functools.cache
 def name_key(text: str) -> str:
     """NFKD without combining marks, case-folded, letters and digits only: `A.C. Milan` → `acmilan`."""
     decomposed = unicodedata.normalize("NFKD", text)

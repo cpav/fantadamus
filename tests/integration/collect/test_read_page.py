@@ -12,7 +12,7 @@ from fantadamus.core.clock import fixed_clock
 from fantadamus.domains.facts import read_silver
 from fantadamus.domains.season.silver import TEAM_SEASONS
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.mcp.tools.compare import ReadingItem
+from fantadamus.mcp.advisor import ReadingItem
 from fantadamus.web import text
 from fantadamus.web.fetch import Fetcher, Response
 from tests.collect_harness import FakeTime, FakeWeb, page_tools

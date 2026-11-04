@@ -12,7 +12,7 @@ from fantadamus.core.clock import fixed_clock
 from fantadamus.domains.facts import read_silver
 from fantadamus.domains.season.silver import PENALTY_TAKERS
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.mcp.tools.compare import load_reading_list
+from fantadamus.mcp.advisor import load_reading_list
 from fantadamus.web.fetch import Fetcher
 from tests.collect_harness import local_site, page_tools
 from tests.xy_harness import error_text

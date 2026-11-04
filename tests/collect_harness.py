@@ -17,9 +17,9 @@ from mcp import Client
 
 from fantadamus.core.clock import Clock, fixed_clock
 from fantadamus.lake.duckdb_store import LakeStore
+from fantadamus.mcp.advisor import ReadingItem
 from fantadamus.mcp.server import AdvisorServer
 from fantadamus.mcp.tools import pages, submit
-from fantadamus.mcp.tools.compare import ReadingItem
 from fantadamus.web.collector import Collector, CollectorConfig
 from fantadamus.web.fetch import Fetcher, Response, Transport, http_transport
 from tests.xy_harness import CLUBS, NOW

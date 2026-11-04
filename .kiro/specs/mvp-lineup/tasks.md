@@ -42,23 +42,27 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Test: `tests/acceptance/xy/test_method.py::test_at3_bench_cover_changes_verdict`;
       `tests/unit/checks/test_task_check.py::test_default_is_the_current_spec`_
 
-- [ ] 2. Tidy and speed up
+- [x] 2. Tidy and speed up
   - Branch: `refactor/ml-2-advisor` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 `mcp/advisor.py`:
+  - [x] 2.1 `mcp/advisor.py`:
     - the facts, the models, the advisor and the shared steps move there from `mcp/tools/compare.py`, with no change of
       behaviour, and the tests change only what they import;
-    - `answer_at` is split around `_gather(players, as_of)`, which returns each player's facts and what's missing;
+    - `answer_at` is split around `gather(players, as_of)`, which returns each player's facts and what's missing;
     - missing facts are sorted into needed and better to have.
     - _Requirements: R3.1, R5.5_
     - _Test: the existing suite, passing with only its imports changed;
-      `tests/integration/lineup/test_gather.py::test_needed_and_better_to_have`_
-  - [ ] 2.2 Faster reads:
+      `tests/integration/lineup/test_gather.py::test_needed_and_better_to_have`,
+      `::test_x_or_y_still_asks_for_what_is_only_better_to_have`_
+  - [x] 2.2 Faster reads:
     - `_words` and `_spellings` cached, and each distinct name of a club resolved once per `availability` call;
     - `Facts.read(lake, as_of)` reads only the 14 days up to `as_of`, filtered in DuckDB;
-    - a replay still works, and movement older than 7 days has no earlier value.
+    - a replay still works, and movement older than 7 days has no earlier value;
+    - freshness worked out once per kickoff: on a real squad, the slowest step left once names were cached.
+    - A real squad's 25 names took 1.27 s before this task and 0.35 s after it (2026-11-04).
     - _Requirements: R4.6_
     - _Test: `tests/integration/lineup/test_reads.py::test_window_moves_with_as_of`, `::test_old_rows_left_out`,
-      `::test_a_whole_squad_reads_quickly`; the time on a real squad, before and after, in the task report_
+      `::test_an_answer_reads_what_the_collector_just_stored`, `::test_each_name_resolved_once_per_call`,
+      `::test_a_whole_squad_reads_quickly`; `tests/integration/lineup/test_gather.py::test_freshness_is_each_match_own`_
 
 - [ ] 3. Rules and squads
   - Branch: `feat/ml-3-rules-squads` · Depends on: 2 · ADRs: none

@@ -15,7 +15,7 @@ from mcp import Client
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.mcp.tools import compare
+from fantadamus.mcp.advisor import Facts
 from fantadamus.web.fetch import Response
 from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE, FakeWeb, round_collector
 from tests.collect_pages import FcoMatch, fco_round_page, stats_page
@@ -126,14 +126,14 @@ async def test_facts_read_once_a_call(tmp_path: Path, monkeypatch: pytest.Monkey
     """A season of statistics rows costs 0.8 s a read (task 1.3): an answer reads them once, and again only
     after the collector stored something."""
     reads = 0
-    read = compare.Facts.read
+    read = Facts.read
 
-    def counting(lake: LakeStore) -> compare.Facts:
+    def counting(lake: LakeStore, as_of: dt.datetime) -> Facts:
         nonlocal reads
         reads += 1
-        return read(lake)
+        return read(lake, as_of)
 
-    monkeypatch.setattr(compare.Facts, "read", counting)
+    monkeypatch.setattr(Facts, "read", counting)
     web, clock = _web(Response(200, HTML, STATS)), SetClock(NOW)
     store = LakeStore(tmp_path / "lake")
     async with tools(store, **_collecting(store, tmp_path, web, clock)) as client:

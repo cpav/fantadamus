@@ -223,8 +223,15 @@ def rebuild(store: LakeStore, domain: Domain[Any, Any], clubs: Clubs) -> None:
     store.write_table("silver", domain.table, [tuple(row.model_dump().values()) for row in rows])
 
 
-def read_silver[R: SilverRow](store: LakeStore, domain: Domain[Any, R]) -> list[R]:
-    return [domain.row.model_validate(row) for row in store.read_table("silver", domain.table.name)]
+def read_silver[R: SilverRow](
+    store: LakeStore,
+    domain: Domain[Any, R],
+    since: dt.datetime | None = None,
+    until: dt.datetime | None = None,
+) -> list[R]:
+    """The domain's rows, or only those captured from `since` to `until`, both included."""
+    rows = store.read_table("silver", domain.table.name, since, until)
+    return [domain.row.model_validate(row) for row in rows]
 
 
 def last_read(store: LakeStore, domain: Domain[Any, Any], source_url: str) -> set[str]:

@@ -14,8 +14,8 @@ from fantadamus.core.clubs import Clubs
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore
+from fantadamus.mcp.advisor import load_reading_list
 from fantadamus.mcp.server import build_advisor, load_instructions
-from fantadamus.mcp.tools.compare import load_reading_list
 from fantadamus.web.collector import load_collector
 from tests.xy_harness import NOW, ROOT
 

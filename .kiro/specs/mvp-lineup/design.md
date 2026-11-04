@@ -85,6 +85,8 @@ are committed. Tests use invented squads.
 Asking about a real 25-player squad took about 5 s under a profiler, nearly all of it matching outlet names to players.
 
 - **Names.** `_words` and `_spellings` are cached, and `availability` resolves each distinct name of a club once per call.
+- **Freshness.** The check goes through every row, so `gather` works it out once per kickoff, not once per player. Each match
+  keeps its own answer, because lineups go stale sooner close to kickoff.
 - **A window on the lake.** `Facts.read(lake, as_of)` reads only rows captured in the 14 days up to `as_of`, filtered in
   DuckDB. No freshness target is longer than 7 days, so no live answer needs more. A replay still works, since the window
   moves with `as_of`. Movement older than 7 days now has no earlier value, which the answer already handles. This also
@@ -96,7 +98,7 @@ Asking about a real 25-player squad took about 5 s under a profiler, nearly all 
 and the shared steps move to `mcp/advisor.py`, and each tool module keeps only its registration and its own result. This
 moves code without changing behaviour; the tests change only what they import.
 
-`answer_at` is split so that the lineup can reuse it: `_gather(players, as_of)` returns each player's facts and what's
+`answer_at` is split so that the lineup can reuse it: `gather(players, as_of)` returns each player's facts and what's
 missing. Facts are then sorted into two kinds:
 
 - **Needed:** fixtures, the table, the takers and season figures. Without them the answer is a refresh plan, as today. The
@@ -220,7 +222,7 @@ unscored, with the reason (R7.3); so do a postponed match's, which has no marks.
 
 - **What users were told:** the decision log's last chances for each player before his kickoff. It's the honest record of what
   was published, and small: about 25 players per squad asked about.
-- **The model on everyone:** `_gather` (C5) and the engine, for every player the page lists, as of his kickoff, with the
+- **The model on everyone:** `gather` (C5) and the engine, for every player the page lists, as of his kickoff, with the
   official lineup left out so that it scores the forecast and not the answer. It's the current model on the facts held then, so
   it can test a changed constant on past rounds. Starting needs no model: it's the mean of the outlets' percentages on the
   page. A player whose facts weren't held before kickoff counts as unscored.

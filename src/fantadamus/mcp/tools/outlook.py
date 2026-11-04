@@ -6,7 +6,7 @@ from __future__ import annotations
 from mcp.server.mcpserver import MCPServer
 from pydantic import AwareDatetime
 
-from fantadamus.mcp.tools.compare import Advisor, CompareResult
+from fantadamus.mcp.advisor import Advisor, CompareResult
 
 
 def register(server: MCPServer, advisor: Advisor) -> None:

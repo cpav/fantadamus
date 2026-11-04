@@ -17,7 +17,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel
 
-from fantadamus.mcp.tools.compare import ReadingItem
+from fantadamus.mcp.advisor import ReadingItem
 from fantadamus.web import text as page
 from fantadamus.web.fetch import Fetcher, FetchError
 from fantadamus.web.html import parse

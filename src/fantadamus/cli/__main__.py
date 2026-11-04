@@ -17,8 +17,8 @@ from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import DEFAULT_ROOT, LakeStore
 from fantadamus.league.rules import RulesStore
+from fantadamus.mcp.advisor import DEFAULT_READING_LIST, load_reading_list
 from fantadamus.mcp.server import DEFAULT_SOURCES, build_advisor, load_allowed_hosts, load_instructions
-from fantadamus.mcp.tools.compare import DEFAULT_READING_LIST, load_reading_list
 from fantadamus.web.cadence import collect_due
 from fantadamus.web.collector import FACTS, Collector, CollectReport, PageReport, load_collector
 from fantadamus.web.fetch import Fetcher

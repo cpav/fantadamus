@@ -93,9 +93,16 @@ def _write_parquet(table: Table, rows: Sequence[Row], path: Path) -> None:
         connection.table(table.name).write_parquet(str(path))
 
 
-def _read_parquet(paths: Sequence[Path]) -> list[dict[str, object]]:
+def _read_parquet(
+    paths: Sequence[Path], since: dt.datetime | None = None, until: dt.datetime | None = None
+) -> list[dict[str, object]]:
     with connect() as connection:
         relation = connection.read_parquet([str(path) for path in paths], filename=True)
+        captured = duckdb.ColumnExpression("captured_at")
+        if since is not None:
+            relation = relation.filter(captured >= duckdb.ConstantExpression(since))
+        if until is not None:
+            relation = relation.filter(captured <= duckdb.ConstantExpression(until))
         kinds = zip(relation.columns, relation.types, strict=True)
         zoned = {name for name, kind in kinds if str(kind) == TIMESTAMPTZ}
         columns = [
@@ -173,11 +180,13 @@ class LakeStore:
         temporary.replace(path)
         return path
 
-    def read_table(self, layer: Layer, name: str) -> list[dict[str, object]]:
-        """A silver or gold table's rows, or no rows if it hasn't been built yet."""
+    def read_table(
+        self, layer: Layer, name: str, since: dt.datetime | None = None, until: dt.datetime | None = None
+    ) -> list[dict[str, object]]:
+        """A silver or gold table's rows, or no rows if it hasn't been built yet; with `since` or `until`,
+        those captured from one to the other, both included, filtered in DuckDB."""
         path = self.root / layer / f"{name}.parquet"
         if not path.is_file():
             return []
-        return [
-            {key: value for key, value in row.items() if key != "filename"} for row in _read_parquet([path])
-        ]
+        rows = _read_parquet([path], since, until)
+        return [{key: value for key, value in row.items() if key != "filename"} for row in rows]

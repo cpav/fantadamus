@@ -100,11 +100,18 @@ def availability(
     mates = [known for known in players if known.club == player.club]
 
     by_surname: set[str] = set()
+    resolved: dict[str, KnownPlayer | None] = {}
+
+    def who(name: str) -> KnownPlayer | None:
+        """Outlets repeat one another's names, so each is matched once (mvp-lineup C4)."""
+        if name not in resolved:
+            resolved[name] = resolve(name, mates).player
+        return resolved[name]
 
     def his[R: LineupViewRow | OfficialLineupRow | OutletViewRow](rows: Sequence[R]) -> list[R]:
         """The rows about him in one lineup."""
         club = [row for row in rows if row.club == player.club]
-        named = [row for row in club if resolve(row.name, mates).player == player]
+        named = [row for row in club if who(row.name) == player]
         if named:
             return named
         found = [row for row in club if same_surname(row.name, mates) == player]

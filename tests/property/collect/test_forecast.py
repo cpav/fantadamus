@@ -27,18 +27,18 @@ from fantadamus.engine.outfield import OutfieldValue
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, RulesStore
-from fantadamus.mcp.tools import compare
+from fantadamus.mcp.advisor import Advisor, Facts, load_reading_list, movement
 from tests.xy_harness import CLUBS, GAMMA_NOVE, NOW, ROOT, TAKERS, TEAM_TABLE, URL, lineup, odds_for, page
 
 READ = NOW - dt.timedelta(hours=1)
 
 
 @pytest.fixture(scope="module")
-def lake(tmp_path_factory: pytest.TempPathFactory) -> tuple[compare.Advisor, compare.Facts]:
+def lake(tmp_path_factory: pytest.TempPathFactory) -> tuple[Advisor, Facts]:
     return _filled(LakeStore(tmp_path_factory.mktemp("lake")))
 
 
-def _filled(store: LakeStore) -> tuple[compare.Advisor, compare.Facts]:
+def _filled(store: LakeStore) -> tuple[Advisor, Facts]:
     submissions: list[tuple[facts.Domain[Any, Any], type[Contract], dict[str, Any]]] = [
         (PLAYER_SEASONS, PlayerSeasonPayload, page("player_season")),
         (PLAYER_SEASONS, PlayerSeasonPayload, GAMMA_NOVE),
@@ -66,22 +66,20 @@ def _filled(store: LakeStore) -> tuple[compare.Advisor, compare.Facts]:
         )
     rules = RulesStore(store.root / "league")
     rules.set("user-1", CLASSIC, at=READ)
-    advisor = compare.Advisor(
+    advisor = Advisor(
         lake=store,
         rules=rules,
         log=DecisionLog(store.root / "decisions"),
         clubs=CLUBS,
-        reading=compare.load_reading_list(ROOT / "config" / "reading_list.toml"),
+        reading=load_reading_list(ROOT / "config" / "reading_list.toml"),
         user="user-1",
         clock=fixed_clock(NOW),
     )
-    return advisor, compare.Facts.read(store)
+    return advisor, Facts.read(store, NOW)
 
 
 @given(minutes=st.tuples(st.integers(0, 600), st.integers(0, 600)))  # within the lineups' 12 hours
-def test_p6_no_new_facts_no_movement(
-    lake: tuple[compare.Advisor, compare.Facts], minutes: tuple[int, int]
-) -> None:
+def test_p6_no_new_facts_no_movement(lake: tuple[Advisor, Facts], minutes: tuple[int, int]) -> None:
     advisor, known = lake
     earlier, later = (READ + dt.timedelta(minutes=minute) for minute in sorted(minutes))
     before = advisor.answer_at(("Alfa Nove", "Gamma Nove"), earlier, facts=known).answer
@@ -89,7 +87,7 @@ def test_p6_no_new_facts_no_movement(
     assert before is not None
     assert now is not None
     for then, part in zip(before.players, now.players, strict=True):
-        moved = compare.movement(then, part, earlier, "previous answer")
+        moved = movement(then, part, earlier, "previous answer")
         assert isinstance(part.value, OutfieldValue)
         assert (moved.p_start, moved.p_scores, moved.p_win) == (
             part.value.p_start,
