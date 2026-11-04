@@ -108,8 +108,11 @@ the match tabs at the top; corrected 2026-10-31 from the real page). In each:
   page's own average and is skipped (R4.2). Each row gives the player's role (`span.role`), name
   (`.prb-nome`, with the initial in `<small>`) and one percentage per outlet. This becomes one
   `OutletLineupPayload` per outlet per match.
-- **Official lineups:** once the official-lineup column (`.prb-tabella__conferma`) is filled for a team's 11
-  starters, the reader also returns an `OfficialLineupPayload`.
+- **Official lineups:** the official-lineup column (`.prb-tabella__conferma`) marks each real starter, in either table.
+  Once both teams have at least 10 marks, the reader also returns an `OfficialLineupPayload`: the marked players are
+  the starters, and the rest of the two tables the bench. The page gives no real bench, so "bench" means listed without a
+  mark. A team with 10 marks has `unnamed_starters = 1`, because its eleventh starter isn't on the page; ten rounds showed
+  no team with fewer. More than 11 marks fails the contract and is named as a problem.
 - **Unavailable players:** each team's "Indisponibili" list (`div.prb-fuori`, `ul.prb-fuori__elenco`) goes into
   the payloads' `unavailable` (C4).
 
@@ -327,6 +330,7 @@ Required Hypothesis tests:
 | P6 | With no facts captured between two times, movement is zero and lists no changes | R6.1 |
 | P7 | A fact due at one time stays due at every later time until it is collected | R7.1 |
 | P8 | `read_page` requests an address only if the reading list names it or one of its patterns matches it | R3.3 |
+| P9 | Whichever players the page marks, in either table: 10 or 11 for both teams are the starters and the rest the bench, fewer means the lineup isn't out, and more is named as a problem | R3.1 |
 
 ## Testing strategy
 

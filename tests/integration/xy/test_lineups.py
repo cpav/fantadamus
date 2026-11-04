@@ -72,6 +72,31 @@ async def test_outlets_kept_side_by_side(tmp_path: Path) -> None:
     assert latest.p_start == pytest.approx(0.7)
 
 
+@pytest.mark.parametrize(("unnamed", "p_start", "status"), [(1, 0.9, None), (0, 0.0, "not listed")])
+async def test_unnamed_starter_leaves_the_unnamed_to_the_outlets(
+    tmp_path: Path, unnamed: int, p_start: float, status: str | None
+) -> None:
+    """Left off a lineup that names all 11, he isn't playing. Left off one that can't name a starter of his
+    team, he might be that starter, so the outlets still decide for him (mvp-x-or-y R4.2)."""
+    store = LakeStore(tmp_path)
+    sheet = page("official_lineup")
+    starters = sheet["home_team"]["starters"]
+    starters.remove("Alfa Nove")
+    if unnamed:
+        sheet["home_team"]["unnamed_starters"] = unnamed
+    else:
+        starters.append("Alfa Quindici")
+    async with tools(store, now=LATER) as client:
+        await send(client, "submit_player_season", page("player_season"), READ)
+        assert not (await send(client, "submit_probable_lineups", probable("Uno Formazioni"), READ)).is_error
+        assert not (await send(client, "submit_official_lineup", sheet, LATER)).is_error
+
+    now = _availability(store, LATER)
+    assert now is not None
+    assert now.p_start == pytest.approx(p_start)
+    assert (now.official.status if now.official else None) == status
+
+
 async def test_unresolved_name_resolves_when_profile_arrives(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     async with tools(store, now=LATER) as client:

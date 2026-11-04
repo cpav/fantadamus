@@ -48,6 +48,19 @@ def test_reading_saved_pages() -> None:
             assert {(view.home, view.away) for view in facts.outlets} == _published(html), path.name
 
 
+@pytest.mark.skipif(
+    not ROUNDS, reason="no real pages saved under data/private/pages/, which is never committed"
+)
+def test_finished_rounds_give_every_official_lineup() -> None:
+    """A finished round's page marks who really started: every match gives an official lineup, where the
+    reader that wanted all 11 probable starters marked found 1 of 20. A page before the lineups gives none."""
+    for path in ROUNDS:
+        facts = read_round(path.read_text(encoding="utf-8"))
+        assert not facts.problems, path.name
+        finished = path.name.endswith("-finished.html")
+        assert len(facts.officials) == (len(facts.fixtures.matches) if finished else 0), path.name
+
+
 def _published(html: str) -> set[tuple[str, str]]:
     """The matches whose lineup tables the page shows, from the HTML itself: early in the week, none."""
     published = set()

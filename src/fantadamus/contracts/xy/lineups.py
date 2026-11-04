@@ -66,16 +66,28 @@ class ProbableLineupPayload(Contract):
 
 
 class OfficialTeam(Part):
-    starters: list[Name] = Field(description="The 11 starters")
+    starters: list[Name] = Field(description="The 11 starters, less any that `unnamed_starters` counts")
     bench: list[Name] = Field(default=[], description="The substitutes")
+    unnamed_starters: int = Field(
+        default=0,
+        ge=0,
+        le=1,
+        description="A starter the source doesn't name: a page can list only 10 of the 11",
+    )
 
-    _starters = field_validator("starters")(_eleven)
+    @model_validator(mode="after")
+    def _accounts_for_eleven(self) -> Self:
+        count = len(self.starters) + self.unnamed_starters
+        if count != STARTERS:
+            raise ValueError(f"needs {STARTERS} starters, got {count}")
+        once_each(self.starters, "{name} is listed twice")
+        return self
 
 
 class OfficialLineupPayload(Contract):
     """The official lineups of one match, published about an hour before kickoff."""
 
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     home: Name = Field(description="Home club")
     away: Name = Field(description="Away club")
