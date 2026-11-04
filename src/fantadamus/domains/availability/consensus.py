@@ -57,6 +57,8 @@ class Availability(BaseModel):
     disputed: bool
     outlets: list[OutletView]
     official: OfficialView | None
+    by_surname: list[str] = []
+    """Names the outlets write that were matched to him only by surname (mvp-roles task 5.2)."""
 
 
 def outlet_view(

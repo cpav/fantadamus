@@ -80,7 +80,10 @@ async def test_at9_one_log_entry_per_answer(tmp_path: Path) -> None:
     assert {player.name for player in entries[0].players} == {"Alfa Nove", "Gamma Nove"}
     assert entries[0].rules.user == "user-1"
     assert entries[0].content_hashes
-    assert all(0 <= player.p_start <= 1 and 0 <= player.p_scores <= 1 for player in entries[1].players)
+    for player in entries[1].players:
+        assert 0 <= player.p_start <= 1
+        assert player.p_scores is not None
+        assert 0 <= player.p_scores <= 1
 
 
 async def test_at10_league_rules(tmp_path: Path) -> None:

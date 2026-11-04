@@ -64,6 +64,7 @@ CAMEO_FLAT = 5.5  # anyone else's cameo (method §A4)
 # The keeper model (method §A6; mvp-roles R3)
 KEEPER_BETA = 0.35  # a goal conceded costs his rating this much
 KEEPER_SKILL_WEIGHT = 9  # his skill counts n / (n + 9) of rated appearances
+LEAGUE_GOALS_PER_MATCH = 1.3  # each team's goals per match, before the table has any
 
 # The answer (R10.2, method §A7)
 COIN_FLIP = 0.15  # a margin below this is a coin flip

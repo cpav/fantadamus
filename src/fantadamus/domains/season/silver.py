@@ -9,6 +9,7 @@ reads both tables as one.
 
 from __future__ import annotations
 
+from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy import once_each
 from fantadamus.contracts.xy.season import (
     PenaltyTakersPayload,
@@ -25,7 +26,7 @@ class PlayerSeasonRow(SilverRow):
     player_id: int
     name: str
     club: str
-    role: str
+    role: Role
     mantra_role: str | None
     appearances: int
     rated_appearances: int

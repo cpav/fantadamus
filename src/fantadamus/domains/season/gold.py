@@ -11,6 +11,7 @@ from fantadamus.domains.facts import Source, latest_by, latest_submissions
 from fantadamus.domains.players.resolve import KnownPlayer
 from fantadamus.domains.season.silver import PenaltyTakerRow, PlayerSeasonRow, TeamSeasonRow
 from fantadamus.domains.sources import best_by
+from fantadamus.engine.constants import LEAGUE_GOALS_PER_MATCH
 
 
 class PenaltyOrder(BaseModel):
@@ -36,6 +37,14 @@ def player_form(
 def team_season(rows: Sequence[TeamSeasonRow], club: str, as_of: dt.datetime) -> TeamSeasonRow | None:
     """The club's row from the highest-ranked source, its newest read (mvp-collect R5.1)."""
     return best_by(rows, as_of, key=lambda row: row.club).get(club)
+
+
+def league_goals_per_match(rows: Sequence[TeamSeasonRow], as_of: dt.datetime) -> float:
+    """Each team's goals per match across the league, setting an average keeper's skill (mvp-roles R3.3)."""
+    table = best_by(rows, as_of, key=lambda row: row.club).values()
+    played = sum(row.played for row in table)
+    goals = sum(row.goals_for for row in table)
+    return goals / played if played and goals else LEAGUE_GOALS_PER_MATCH
 
 
 def penalty_order(rows: Sequence[PenaltyTakerRow], club: str, as_of: dt.datetime) -> PenaltyOrder | None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from fantadamus.domains.players.resolve import KnownPlayer, resolve
+from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
 
 MARCO = KnownPlayer(player_id=1, name="Marco Rossi", club="alfa")
 LUCA = KnownPlayer(player_id=2, name="Rossi L.", club="beta")
@@ -77,3 +77,18 @@ def test_the_two_sites_spellings_meet() -> None:
     assert resolve("Anguissa", squad).player == midfielder
     assert resolve("ANGUISSA A", squad).player is None
     assert resolve("ROSSI M", squad).player is None
+
+
+def test_one_club_mate_with_the_surname() -> None:
+    """mvp-roles task 5.2: on the real pages an outlet's "ANGUISSA A" was "Zambo Anguissa" and its "ROMERO J"
+    the club's one "Romero D.": a last resort, among club-mates, for a name `resolve` can't place."""
+    compound, other_initial, rossi, verdi = (
+        KnownPlayer(player_id=number, name=name, club="napoli")
+        for number, name in enumerate(("Zambo Anguissa", "Romero D.", "Rossi L.", "Rossi Mas."), start=1)
+    )
+    mates = [compound, other_initial, rossi, verdi]
+    assert same_surname("ANGUISSA A", mates) == compound
+    assert same_surname("ROMERO J", mates) == other_initial
+    assert same_surname("ROSSI G", mates) is None  # two of them: it could be either
+    assert same_surname("PAZ Y", mates) is None
+    assert same_surname(" . ", mates) is None

@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from fantadamus.core.clubs import Clubs
-from fantadamus.domains.players.resolve import KnownPlayer, resolve
+from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
 from fantadamus.web.html import parse
 from fantadamus.web.readers.fcit_stats import read_stats
 from fantadamus.web.readers.fco import read_round
@@ -26,6 +26,11 @@ RESOLVED = 0.95
 """The share of a round page's distinct names that must find a player: 96.6% did on the pages of 31 October
 and 3 November, and the rest were players outside the official list, which the statistics page doesn't show.
 Before an initial was kept from pairing with a whole name, 45% did."""
+REGULAR_RATED = 3
+UNMENTIONED = 3
+"""How many regulars (3 or more rated games) a round page may not mention: a player can leave a club's squad.
+None on the pages of 31 October and 3 November once a surname counts; before that, two: one was a first-choice
+midfielder shown at 5% to start."""
 
 
 @pytest.mark.skipif(
@@ -72,9 +77,13 @@ def test_saved_statistics_page() -> None:
 )
 def test_round_page_names_resolve() -> None:
     """Every outlet's name on a saved round page finds at most one player of its club on the statistics page,
-    and almost every one finds one."""
+    and almost every one finds one. And the reverse, which is what a wrong answer looks like: a regular whom
+    no row finds would get the 5% of a player nobody mentions."""
     players = read_stats(STATS.read_text(encoding="utf-8")).payload.players
     known = [KnownPlayer(player_id=p.player_id, name=p.name, club=CLUBS.key(p.club)) for p in players]
+    regulars = {
+        (p.player_id, p.name): CLUBS.key(p.club) for p in players if p.rated_appearances >= REGULAR_RATED
+    }
     for path in ROUNDS:
         names = {
             (CLUBS.key(club), name)
@@ -84,4 +93,21 @@ def test_round_page_names_resolve() -> None:
         }
         found = [resolve(name, [mate for mate in known if mate.club == club]) for club, name in names]
         assert not [resolution.candidates for resolution in found if resolution.candidates], path.name
-        assert sum(resolution.player is not None for resolution in found) >= RESOLVED * len(found), path.name
+        assert sum(resolution.player is not None for resolution in found) >= RESOLVED * len(names), path.name
+        mentioned = {
+            player.player_id
+            for club, name in names
+            if (player := _found(name, [mate for mate in known if mate.club == club])) is not None
+        }
+        on_page = {club for club, _ in names}
+        missing = [
+            name
+            for (player_id, name), club in regulars.items()
+            if club in on_page and player_id not in mentioned
+        ]
+        assert len(missing) <= UNMENTIONED, (path.name, missing)
+
+
+def _found(name: str, mates: list[KnownPlayer]) -> KnownPlayer | None:
+    """As availability finds the player a row is about."""
+    return resolve(name, mates).player or same_surname(name, mates)

@@ -53,7 +53,8 @@ async def test_refresh_plan_order(tmp_path: Path) -> None:
     assert odds["search"][0] == "Alfa Beta quote over under goal no goal site:livetipsportal.com"
 
 
-async def test_forwards_only(tmp_path: Path) -> None:
+async def test_two_roles_get_outlooks(tmp_path: Path) -> None:
+    """Forwards only, until mvp-roles R4.2: a forward and a midfielder now get two outlooks, no verdict."""
     async with tools(LakeStore(tmp_path)) as client:
         await set_classic(client)
         await collect(client, READ)
@@ -65,7 +66,7 @@ async def test_forwards_only(tmp_path: Path) -> None:
             READ,
         )
         result = await ask(client, "Alfa Nove", "Beta Sei")
-    assert result["status"] == "forwards only"
+    assert result["status"] == "outlooks"
     assert "Beta Sei" in result["message"]
 
 

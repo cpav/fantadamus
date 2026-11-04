@@ -7,6 +7,7 @@ here opens a file except to append to it or read it.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -21,22 +22,27 @@ class LoggedPlayer(BaseModel):
     name: str
     p_start: float
     p_cameo: float
-    p_scores: float
+    p_scores: float | None = None
+    """An outfield player's; a keeper has P(clean sheet) instead (mvp-roles R6.3)."""
     key: float
+    p_clean_sheet: float | None = None
+    expected_conceded: float | None = None
 
 
 class Decision(BaseModel):
-    """Every published probability of one answer, its verdict, the rules and the facts it used (R14.1)."""
+    """Every published probability of one answer, its verdict if it has one, the rules and the facts it used
+    (R14.1; mvp-roles R5.3). Lines logged before there were other kinds are comparisons."""
 
+    kind: Literal["compare", "outlooks", "outlook"] = "compare"
     as_of: UtcDatetime
     logged_at: UtcDatetime
     user: str
     round: int
     players: list[LoggedPlayer]
-    first: str
-    second: str
-    margin: float
-    label: str
+    first: str | None = None
+    second: str | None = None
+    margin: float | None = None
+    label: str | None = None
     rules: StoredRules
     content_hashes: list[str]
 

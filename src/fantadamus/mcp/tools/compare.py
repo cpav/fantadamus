@@ -1,12 +1,15 @@
-"""`compare_players`: "X or Y?" for two forwards (design C10; R1 to R4, R7, R9 to R12, R14).
+"""`compare_players`: "X or Y?" for two players of one role (design C10; R1 to R4, R7, R9 to R12, R14;
+mvp-roles design C9, R4).
 
 1. A user without league rules gets the setup step.
-2. Both names resolve to players with profiles, or the candidates come back.
+2. Both names resolve to players with season figures, or the candidates come back.
 3. The round is the next one whose deadline hasn't passed; a player whose club has no match in it isn't
    playing.
 4. Every fact the answer needs is checked for freshness. Whatever is missing or stale goes into one refresh
    plan, lineups first, then odds, then season figures.
-5. Otherwise the forward model answers, and the answer is logged.
+5. Otherwise each player's model answers: the keeper model or the outfield model. Two players of one role get
+   a verdict; two roles get each player's outlook and no verdict, since that choice is the formation call. The
+   answer is logged.
 """
 
 from __future__ import annotations
@@ -43,25 +46,29 @@ from fantadamus.domains.players.resolve import KnownPlayer, resolve
 from fantadamus.domains.season.gold import (
     PenaltyOrder,
     known_players,
+    league_goals_per_match,
     penalty_order,
     player_form,
     team_season,
 )
 from fantadamus.domains.season.silver import (
     PENALTY_TAKERS,
+    SEASON_STATS,
     TEAM_SEASONS,
     PlayerSeasonRow,
     TeamSeasonRow,
     read_player_seasons,
 )
 from fantadamus.domains.sources import Confidence, describe, disagreement, of_odds, of_outlets, weaker
-from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue, compare
-from fantadamus.engine.rank import Verdict
+from fantadamus.engine import keepers, outfield
+from fantadamus.engine.keepers import KeeperInputs, KeeperValue
+from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue
+from fantadamus.engine.rank import Scoring, Verdict
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import Decision, DecisionLog, LoggedPlayer
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore, SetupStep, StoredRules, scoring_for, setup_step
-from fantadamus.web.collector import ROUND_FACTS, Collector, CollectReport
+from fantadamus.web.collector import ROUND_FACTS, STATS_FACTS, Collector, CollectReport
 
 ROME = ZoneInfo("Europe/Rome")
 DEFAULT_READING_LIST = Path("config/reading_list.toml")
@@ -73,6 +80,7 @@ _PLAN_ORDER = {
     "penalty_takers": 2,
 }
 _LATEST = dt.datetime.max.replace(tzinfo=dt.UTC)
+_ROLE_WORDS = {"P": "keeper", "D": "defender", "C": "midfielder", "A": "forward"}
 REFRESH = (
     "Some facts are missing or stale. For each item read with `read_page`, read its pages best first until "
     "one gives the fact; for an item read with `search`, find a page on a listed site with its search hint. "
@@ -128,10 +136,13 @@ class Movement(BaseModel):
     """The user's previous answer that included him, or else 24 hours before this one."""
     p_start: float | None
     p_scores: float | None
+    p_clean_sheet: float | None = None
+    """A keeper's, in place of P(scores) (mvp-roles R3.5)."""
     p_win: float | None
     """Each value then; None where no answer could be given then."""
     changes: list[str]
-    """E.g. "Gazzetta 55% → 90%", "official lineup out: starter", "team xG 1.20 → 1.45"."""
+    """E.g. "Gazzetta 55% → 90%", "official lineup out: starter", "team xG 1.20 → 1.45"; for a keeper,
+    "opponent xG 1.20 → 1.45"."""
 
 
 class Updated(BaseModel):
@@ -173,24 +184,28 @@ class PlayerAnswer(BaseModel):
     average_rating: float | None
     goals: int
     assists: int
-    value: OutfieldValue
+    goals_conceded: int | None
+    """A keeper's; none where his page didn't say (mvp-roles R3.5)."""
+    value: OutfieldValue | KeeperValue
     p_start_confidence: Confidence | None
     """How sure his chance of starting (and of a cameo) is (mvp-collect R5.3)."""
     win_confidence: Confidence | None
     """How sure his team's chances and xG are."""
     p_scores_confidence: Confidence | None
-    """How sure his chance of scoring is: the weaker of the two."""
+    """How sure his chance of scoring, or a keeper's clean sheet, is: the weaker of the two."""
     notes: list[str]
     sources: list[SourceUsed]
     movement: Movement | None = None
 
 
 class Flip(BaseModel):
-    """What would change the order: the leader's p_start or team xG falling below these (R10.4)."""
+    """What would change the order: an outfield leader's p_start or team xG falling below these (R10.4), or a
+    keeper's opponent's xG rising above this (mvp-roles R4.1)."""
 
     player: str
-    p_start_below: float | None
-    team_xg_below: float | None
+    p_start_below: float | None = None
+    team_xg_below: float | None = None
+    opponent_xg_above: float | None = None
 
 
 class Answer(BaseModel):
@@ -199,8 +214,9 @@ class Answer(BaseModel):
     deadline: dt.datetime
     """In Europe/Rome: the kickoff of the round's first match."""
     as_of: dt.datetime
-    verdict: Verdict
-    flip: Flip
+    verdict: Verdict | None
+    """None for two roles: each player's outlook, no verdict (mvp-roles R4.2)."""
+    flip: Flip | None
     check_before_deadline: list[str]
     rules: StoredRules
     """The league rules this answer used (R12.4)."""
@@ -208,8 +224,11 @@ class Answer(BaseModel):
     players: list[PlayerAnswer]
 
 
+Status = Literal["setup", "choose", "refresh", "answer", "outlooks"]
+
+
 class CompareResult(BaseModel):
-    status: Literal["setup", "choose", "refresh", "forwards only", "answer"]
+    status: Status
     message: str
     setup: SetupStep | None = None
     candidates: dict[str, list[KnownPlayer]] = {}
@@ -328,34 +347,42 @@ class Advisor:
     def compare(
         self, first: str, second: str, *, as_of: dt.datetime | None = None, odds_unavailable: bool = False
     ) -> CompareResult:
-        """The answer, after the collector has read the round page if its facts were missing or stale. A
-        replay of an earlier `as_of` never collects."""
+        """The answer on two players."""
+        return self._ask((first, second), as_of, odds_unavailable)
+
+    def _ask(self, names: Sequence[str], as_of: dt.datetime | None, odds_unavailable: bool) -> CompareResult:
+        """The answer, after the collector has read the pages of what was missing or stale. A replay of an
+        earlier `as_of` never collects. The lake's facts are read once, and again only after the collector
+        stored something: a season of statistics rows costs 0.8 s a read (mvp-roles C2)."""
         when = (as_of or self.clock()).astimezone(dt.UTC)
-        result = self.answer_at(first, second, when, odds_unavailable=odds_unavailable)
-        wanted = [item for item in result.refresh if item.fact in ROUND_FACTS]
-        if as_of is None and self.collector is not None and wanted:
-            report = self.collector.collect(facts=sorted({item.fact for item in wanted}))
-            if self.collect_log is not None:
-                self.collect_log.append(report)
-            when = self.clock().astimezone(dt.UTC)
-            result = self.answer_at(
-                first, second, when, odds_unavailable=odds_unavailable, tried=_tried(report)
-            )
+        facts = Facts.read(self.lake)
+        result = self.answer_at(names, when, odds_unavailable=odds_unavailable, facts=facts)
+        if as_of is None and self.collector is not None:
+            wanted = {item.fact for item in result.refresh if self.collector.reads(item.fact)}
+            if wanted:
+                report = self.collector.collect(facts=sorted(wanted))
+                if self.collect_log is not None:
+                    self.collect_log.append(report)
+                if any(page.stored for page in report.pages):
+                    facts = Facts.read(self.lake)
+                when = self.clock().astimezone(dt.UTC)
+                result = self.answer_at(
+                    names, when, odds_unavailable=odds_unavailable, facts=facts, tried=_tried(report)
+                )
         if result.answer is None:
             return result
-        answer = self._with_movement(result.answer, first, second, odds_unavailable)
+        answer = self._with_movement(result.answer, names, odds_unavailable, facts)
         self._log(answer)
         return result.model_copy(update={"answer": answer})
 
     def answer_at(
         self,
-        first: str,
-        second: str,
+        names: Sequence[str],
         as_of: dt.datetime,
         *,
         odds_unavailable: bool = False,
         facts: Facts | None = None,
-        tried: str | None = None,
+        tried: Mapping[str, str] | None = None,
     ) -> CompareResult:
         """What the facts known at `as_of` answer, without collecting or logging; `facts`, when given, saves
         reading the lake again."""
@@ -378,7 +405,7 @@ class Advisor:
 
         players: list[KnownPlayer] = []
         candidates: dict[str, list[KnownPlayer]] = {}
-        for name in (first, second):
+        for name in names:
             resolution = resolve(name, known)
             if resolution.candidates:
                 candidates[name] = resolution.candidates
@@ -393,12 +420,6 @@ class Advisor:
                 candidates=candidates,
             )
         forms = {player.player_id: player_form(facts.players, player.player_id, as_of) for player in players}
-        others = [player.name for player in players if (form := forms[player.player_id]) and form.role != "A"]
-        if others:
-            return CompareResult(
-                status="forwards only",
-                message=f"This slice only compares forwards, and {', '.join(others)} isn't one.",
-            )
 
         teams = _fresh(facts.teams, "team_season", as_of)
         takers = _fresh(facts.takers, "penalty_takers", as_of)
@@ -417,7 +438,9 @@ class Advisor:
         sides: list[_Side] = []
         for player in players:
             form = forms[player.player_id]
-            if form is None or not _fresh([form], "player_season", as_of):
+            if form is None or not _fresh(
+                [form], "player_season", as_of, confirmed=confirmed.get(SEASON_STATS.table.name)
+            ):
                 about = f"{player.name}'s profile"
                 need(self._item("player_season", "stale", about, player=player.name, club=player.club))
             table = team_season(teams, player.club, as_of)
@@ -439,11 +462,11 @@ class Advisor:
                 sides.append(_Side(player, form, table, order, match, present, xg, notes))
 
         first_kickoff = deadline(fixtures, round, as_of) if round is not None else None
-        if plan or round is None or first_kickoff is None or len(sides) != 2:
+        if plan or round is None or first_kickoff is None or len(sides) != len(names):
             refresh = [item for _, item in sorted(plan, key=lambda entry: entry[0])]
             if tried is not None:
                 refresh = [
-                    item.model_copy(update={"collector": tried}) if item.fact in ROUND_FACTS else item
+                    item.model_copy(update={"collector": tried[item.fact]}) if item.fact in tried else item
                     for item in refresh
                 ]
             return CompareResult(
@@ -451,8 +474,10 @@ class Advisor:
                 message=REFRESH,
                 refresh=refresh,
             )
-        answer = self._answer(sides, known, round, first_kickoff, as_of, stored)
-        return CompareResult(status="answer", message=answer.message, answer=answer)
+        league = league_goals_per_match(teams, as_of)
+        answer = self._answer(sides, known, round, first_kickoff, as_of, stored, league)
+        status: Status = "answer" if answer.verdict is not None else "outlooks"
+        return CompareResult(status=status, message=answer.message, answer=answer)
 
     def _disagreements(
         self,
@@ -552,33 +577,30 @@ class Advisor:
         first_kickoff: dt.datetime,
         as_of: dt.datetime,
         stored: StoredRules,
+        league: float,
     ) -> Answer:
-        inputs = [self._inputs(side, known) for side in sides]
-        result = compare(inputs[0], inputs[1], scoring_for(stored.rules, "A"))
-        verdict = result.verdict
-        players = [
-            self._player_answer(side, value, taker.penalty_taker, round)
-            for side, value, taker in zip(sides, result.values, inputs, strict=True)
+        takers = [_takes_penalties(side, known) for side in sides]
+        inputs = [_inputs(side, taker, league) for side, taker in zip(sides, takers, strict=True)]
+        values = [
+            _value(part, scoring_for(stored.rules, side.form.role))
+            for part, side in zip(inputs, sides, strict=True)
         ]
-        if not verdict.first_plays:
-            message = f"Neither {verdict.first} nor {verdict.second} will play: field another forward."
-        elif not verdict.second_plays:
-            message = f"Start {verdict.first}; {verdict.second} won't play, "
-            message += "so put a fit forward first on the bench."
-        else:
-            message = f"Start {verdict.first}, put {verdict.second} first on the bench."
-            if verdict.no_cover_differs:
-                message += f" Without bench cover, start {verdict.no_cover_first}."
-        message += f" Margin {verdict.margin:.2f} points: {verdict.label}."
+        players = [
+            self._player_answer(side, value, taker, round)
+            for side, value, taker in zip(sides, values, takers, strict=True)
+        ]
+        judged = _judged(inputs, scoring_for(stored.rules, sides[0].form.role))
+        verdict, flip = judged if judged is not None else (None, None)
+        message = (
+            _verdict_message(verdict, sides[0].form.role) if verdict is not None else _outlooks_message(sides)
+        )
         answer = Answer(
             message=message,
             round=round,
             deadline=first_kickoff.astimezone(ROME),
             as_of=as_of,
             verdict=verdict,
-            flip=Flip(
-                player=verdict.first, p_start_below=result.flip_p_start, team_xg_below=result.flip_team_xg
-            ),
+            flip=flip,
             check_before_deadline=[
                 f"{part.name} plays in the round's first match ({part.fixture}, "
                 f"{part.kickoff:%a %d %b %H:%M} Rome time): his official lineup is out about an hour before "
@@ -602,9 +624,10 @@ class Advisor:
         ]
         return Updated(newest=max(times), oldest=min(times))
 
-    def _with_movement(self, answer: Answer, first: str, second: str, odds_unavailable: bool) -> Answer:
+    def _with_movement(
+        self, answer: Answer, names: Sequence[str], odds_unavailable: bool, facts: Facts
+    ) -> Answer:
         """Each player's movement since the user's previous answer that included him, or 24 hours (R6.1)."""
-        facts = Facts.read(self.lake)
         decisions = [decision for decision in self.log.read() if decision.user == self.user]
         earlier: dict[dt.datetime, CompareResult] = {}
         players = []
@@ -617,9 +640,7 @@ class Advisor:
             ]
             since = max(previous, default=answer.as_of - dt.timedelta(hours=24))
             if since not in earlier:
-                earlier[since] = self.answer_at(
-                    first, second, since, odds_unavailable=odds_unavailable, facts=facts
-                )
+                earlier[since] = self.answer_at(names, since, odds_unavailable=odds_unavailable, facts=facts)
             then = earlier[since].answer
             before = next((p for p in then.players if p.player_id == part.player_id), None) if then else None
             basis: Literal["previous answer", "24 hours earlier"] = (
@@ -629,61 +650,29 @@ class Advisor:
         return answer.model_copy(update={"players": players})
 
     def _log(self, answer: Answer) -> None:
-        """One decision-log line per answer (R14.1)."""
-        players = answer.players
+        """One decision-log line per answer (R14.1; mvp-roles R5.3, R6.3)."""
+        verdict = answer.verdict
         self.log.append(
             Decision(
+                kind="compare" if verdict is not None else "outlooks",
                 as_of=answer.as_of,
                 logged_at=self.clock(),
                 user=self.user,
                 round=answer.round,
-                players=[
-                    LoggedPlayer(
-                        player_id=part.player_id,
-                        name=part.name,
-                        p_start=part.value.p_start,
-                        p_cameo=part.value.p_cameo,
-                        p_scores=part.value.p_scores,
-                        key=part.value.key,
-                    )
-                    for part in players
-                ],
-                first=answer.verdict.first,
-                second=answer.verdict.second,
-                margin=answer.verdict.margin,
-                label=answer.verdict.label,
+                players=[_logged(part) for part in answer.players],
+                first=verdict.first if verdict else None,
+                second=verdict.second if verdict else None,
+                margin=verdict.margin if verdict else None,
+                label=verdict.label if verdict else None,
                 rules=answer.rules,
-                content_hashes=sorted({source.content_sha256 for part in players for source in part.sources}),
+                content_hashes=sorted(
+                    {source.content_sha256 for part in answer.players for source in part.sources}
+                ),
             )
         )
 
-    @staticmethod
-    def _inputs(side: _Side, known: list[KnownPlayer]) -> OutfieldInputs:
-        """The forward model's inputs; a player without a match has no chance of a rating (R2.3)."""
-        mates = [mate for mate in known if mate.club == side.player.club]
-        home = side.match is not None and side.match.home == side.player.club
-        xg, present = side.xg, side.present
-        return OutfieldInputs(
-            name=side.player.name,
-            role=side.form.role,
-            mantra_role=side.form.mantra_role,
-            appearances=side.form.appearances,
-            rated_appearances=side.form.rated_appearances,
-            average_rating=side.form.average_rating,
-            goals=side.form.goals,
-            assists=side.form.assists,
-            yellow_cards=side.form.yellow_cards,
-            club_goals_per_match=side.table.goals_for / side.table.played if side.table.played else 0.0,
-            penalty_taker=resolve(side.order.takers[0], mates).player == side.player,
-            team_xg=(xg.home_xg if home else xg.away_xg) if xg else 0.0,
-            p_win=(xg.p_home_win if home else xg.p_away_win) if xg else 0.0,
-            p_loss=(xg.p_away_win if home else xg.p_home_win) if xg else 0.0,
-            p_start=present.p_start if present else 0.0,
-            p_cameo=present.p_cameo if present else 0.0,
-        )
-
     def _player_answer(
-        self, side: _Side, value: OutfieldValue, penalty_taker: bool, round: int
+        self, side: _Side, value: OutfieldValue | KeeperValue, penalty_taker: bool, round: int
     ) -> PlayerAnswer:
         match, present, xg = side.match, side.present, side.xg
         notes = list(side.disagreements)
@@ -705,6 +694,9 @@ class Advisor:
                 sources.append(present.official.source)
             if present.disputed:
                 notes.append(f"The outlets disagree about {side.player.name} (spread {present.spread:.2f}).")
+            if present.by_surname:
+                written = ", ".join(present.by_surname)
+                notes.append(f"The outlets write {written}: matched to {side.player.name} by surname.")
         if xg is not None:
             sources += xg.sources
             if not xg.from_odds:
@@ -713,6 +705,8 @@ class Advisor:
                 notes.append("No over/under 2.5 was found: goal chances come from the 1X2 alone.")
         home = match is not None and match.home == side.player.club
         form = side.form
+        if form.role == "P" and form.goals_conceded is None:
+            notes.append(f"{side.player.name}'s goals conceded aren't known: an average defence is assumed.")
         return PlayerAnswer(
             name=side.player.name,
             player_id=side.player.player_id,
@@ -738,6 +732,7 @@ class Advisor:
             average_rating=form.average_rating,
             goals=form.goals,
             assists=form.assists,
+            goals_conceded=form.goals_conceded,
             value=value,
             p_start_confidence=start_confidence,
             win_confidence=win_confidence,
@@ -757,6 +752,7 @@ def movement(
     view, the official lineup coming out, his team's xG."""
     if before is None:
         return Movement(since=since, basis=basis, p_start=None, p_scores=None, p_win=None, changes=[])
+    then = before.value
     changes: list[str] = []
     if now.official is not None and before.official is None:
         changes.append(f"official lineup out: {now.official.status}")
@@ -767,36 +763,158 @@ def movement(
             changes.append(f"{view.outlet} now {view.p_start:.0%}")
         elif round(old.p_start, 2) != round(view.p_start, 2):
             changes.append(f"{view.outlet} {old.p_start:.0%} → {view.p_start:.0%}")
-    if before.team_xg is not None and now.team_xg is not None and abs(now.team_xg - before.team_xg) >= 0.05:
-        changes.append(f"team xG {before.team_xg:.2f} → {now.team_xg:.2f}")
+    side, xg_then, xg_now = (
+        ("opponent xG", before.opponent_xg, now.opponent_xg)
+        if isinstance(then, KeeperValue)
+        else ("team xG", before.team_xg, now.team_xg)
+    )
+    if xg_then is not None and xg_now is not None and abs(xg_now - xg_then) >= 0.05:
+        changes.append(f"{side} {xg_then:.2f} → {xg_now:.2f}")
     return Movement(
         since=since,
         basis=basis,
-        p_start=before.value.p_start,
-        p_scores=before.value.p_scores,
+        p_start=then.p_start,
+        p_scores=then.p_scores if isinstance(then, OutfieldValue) else None,
+        p_clean_sheet=then.p_clean_sheet if isinstance(then, KeeperValue) else None,
         p_win=before.p_win,
         changes=changes,
     )
 
 
-def _tried(report: CollectReport) -> str:
-    """What the collector's run tried, for the refresh items it couldn't fill."""
-    page = report.pages[0]
-    if page.outcome in {"stored", "unchanged"}:
-        return f"Fantadamus read {page.url}, which doesn't give it yet"
-    reason = f" ({page.reason})" if page.reason else ""
-    return f"Fantadamus couldn't read {page.url}: {page.outcome}{reason}"
+def _tried(report: CollectReport) -> dict[str, str]:
+    """For each fact the run's pages carry, what was tried, for the refresh items it couldn't fill."""
+    tried: dict[str, str] = {}
+    for page in report.pages:
+        reason = f" ({page.reason})" if page.reason else ""
+        said = (
+            f"Fantadamus read {page.url}, which doesn't give it yet"
+            if page.outcome in {"stored", "unchanged"}
+            else f"Fantadamus couldn't read {page.url}: {page.outcome}{reason}"
+        )
+        tried |= dict.fromkeys(ROUND_FACTS if page.page == "round" else STATS_FACTS, said)
+    return tried
+
+
+def _takes_penalties(side: _Side, known: list[KnownPlayer]) -> bool:
+    """Whether he is his club's first penalty taker."""
+    mates = [mate for mate in known if mate.club == side.player.club]
+    return resolve(side.order.takers[0], mates).player == side.player
+
+
+def _inputs(side: _Side, taker: bool, league: float) -> OutfieldInputs | KeeperInputs:
+    """His model's inputs; a player without a match has no chance of a rating (R2.3)."""
+    home = side.match is not None and side.match.home == side.player.club
+    xg, present, form = side.xg, side.present, side.form
+    if form.role == "P":
+        return KeeperInputs(
+            name=side.player.name,
+            club=side.player.club,
+            rated_appearances=form.rated_appearances,
+            average_rating=form.average_rating,
+            goals_conceded=form.goals_conceded,
+            league_goals_per_match=league,
+            opponent_xg=(xg.away_xg if home else xg.home_xg) if xg else 0.0,
+            p_start=present.p_start if present else 0.0,
+        )
+    return OutfieldInputs(
+        name=side.player.name,
+        role=form.role,
+        mantra_role=form.mantra_role,
+        appearances=form.appearances,
+        rated_appearances=form.rated_appearances,
+        average_rating=form.average_rating,
+        goals=form.goals,
+        assists=form.assists,
+        yellow_cards=form.yellow_cards,
+        club_goals_per_match=side.table.goals_for / side.table.played if side.table.played else 0.0,
+        penalty_taker=taker,
+        team_xg=(xg.home_xg if home else xg.away_xg) if xg else 0.0,
+        p_win=(xg.p_home_win if home else xg.p_away_win) if xg else 0.0,
+        p_loss=(xg.p_away_win if home else xg.p_home_win) if xg else 0.0,
+        p_start=present.p_start if present else 0.0,
+        p_cameo=present.p_cameo if present else 0.0,
+    )
+
+
+def _value(player: OutfieldInputs | KeeperInputs, scoring: Scoring) -> OutfieldValue | KeeperValue:
+    if isinstance(player, KeeperInputs):
+        return keepers.value(player, scoring)
+    return outfield.value(player, scoring)
+
+
+def _judged(inputs: Sequence[OutfieldInputs | KeeperInputs], scoring: Scoring) -> tuple[Verdict, Flip] | None:
+    """The verdict on two players of one role and what would flip it; None otherwise (mvp-roles R4)."""
+    if len(inputs) != 2:
+        return None
+    a, b = inputs
+    if isinstance(a, KeeperInputs) and isinstance(b, KeeperInputs):
+        kept = keepers.compare(a, b, scoring)
+        return kept.verdict, Flip(player=kept.verdict.first, opponent_xg_above=kept.flip_opponent_xg)
+    if isinstance(a, OutfieldInputs) and isinstance(b, OutfieldInputs) and a.role == b.role:
+        played = outfield.compare(a, b, scoring)
+        flip = Flip(
+            player=played.verdict.first,
+            p_start_below=played.flip_p_start,
+            team_xg_below=played.flip_team_xg,
+        )
+        return played.verdict, flip
+    return None
+
+
+def _verdict_message(verdict: Verdict, role: str) -> str:
+    word = _ROLE_WORDS[role]
+    first, second = verdict.first, verdict.second
+    if verdict.first_plays and verdict.label == "covered":
+        return (
+            f"Field {first}, the likelier starter. {second}, of the same club, plays exactly when he "
+            "doesn't, so the place is covered."
+        )
+    if not verdict.first_plays:
+        message = f"Neither {first} nor {second} will play: field another {word}."
+    elif not verdict.second_plays:
+        message = f"Start {first}; {second} won't play, so put a fit {word} first on the bench."
+    else:
+        message = f"Start {first}, put {second} first on the bench."
+        if verdict.no_cover_differs:
+            message += f" Without bench cover, start {verdict.no_cover_first}."
+    return message + f" Margin {verdict.margin:.2f} points: {verdict.label}."
+
+
+def _outlooks_message(sides: Sequence[_Side]) -> str:
+    who = " and ".join(f"{side.player.name} ({_ROLE_WORDS[side.form.role]})" for side in sides)
+    return (
+        f"{who} play different roles: a choice between roles is the formation call, which comes with the "
+        "full lineup. Here is each player's outlook."
+    )
+
+
+def _logged(part: PlayerAnswer) -> LoggedPlayer:
+    """A keeper without a match has no clean sheet to log: he isn't playing."""
+    value = part.value
+    playing = part.fixture is not None
+    return LoggedPlayer(
+        player_id=part.player_id,
+        name=part.name,
+        p_start=value.p_start,
+        p_cameo=value.p_cameo,
+        p_scores=value.p_scores if isinstance(value, OutfieldValue) else None,
+        key=value.key,
+        p_clean_sheet=value.p_clean_sheet if isinstance(value, KeeperValue) and playing else None,
+        expected_conceded=value.expected_conceded if isinstance(value, KeeperValue) and playing else None,
+    )
 
 
 def register(server: MCPServer, advisor: Advisor) -> None:
     """Add `compare_players` to `server`."""
 
     @server.tool(
-        description='Answer "X or Y?" for two forwards for the next round, from the stored facts. It '
+        description='Answer "X or Y?" for two players for the next round, from the stored facts. It '
         "returns one of: the setup step (no league rules yet: ask the user, then call set_league_rules); "
         "candidates (a name matches several players: ask which); a refresh plan (facts missing or stale: "
-        "read the listed pages, submit with the named tools, then call again); 'forwards only'; or the "
-        "answer with its breakdown. Set odds_unavailable only after looking for the match odds on the listed "
+        "read the listed pages, submit with the named tools, then call again); 'answer', the verdict for two "
+        "players of one role with its breakdown; or 'outlooks', each player's breakdown and no verdict for "
+        "two roles, since that choice is the formation call. Set odds_unavailable only after looking for the "
+        "match odds on the listed "
         "pages and finding none: the answer then uses regressed team form and says so. as_of replays an "
         "earlier question."
     )

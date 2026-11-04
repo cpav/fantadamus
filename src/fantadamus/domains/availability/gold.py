@@ -1,7 +1,8 @@
 """As-of availability of one player for one match (design C5, C6; R3, R4.2, R7.4).
 
 Each outlet counts with its latest lineup for the match; the latest official lineup, once out, decides.
-Names are matched against the player's club-mates with profiles (design C4).
+Names are matched against the player's club-mates with profiles (design C4). When no row of a lineup names
+him, a row counts if he is the one club-mate with its surname, and the answer says so (mvp-roles R4.4).
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from fantadamus.domains.availability.consensus import (
 )
 from fantadamus.domains.availability.silver import LineupViewRow, OfficialLineupRow, OutletViewRow
 from fantadamus.domains.facts import latest_submissions
-from fantadamus.domains.players.resolve import KnownPlayer, resolve
+from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
 
 _STRONGEST: tuple[Status, ...] = ("unavailable", "ballottaggio", "starter", "bench")
 
@@ -79,8 +80,17 @@ def availability(
     once, from its newest read, whether it gave a lineup or its own percentages (mvp-collect R4.2)."""
     mates = [known for known in players if known.club == player.club]
 
-    def mentions(row: LineupViewRow | OfficialLineupRow | OutletViewRow) -> bool:
-        return row.club == player.club and resolve(row.name, mates).player == player
+    by_surname: set[str] = set()
+
+    def his[R: LineupViewRow | OfficialLineupRow | OutletViewRow](rows: Sequence[R]) -> list[R]:
+        """The rows about him in one lineup."""
+        club = [row for row in rows if row.club == player.club]
+        named = [row for row in club if resolve(row.name, mates).player == player]
+        if named:
+            return named
+        found = [row for row in club if same_surname(row.name, mates) == player]
+        by_surname.update(row.name for row in found)
+        return found
 
     def in_match[R: LineupViewRow | OutletViewRow](rows: Sequence[R]) -> list[R]:
         return [row for row in rows if (row.home, row.away) == (home, away)]
@@ -91,9 +101,9 @@ def availability(
     for outlet in sorted(lineups.keys() | percentages.keys()):
         lineup, sheet = lineups.get(outlet), percentages.get(outlet)
         if sheet and (not lineup or (sheet[0].captured_at, sheet[0].content_sha256) > _stamp(lineup[0])):
-            outlets.append(_percentage_view(sheet, [row for row in sheet if mentions(row)]))
+            outlets.append(_percentage_view(sheet, his(sheet)))
         elif lineup:
-            row = _view_of([row for row in lineup if mentions(row)])
+            row = _view_of(his(lineup))
             if row is None:
                 outlets.append(outlet_view(lineup[0].outlet, "not listed", None, lineup[0].source))
             else:
@@ -106,11 +116,11 @@ def availability(
     for team_sheet in latest_submissions(
         match_officials, as_of, key=lambda row: (row.home, row.away)
     ).values():
-        named = [row for row in team_sheet if mentions(row)]
+        named = his(team_sheet)
         official = OfficialView(
             status=named[0].status if named else "not listed", source=team_sheet[0].source
         )
 
     if not outlets and official is None:
         return None
-    return combine(outlets, official)
+    return combine(outlets, official).model_copy(update={"by_surname": sorted(by_surname)})

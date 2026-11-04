@@ -9,6 +9,7 @@ forward listed first as `Pc`, `A`, `W` or with no Mantra role is valued exactly 
 from __future__ import annotations
 
 import math
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -63,6 +64,7 @@ class OutfieldInputs(BaseModel):
 class OutfieldValue(Option):
     """An option with every intermediate value, for the answer's breakdown (R9.8)."""
 
+    kind: Literal["outfield"] = "outfield"
     expected_vote: float
     goal_share: float
     assist_share: float

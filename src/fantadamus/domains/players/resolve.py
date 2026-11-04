@@ -105,3 +105,12 @@ def resolve(name: str, players: Iterable[KnownPlayer]) -> Resolution:
     if len(matches) == 1:
         return Resolution(player=matches[0], candidates=[])
     return Resolution(player=None, candidates=matches)
+
+
+def same_surname(name: str, mates: Iterable[KnownPlayer]) -> KnownPlayer | None:
+    """The one club-mate whose whole words include `name`'s, initials aside: a last resort among club-mates,
+    for a name `resolve` can't place. An outlet's "ANGUISSA A" is "Zambo Anguissa", and its "ROMERO J" the
+    club's one "Romero D." (mvp-roles task 5.2). It could be someone else, so an answer says so."""
+    ours = _whole(_words(name))
+    found = [mate for mate in mates if ours and all(word in _whole(_words(mate.name)) for word in ours)]
+    return found[0] if len(found) == 1 else None
