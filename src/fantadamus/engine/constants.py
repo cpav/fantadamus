@@ -68,6 +68,16 @@ KEEPER_BETA = 0.35  # a goal conceded costs his rating this much
 KEEPER_SKILL_WEIGHT = 9  # his skill counts n / (n + 9) of rated appearances
 LEAGUE_GOALS_PER_MATCH = 1.3  # each team's goals per match, before the table has any
 
+# The simulation (mvp-lineup C7, method §A7)
+SIMULATIONS = 10_000  # rounds simulated for a lineup
+SIMULATION_SEED = 2026  # any fixed number: the same facts give the same lineup (mvp-lineup R4.6)
+VOTE_NOISE = 0.6  # the spread of an outfield starter's vote around what's expected
+KEEPER_VOTE_NOISE = 0.75  # and of a keeper's
+GOAL_VOTE_LIFT = (
+    0.85  # what a goal adds to the scorer's vote; with it, method §A9 test 5's +2.5 and +1.5 hold
+)
+THRESHOLDS_SHOWN = 6  # at least this many thresholds get a chance in the answer
+
 # The answer (R10.2, method §A7)
 COIN_FLIP = 0.15  # a margin below this is a coin flip
 CLEAR = 0.5  # above this, clear; in between, a lean

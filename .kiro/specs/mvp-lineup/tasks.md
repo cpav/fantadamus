@@ -93,26 +93,30 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
       **AT-7** `tests/acceptance/lineup/test_squad.py::test_at7_set_squad`, `::test_at7_says_what_it_cannot_field`,
       `::test_at7_reads_the_statistics_page_if_nobody_is_known`_
 
-- [ ] 4. The engine
+- [x] 4. The engine
   - Branch: `feat/ml-4-engine` · Depends on: 1 · ADRs: none
-  - [ ] 4.1 `arrange(candidates, formation, rules, start, leave_out)`, pure:
+  - [x] 4.1 `arrange(candidates, formation, rules, start, leave_out)`, pure:
     - each role by key, the top fielded and the rest on the bench in order;
     - a player with no chance of a rating last;
     - a club's keepers as one place;
     - a bench with too many players loses the lowest key, among those who aren't first in their role.
     - _Requirements: R3.2, R3.3_
-    - _Test: **P1** `tests/property/lineup/test_arrange.py::test_p1_fills_the_formation`,
+    - _Test: `tests/unit/lineup/test_arrange.py`;
+      **P1** `tests/property/lineup/test_arrange.py::test_p1_fills_the_formation`,
       **P2** `::test_p2_one_keeper_of_a_club`;
       **AT-1** `tests/acceptance/lineup/test_ordering.py::test_at1_sorting_by_key_is_optimal`_
-  - [ ] 4.2 `simulate`, pure, seeded and standard-library only, drawing 10,000 rounds once and scoring every arrangement on them:
+  - [x] 4.2 `simulate`, pure, seeded and standard-library only, drawing 10,000 rounds once and scoring every arrangement on them:
     - each match's goals drawn once, each goal and assist to at most one squad player;
     - who plays, from each player's chances;
     - scores, with the new starting values in `constants.py`.
     - _Requirements: R4.2, R4.3, R4.6_
-    - _Test: **P4** `tests/property/lineup/test_simulate.py::test_p4_means_match_the_models`,
-      **P6** `::test_p6_same_inputs_same_results`;
+    - _Test: `tests/unit/lineup/test_points.py`;
+      **P2** `tests/property/lineup/test_simulate.py::test_p2_a_clubs_keepers_never_start_together`,
+      `::test_each_goal_goes_to_at_most_one_player`, `::test_each_assist_goes_to_at_most_one_player`,
+      **P4** `::test_p4_means_match_the_models`, `::test_p4_keepers_match_their_model`,
+      **P6** `::test_p6_same_inputs_same_results`, `::test_p6_simulate_is_repeatable`;
       **AT-2** `tests/acceptance/lineup/test_simulation.py::test_at2_a_goal_against_your_own_keeper`_
-  - [ ] 4.3 Substitutions and thresholds:
+  - [x] 4.3 Substitutions and thresholds:
     - the league's mode and cap, a keeper only for a keeper, a cameo with a rating blocking his substitute, a formation change
       only into an allowed formation;
     - the score converted through the thresholds;
