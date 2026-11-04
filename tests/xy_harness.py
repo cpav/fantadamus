@@ -20,7 +20,7 @@ from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, RulesStore
 from fantadamus.mcp.server import AdvisorServer
-from fantadamus.mcp.tools import compare, league, submit
+from fantadamus.mcp.tools import compare, league, outlook, submit
 from fantadamus.web.collector import Collector
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -77,6 +77,7 @@ async def tools(
         collect_log=collect_log,
     )
     compare.register(server, advisor)
+    outlook.register(server, advisor)
     async with Client(server) as client:
         yield client
 

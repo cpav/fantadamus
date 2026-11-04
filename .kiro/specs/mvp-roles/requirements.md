@@ -1,7 +1,7 @@
 # Requirements Document: `mvp-roles` (Phase 2, second slice)
 
 Status: **Approved by the owner, 2026-11-03**; R1.1, R7.2 and AT-1 **amended the same day** with the design,
-**the amendment approved the same day**; R4.4 added 2026-11-04, for the owner's review · Workflow: requirements-first · Depends on:
+**the amendment approved the same day**; R4.4 added and approved 2026-11-04 · Workflow: requirements-first · Depends on:
 `mvp-x-or-y` and `mvp-collect` (built; code for this slice started before `mvp-collect`'s sign-off, owner decision
 2026-11-03) · Method: [`docs/method.md`](../../../docs/method.md) §A3, §A4 and §A6 · Answers:
 [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 1 and 4
@@ -232,4 +232,4 @@ owner's shapes.
   built. This replaces the first decision above.
 - **2026-11-04, building task 5:** asking on the saved real pages showed a first-choice midfielder at 5% to start
   against the outlets' 90–95%, because they write his compound surname in part, and a verdict of "clear" that
-  should have been "lean". R4.4 added; proposed to the owner with the task's report.
+  should have been "lean". R4.4 added, and approved by the owner with the task's report.

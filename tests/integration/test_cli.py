@@ -26,6 +26,7 @@ def test_serve_runs_the_server_on_stdio(monkeypatch: pytest.MonkeyPatch, tmp_pat
         "tools": [
             "collect",
             "compare_players",
+            "player_outlook",
             "read_page",
             "set_league_rules",
             "submit_fixtures",

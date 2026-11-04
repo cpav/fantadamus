@@ -174,9 +174,9 @@ real rounds are tested together in task 8
     - _Test: `tests/integration/roles/test_decision_log.py::test_keeper_probabilities_logged`,
       `::test_earlier_lines_read`_
 
-- [ ] 6. One player's outlook
+- [x] 6. One player's outlook
   - Branch: `feat/mr-6-outlook` · Depends on: 5 · ADRs: ADR-0006
-  - [ ] 6.1 `player_outlook`:
+  - [x] 6.1 `player_outlook`:
     - the same statuses as `compare_players`, or an outlook: the round and its deadline, the rules, the update
       times, what to check before the deadline, and the player with his movement;
     - each outlook logged;
@@ -191,7 +191,9 @@ real rounds are tested together in task 8
   - [ ] 7.1 The agent prompt:
     - every role, `player_outlook`, and two roles answered with outlooks;
     - a keeper's lines, and rated games in a player's form;
-    - the MVP section names the statistics page.
+    - the MVP section names the statistics page;
+    - a name the tools don't know, such as a first name ("Lautaro", where the statistics page has "Martinez L."):
+      read the statistics page, and ask again with the name it writes.
     - Also: a keeper's line in `docs/answer-formats.md`, and the README's tool list.
     - _Requirements: R7.1_
     - _Test: `tests/integration/xy/test_server.py::test_prompt_names_every_role`_
