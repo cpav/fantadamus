@@ -23,7 +23,7 @@ from fantadamus.domains.availability.consensus import Availability
 from fantadamus.domains.facts import Source
 from fantadamus.domains.fixtures.gold import matches as round_matches
 from fantadamus.domains.fixtures.silver import FixtureRow
-from fantadamus.domains.players.resolve import KnownPlayer
+from fantadamus.domains.players.resolve import KnownPlayer, resolve
 from fantadamus.domains.season.gold import known_players, league_goals_per_match
 from fantadamus.domains.sources import Confidence, describe, of_outlets
 from fantadamus.engine.constants import (
@@ -34,9 +34,9 @@ from fantadamus.engine.constants import (
     SIMULATIONS,
 )
 from fantadamus.engine.keepers import KeeperInputs, KeeperValue
-from fantadamus.engine.lineup import Arrangement, Candidate, CannotFieldError, arrange
+from fantadamus.engine.lineup import ROLES, Arrangement, Candidate, CannotFieldError, arrange
 from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue
-from fantadamus.engine.rank import Scoring
+from fantadamus.engine.rank import Label, Option, Scoring, label, verdict
 from fantadamus.engine.simulate import (
     Reached,
     Side,
@@ -73,6 +73,7 @@ from fantadamus.mcp.advisor import (
 )
 
 SCORERS_SHOWN = 5
+PLACE_CALLS = 2
 MOVES_SHOWN = 5
 _WORDS: dict[Role, str] = {"P": "keeper", "D": "defender", "C": "midfielder", "A": "forward"}
 _RULES = {
@@ -127,6 +128,39 @@ class SourceLine(BaseModel):
     captured_at: dt.datetime
 
 
+class Call(BaseModel):
+    """A choice that matters: between two formations, or a starter and the player behind him (R5.2)."""
+
+    kind: Literal["formation", "place"]
+    first: str
+    second: str
+    worth: float
+    """In points: between formations the difference in expected score, between players what the choice is
+    worth (R8)."""
+    label: Label
+    text: str
+    ceiling: str | None = None
+    """In a coin flip between formations, the one with the higher ceiling: variance helps an underdog."""
+
+
+class ThresholdCost(BaseModel):
+    points: float
+    advised: float
+    chosen: float
+
+
+class Override(BaseModel):
+    """What the user's own choice costs against the advice, over the same simulated rounds (R3.5)."""
+
+    advised_formation: str
+    advised_expected: float
+    advised_starters: list[str]
+    cost: float
+    """Expected points given up."""
+    fantasy_goals_cost: float
+    thresholds: list[ThresholdCost]
+
+
 class Lineup(BaseModel):
     message: str
     team: str
@@ -147,7 +181,9 @@ class Lineup(BaseModel):
     bench_rule: str
     left_off: list[str]
     formations: list[Simulated]
-    """Every allowed formation that can be fielded, best first (R6.1)."""
+    """Every allowed formation that can be fielded, best first, as advised (R6.1)."""
+    calls: list[Call]
+    override: Override | None = None
     out_and_doubtful: list[Concern]
     likely_scorers: list[Scorer]
     moved: list[str]
@@ -160,10 +196,12 @@ class Lineup(BaseModel):
 
 
 class LineupResult(BaseModel):
-    status: Literal["setup", "squad", "refresh", "lineup"]
+    status: Literal["setup", "squad", "choose", "refused", "refresh", "lineup"]
     message: str
     setup: SetupStep | None = None
     lineup_setup: LineupSetup | None = None
+    unresolved: dict[str, list[KnownPlayer]] = {}
+    """Names to start or leave out that could be several players of the squad."""
     refresh: list[RefreshItem] = []
     lineup: Lineup | None = None
 
@@ -291,6 +329,79 @@ def _bench_reason(player: Candidate, arranged: Arrangement, first_in_role: bool,
     if first_in_role:
         return f"first in if a {_WORDS[player.role]} misses out: {part.rating:.0%} to get a rating"
     return f"next {_WORDS[player.role]} in"
+
+
+def _ordinal(number: int) -> str:
+    return {1: "1st", 2: "2nd", 3: "3rd"}.get(number, f"{number}th")
+
+
+def _worded(players: Sequence[Candidate]) -> str:
+    return " and ".join(f"{player.name} {player.key:.1f}" for player in players)
+
+
+def formation_call(results: Sequence[Simulated], arrangements: Mapping[str, Arrangement]) -> Call | None:
+    """The best formation against the next, and the players it comes down to (§A7). Within about 0.15 points
+    it's a coin flip, and the higher ceiling is worth naming: variance helps an underdog (R3.4)."""
+    if len(results) < 2:
+        return None
+    best, other = results[0], results[1]
+    gap = abs(best.mean - other.mean)
+    worded = label(gap)
+    ours, theirs = arrangements[best.formation].starters, arrangements[other.formation].starters
+    gained = [player for player in ours if player not in theirs]
+    lost = [player for player in theirs if player not in ours]
+    ceiling = None
+    text = (
+        f"{best.formation} over {other.formation}: {worded}, {gap:.2f} points. "
+        f"{_worded(gained)} over {_worded(lost)}."
+    )
+    if worded == "coin flip":
+        ceiling = other.formation if other.high > best.high else best.formation
+        text += f" {ceiling} has the higher ceiling, which helps an underdog."
+    return Call(
+        kind="formation",
+        first=best.formation,
+        second=other.formation,
+        worth=round(gap, 3),
+        label=worded,
+        text=text,
+        ceiling=ceiling,
+    )
+
+
+def place_calls(arranged: Arrangement, options: Mapping[int, Option]) -> list[Call]:
+    """The closest choices between a role's last starter and the player behind him, with what each is worth
+    (R5.2, R8). A keeper's club-mate covers him rather than competes, and nobody competes with a player who
+    won't play."""
+    calls = []
+    for role in ROLES:
+        line = [player for player in arranged.starters if player.role == role]
+        last = line[-1]
+        behind = next(
+            (
+                player
+                for player in arranged.bench
+                if player.role == role
+                and (role != "P" or player.club != last.club)
+                and player.p_start + player.p_cameo > 0
+            ),
+            None,
+        )
+        if behind is None:
+            continue
+        choice = verdict(options[last.player_id], options[behind.player_id])
+        calls.append(
+            Call(
+                kind="place",
+                first=last.name,
+                second=behind.name,
+                worth=round(choice.margin, 3),
+                label=choice.label,
+                text=f"{_ordinal(len(line))} {_WORDS[role]}: {last.name} {last.key:.1f} v "
+                f"{behind.name} {behind.key:.1f}: {choice.label}, worth {choice.margin:.2f}.",
+            )
+        )
+    return sorted(calls, key=lambda call: (call.worth, call.first))[:PLACE_CALLS]
 
 
 def _concerns(priced: Mapping[int, _Priced], arranged: Arrangement) -> list[Concern]:
@@ -444,6 +555,7 @@ def _moved(
         and decision.team is not None
         and name_key(decision.team) == name_key(team)
         and decision.round == round
+        and decision.override_cost is None
         and decision.as_of < as_of
     ]
     if not earlier:
@@ -515,12 +627,27 @@ def _rounded(result: Simulated) -> Simulated:
     )
 
 
+@dataclass(frozen=True)
+class _Asked:
+    """What the user wants to choose themself (R3.5)."""
+
+    start: Sequence[str] = ()
+    leave_out: Sequence[str] = ()
+    formation: str | None = None
+
+    def __bool__(self) -> bool:
+        return bool(self.start or self.leave_out or self.formation)
+
+
 def lineup_for(
     advisor: Advisor,
     squads: SquadStore,
     team: str = MINE,
     as_of: dt.datetime | None = None,
     *,
+    start: Sequence[str] = (),
+    leave_out: Sequence[str] = (),
+    formation: str | None = None,
     rounds: int = SIMULATIONS,
 ) -> LineupResult:
     """The lineup, after the collector has read the pages of what was missing or stale. A replay of an earlier
@@ -542,6 +669,11 @@ def lineup_for(
         return LineupResult(
             status="squad",
             message=f"No squad stored for {team}: ask the user for the players, then call set_squad.",
+        )
+    if formation is not None and formation not in (rules.formations or ()):
+        allowed = ", ".join(rules.formations or ())
+        return LineupResult(
+            status="refused", message=f"{formation} isn't a formation this league allows: {allowed}."
         )
     when = (as_of or advisor.clock()).astimezone(dt.UTC)
     wanted = [player.player_id for player in squad.players]
@@ -581,8 +713,46 @@ def lineup_for(
         round,
         first_kickoff,
         noted(gathered.better),
+        _Asked(start, leave_out, formation),
         log=as_of is None,
         rounds=rounds,
+    )
+
+
+def _named(names: Sequence[str], players: Sequence[KnownPlayer]) -> dict[str, int] | LineupResult:
+    """Each name's player ID within the squad, or what to do about the ones that don't find one."""
+    found: dict[str, int] = {}
+    unresolved: dict[str, list[KnownPlayer]] = {}
+    for name in names:
+        resolution = resolve(name, players)
+        if resolution.player is not None:
+            found[name] = resolution.player.player_id
+        elif resolution.candidates:
+            unresolved[name] = resolution.candidates
+        else:
+            return LineupResult(status="refused", message=f"{name} isn't in this squad.")
+    if unresolved:
+        return LineupResult(
+            status="choose",
+            message="A name matches more than one player of this squad: ask which.",
+            unresolved=unresolved,
+        )
+    return found
+
+
+def _override(advised: Simulated, chosen: Simulated, arranged: Arrangement) -> Override:
+    """What the choice costs: the same rounds, so the difference is the choice, not luck."""
+    marks = {mark.points: mark.chance for mark in chosen.thresholds}
+    return Override(
+        advised_formation=advised.formation,
+        advised_expected=round(advised.mean, 2),
+        advised_starters=[player.name for player in arranged.starters],
+        cost=round(advised.mean - chosen.mean, 2) + 0.0,  # adding 0.0 turns a rounded -0.0 into 0.0
+        fantasy_goals_cost=round(advised.fantasy_goals - chosen.fantasy_goals, 3) + 0.0,
+        thresholds=[
+            ThresholdCost(points=mark.points, advised=mark.chance, chosen=marks[mark.points])
+            for mark in advised.thresholds
+        ],
     )
 
 
@@ -602,6 +772,7 @@ def _answer(
     round: int,
     first_kickoff: dt.datetime,
     improve: list[RefreshItem],
+    asked: _Asked,
     *,
     log: bool,
     rounds: int,
@@ -622,10 +793,29 @@ def _answer(
             status="squad",
             message="This squad can't field any formation the league allows. " + " ".join(left_out),
         )
+    named = _named((*asked.start, *asked.leave_out), [part.facts.player for part in priced])
+    if isinstance(named, LineupResult):
+        return named
+    chosen: dict[str, Arrangement] = {}
+    if asked:
+        problems: list[str] = []
+        start_ids = {named[name] for name in asked.start}
+        leave_ids = {named[name] for name in asked.leave_out}
+        for shape in [asked.formation] if asked.formation else (rules.formations or ()):
+            try:
+                chosen[shape] = arrange(candidates, shape, rules, start_ids, leave_ids)
+            except CannotFieldError as problem:
+                problems.append(f"{problem}.")
+        if not chosen:
+            return LineupResult(status="refused", message=problems[0])
     players, matches = _simulated(priced)
-    results = ranked(simulate(players, matches, list(arrangements.values()), rules, rounds=rounds), rules)
-    best = results[0]
-    arranged = arrangements[best.formation]
+    # The advice and the user's choice over the same simulated rounds, so that the cost isn't luck (R3.5).
+    simulated = simulate(players, matches, [*arrangements.values(), *chosen.values()], rules, rounds=rounds)
+    results = ranked(simulated[: len(arrangements)], rules)
+    advised = results[0]
+    best = ranked(simulated[len(arrangements) :], rules)[0] if asked else advised
+    arranged = chosen[best.formation] if asked else arrangements[best.formation]
+    override = _override(advised, best, arrangements[advised.formation]) if asked else None
     first_match = next(
         _match_name(advisor, row)
         for row in round_matches(gathered.fixtures, when)
@@ -647,7 +837,15 @@ def _answer(
     message = f"{best.formation}, expected about {best.mean:.0f} points" + (
         f"; chance of reaching {thresholds}." if thresholds else "."
     )
-    moved = _moved(advisor, team, round, when, best, priced)
+    if override is not None:
+        message += (
+            f" Against the advice ({override.advised_formation}, about {override.advised_expected:.0f}), "
+            f"this costs {override.cost:.2f} points."
+        )
+    moved = [] if asked else _moved(advisor, team, round, when, best, priced)
+    options: dict[int, Option] = {player_id: part.value for player_id, part in by_id.items()}
+    formation_choice = None if asked else formation_call(results, arrangements)
+    calls = [*([formation_choice] if formation_choice else []), *place_calls(arranged, options)]
     rounded = _rounded(best)
     lineup = Lineup(
         message=message,
@@ -671,6 +869,8 @@ def _answer(
         f"bench player with a rating, up to {rules.substitutions}.",
         left_off=[player.name for player in arranged.left_off],
         formations=[_rounded(result) for result in results],
+        calls=calls,
+        override=override,
         out_and_doubtful=_concerns(by_id, arranged),
         likely_scorers=_scorers(by_id, arranged),
         moved=moved,
@@ -692,6 +892,12 @@ def _answer(
                 formation=best.formation,
                 expected=best.mean,
                 thresholds={f"{mark.points:g}": mark.chance for mark in best.thresholds},
+                starters=[player.player_id for player in arranged.starters],
+                bench=[player.player_id for player in arranged.bench],
+                override_cost=override.cost if override else None,
+                advised_starters=[player.player_id for player in arrangements[advised.formation].starters]
+                if override
+                else None,
                 rules=stored,
                 content_hashes=sorted({source.content_sha256 for source in sources}),
             )
@@ -709,7 +915,24 @@ def register(server: MCPServer, advisor: Advisor, squads: SquadStore, *, rounds:
         "stored: ask the user, then call set_squad); a refresh plan (facts missing or stale: read the listed "
         "pages, submit with the named tools, then call again); or the lineup, with every allowed formation, "
         "who's doubtful, warnings about anything basic and what could improve it. Without a team it's the "
-        "user's own squad. as_of replays an earlier question."
+        "user's own squad. To price the user's own choice, pass players to start or leave_out of the eleven, "
+        "or a formation: it returns that lineup with what it costs against the advice. as_of replays an "
+        "earlier question."
     )
-    def best_lineup(team: str = MINE, as_of: AwareDatetime | None = None) -> LineupResult:
-        return lineup_for(advisor, squads, team, as_of, rounds=rounds)
+    def best_lineup(
+        team: str = MINE,
+        start: list[str] | None = None,
+        leave_out: list[str] | None = None,
+        formation: str | None = None,
+        as_of: AwareDatetime | None = None,
+    ) -> LineupResult:
+        return lineup_for(
+            advisor,
+            squads,
+            team,
+            as_of,
+            start=start or (),
+            leave_out=leave_out or (),
+            formation=formation,
+            rounds=rounds,
+        )
