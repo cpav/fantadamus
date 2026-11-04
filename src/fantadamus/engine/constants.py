@@ -77,6 +77,7 @@ GOAL_VOTE_LIFT = (
     0.85  # what a goal adds to the scorer's vote; with it, method §A9 test 5's +2.5 and +1.5 hold
 )
 THRESHOLDS_SHOWN = 6  # at least this many thresholds get a chance in the answer
+DOUBTFUL_BELOW = 0.8  # a starter less likely than this to start is named as doubtful
 
 # The answer (R10.2, method §A7)
 COIN_FLIP = 0.15  # a margin below this is a coin flip

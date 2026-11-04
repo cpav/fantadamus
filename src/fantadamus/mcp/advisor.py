@@ -298,7 +298,7 @@ def _unique(sources: Sequence[Source]) -> list[SourceUsed]:
 
 
 @dataclass(frozen=True)
-class _Side:
+class PlayerFacts:
     """One player with every fact his answer needs; `match` None means he isn't playing this round."""
 
     player: KnownPlayer
@@ -348,9 +348,10 @@ class _Plan:
 class Gathered:
     """Each player's facts at one time, and what's missing (mvp-lineup C5)."""
 
-    sides: list[_Side]
+    sides: list[PlayerFacts]
     round: int | None
     first_kickoff: dt.datetime | None
+    fixtures: list[FixtureRow]
     teams: list[TeamSeasonRow]
     plan: _Plan
 
@@ -442,7 +443,7 @@ class Advisor:
             if any(page.stored for page in report.pages):
                 facts = Facts.read(self.lake, when)
             result = self.answer_at(
-                names, when, odds_unavailable=odds_unavailable, facts=facts, tried=_tried(report)
+                names, when, odds_unavailable=odds_unavailable, facts=facts, tried=tried_notes(report)
             )
         if result.answer is None:
             return result
@@ -543,7 +544,7 @@ class Advisor:
         if round is None:
             stale = next_round(facts.fixtures, as_of) is not None
             need(self.refresh_item("fixtures", "stale" if stale else "missing", "the next round's fixtures"))
-        sides: list[_Side] = []
+        sides: list[PlayerFacts] = []
         for player in players:
             form = forms[player.player_id]
             if form is None or not _fresh(
@@ -569,10 +570,10 @@ class Advisor:
             )
             if form is not None and table is not None and order is not None:
                 notes = self._disagreements(player, match, fixtures, teams, as_of)
-                sides.append(_Side(player, form, table, order, match, present, xg, notes))
+                sides.append(PlayerFacts(player, form, table, order, match, present, xg, notes))
 
         first_kickoff = deadline(fixtures, round, as_of) if round is not None else None
-        return Gathered(sides, round, first_kickoff, teams, plan)
+        return Gathered(sides, round, first_kickoff, fixtures, teams, plan)
 
     def _disagreements(
         self,
@@ -656,7 +657,7 @@ class Advisor:
 
     def _answer(
         self,
-        sides: list[_Side],
+        sides: list[PlayerFacts],
         known: list[KnownPlayer],
         round: int,
         first_kickoff: dt.datetime,
@@ -664,10 +665,10 @@ class Advisor:
         stored: StoredRules,
         league: float,
     ) -> Answer:
-        takers = [_takes_penalties(side, known) for side in sides]
-        inputs = [_inputs(side, taker, league) for side, taker in zip(sides, takers, strict=True)]
+        takers = [takes_penalties(side, known) for side in sides]
+        inputs = [model_inputs(side, taker, league) for side, taker in zip(sides, takers, strict=True)]
         values = [
-            _value(part, scoring_for(stored.rules, side.form.role))
+            model_value(part, scoring_for(stored.rules, side.form.role))
             for part, side in zip(inputs, sides, strict=True)
         ]
         players = [
@@ -758,7 +759,7 @@ class Advisor:
         )
 
     def _player_answer(
-        self, side: _Side, value: OutfieldValue | KeeperValue, penalty_taker: bool, round: int
+        self, side: PlayerFacts, value: OutfieldValue | KeeperValue, penalty_taker: bool, round: int
     ) -> PlayerAnswer:
         match, present, xg = side.match, side.present, side.xg
         notes = list(side.disagreements)
@@ -867,7 +868,7 @@ def movement(
     )
 
 
-def _tried(report: CollectReport) -> dict[str, str]:
+def tried_notes(report: CollectReport) -> dict[str, str]:
     """For each fact the run's pages carry, what was tried, for the refresh items it couldn't fill."""
     tried: dict[str, str] = {}
     for page in report.pages:
@@ -881,13 +882,13 @@ def _tried(report: CollectReport) -> dict[str, str]:
     return tried
 
 
-def _takes_penalties(side: _Side, known: list[KnownPlayer]) -> bool:
+def takes_penalties(side: PlayerFacts, known: list[KnownPlayer]) -> bool:
     """Whether he is his club's first penalty taker."""
     mates = [mate for mate in known if mate.club == side.player.club]
     return resolve(side.order.takers[0], mates).player == side.player
 
 
-def _inputs(side: _Side, taker: bool, league: float) -> OutfieldInputs | KeeperInputs:
+def model_inputs(side: PlayerFacts, taker: bool, league: float) -> OutfieldInputs | KeeperInputs:
     """His model's inputs; a player without a match has no chance of a rating (R2.3)."""
     home = side.match is not None and side.match.home == side.player.club
     xg, present, form = side.xg, side.present, side.form
@@ -922,7 +923,7 @@ def _inputs(side: _Side, taker: bool, league: float) -> OutfieldInputs | KeeperI
     )
 
 
-def _value(player: OutfieldInputs | KeeperInputs, scoring: Scoring) -> OutfieldValue | KeeperValue:
+def model_value(player: OutfieldInputs | KeeperInputs, scoring: Scoring) -> OutfieldValue | KeeperValue:
     if isinstance(player, KeeperInputs):
         return keepers.value(player, scoring)
     return outfield.value(player, scoring)
@@ -973,7 +974,7 @@ def _outlook_message(part: PlayerAnswer) -> str:
     return f"{who}: {value.p_start:.0%} to start, worth about {value.e_start:.1f} if he does."
 
 
-def _outlooks_message(sides: Sequence[_Side]) -> str:
+def _outlooks_message(sides: Sequence[PlayerFacts]) -> str:
     who = " and ".join(f"{side.player.name} ({_ROLE_WORDS[side.form.role]})" for side in sides)
     return (
         f"{who} play different roles: a choice between roles is the formation call, which comes with the "

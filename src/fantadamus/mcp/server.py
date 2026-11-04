@@ -19,7 +19,7 @@ from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore
 from fantadamus.league.squads import SquadStore
 from fantadamus.mcp.advisor import Advisor, ReadingItem
-from fantadamus.mcp.tools import collect, compare, league, outlook, pages, squad, submit
+from fantadamus.mcp.tools import collect, compare, league, lineup, outlook, pages, squad, submit
 from fantadamus.web.collector import Collector, CollectorConfig
 from fantadamus.web.fetch import Fetcher
 
@@ -122,5 +122,7 @@ def build_advisor(
     )
     compare.register(server, advisor)
     outlook.register(server, advisor)
-    squad.register(server, advisor, SquadStore(rules.root))
+    squads = SquadStore(rules.root)
+    squad.register(server, advisor, squads)
+    lineup.register(server, advisor, squads)
     return server

@@ -166,7 +166,7 @@ expected fantasy goals, and the chance of each threshold.
 ### C8. `best_lineup` (`mcp/tools/lineup.py`; R3, R5, R6)
 
 `best_lineup(team="mine", start=[], leave_out=[], formation=None, as_of=None)`, with the statuses `setup`, `squad` (no squad
-yet), `choose`, `refresh` and `lineup`.
+yet), `refresh` and `lineup`, and `choose` once it takes names to start or leave out. A replay never collects and isn't logged.
 
 | Part | What it holds |
 |---|---|
@@ -189,8 +189,8 @@ player, much of it repeated sources, and the target here is about 300 bytes per 
 
 ### C9. The decision log (`lake/decision_log.py`; R7.1)
 
-`Decision` gains `kind="lineup"`, and the optional `team`, `formation`, `thresholds` (each threshold's chance) and
-`override_cost`. Every squad player's published chances are logged. Earlier lines still read.
+`Decision` gains `kind="lineup"`, and the optional `team`, `formation`, `expected`, `thresholds` (each threshold's chance)
+and `override_cost`. Every squad player's published chances are logged. Earlier lines still read.
 
 ### C10. Calibration (`domains/calibration.py`, `cli/`; R7.2 to R7.6)
 
@@ -285,7 +285,7 @@ two-role message says so too. The README and the player guide say how to give a 
 | A role can't fill an allowed formation | That formation is left out, and the lineup says so |
 | A forced player isn't in the squad, or the override can't be fielded | Refused, with the reason |
 | A match has no odds, or only the 1X2 | Team form or the 1X2, with a warning and an `improve` item |
-| A match has no lineups yet | Its players at the default chance, with a warning and an `improve` item |
+| A match has no lineups yet | Each player's chance of starting comes from how often he's had a rating (rated games out of his club's), capped at a listed starter's chance, with a warning and an `improve` item. The 5% default for a player no outlet lists would bench a whole match |
 | No match of the squad has lineups, or a needed fact is missing | A refresh plan, as today |
 | A chance can't be scored | Counted, with the reason |
 | A finished round's page can't be read | The answer is unaffected, and it's tried again later |
@@ -314,7 +314,8 @@ These Hypothesis tests are required:
   squads, independent of the simulation.
 - **Method §A9 test 5 (AT-2):** one match, with a striker and the opposing keeper, with and without the link.
 - **Tools:** in-process MCP tests on invented squads, with the collector on the local server.
-- **Speed and size (AT-9):** a time limit on a synthetic 25-player squad, and the answer's size, in the test suite.
+- **Speed and size (AT-9):** the answer's size in the test suite; the time limit on a synthetic 25-player squad in a process of its
+  own, as CPU time, because the coverage tracer slows the simulation about sixfold and other test workers compete for the machine.
 - **On real data, from Claude Code, before asking the owner to test:** the local tools with a real squad, kept in private memory
   and never committed. Results stay out of the repository.
 - **Manual:** AT-13, in Claude Desktop.

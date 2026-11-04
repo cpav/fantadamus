@@ -33,7 +33,7 @@ class Decision(BaseModel):
     """Every published probability of one answer, its verdict if it has one, the rules and the facts it used
     (R14.1; mvp-roles R5.3). Lines logged before there were other kinds are comparisons."""
 
-    kind: Literal["compare", "outlooks", "outlook"] = "compare"
+    kind: Literal["compare", "outlooks", "outlook", "lineup"] = "compare"
     as_of: UtcDatetime
     logged_at: UtcDatetime
     user: str
@@ -46,6 +46,12 @@ class Decision(BaseModel):
     label: str | None = None
     rules: StoredRules
     content_hashes: list[str]
+    team: str | None = None
+    """A lineup's: whose squad it was (mvp-lineup R1.5, R7.1)."""
+    formation: str | None = None
+    expected: float | None = None
+    thresholds: dict[str, float] | None = None
+    """The chance of reaching each threshold, by its points."""
 
 
 class DecisionLog:

@@ -40,6 +40,7 @@ def _server(tmp_path: Path) -> MCPServer:
 async def test_served_tools(tmp_path: Path) -> None:
     tools = {tool.name: tool for tool in await _server(tmp_path).list_tools()}
     assert sorted(tools) == [
+        "best_lineup",
         "collect",
         "compare_players",
         "player_outlook",
