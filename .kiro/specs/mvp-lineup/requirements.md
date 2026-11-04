@@ -1,6 +1,7 @@
 # Requirements Document: `mvp-lineup` (Phase 2, third slice)
 
-Status: **Approved by the owner, 2026-11-04**, with the amendment to R5.5 and R5.6 · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
+Status: **Approved by the owner, 2026-11-04**, with the amendment to R5.5 and R5.6; R1.5, R2.1, R2.3, R3.3 to R3.5, R4.4
+and AT-6, AT-7, AT-10 amended the same day from the owner's league notes, **for the owner's review** · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
 `mvp-collect` and `mvp-roles` (signed off) · Method: [`docs/method.md`](../../../docs/method.md) §A1 to §A3, §A7, §A8,
 §A9 tests 1 and 5 · Answers: [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 2, 3 and 6
 
@@ -19,7 +20,7 @@ It adds no new source. The round page and the statistics page already give every
 - anything that needs the opponent's team: the home factor, the draw, superiority and humiliation bonuses, the rule
   of 59, and modifiers that compare two teams or act on the opponent. The answer is about the user's own score;
 - Mantra leagues;
-- modifiers other than the defence modifier and the captain (R2.3);
+- modifiers, including the defence modifier and the captain (R2.3);
 - trades, auctions and market values (out of scope for v1);
 - match cards, live forecasts and alerts: later specs;
 - the online endpoint: Phase 3.
@@ -35,7 +36,6 @@ Spec-wide terms are in `product.md`; the earlier slices' terms apply. Here:
 | Fantasy goals | The goals a team's score converts to; what the method optimises (§A1) |
 | Substitution mode | How a player without a rating is replaced: same role only, role first then bench order, or bench order first |
 | Formation change | Whether a substitution may change the formation, if the result is one the league allows |
-| Pure vote | A player's rating without bonuses or maluses; modifiers read it |
 | Worth of a choice | What choosing X over Y adds in expected points when the bench covers both (R8) |
 
 ## What leagues can set
@@ -48,11 +48,11 @@ There is no single official rulebook: Fantacalcio.it says each league writes its
 | Bench size | Open; 11 is Fantacalcio-Online's default and 7 the next most used | Fantacalcio-Online, substitutions guide |
 | Substitutions per match | 4, then 3, then 5 | Same |
 | Substitution mode | Role first then bench order (about half), same role only (about 40%), bench order first (rare) | Same |
-| Formation change | Allowed in about 60% of leagues | Same |
+| Formation change | Allowed in about 60% of leagues; it comes with the substitution mode | Same |
 | Allowed formations | 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1 | [Fantacalcio.it's league template](https://www.fantacalcio.it/regolamenti/leghe-private) |
 | Squad | 25 players: 3 keepers, 8 defenders, 8 midfielders, 6 forwards | Fantacalcio-Online's rules guide |
-| Defence modifier | Optional; the most used modifier. Most common table: keeper and 3 best defenders, pure votes averaged: 6.00 gives +1, 6.50 +3, 7.00 +6 | Fantacalcio-Online's defence-modifier guide |
-| Captain | Optional. The captain's pure vote gives −2.5 to +2.5 in half-point bands, 0 from 6 to 6.49 | Fantacalcio-Online's captain guide |
+| Defence modifier (not built, R2.3) | Optional; the most used modifier. Most common table: keeper and 3 best defenders, pure votes averaged: 6.00 gives +1, 6.50 +3, 7.00 +6 | Fantacalcio-Online's defence-modifier guide |
+| Captain (not built, R2.3) | Optional. The captain's pure vote gives −2.5 to +2.5 in half-point bands, 0 from 6 to 6.49 | Fantacalcio-Online's captain guide |
 | League format | Head to head, where thresholds decide; or total points, where they don't matter | Fantacalcio.it's league template |
 
 ## Requirements
@@ -69,20 +69,21 @@ There is no single official rulebook: Fantacalcio.it says each league writes its
   allows, for example with no keeper.
 - **R1.4** WHEN a stored player is no longer listed at any club THE SYSTEM SHALL say so in the answer and leave him out
   of the eleven.
+- **R1.5** THE SYSTEM SHALL keep several squads per user, by team name, so that a player can also ask on behalf of a
+  league-mate. They share the user's league rules. Without a name, the squad is the user's own.
 
 ### Requirement 2: The league's full rules
 
 **User Story:** As a player, I want my league's own rules used, so that the eleven is right for my league.
 
 - **R2.1** THE SYSTEM SHALL let `set_league_rules` also take: the league format (head to head or total points), the
-  goal thresholds, the bench size, the substitutions per match, the substitution mode, whether a formation may change,
-  the allowed formations, and the vote a player without a rating keeps if the league gives one.
+  goal thresholds, the bench size, the substitutions per match, the substitution mode, the allowed formations, the vote a
+  player without a rating keeps if the league gives one, and any other rules the league uses (R2.3).
 - **R2.2** IF a user asks for a lineup and any of those is unset THEN THE SYSTEM SHALL return the setup step for just
   those settings, offering the most common values above. It SHALL never assume them. Users who set only bonuses and
   maluses SHALL keep getting "X or Y?" answers.
-- **R2.3** THE SYSTEM SHALL let a league switch on the defence modifier, with the table above, and the captain, with the
-  bands above. WHERE a league's rules include anything this spec leaves out, the answer SHALL say that its score doesn't
-  include it.
+- **R2.3** WHERE a league uses rules this spec leaves out, such as a modifier or a home factor, THE SYSTEM SHALL take their
+  names, and every lineup SHALL say that its score doesn't include them.
 - **R2.4** IF a value is impossible (thresholds not rising, a formation that isn't eleven players with one keeper, a
   bench too small for a keeper and one of each role) THEN `set_league_rules` SHALL reject it with the reason.
 
@@ -95,12 +96,13 @@ before the lock.
   step, collecting, and one refresh plan of what's missing.
 - **R3.2** THE SYSTEM SHALL, for each allowed formation, field the top of each role by key, and put the rest on the
   bench by key within each role (method §A3), up to the bench size.
-- **R3.3** THE SYSTEM SHALL put first among the bench keepers a backup from the starting keeper's club, since he plays
-  exactly when the starter doesn't (method §A6).
+- **R3.3** THE SYSTEM SHALL treat a club's keepers as one place: it fields the likelier starter, whatever their keys, and
+  puts the other first among the bench keepers, since he plays exactly when the starter doesn't (method §A6).
 - **R3.4** THE SYSTEM SHALL recommend the formation with the most expected fantasy goals, or, in a total-points league,
-  the highest expected score. IF the top formations are within about 0.15 THEN it SHALL call that a coin flip (§A7).
-- **R3.5** WHERE the league uses a captain THE SYSTEM SHALL recommend the captain and vice-captain with the highest
-  expected modifier among the likely starters.
+  the highest expected score. IF the top formations are within about 0.15 points THEN it SHALL call that a coin flip and
+  say which has the higher ceiling, since variance helps an underdog (§A7).
+- **R3.5** `best_lineup` SHALL take players the user wants to start or leave out, and a formation, and return that lineup
+  with its cost against the recommendation, in expected points and in the chance of each threshold (method §A8).
 
 ### Requirement 4: The simulation
 
@@ -115,8 +117,7 @@ head-to-head match.
   draw yellow cards.
 - **R4.3** THE SYSTEM SHALL draw each match's goals once, so that a striker's goal and the goal conceded by the opposing
   keeper are the same event (§A7, §A9 test 5).
-- **R4.4** THE SYSTEM SHALL apply the league's thresholds and, where switched on, its defence modifier and captain,
-  to each simulated score.
+- **R4.4** THE SYSTEM SHALL apply the league's goal thresholds to each simulated score.
 - **R4.5** THE SYSTEM SHALL report, for each allowed formation: the expected score, the range it falls in eight rounds out
   of ten, the expected fantasy goals, and the chance of reaching each threshold.
 - **R4.6** THE SYSTEM SHALL give the same answer for the same facts, and SHALL answer within 3 seconds for a 25-player
@@ -194,11 +195,11 @@ answer.
 | AT-3 | A league's substitution rules: role for role, first bench player with a rating, the cap, a cameo with a rating blocking his substitute, a keeper replaced only by a keeper, a formation change only into an allowed formation | R4.1, R4.2 |
 | AT-4 | Thresholds: known scores convert to the right fantasy goals on both preset tables, and the chance of each threshold matches a hand-worked case | R4.4, R4.5 |
 | AT-5 | The formation falls out of the marginal players: a strong third forward over a weak fourth defender picks 3-4-3; a head-to-head and a total-points league can differ | R3.4, R5.2 |
-| AT-6 | The bench is in key order within each role, a same-club backup keeper is first, and the lineup comes from one call with its sources once | R3.2, R3.3, R5.1, R5.4 |
-| AT-7 | `set_squad` resolves names, returns candidates and unknown names, stores nothing then, and replaces the squad on a second call; the file sits under the git-ignored data folder | R1 |
+| AT-6 | The bench is in key order within each role; of two keepers of one club the likelier starter is fielded, even with the lower key, and the other is first on the bench; the lineup comes from one call with its sources once | R3.2, R3.3, R5.1, R5.4 |
+| AT-7 | `set_squad` resolves names, returns candidates and unknown names, stores nothing then, and replaces the squad on a second call; a league-mate's squad is kept apart under its team name; the files sit under the git-ignored data folder | R1 |
 | AT-8 | A user with only bonuses and maluses still gets "X or Y?", and gets the setup step for just the missing settings on `best_lineup`; an impossible value is rejected | R2 |
 | AT-9 | The same facts give the same lineup; a 25-player squad and seven formations take under 3 seconds; the answer is under 15 KB | R4.6, R5.4 |
-| AT-10 | Defence modifier and captain: hand-worked rounds give the right score; a league rule this spec leaves out is named in the answer | R2.3, R3.5, R4.4 |
+| AT-10 | An override: forcing a player into the eleven, or another formation, returns that lineup with its cost in points and threshold chances; a league rule this spec leaves out is named in the answer | R2.3, R3.5 |
 | AT-11 | Worth of a choice: a 12% backup keeper ahead of a 92% starter on the key is a coin flip, not "clear"; the order doesn't change | R8 |
 | AT-12 | `fantadamus calibrate` on a scripted round gives the right Brier scores and buckets, and names what it couldn't score | R7 |
 | AT-14 | A squad with a player in a match without over/under gets its lineup in one call, with a warning naming the match and the pages that could improve it; once better odds are submitted, the warning goes and the numbers use them. A player without rated games and one no outlet lists each get their warning | R5.5, R5.6 |
@@ -211,10 +212,14 @@ Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
 - **2026-11-04:** the owner signed off `mvp-collect` and `mvp-roles` and asked to move on to close Phase 2.
 
 - **2026-11-04:** these requirements approved, with three decisions:
-  1. **Which rules to build (R2):** the owner said they added context on where to find their league's rules, but the
-     agent couldn't find it in the repository, the private configuration or the owner's artifacts. The list in R2
-     stands until that's found; R2 takes each league's own values, so what changes would be which options exist.
+  1. **Which rules to build (R2):** settled by the owner's league notes, kept outside this public repository: no defence
+     modifier and no captain, thresholds from 66 with a fixed step, a long bench, substitutions role for role. So R2.3
+     drops both modifiers, and a league that uses one gets a line saying the score leaves it out. The second player's
+     league isn't known yet.
   2. **What a choice is worth (R8):** approved. Method §A9 test 6 now reads "lean" rather than "clear".
   3. **A lineup and basic data (R5.5, R5.6):** the agent proposed answering from the 1X2 and saying so. The owner wants
      the best statistics, or a warning when the answer rests on something basic. So Claude tries once for better data,
      and any number left on basic data carries a warning, wider than over/under alone.
+- **2026-11-04, from the same notes, for the owner's review:** a player also asks on behalf of league-mates (R1.5); a
+  club's keepers are one place, because on a real squad an unrated backup had the higher key (R3.3); a close call says
+  which option has the higher ceiling (R3.4); and an override's cost is given once, as the method asks (R3.5).
