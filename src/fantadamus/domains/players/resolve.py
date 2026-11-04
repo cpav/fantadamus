@@ -22,7 +22,7 @@ from fantadamus.core.names import name_key
 
 
 class KnownPlayer(BaseModel):
-    """A player the lake has a profile for."""
+    """A player the lake has season figures for."""
 
     model_config = ConfigDict(frozen=True)
 

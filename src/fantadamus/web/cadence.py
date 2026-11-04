@@ -12,7 +12,8 @@ design C7; R7.1, R7.2).
 A match's facts stop being due at its kickoff: there's nothing left to forecast. Each interval counts from the
 collector's last attempt at the page that carries the fact, successful or not: a site that refuses is asked
 again at the fact's own interval, not every 15 minutes. The matches are the next round's, whose deadline is
-still ahead. A scheduled run reads only the pages whose facts are due.
+still ahead. A scheduled run reads only the pages whose facts are due, and an answer that finds a fact missing
+leaves alone a page tried moments ago: it has nothing new for a name it doesn't list or odds it doesn't show.
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from fantadamus.domains.fixtures.gold import matches, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.web.collector import Collector, CollectReport
+from fantadamus.web.collector import STATS_FACTS, Collector, CollectReport, PageKind
 
 SCHEDULED = ("fixtures", "probable_lineups", "official_lineups", "match_odds", "player_season")
 _HOUR = dt.timedelta(hours=1)
@@ -42,6 +43,8 @@ _EVERY = {
     "official_lineups": dt.timedelta(minutes=15),
 }
 _LAST_DAY = {"probable_lineups": 3 * _HOUR, "match_odds": 3 * _HOUR}
+_ON_DEMAND_EVERY: dict[PageKind, dt.timedelta] = {"round": dt.timedelta(minutes=15), "statistics": 24 * _HOUR}
+"""The shortest interval of each page's facts in the table."""
 
 
 def due(
@@ -68,6 +71,15 @@ def due(
     else:
         every = _EVERY[fact]
     return last_read is None or now - last_read >= every
+
+
+def may_read(fact: str, log: CollectLog | None, now: dt.datetime) -> bool:
+    """Whether an answer may ask the collector for `fact` now (mvp-collect R1.4)."""
+    if log is None:
+        return True
+    page: PageKind = "statistics" if fact in STATS_FACTS else "round"
+    last = log.last_attempt(now, page)
+    return last is None or now - last >= _ON_DEMAND_EVERY[page]
 
 
 def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]:

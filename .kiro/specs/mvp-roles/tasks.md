@@ -208,10 +208,15 @@ real rounds are tested together in task 8
     - check that the season figures came from the statistics page.
     - _Requirements: AT-10; R1.1, R4.1, R5.1_
     - _Test: what each answer used and the collection log, recorded in the slice report (no page text)_
-  - [ ] 8.2 A short slice report in `docs/reports/`: tests, coverage, acceptance tests, the decision log's
+  - [x] 8.2 A short slice report in `docs/reports/`: tests, coverage, acceptance tests, the decision log's
     record, open risks
     - _Requirements: R5.3, slice gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
   - [ ] 8.3 **Owner:** sign off the slice → the full-lineup slice may start
     - _Requirements: Slice gate (`quality.md`)_
     - _Test: sign-off recorded in the slice report_
+  - [x] 8.4 Fixes from calling the real tools: an answer leaves alone a page it just tried, and a percentage sheet's
+    ballottaggi give rivals
+    - _Requirements: R1.4, R5.1_
+    - _Test: `tests/integration/roles/test_compare_roles.py::test_a_page_just_read_is_not_read_again`;
+      `tests/unit/collect/test_percent_consensus.py::test_rivals_from_percentages`_

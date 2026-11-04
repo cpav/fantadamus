@@ -68,6 +68,7 @@ from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import Decision, DecisionLog, LoggedPlayer
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore, SetupStep, StoredRules, scoring_for, setup_step
+from fantadamus.web.cadence import may_read
 from fantadamus.web.collector import ROUND_FACTS, STATS_FACTS, Collector, CollectReport
 
 ROME = ZoneInfo("Europe/Rome")
@@ -309,7 +310,7 @@ class _Side:
 
 @dataclass(frozen=True)
 class Advisor:
-    """Everything `compare_players` reads and writes, for one user."""
+    """Everything `compare_players` and `player_outlook` read and write, for one user."""
 
     lake: LakeStore
     rules: RulesStore
@@ -364,7 +365,11 @@ class Advisor:
         facts = Facts.read(self.lake)
         result = self.answer_at(names, when, odds_unavailable=odds_unavailable, facts=facts)
         if as_of is None and self.collector is not None:
-            wanted = {item.fact for item in result.refresh if self.collector.reads(item.fact)}
+            wanted = {
+                item.fact
+                for item in result.refresh
+                if self.collector.reads(item.fact) and may_read(item.fact, self.collect_log, when)
+            }
             if wanted:
                 report = self.collector.collect(facts=sorted(wanted))
                 if self.collect_log is not None:
@@ -416,7 +421,7 @@ class Advisor:
             if resolution.candidates:
                 candidates[name] = resolution.candidates
             elif resolution.player is None:
-                need(self._item("player_season", "missing", f"{name}'s profile", player=name))
+                need(self._item("player_season", "missing", f"{name}'s season figures", player=name))
             else:
                 players.append(resolution.player)
         if candidates:
@@ -447,7 +452,7 @@ class Advisor:
             if form is None or not _fresh(
                 [form], "player_season", as_of, confirmed=confirmed.get(SEASON_STATS.table.name)
             ):
-                about = f"{player.name}'s profile"
+                about = f"{player.name}'s season figures"
                 need(self._item("player_season", "stale", about, player=player.name, club=player.club))
             table = team_season(teams, player.club, as_of)
             if table is None:

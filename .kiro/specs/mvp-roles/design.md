@@ -116,6 +116,9 @@ round-page reader. It returns the payload and the problems.
 - **Cadence.** `player_season` joins `SCHEDULED`, due 24 hours after the statistics page's last attempt,
   whatever the matches (R1.4). `CollectLog.last_attempt` takes the page's address, so each page counts from its
   own last attempt. `collect_due` reads only the pages whose facts are due.
+- **On demand.** An answer leaves alone a page tried within 15 minutes (the round page) or 24 hours (the statistics
+  page), the shortest interval of each page's facts: found by calling the real tools, where an unknown name or odds
+  without over/under read the same page again on every question (`may_read`).
 - **Freshness.** `FRESH_FOR_HOURS["player_season"]` becomes 48. A daily read that finds the page unchanged keeps
   the figures fresh, through the collection log's confirmed reads, as the round page's facts do.
 
@@ -195,6 +198,9 @@ changes it.
   answer carries his goals conceded, P(clean sheet) and expected goals conceded (R3.5).
 - **Movement** adds P(clean sheet) beside P(scores), and the opponent's xG among the changes.
 - **The "won't play" advice names the role**: keeper, defender, midfielder or forward (R4.3).
+- **Rivals on a percentage sheet (R5.1).** The round page names no ballottaggi. Two players of one role, each between
+  31% and 69%, whose percentages make 100 are each other's rivals; the sheets' defaults (90 and 30, 95 and 5) don't
+  count.
 - **Outlet names by surname (R4.4).** When no row of a lineup names him, `availability` counts a row if he is the
   one club-mate with its surname (`same_surname`). Rows that name him strictly
   always win, and his answer's notes say when it was used. Only among club-mates, and only for outlets' rows:

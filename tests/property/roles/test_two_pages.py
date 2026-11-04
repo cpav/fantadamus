@@ -13,7 +13,7 @@ from fantadamus.web.readers.fcit_stats import read_stats
 from tests.collect_pages import stats_page
 from tests.roles_data import stats_read
 
-ROWS = stats_read()["players"]
+ROWS = stats_read()["players"][:6]  # each example builds and parses a page: enough to shuffle
 FIRST = season_submissions(read_stats(stats_page(ROWS)))
 LAST = {domain.source: {payload_hash(item.payload) for item in items} for domain, items in FIRST.items()}
 unread = st.fixed_dictionaries(
