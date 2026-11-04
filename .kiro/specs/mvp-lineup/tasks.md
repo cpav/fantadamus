@@ -127,31 +127,39 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
       **AT-3** `tests/acceptance/lineup/test_simulation.py::test_at3_substitution_rules`,
       **AT-4** `::test_at4_thresholds`_
 
-- [ ] 5. `best_lineup`
+- [x] 5. `best_lineup`
   - Branch: `feat/ml-5-best-lineup` · Depends on: 3, 4 · ADRs: none
-  - [ ] 5.1 The tool, with the statuses `setup`, `squad`, `choose`, `refresh` and `lineup`:
+  - [x] 5.1 The tool, with the statuses `setup`, `squad`, `refresh` and `lineup` (`choose` comes with names to start, in 6.2):
     - the same steps first as the other tools;
     - a stored player no longer listed is named and left out.
     - _Requirements: R3.1, R2.2, R1.4_
-    - _Test: `tests/integration/lineup/test_best_lineup.py::test_statuses`, `::test_player_no_longer_listed`_
-  - [ ] 5.2 The answer:
+    - _Test: `tests/integration/lineup/test_best_lineup.py::test_statuses`, `::test_one_call_collects_and_answers`,
+      `::test_what_is_needed_holds_the_lineup_back`, `::test_no_match_with_lineups_is_a_refresh_plan`,
+      `::test_player_no_longer_listed`, `::test_a_squad_that_cant_field_any_formation_says_so`_
+  - [x] 5.2 The answer:
     - the summary, starters, bench, formations, who's out or doubtful, likely scorers, what moved and what to check before the
       lock;
     - each source once, and under 15 KB;
     - the formation with the most fantasy goals, or the highest score in a total-points league.
     - _Requirements: R3.4, R5.1, R5.3, R5.4, R6.1_
     - _Test: **AT-5** `tests/acceptance/lineup/test_lineup.py::test_at5_the_formation_falls_out_of_the_marginal_players`,
-      **AT-6** `::test_at6_bench_and_keepers`, **AT-9** `::test_at9_same_facts_fast_and_small`_
-  - [ ] 5.3 Warnings and `improve`:
+      `::test_at5_a_head_to_head_and_a_total_points_league_can_differ`,
+      **AT-6** `::test_at6_bench_and_keepers`, `::test_at6_what_each_starter_shows`, `::test_at6_out_and_doubtful`,
+      **AT-9** `::test_at9_same_facts_same_lineup_and_small`, `::test_at9_fast`;
+      `tests/integration/lineup/test_best_lineup.py::test_what_moved_since_the_last_lineup`_
+  - [x] 5.3 Warnings and `improve`:
     - every number on basic data is warned about, and a lineup is never held back for it;
     - better data is listed with its pages and search hints;
     - a league's rules this spec leaves out are named in every lineup.
     - _Requirements: R2.3, R5.5, R5.6_
     - _Test: **AT-14** `tests/acceptance/lineup/test_lineup.py::test_at14_warnings_and_improve`;
-      `tests/integration/lineup/test_best_lineup.py::test_rules_left_out_are_named`_
-  - [ ] 5.4 The decision log's `kind="lineup"`, with every squad player's chances, and earlier lines still read.
+      `tests/integration/lineup/test_best_lineup.py::test_rules_left_out_are_named`,
+      `::test_a_match_without_odds_is_priced_from_team_form`, `::test_a_match_without_lineups_goes_ahead_with_a_warning`,
+      `::test_a_name_matched_by_surname_is_said`, `::test_a_keeper_whose_goals_conceded_are_unknown`_
+  - [x] 5.4 The decision log's `kind="lineup"`, with every squad player's chances, and earlier lines still read.
     - _Requirements: R7.1_
-    - _Test: `tests/integration/lineup/test_best_lineup.py::test_lineup_logged`, `::test_earlier_lines_still_read`_
+    - _Test: `tests/integration/lineup/test_best_lineup.py::test_lineup_logged`, `::test_a_replay_is_not_logged`,
+      `::test_earlier_lines_still_read`_
 
 - [ ] 6. Overrides and calls
   - Branch: `feat/ml-6-overrides` · Depends on: 5 · ADRs: none

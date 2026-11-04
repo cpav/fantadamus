@@ -24,6 +24,7 @@ def test_serve_runs_the_server_on_stdio(monkeypatch: pytest.MonkeyPatch, tmp_pat
     assert seen == {
         "transport": "stdio",
         "tools": [
+            "best_lineup",
             "collect",
             "compare_players",
             "player_outlook",

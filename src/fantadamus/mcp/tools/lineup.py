@@ -1,0 +1,715 @@
+"""`best_lineup`: "who do I field?" (mvp-lineup design C8; R3, R5, R6.1, R7.1).
+
+The same steps as the other tools come first: the setup step, collecting, and one refresh plan of what's
+missing. A lineup is held back only when no number can be given. For a match's odds or lineups it goes ahead
+on the best data it has, says which numbers rest on something more basic, and lists what could improve them.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import datetime as dt
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Literal
+
+from mcp.server.mcpserver import MCPServer
+from pydantic import AwareDatetime, BaseModel
+
+from fantadamus.contracts.types import Role
+from fantadamus.contracts.xy.league import LineupRules
+from fantadamus.core.names import name_key
+from fantadamus.domains.availability.consensus import Availability
+from fantadamus.domains.facts import Source
+from fantadamus.domains.fixtures.gold import matches as round_matches
+from fantadamus.domains.fixtures.silver import FixtureRow
+from fantadamus.domains.players.resolve import KnownPlayer
+from fantadamus.domains.season.gold import known_players, league_goals_per_match
+from fantadamus.domains.sources import Confidence, describe, of_outlets
+from fantadamus.engine.constants import (
+    CAMEO_SHARE,
+    DOUBTFUL_BELOW,
+    P_START_BENCH,
+    P_START_STARTER,
+    SIMULATIONS,
+)
+from fantadamus.engine.keepers import KeeperInputs, KeeperValue
+from fantadamus.engine.lineup import Arrangement, Candidate, CannotFieldError, arrange
+from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue
+from fantadamus.engine.rank import Scoring
+from fantadamus.engine.simulate import (
+    Reached,
+    Side,
+    SimPlayer,
+    Simulated,
+    keeper_player,
+    outfield_player,
+    ranked,
+    simulate,
+)
+from fantadamus.lake.decision_log import Decision, LoggedPlayer
+from fantadamus.league.rules import (
+    LineupSetup,
+    SetupStep,
+    StoredRules,
+    lineup_setup_step,
+    scoring_for,
+    setup_step,
+)
+from fantadamus.league.squads import MINE, SquadStore, StoredSquad
+from fantadamus.mcp.advisor import (
+    REFRESH,
+    ROME,
+    Advisor,
+    Facts,
+    Gathered,
+    PlayerFacts,
+    RefreshItem,
+    Updated,
+    model_inputs,
+    model_value,
+    takes_penalties,
+    tried_notes,
+)
+
+SCORERS_SHOWN = 5
+MOVES_SHOWN = 5
+_WORDS: dict[Role, str] = {"P": "keeper", "D": "defender", "C": "midfielder", "A": "forward"}
+_RULES = {
+    "same_role": "role for role",
+    "role_first": "role first, then bench order",
+    "bench_order": "in bench order",
+}
+
+
+class LineupPlayer(BaseModel):
+    """One player's line: a full breakdown stays with `player_outlook` (R5.4)."""
+
+    player_id: int
+    name: str
+    club: str
+    role: Role
+    match: str | None
+    p_start: float
+    confidence: Confidence | None
+    """How sure his chance of starting is; none where no outlet gave one (R5.3 of `mvp-collect`)."""
+    start_range: tuple[float, float] | None = None
+    """The outlets' lowest and highest, when they disagree."""
+    value: float
+    """What his rating is worth, whichever way he gets it: the key (§A3)."""
+    p_scores: float | None = None
+    p_clean_sheet: float | None = None
+    penalties: bool = False
+
+
+class BenchPlace(LineupPlayer):
+    reason: str
+
+
+class Concern(BaseModel):
+    """A squad player who's out, or a starter who's doubtful, and who covers him (R5.3)."""
+
+    name: str
+    status: Literal["out", "doubtful"]
+    p_start: float
+    covered_by: str | None
+
+
+class Scorer(BaseModel):
+    name: str
+    chance: float
+
+
+class SourceLine(BaseModel):
+    """A page, once for the whole answer (R5.4)."""
+
+    label: str
+    captured_at: dt.datetime
+
+
+class Lineup(BaseModel):
+    message: str
+    team: str
+    round: int
+    lock: dt.datetime
+    """In Europe/Rome: the kickoff of the round's first match."""
+    first_match: str
+    updated: Updated
+    formation: str
+    expected: float
+    low: float
+    high: float
+    """Eight rounds out of ten fall from `low` to `high`."""
+    fantasy_goals: float
+    thresholds: list[Reached]
+    starters: list[LineupPlayer]
+    bench: list[BenchPlace]
+    bench_rule: str
+    left_off: list[str]
+    formations: list[Simulated]
+    """Every allowed formation that can be fielded, best first (R6.1)."""
+    out_and_doubtful: list[Concern]
+    likely_scorers: list[Scorer]
+    moved: list[str]
+    check_before_lock: list[str]
+    warnings: list[str]
+    """Every number that rests on something more basic, and what the score leaves out (R2.3, R5.5)."""
+    improve: list[RefreshItem]
+    """What could improve those numbers: try once, then answer anyway (R5.6)."""
+    sources: list[SourceLine]
+
+
+class LineupResult(BaseModel):
+    status: Literal["setup", "squad", "refresh", "lineup"]
+    message: str
+    setup: SetupStep | None = None
+    lineup_setup: LineupSetup | None = None
+    refresh: list[RefreshItem] = []
+    lineup: Lineup | None = None
+
+
+@dataclass(frozen=True)
+class _Priced:
+    """A squad player with his model's answer."""
+
+    facts: PlayerFacts
+    inputs: OutfieldInputs | KeeperInputs
+    value: OutfieldValue | KeeperValue
+    scoring: Scoring
+    penalties: bool
+    no_lineups: bool
+
+    @property
+    def rating(self) -> float:
+        return self.value.p_start + self.value.p_cameo
+
+
+def _assumed(facts: PlayerFacts) -> Availability:
+    """Without any lineup for his match: how often he's had a rating so far, capped at a listed starter's
+    chance."""
+    played = facts.table.played
+    p_start = min(facts.form.rated_appearances / played, P_START_STARTER) if played else P_START_BENCH
+    return Availability(
+        p_start=p_start,
+        p_cameo=CAMEO_SHARE * (1 - p_start),
+        spread=0.0,
+        disputed=False,
+        outlets=[],
+        official=None,
+    )
+
+
+def _priced(
+    gathered: Gathered, known: list[KnownPlayer], stored: StoredRules, as_of: dt.datetime
+) -> list[_Priced]:
+    league = league_goals_per_match(gathered.teams, as_of)
+    priced = []
+    for facts in gathered.sides:
+        scoring = scoring_for(stored.rules, facts.form.role)
+        taker = takes_penalties(facts, known)
+        no_lineups = facts.match is not None and facts.present is None
+        modelled = dataclasses.replace(facts, present=_assumed(facts)) if no_lineups else facts
+        inputs = model_inputs(modelled, taker, league)
+        priced.append(_Priced(facts, inputs, model_value(inputs, scoring), scoring, taker, no_lineups))
+    return priced
+
+
+def _match_name(advisor: Advisor, match: FixtureRow) -> str:
+    return f"{advisor.clubs.names[match.home]} v {advisor.clubs.names[match.away]}"
+
+
+def _simulated(priced: Sequence[_Priced]) -> tuple[list[SimPlayer], list[tuple[float, float]]]:
+    """Each player as the simulation sees him, and the goals expected in each of the squad's matches."""
+    indexes: dict[tuple[str, str], int] = {}
+    matches: list[tuple[float, float]] = []
+    players: list[SimPlayer] = []
+    for part in priced:
+        facts, side = part.facts, None
+        if facts.match is not None:
+            pair = facts.match.home, facts.match.away
+            if pair not in indexes:
+                indexes[pair] = len(matches)
+                xg = facts.xg
+                matches.append((xg.home_xg, xg.away_xg) if xg else (0.0, 0.0))
+            side = indexes[pair], 0 if facts.match.home == facts.player.club else 1
+        players.append(_sim_player(part, side))
+    return players, matches
+
+
+def _sim_player(part: _Priced, side: Side | None) -> SimPlayer:
+    player_id = part.facts.player.player_id
+    if isinstance(part.inputs, KeeperInputs) and isinstance(part.value, KeeperValue):
+        return keeper_player(player_id, part.inputs, part.value, part.scoring, side)
+    if isinstance(part.inputs, OutfieldInputs) and isinstance(part.value, OutfieldValue):
+        return outfield_player(player_id, part.inputs, part.value, part.scoring, side)
+    raise TypeError(f"player {player_id}: a keeper's inputs need a keeper's value")
+
+
+def _candidate(part: _Priced) -> Candidate:
+    player = part.facts.player
+    return Candidate(
+        player_id=player.player_id,
+        name=player.name,
+        role=part.facts.form.role,
+        club=player.club,
+        p_start=part.value.p_start,
+        p_cameo=part.value.p_cameo,
+        key=part.value.key,
+    )
+
+
+def _line(advisor: Advisor, part: _Priced) -> dict[str, object]:
+    facts, value = part.facts, part.value
+    present = facts.present
+    values = [view.p_start for view in present.outlets] if present else []
+    return {
+        "player_id": facts.player.player_id,
+        "name": facts.player.name,
+        "club": advisor.clubs.names[facts.player.club],
+        "role": facts.form.role,
+        "match": _match_name(advisor, facts.match) if facts.match else None,
+        "p_start": round(value.p_start, 3),
+        "confidence": of_outlets(present) if present else None,
+        "start_range": (round(min(values), 3), round(max(values), 3))
+        if present and present.disputed
+        else None,
+        "value": round(value.key, 2),
+        "p_scores": round(value.p_scores, 3) if isinstance(value, OutfieldValue) else None,
+        "p_clean_sheet": round(value.p_clean_sheet, 3)
+        if isinstance(value, KeeperValue) and facts.match
+        else None,
+        "penalties": part.penalties,
+    }
+
+
+def _bench_reason(player: Candidate, arranged: Arrangement, first_in_role: bool, part: _Priced) -> str:
+    fielded = next(starter for starter in arranged.starters if starter.role == player.role)
+    if player.role == "P" and player.club == fielded.club:
+        return f"plays exactly when {fielded.name} doesn't, so the place is covered"
+    if not part.rating:
+        return "won't play"
+    if first_in_role:
+        return f"first in if a {_WORDS[player.role]} misses out: {part.rating:.0%} to get a rating"
+    return f"next {_WORDS[player.role]} in"
+
+
+def _concerns(priced: Mapping[int, _Priced], arranged: Arrangement) -> list[Concern]:
+    starters = {player.player_id for player in arranged.starters}
+    found = []
+    for player_id, part in priced.items():
+        present = part.facts.present
+        role = part.facts.form.role
+        cover = next(
+            (
+                player.name
+                for player in arranged.bench
+                if player.role == role and priced[player.player_id].rating > 0
+            ),
+            None,
+        )
+        if not part.rating and part.facts.match is not None:
+            found.append(
+                Concern(
+                    name=part.facts.player.name,
+                    status="out",
+                    p_start=0.0,
+                    covered_by=cover if player_id in starters else None,
+                )
+            )
+        elif player_id in starters and (
+            part.value.p_start < DOUBTFUL_BELOW or (present is not None and present.disputed)
+        ):
+            found.append(
+                Concern(
+                    name=part.facts.player.name,
+                    status="doubtful",
+                    p_start=round(part.value.p_start, 3),
+                    covered_by=cover,
+                )
+            )
+    return found
+
+
+def _scorers(priced: Mapping[int, _Priced], arranged: Arrangement) -> list[Scorer]:
+    chances = [
+        Scorer(name=player.name, chance=round(value.p_scores, 3))
+        for player in arranged.starters
+        if isinstance(value := priced[player.player_id].value, OutfieldValue)
+    ]
+    return sorted(chances, key=lambda scorer: (-scorer.chance, scorer.name))[:SCORERS_SHOWN]
+
+
+def _warnings(
+    advisor: Advisor,
+    priced: Sequence[_Priced],
+    gone: Sequence[str],
+    left_out: Sequence[str],
+    round: int,
+    rules: LineupRules,
+) -> list[str]:
+    """Every number resting on something more basic, naming the match or player and what it affects (R5.5)."""
+    no_odds: dict[str, list[str]] = {}
+    no_totals: dict[str, list[str]] = {}
+    no_lineups: dict[str, list[str]] = {}
+    found: list[str] = []
+    for part in priced:
+        facts = part.facts
+        name = facts.player.name
+        found += facts.disagreements
+        if facts.match is None:
+            found.append(f"{name} has no match in round {round}: counted as not playing.")
+            continue
+        match = _match_name(advisor, facts.match)
+        if facts.xg is not None and not facts.xg.from_odds:
+            no_odds.setdefault(match, []).append(name)
+        elif facts.xg is not None and not facts.xg.totals:
+            no_totals.setdefault(match, []).append(name)
+        if part.no_lineups:
+            no_lineups.setdefault(match, []).append(name)
+        present = facts.present
+        if (
+            present is not None
+            and not present.official
+            and all(view.status == "not listed" for view in present.outlets)
+        ):
+            found.append(f"No outlet lists {name}: he's at the default {part.value.p_start:.0%} to start.")
+        if present is not None and present.by_surname:
+            written = ", ".join(present.by_surname)
+            found.append(f"The outlets write {written}: matched to {name} by surname.")
+        if not facts.form.rated_appearances:
+            found.append(f"{name} has no rated games: he's on his role's priors.")
+        if facts.form.role == "P" and facts.form.goals_conceded is None:
+            found.append(f"{name}'s goals conceded aren't known: an average defence is assumed.")
+    for match, names in no_odds.items():
+        found.append(
+            f"{match} has no odds: its numbers come from team form. This affects {', '.join(names)}."
+        )
+    for match, names in no_totals.items():
+        found.append(
+            f"{match} has no over/under: goal chances come from the 1X2 alone. "
+            f"This affects {', '.join(names)}."
+        )
+    for match, names in no_lineups.items():
+        found.append(
+            f"{match} has no lineups yet: chances of starting come from how often each player has played. "
+            f"This affects {', '.join(names)}."
+        )
+    found += [f"{name} is no longer listed at any club: left out." for name in gone]
+    found += left_out
+    if rules.other_rules:
+        found.append(f"The score doesn't include {', '.join(rules.other_rules)}.")
+    return found
+
+
+def _sources(priced: Sequence[_Priced]) -> list[Source]:
+    sources: list[Source] = []
+    for part in priced:
+        facts = part.facts
+        sources += [facts.form.source, facts.table.source, facts.order.source]
+        if facts.match is not None:
+            sources.append(facts.match.source)
+        if facts.present is not None:
+            sources += [view.source for view in facts.present.outlets]
+            if facts.present.official is not None:
+                sources.append(facts.present.official.source)
+        if facts.xg is not None:
+            sources += facts.xg.sources
+    return sources
+
+
+def _source_lines(sources: Sequence[Source], advisor: Advisor, as_of: dt.datetime) -> list[SourceLine]:
+    """Each page once, by label, as read most recently."""
+    worked = advisor.collect_log.last_worked(as_of) if advisor.collect_log is not None else {}
+    newest: dict[str, dt.datetime] = {}
+    for source in sources:
+        label = describe(source.source_url)
+        seen = max(source.captured_at, worked.get(source.source_url, source.captured_at))
+        newest[label] = max(seen, newest.get(label, seen))
+    return [SourceLine(label=label, captured_at=newest[label]) for label in sorted(newest)]
+
+
+def _percent(chance: float) -> int:
+    return round(chance * 100)
+
+
+def _moved(
+    advisor: Advisor, team: str, round: int, as_of: dt.datetime, result: Simulated, priced: Sequence[_Priced]
+) -> list[str]:
+    """What changed since this team's last lineup for this round, from the log: no replay (design C8)."""
+    earlier = [
+        decision
+        for decision in advisor.log.read()
+        if decision.kind == "lineup"
+        and decision.user == advisor.user
+        and decision.team is not None
+        and name_key(decision.team) == name_key(team)
+        and decision.round == round
+        and decision.as_of < as_of
+    ]
+    if not earlier:
+        return []
+    last = max(earlier, key=lambda decision: decision.as_of)
+    changes = []
+    if last.formation != result.formation:
+        changes.append(f"formation {last.formation} → {result.formation}")
+    then = {logged.player_id: logged.p_start for logged in last.players}
+    moves = sorted(
+        (
+            (
+                now - then[part.facts.player.player_id],
+                part.facts.player.name,
+                then[part.facts.player.player_id],
+                now,
+            )
+            for part in priced
+            if part.facts.player.player_id in then
+            and _percent(now := part.value.p_start) != _percent(then[part.facts.player.player_id])
+        ),
+        key=lambda move: (-abs(move[0]), move[1]),
+    )
+    changes += [f"{name} {old:.0%} → {new:.0%}" for _, name, old, new in moves[:MOVES_SHOWN]]
+    if last.expected is not None and abs(result.mean - last.expected) >= 0.05:
+        changes.append(f"expected {last.expected:.1f} → {result.mean:.1f}")
+    return changes
+
+
+def _before_lock(
+    advisor: Advisor, priced: Sequence[_Priced], first_kickoff: dt.datetime, first_match: str
+) -> list[str]:
+    early = [
+        part.facts.player.name
+        for part in priced
+        if part.facts.match is not None and part.facts.match.kickoff_at == first_kickoff
+    ]
+    if not early:
+        return [f"No player of yours is in {first_match}, so this lineup is final unless news breaks."]
+    return [
+        f"{', '.join(early)} play in the round's first match ({first_match}): the official lineup is out "
+        "about an hour before the lock, so check it then."
+    ]
+
+
+def _logged(part: _Priced) -> LoggedPlayer:
+    value = part.value
+    playing = part.facts.match is not None
+    return LoggedPlayer(
+        player_id=part.facts.player.player_id,
+        name=part.facts.player.name,
+        p_start=value.p_start,
+        p_cameo=value.p_cameo,
+        p_scores=value.p_scores if isinstance(value, OutfieldValue) else None,
+        key=value.key,
+        p_clean_sheet=value.p_clean_sheet if isinstance(value, KeeperValue) and playing else None,
+        expected_conceded=value.expected_conceded if isinstance(value, KeeperValue) and playing else None,
+    )
+
+
+def _rounded(result: Simulated) -> Simulated:
+    return result.model_copy(
+        update={
+            "mean": round(result.mean, 2),
+            "low": round(result.low, 2),
+            "high": round(result.high, 2),
+            "fantasy_goals": round(result.fantasy_goals, 3),
+        }
+    )
+
+
+def lineup_for(
+    advisor: Advisor,
+    squads: SquadStore,
+    team: str = MINE,
+    as_of: dt.datetime | None = None,
+    *,
+    rounds: int = SIMULATIONS,
+) -> LineupResult:
+    """The lineup, after the collector has read the pages of what was missing or stale. A replay of an earlier
+    `as_of` never collects and isn't logged."""
+    stored = advisor.rules.get(advisor.user)
+    if stored is None:
+        return LineupResult(
+            status="setup",
+            message="This user has no league rules yet: ask for them, then call set_league_rules.",
+            setup=setup_step(),
+        )
+    rules = stored.rules.lineup
+    step = lineup_setup_step(stored.rules)
+    if step is not None or rules is None:
+        step = step or lineup_setup_step(stored.rules.model_copy(update={"lineup": LineupRules()}))
+        return LineupResult(status="setup", message=step.message if step else "", lineup_setup=step)
+    squad = squads.get(advisor.user, team)
+    if squad is None:
+        return LineupResult(
+            status="squad",
+            message=f"No squad stored for {team}: ask the user for the players, then call set_squad.",
+        )
+    when = (as_of or advisor.clock()).astimezone(dt.UTC)
+    wanted = [player.player_id for player in squad.players]
+    facts = Facts.read(advisor.lake, when)
+    known = known_players(facts.players, when)
+    gathered = advisor.gather(_squad_players(known, wanted), when, facts=facts, known=known)
+    tried: Mapping[str, str] = {}
+    report = advisor.collect_now({item.fact for item in gathered.plan.items}, when) if as_of is None else None
+    if report is not None:
+        tried = tried_notes(report)
+        when = advisor.clock().astimezone(dt.UTC)
+        if any(page.stored for page in report.pages):
+            facts = Facts.read(advisor.lake, when)
+            known = known_players(facts.players, when)
+        gathered = advisor.gather(_squad_players(known, wanted), when, facts=facts, known=known)
+
+    def noted(items: Sequence[RefreshItem]) -> list[RefreshItem]:
+        return [
+            item.model_copy(update={"collector": tried[item.fact]}) if item.fact in tried else item
+            for item in items
+        ]
+
+    round, first_kickoff = gathered.round, gathered.first_kickoff
+    with_match = [side for side in gathered.sides if side.match is not None]
+    if gathered.needed or round is None or first_kickoff is None or not with_match:
+        return LineupResult(status="refresh", message=REFRESH, refresh=noted(gathered.needed))
+    if all(side.present is None for side in with_match):
+        return LineupResult(status="refresh", message=REFRESH, refresh=noted(gathered.plan.items))
+    return _answer(
+        advisor,
+        stored,
+        rules,
+        squad,
+        gathered,
+        known,
+        when,
+        round,
+        first_kickoff,
+        noted(gathered.better),
+        log=as_of is None,
+        rounds=rounds,
+    )
+
+
+def _squad_players(known: Sequence[KnownPlayer], wanted: Sequence[int]) -> list[KnownPlayer]:
+    ids = set(wanted)
+    return [player for player in known if player.player_id in ids]
+
+
+def _answer(
+    advisor: Advisor,
+    stored: StoredRules,
+    rules: LineupRules,
+    squad: StoredSquad,
+    gathered: Gathered,
+    known: list[KnownPlayer],
+    when: dt.datetime,
+    round: int,
+    first_kickoff: dt.datetime,
+    improve: list[RefreshItem],
+    *,
+    log: bool,
+    rounds: int,
+) -> LineupResult:
+    team = squad.team
+    priced = _priced(gathered, known, stored, when)
+    by_id = {part.facts.player.player_id: part for part in priced}
+    candidates = [_candidate(part) for part in priced]
+    arrangements: dict[str, Arrangement] = {}
+    left_out: list[str] = []
+    for formation in rules.formations or ():
+        try:
+            arrangements[formation] = arrange(candidates, formation, rules)
+        except CannotFieldError as problem:
+            left_out.append(f"{formation} is left out: {problem}.")
+    if not arrangements:
+        return LineupResult(
+            status="squad",
+            message="This squad can't field any formation the league allows. " + " ".join(left_out),
+        )
+    players, matches = _simulated(priced)
+    results = ranked(simulate(players, matches, list(arrangements.values()), rules, rounds=rounds), rules)
+    best = results[0]
+    arranged = arrangements[best.formation]
+    first_match = next(
+        _match_name(advisor, row)
+        for row in round_matches(gathered.fixtures, when)
+        if row.round == round and row.kickoff_at == first_kickoff
+    )
+    bench = []
+    seen: set[Role] = set()
+    for player in arranged.bench:
+        part = by_id[player.player_id]
+        reason = _bench_reason(player, arranged, player.role not in seen, part)
+        seen.add(player.role)
+        bench.append(BenchPlace.model_validate(_line(advisor, part) | {"reason": reason}))
+    known_ids = {player.player_id for player in known}
+    gone = [player.name for player in squad.players if player.player_id not in known_ids]
+    sources = _sources(priced)
+    lines = _source_lines(sources, advisor, when)
+    times = [line.captured_at for line in lines]
+    thresholds = ", ".join(f"{mark.points:g}: {mark.chance:.0%}" for mark in best.thresholds[:3])
+    message = f"{best.formation}, expected about {best.mean:.0f} points" + (
+        f"; chance of reaching {thresholds}." if thresholds else "."
+    )
+    moved = _moved(advisor, team, round, when, best, priced)
+    rounded = _rounded(best)
+    lineup = Lineup(
+        message=message,
+        team=team,
+        round=round,
+        lock=first_kickoff.astimezone(ROME),
+        first_match=first_match,
+        updated=Updated(newest=max(times), oldest=min(times)),
+        formation=best.formation,
+        expected=rounded.mean,
+        low=rounded.low,
+        high=rounded.high,
+        fantasy_goals=rounded.fantasy_goals,
+        thresholds=best.thresholds,
+        starters=[
+            LineupPlayer.model_validate(_line(advisor, by_id[player.player_id]))
+            for player in arranged.starters
+        ],
+        bench=bench,
+        bench_rule=f"Your league substitutes {_RULES[rules.substitution_mode or 'same_role']}, the first "
+        f"bench player with a rating, up to {rules.substitutions}.",
+        left_off=[player.name for player in arranged.left_off],
+        formations=[_rounded(result) for result in results],
+        out_and_doubtful=_concerns(by_id, arranged),
+        likely_scorers=_scorers(by_id, arranged),
+        moved=moved,
+        check_before_lock=_before_lock(advisor, priced, first_kickoff, first_match),
+        warnings=_warnings(advisor, priced, gone, left_out, round, rules),
+        improve=improve,
+        sources=lines,
+    )
+    if log:
+        advisor.log.append(
+            Decision(
+                kind="lineup",
+                as_of=when,
+                logged_at=advisor.clock(),
+                user=advisor.user,
+                round=round,
+                players=[_logged(part) for part in priced],
+                team=team,
+                formation=best.formation,
+                expected=best.mean,
+                thresholds={f"{mark.points:g}": mark.chance for mark in best.thresholds},
+                rules=stored,
+                content_hashes=sorted({source.content_sha256 for source in sources}),
+            )
+        )
+    return LineupResult(status="lineup", message=message, lineup=lineup)
+
+
+def register(server: MCPServer, advisor: Advisor, squads: SquadStore, *, rounds: int = SIMULATIONS) -> None:
+    """Add `best_lineup` to `server`. The tests simulate fewer `rounds`, to keep the checks fast."""
+
+    @server.tool(
+        description="Pick the eleven, the bench in order and the formation for the next round, from the "
+        "stored squad and the league's rules, simulated under the league's real rules. It returns one of: "
+        "the setup step (league settings unset: ask the user, then call set_league_rules); 'squad' (no squad "
+        "stored: ask the user, then call set_squad); a refresh plan (facts missing or stale: read the listed "
+        "pages, submit with the named tools, then call again); or the lineup, with every allowed formation, "
+        "who's doubtful, warnings about anything basic and what could improve it. Without a team it's the "
+        "user's own squad. as_of replays an earlier question."
+    )
+    def best_lineup(team: str = MINE, as_of: AwareDatetime | None = None) -> LineupResult:
+        return lineup_for(advisor, squads, team, as_of, rounds=rounds)

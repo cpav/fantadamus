@@ -23,6 +23,7 @@ from fantadamus.league.squads import SquadStore
 from fantadamus.mcp.advisor import Advisor, load_reading_list
 from fantadamus.mcp.server import AdvisorServer
 from fantadamus.mcp.tools import compare, league, outlook, squad, submit
+from fantadamus.mcp.tools import lineup as lineup_tool
 from fantadamus.web.collector import Collector
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,6 +60,7 @@ async def tools(
     clock: Clock | None = None,
     collector: Collector | None = None,
     collect_log: CollectLog | None = None,
+    lineup_rounds: int = 500,
 ) -> AsyncIterator[Client]:
     """The tools over `store`, accepting pages from `hosts`, as user `user-1`; league rules and the decision
     log are kept under the lake's root. With a `collector`, `compare_players` collects first."""
@@ -80,7 +82,9 @@ async def tools(
     )
     compare.register(server, advisor)
     outlook.register(server, advisor)
-    squad.register(server, advisor, SquadStore(store.root / "league"))
+    squads = SquadStore(store.root / "league")
+    squad.register(server, advisor, squads)
+    lineup_tool.register(server, advisor, squads, rounds=lineup_rounds)
     async with Client(server) as client:
         yield client
 

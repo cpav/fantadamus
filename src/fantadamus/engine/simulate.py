@@ -372,6 +372,18 @@ def summarize(formation: str, totals: Sequence[float], thresholds: Sequence[floa
     )
 
 
+def ranked(results: Sequence[Simulated], rules: LineupRules) -> list[Simulated]:
+    """Best first: the most expected fantasy goals, or in a total-points league the highest expected score
+    (R3.4)."""
+    if rules.format == "total_points":
+        return sorted(results, key=lambda result: (-result.mean, result.formation))
+    return sorted(results, key=lambda result: (-result.fantasy_goals, -result.mean, result.formation))
+
+
+def recommended(results: Sequence[Simulated], rules: LineupRules) -> Simulated:
+    return ranked(results, rules)[0]
+
+
 def simulate(
     players: Sequence[SimPlayer],
     matches: Sequence[tuple[float, float]],
