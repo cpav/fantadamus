@@ -213,7 +213,10 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Test: **P9** `tests/property/lineup/test_calibration.py::test_p9_brier_scores_are_bounded`,
       `::test_p9_a_forecast_right_every_time_scores_0`, **P10** `::test_p10_nothing_after_kickoff`;
       `tests/unit/lineup/test_calibration.py::test_hand_worked_scores`, `::test_unscored_named_with_the_reason`,
-      `::test_what_users_were_told_is_the_last_before_kickoff`, `::test_a_replay_logged_after_kickoff_doesnt_count`;
+      `::test_what_users_were_told_is_the_last_before_kickoff`, `::test_a_replay_logged_after_kickoff_doesnt_count`,
+      `::test_which_statistics_reads_count`, `::test_a_read_that_found_the_page_unchanged_counts`;
+      `tests/integration/lineup/test_finished_round.py::test_a_page_updated_before_the_mark_still_counts`,
+      `::test_a_page_that_hasnt_moved_isnt_the_read_after`;
       `tests/acceptance/lineup/test_calibration.py::test_at12_an_official_lineup_never_feeds_the_model`,
       `::test_at12_what_cant_be_scored_is_named`, `::test_at12_starting_needs_only_the_page`_
   - [x] 7.3 A round scores itself:

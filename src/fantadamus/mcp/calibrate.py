@@ -106,8 +106,22 @@ class Calibrator:
         return kickoff is not None and kickoff - now < _QUIET_BEFORE_DEADLINE
 
     def _has_a_read_after(self, frame: RoundFrame, now: dt.datetime) -> bool:
-        rows = read_silver(self.lake, SEASON_STATS, frame.finished_at, now)
-        return statistics_reads((row.captured_at for row in rows), frame)[1] is not None
+        rows = read_silver(self.lake, SEASON_STATS, frame.first_kickoff, now)
+        return (
+            statistics_reads((row.captured_at for row in rows), frame, worked=self._worked(now))[1]
+            is not None
+        )
+
+    def _worked(self, now: dt.datetime) -> list[dt.datetime]:
+        """When the statistics page was read, whether or not it had changed."""
+        if self.collect_log is None:
+            return []
+        return [
+            run.started_at
+            for run in self.collect_log.runs()
+            for page in run.pages
+            if page.page == "statistics" and page.outcome in _WORKED and run.started_at <= now
+        ]
 
     def _statistics_ready(self, frame: RoundFrame, now: dt.datetime) -> bool:
         """Whether scoring can go ahead: a read of the statistics page after the round, read now if need be,
@@ -148,7 +162,7 @@ class Calibrator:
         known = known_players([*read_silver(self.lake, PLAYER_SEASONS, since, now), *stats], now)
         by_id = {player.player_id: player for player in known}
         sheets = self._sheets(frame, known, now)
-        before, after = _statistics(stats, frame)
+        before, after = _statistics(stats, frame, self._worked(now))
 
         kickoffs = {club: row.kickoff_at for row in frame.matches for club in (row.home, row.away)}
 
@@ -222,7 +236,7 @@ class Calibrator:
 
 
 def _statistics(
-    rows: Sequence[PlayerSeasonRow], frame: RoundFrame
+    rows: Sequence[PlayerSeasonRow], frame: RoundFrame, worked: Sequence[dt.datetime]
 ) -> tuple[Mapping[int, StatsLine] | None, Mapping[int, StatsLine] | None]:
     """His figures in the read before the round and in the read after it."""
 
@@ -237,7 +251,7 @@ def _statistics(
             if row.captured_at == when
         }
 
-    before, after = statistics_reads((row.captured_at for row in rows), frame)
+    before, after = statistics_reads((row.captured_at for row in rows), frame, worked=worked)
     return read_at(before), read_at(after)
 
 

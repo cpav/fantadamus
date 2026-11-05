@@ -227,6 +227,20 @@ def test_which_statistics_reads_count() -> None:
     assert statistics_reads([before, NEXT], unknown) == (before, NEXT)
 
 
+def test_a_read_that_found_the_page_unchanged_counts() -> None:
+    """It stored nothing, and it shows the page still holds what the last read stored."""
+    before, during = T0 - dt.timedelta(days=1), T0 + dt.timedelta(days=1)
+    soon, later = FINISHED + dt.timedelta(hours=1), FINISHED + dt.timedelta(hours=25)
+    assert statistics_reads([before, during], FRAME, worked=[soon]) == (before, during)
+    assert statistics_reads([before, during, later], FRAME, worked=[soon]) == (before, during)
+    # Not yet moved since before the round: the page hasn't updated, so a later read that moved is the one.
+    assert statistics_reads([before], FRAME, worked=[soon]) == (before, None)
+    assert statistics_reads([before, later], FRAME, worked=[soon]) == (before, later)
+    # Only a read in the window says what the page held then.
+    assert statistics_reads([before, during], FRAME, worked=[during]) == (before, None)
+    assert statistics_reads([before, during], FRAME, worked=[NEXT]) == (before, None)
+
+
 def _official(name: str, status: Literal["starter", "bench"], unnamed: int = 0) -> OfficialLineupRow:
     return OfficialLineupRow(
         source_url="https://example.org/p",

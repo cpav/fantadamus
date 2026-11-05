@@ -296,21 +296,21 @@ class Outcome:
 
 
 def statistics_reads(
-    read_times: Iterable[dt.datetime], frame: RoundFrame
+    stored: Iterable[dt.datetime], frame: RoundFrame, *, worked: Iterable[dt.datetime] = ()
 ) -> tuple[dt.datetime | None, dt.datetime | None]:
-    """The last read of the statistics page before the round, and the first after it, before the next."""
-    times = sorted(set(read_times))
+    """The last stored read of the statistics page before the round, and the stored read that shows what the
+    page held once it had finished, before the next. `worked` adds the reads that found the page unchanged:
+    they store nothing, and show that it still held what the last stored read did. A page that hasn't moved
+    since before the round hasn't updated yet."""
+    times = sorted(set(stored))
     start = bisect.bisect_left(times, frame.first_kickoff)
     before = times[start - 1] if start else None
-    after = next(
-        (
-            when
-            for when in times[start:]
-            if when >= frame.finished_at and (frame.next_kickoff is None or when < frame.next_kickoff)
-        ),
-        None,
-    )
-    return before, after
+    for when in sorted({*times, *worked}):
+        in_time = when >= frame.finished_at and (frame.next_kickoff is None or when < frame.next_kickoff)
+        place = bisect.bisect_right(times, when)
+        if in_time and place > start:
+            return before, times[place - 1]
+    return before, None
 
 
 class StatsLine(BaseModel):

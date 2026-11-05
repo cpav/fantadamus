@@ -241,8 +241,10 @@ kind, `finished_round`, so they don't count as an attempt at the current round's
 | Clean sheet, if he started | Whether a keeper's goals conceded stayed the same | The same reads |
 
 The "before" read is the last before the round's first kickoff, and the "after" read the first once the round has finished,
-if it comes before the next round starts. The player's own draft normally gives both. Otherwise those chances count as
-unscored, with the reason (R7.3); so do a postponed match's, which has no marks.
+if it comes before the next round starts. A read that finds the page unchanged stores nothing, so it counts as the last stored
+read, if that's from after the first kickoff: the page may have updated inside the 12 hours. One that still shows the figures
+from before the round hasn't updated yet, and scoring waits. The player's own draft normally gives both. Otherwise those
+chances count as unscored, with the reason (R7.3); so do a postponed match's, which has no marks.
 
 **Two sets (R7.4).**
 

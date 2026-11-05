@@ -169,3 +169,53 @@ async def test_both_kinds_of_answer_log_the_chance_of_a_rating(tmp_path: Path) -
     for decision in decisions:
         for player in decision.players:
             assert player.p_rating == pytest.approx(player.p_start + player.p_cameo)
+
+
+async def test_a_page_updated_before_the_mark_still_counts(tmp_path: Path) -> None:
+    """The statistics page can update inside the 12 hours. A read after them finds it unchanged and stores
+    nothing, and it shows what the last read stored: that's the read after the round."""
+    async with a_round(tmp_path) as here:
+        await _played(here)
+        here.clock.now = AFTER - dt.timedelta(hours=1)
+        await here.ask()
+        assert here.scores.get(10) is None
+
+        # The round's page saying nothing about the statistics, and a read that failed, aren't that read.
+        await here.client.call_tool("collect", {"fact": "probable_lineups"})
+        here.clock.now = AFTER + dt.timedelta(minutes=30)
+        await here.client.call_tool("collect", {"fact": "probable_lineups"})
+        await here.ask()
+        assert here.scores.get(10) is None
+        stats = here.routes[f"{here.base}{STATS_ROUTE}"]
+        here.routes[f"{here.base}{STATS_ROUTE}"] = Response(500, {}, b"")
+        here.clock.now = AFTER + dt.timedelta(hours=24)
+        await here.ask()
+        assert here.scores.get(10) is None
+
+        here.routes[f"{here.base}{STATS_ROUTE}"] = stats
+        here.clock.now = AFTER + dt.timedelta(hours=49)
+        await here.ask()
+        report = here.scores.get(10)
+    assert report is not None
+    rated = next(chance for chance in report.model.scored if chance.chance == "Getting a rating")
+    assert rated.count == 56
+    assert sum(bucket.happened * bucket.count for bucket in rated.buckets) == pytest.approx(44, abs=0.01)
+
+
+async def test_a_page_that_hasnt_moved_isnt_the_read_after(tmp_path: Path) -> None:
+    """If the page still shows the figures from before the round, it hasn't updated yet: this waits, rather
+    than saying nobody got a rating."""
+    async with a_round(tmp_path) as here:
+        await here.ask()
+        here.routes[f"{here.base}{ROUND_10}"] = Response(200, HTML, fco_round_page(*_marks()).encode())
+        here.routes[f"{here.base}{ROUND_ROUTE}"] = Response(200, HTML, the_next_round().encode())
+        here.clock.now = AFTER
+        await here.ask()
+        assert here.scores.get(10) is None
+        here.routes[f"{here.base}{STATS_ROUTE}"] = Response(200, HTML, stats_after().encode())
+        here.clock.now += dt.timedelta(hours=25)
+        await here.ask()
+        report = here.scores.get(10)
+    assert report is not None
+    rated = next(chance for chance in report.model.scored if chance.chance == "Getting a rating")
+    assert sum(bucket.happened * bucket.count for bucket in rated.buckets) == pytest.approx(44, abs=0.01)
