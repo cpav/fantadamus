@@ -76,8 +76,9 @@ covered.
 
 ## 2. The full lineup
 
-Next slices (every role, then the full lineup). It needs the user's squad and the league's full rules: allowed
-formations, bench and substitution rules, and the scoring thresholds.
+Built in `mvp-lineup`, with `best_lineup`. It needs the user's squad, given with `set_squad`, and the league's full
+rules: allowed formations, bench and substitution rules, and the scoring thresholds. Both can come from the player's
+[league profile](league-profile-template.md).
 
 ```text
 Round 11 · locks Fri 6 Nov 20:45 at Venezia–Udinese · updated 12 minutes ago
@@ -119,13 +120,28 @@ Since your last lineup (Wednesday): Bruno 85% → 75% (Gazzetta now has a ballot
 
 Before the lock: no player of yours is in Venezia–Udinese, so this lineup is final unless news breaks.
 
+Worth knowing: Genoa v Milan has no over/under yet, so its goals rest on the 1X2 alone. Your league's captain isn't
+in this score.
+
+Round 10's forecasts: chances of starting scored 0.130 over 520 players, against 0.240 for always guessing the average.
+Lower is better.
+
 Sources: Fantacalcio-Online, round 11 probable lineups · Fantacalcio.it, table · Fantacalcio.it, penalty takers ·
 Fantacalcio.it profiles (11)
 ```
 
+The user's own choice gets the same lineup, with its cost said once:
+
+```text
+What that costs: Fontana instead of Ricci gives up about 0.3 points.
+Chance of reaching 66: 79% → 77% · 72: 55% → 53%.
+Your call: with Fontana in, Caruso is first on the defence's bench.
+```
+
 ## 3. The formation call
 
-Part of the full-lineup slice: the formation falls out of the ranking, by comparing the marginal players.
+Built in `mvp-lineup`, from the same call as the lineup: the formation falls out of the ranking, by comparing the
+marginal players.
 
 ```text
 Round 11 · locks Fri 6 Nov 20:45 · updated 12 minutes ago
@@ -184,7 +200,7 @@ Sources: Fantacalcio-Online, round 11 probable lineups · Fantacalcio.it, table
 
 ## 6. The bench order
 
-Full-lineup slice: who goes first in each role, and why.
+Built in `mvp-lineup`, from the same call as the lineup: who goes first in each role, and why.
 
 ```text
 Bench order for round 11. Your league subs like for like, the first bench player with a rating, up to 3.

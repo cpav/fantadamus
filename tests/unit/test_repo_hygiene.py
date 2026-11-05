@@ -10,6 +10,8 @@ import pytest
 from scripts.checks._common import run_command
 
 ROOT = Path(__file__).resolve().parents[2]
+PROMPT_BUDGET = 13_000
+"""Characters. Our own budget, not a limit of Claude's: Claude reads the prompt on every question."""
 
 MUST_BE_IGNORED = [
     "data/local/league/owner-squads.json",
@@ -105,3 +107,90 @@ def test_docs_name_every_role() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "`player_outlook`" in readme
     assert "statistics page" in readme.split("## Status")[0]
+
+
+def _agent_prompt() -> str:
+    """What a player pastes into their Project, its lines joined wherever they break."""
+    text = (ROOT / "docs" / "agent-prompt.md").read_text(encoding="utf-8")
+    return " ".join(text.split("\n---\n", 1)[1].split())
+
+
+def test_agent_prompt_covers_the_lineup() -> None:
+    """mvp-lineup task 8.1 (R9.1, R9.4, R6.2): Claude knows it can pick the lineup, and how to say it."""
+    prompt = _agent_prompt()
+    for part in (
+        "`set_squad`",
+        "`best_lineup`",
+        # What the tools can answer with.
+        "`squad`",
+        "`choose`",
+        "`refused`",
+        "a league-mate's",
+        # Formats 2, 3 and 6.
+        "**How to answer a full lineup**",
+        "eight rounds out of ten",
+        "the bench in order",
+        "the higher ceiling",
+        '"Which formation?"',
+        '"How do I order my bench?"',
+        # The league profile.
+        "**If the Project has a league profile**",
+        "ask only for what it leaves out",
+        "never the numbers",
+        # Warnings, what could improve them and the user's own choice.
+        "Give every warning",
+        "`improve`",
+        "Try it once",
+        "start, leave_out or formation",
+        "state the cost once and then help with their choice",
+        # How the last round went.
+        "last_round",
+        "Say it once",
+        # Two roles, with a squad.
+        "formation call, which `best_lineup` makes",
+    ):
+        assert part in prompt, part
+    for stale in ("aren't supported yet", "in a later slice", "For now they answer two questions"):
+        assert stale not in prompt, stale
+    assert len(prompt) < PROMPT_BUDGET
+
+
+def test_player_guide_covers_the_lineup() -> None:
+    """mvp-lineup task 8.3 (R9.2): what it now answers, how to give a squad and rules, and where the profile
+    goes."""
+    guide = " ".join((ROOT / "docs" / "player-setup.md").read_text(encoding="utf-8").split())
+    for part in (
+        "the full lineup",
+        "docs/league-profile-template.md",
+        "below the agent prompt",
+        "your squad",
+        "your league's rules",
+        "Who do I field this round?",
+        "paste it again",
+        "fantadamus calibrate --round",
+    ):
+        assert part in guide, part
+    assert "come in later versions" not in guide
+
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    for part in (
+        "`best_lineup`",
+        "`set_squad`",
+        "docs/league-profile-template.md",
+        "fantadamus calibrate --round",
+        "`mvp-lineup`",
+    ):
+        assert part in readme, part
+    assert "then the full lineup with the bench and the formation | In progress" not in readme
+
+    formats = (ROOT / "docs" / "answer-formats.md").read_text(encoding="utf-8")
+    full = formats.split("## 2. The full lineup", 1)[1].split("## 3. The formation call", 1)[0]
+    assert "Built in `mvp-lineup`" in full
+    assert "Next slices" not in full
+    for part in (
+        "What that costs",
+        "Round 10's forecasts",
+    ):  # the user's own choice, and the line on the last round
+        assert part in full, part
+    assert "Built in `mvp-lineup`" in formats.split("## 3. The formation call", 1)[1].split("## 4.", 1)[0]
+    assert "Built in `mvp-lineup`" in formats.split("## 6. The bench order", 1)[1].split("## Later", 1)[0]

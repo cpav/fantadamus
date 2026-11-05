@@ -143,7 +143,6 @@ def test_prompt_names_every_role(tmp_path: Path) -> None:
         "`player_outlook`",
         "`outlooks`",  # two roles
         "formation call",
-        "A full lineup and the formation aren't supported yet",
         "`covered`",  # two keepers of one club
         "clean sheet",
         "expected to concede",
