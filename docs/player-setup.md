@@ -1,15 +1,17 @@
 # Set up Fantadamus on your Mac
 
-Fantadamus answers "X or Y?" for two Serie A players, inside your own Claude Desktop. Fantadamus reads the
-round's lineups and odds and every player's season figures itself, and Claude reads the few other pages it needs
-from a short list of approved sites; Fantadamus checks every fact, stores it on your Mac and does the arithmetic. This guide takes about 15
-minutes.
+Fantadamus tells you who to field in Fantacalcio, inside your own Claude Desktop. It reads the round's lineups and
+odds and every player's season figures itself, and Claude reads the few other pages it needs from a short list of
+approved sites; Fantadamus checks every fact, stores it on your Mac and does the arithmetic. This guide takes about
+15 minutes.
 
 **You need:** a Mac, [Claude Desktop](https://claude.ai/download) signed in to a Claude plan with web search,
 and the Terminal app (in Applications → Utilities). Windows isn't supported yet.
 
-**What it does for now:** for the next round, "X or Y?" between two players of the same role, and one player's
-outlook ("Will he start? Is he worth it?"). Full lineups and formations come in later versions.
+**What it does:** for the next round, the full lineup for your squad under your league's rules: the eleven, the
+bench in order and the formation, with the expected score and the chance of reaching each goal threshold. It also
+answers "X or Y?" between two players of the same role, and gives one player's outlook ("Will he start? Is he worth
+it?").
 
 ## 1. Install uv
 
@@ -94,24 +96,35 @@ A project with Fantadamus's instructions makes Claude use the tools without bein
 2. Open the agent prompt, either at
    [`docs/agent-prompt.md` on GitHub](https://github.com/cpav/fantadamus/blob/main/docs/agent-prompt.md) or in
    `~/fantadamus/docs/agent-prompt.md`. Copy everything **below the `---` line**.
-3. Paste it into the project's **instructions** and save.
-4. In a chat in that project, open the tools menu under the message box and make sure **web search** and
+3. Paste it into the project's **instructions**.
+4. Optional, and it saves typing: fill in your league profile. Copy
+   [`docs/league-profile-template.md`](https://github.com/cpav/fantadamus/blob/main/docs/league-profile-template.md),
+   fill it in and paste it **below the agent prompt**, in the same instructions. It holds your league's rules, your
+   squad and how you like to play. Leave out what you don't know: Claude will ask. Keep your filled-in copy to
+   yourself, because it holds your league's team names and rosters.
+5. Save. In a chat in that project, open the tools menu under the message box and make sure **web search** and
    **fantadamus** are both on.
 
 ## 7. Ask your first question
 
 In a new chat in the Fantadamus project, ask for example:
 
-> Lautaro or Thuram this round?
+> Who do I field this round?
 
-- **The first time**, Claude asks for your league's bonuses and maluses, offering the Classic values (goal
-  +3, assist +1, yellow −0.5, and so on). Give your league's values; you can change them later by asking.
+- **The first time**, Claude needs your league's rules and your squad. With a league profile, it saves them itself.
+  Without one, it asks: bonuses and maluses, offering the Classic values (goal +3, assist +1, yellow −0.5, and so
+  on), then the goal thresholds, the bench, substitutions and allowed formations, and your players. You can change
+  any of it later by asking.
 - Claude Desktop asks permission before each Fantadamus tool. "Allow always" is fine: everything runs on
   your Mac.
 - Claude then reads the pages Fantadamus lists (lineups, odds, players' profiles, the table), submits what
   they say and asks again. The first answer can take a few minutes; later ones reuse what's stored.
-- The answer starts with the verdict ("start X, put Y first on the bench"), then the margin, the reasons
-  and what to check before the deadline.
+- The answer starts with the formation, the expected score and the chance of each threshold, then the eleven, the
+  bench in order, the calls that matter and what to check before the deadline.
+- If you'd rather play someone else, say so. Claude says once what that costs, then helps with your choice.
+
+You can also ask "Lautaro or Thuram this round?", "Which formation?", "How do I order my bench?" or "Will Lautaro
+start?".
 
 If Claude answers without showing a Fantadamus tool block, say "Use Fantadamus for this".
 
@@ -171,13 +184,24 @@ run, and when the page last worked. To switch it off:
 launchctl bootout gui/$(id -u)/com.github.cpav.fantadamus.collect
 ```
 
+## How it checks itself
+
+There's nothing to do here. About 12 hours after a round's last match, at your next question or scheduled run,
+Fantadamus reads who really started and scores the chances it gave. Your next lineup says how that went, in one line.
+To see the whole report:
+
+```bash
+cd ~/fantadamus && uv run --frozen --no-dev fantadamus calibrate --round 11
+```
+
 ## Keeping it up to date
 
 ```bash
 cd ~/fantadamus && git pull
 ```
 
-Then quit and reopen Claude Desktop.
+Then quit and reopen Claude Desktop. If `docs/agent-prompt.md` has changed, copy it again as in step 6 and paste it
+again over the old one in the project's instructions, keeping your league profile below it.
 
 ## If something goes wrong
 
@@ -186,7 +210,7 @@ Then quit and reopen Claude Desktop.
   `~/Library/Logs/Claude/mcp-server-fantadamus.log`. Send the last lines to whoever shared this guide.
 - **The schedule (step 8) seems idle:** its output is in `~/fantadamus/data/local/collect/schedule.log`;
   "Nothing due." is normal between reads.
-- **Starting over:** your league rules, the stored facts and the log of answers are in
+- **Starting over:** your league rules, your squads, the stored facts, the log of answers and the scores are in
   `~/fantadamus/data/local/`. Quitting Claude Desktop and deleting that folder resets everything.
 
 Your data stays on your Mac. For now each player collects their own facts; a shared online version comes

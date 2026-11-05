@@ -230,9 +230,9 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
       `tests/integration/lineup/test_finished_round.py::test_skipped_in_the_last_hour_before_a_deadline`,
       `::test_a_failure_never_stops_the_answer`, `::test_the_answer_is_the_same_either_way`_
 
-- [ ] 8. The agent prompt, the league profile and the docs
+- [x] 8. The agent prompt, the league profile and the docs
   - Branch: `docs/ml-8-prompt` · Depends on: 6, 7 · ADRs: none
-  - [ ] 8.1 The agent prompt:
+  - [x] 8.1 The agent prompt:
     - `set_squad` and `best_lineup`, and formats 2, 3 and 6;
     - using the league profile when the Project has one: rules and squads saved on first use, and preferences that shape the
       explanation, never the numbers;
@@ -242,10 +242,12 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Requirements: R9.1, R9.4, R6.2_
     - _Test: `tests/unit/test_repo_hygiene.py::test_agent_prompt_covers_the_lineup`; the prompt's size stays within what a
       Project takes_
-  - [ ] 8.2 The blank league profile, tied to the rules so that a new setting can't be forgotten, and holding no user's details.
+  - [x] 8.2 The blank league profile, tied to the rules so that a new setting can't be forgotten, and holding no user's details.
     - _Requirements: R9.3_
-    - _Test: **AT-15** `tests/acceptance/lineup/test_profile.py::test_at15_the_profile_names_every_setting`_
-  - [ ] 8.3 The README, the player guide and `docs/answer-formats.md`: what Fantadamus now answers, how to give a squad and
+    - _Test: **AT-15** `tests/acceptance/lineup/test_profile.py::test_at15_the_profile_names_every_setting`,
+      `::test_at15_the_values_it_offers_are_classics`, `::test_at15_the_goal_and_the_common_values`,
+      `::test_at15_it_holds_no_users_details`, `::test_at15_the_prompt_and_the_guide_use_it`_
+  - [x] 8.3 The README, the player guide and `docs/answer-formats.md`: what Fantadamus now answers, how to give a squad and
     rules, and where the profile goes.
     - _Requirements: R9.2_
     - _Test: `tests/unit/test_repo_hygiene.py::test_player_guide_covers_the_lineup`_

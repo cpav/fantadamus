@@ -15,10 +15,10 @@ published copies.
 ## How it works
 
 ```text
-your Claude app ──ask──▶ compare_players ──▶ collector reads its two pages ──▶ checks ──▶ bronze ─▶ silver ─▶ gold ─▶ engine
-       │                      │                                                           ▲
-       │                      └─▶ answer, or a plan for what's still missing              │
-       └─read_page (Fantadamus fetches the listed page) ──▶ submit tools ─────────────────┘
+your Claude app ──ask──▶ best_lineup, compare_players… ──▶ collector reads its two pages ──▶ checks ──▶ bronze ─▶ silver ─▶ gold ─▶ engine
+       │                      │                                                                         ▲
+       │                      └─▶ answer, or a plan for what's still missing                            │
+       └─read_page (Fantadamus fetches the listed page) ──▶ submit tools ───────────────────────────────┘
 ```
 
 - **Fantadamus collects, Claude fills the gaps, the tools decide.** Fantadamus reads two pages itself,
@@ -37,7 +37,9 @@ Phase 2 is under way. Its first two slices are signed off ([report](docs/reports
 `mvp-collect`: Fantadamus reads the round's lineups and odds
 itself, compares its sources, and answers as a forecast, with how sure each number is, how it moved and where it
 came from. `mvp-roles`: "X or Y?" for any two players of the same role, and one player's outlook. A second player can install
-it from the [setup guide](docs/player-setup.md). Phases 0 and 1 are signed off
+it from the [setup guide](docs/player-setup.md). `mvp-lineup`, built and waiting for a real round before its sign-off:
+the eleven, the bench in order and the formation for a user's squad under their league's own rules, simulated to give the
+expected score and the chance of each goal threshold; a finished round scores its own forecasts. Phases 0 and 1 are signed off
 ([reports](docs/reports/phase-1-report.md)). The answers' shapes, from "X or Y?" to the full lineup, are in
 [docs/answer-formats.md](docs/answer-formats.md).
 
@@ -47,7 +49,7 @@ Re-planned on 2026-10-26: the work now goes in thin slices, each taking one ques
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton (retired 2026-10-31) | Done, signed off 2026-10-26 |
 | 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Done, signed off 2026-10-26 ([report](docs/reports/phase-1-report.md)) |
-| 2 Slices | `mvp-collect` and `mvp-roles` (every role), signed off 2026-11-04; then the full lineup with the bench and the formation | In progress |
+| 2 Slices | `mvp-collect` and `mvp-roles` (every role), signed off 2026-11-04; `mvp-lineup` (the full lineup, the bench, the formation and calibration), built | In progress: a real round, then the gate |
 | 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
 
 For now each player runs Fantadamus on their own Mac; the shared online server comes with Phase 3.
@@ -62,9 +64,10 @@ make check      # every gate, as CI runs it: one PASS or FAIL line per check
 make test-fast  # format, lint, unit and property tests with the fast profile
 ```
 
-`uv run fantadamus serve` starts the MCP server on stdio: `compare_players`, `player_outlook`,
-`set_league_rules`, `collect`, `read_page` and the submit tools. `uv run fantadamus collect` reads the round page and Fantacalcio.it's
-statistics page now (`--fact` picks one fact's page); `--report` shows the last run.
+`uv run fantadamus serve` starts the MCP server on stdio: `best_lineup`, `compare_players`, `player_outlook`,
+`set_squad`, `set_league_rules`, `collect`, `read_page` and the submit tools. `uv run fantadamus collect` reads the round page and Fantacalcio.it's
+statistics page now (`--fact` picks one fact's page); `--report` shows the last run. `uv run fantadamus calibrate --round N`
+prints a finished round's report on the forecasts; `--again` scores it again.
 
 ## Use it in Claude Desktop
 
@@ -85,14 +88,16 @@ statistics page now (`--fact` picks one fact's page); `--report` shows the last 
    ```
 
 4. Create a Claude **Project** called Fantadamus and paste the agent prompt (everything below the `---` line in
-   [`docs/agent-prompt.md`](docs/agent-prompt.md)) as its instructions, so Claude uses the tools unasked.
-5. In that project, ask "X or Y?" for two players of the same role. The first time, Claude asks for your league's bonuses and
-   maluses, with the Fantacalcio Classic values offered. When facts are missing or stale, Claude reads the
+   [`docs/agent-prompt.md`](docs/agent-prompt.md)) as its instructions, so Claude uses the tools unasked. Below it, you
+   can paste your filled-in league profile ([`docs/league-profile-template.md`](docs/league-profile-template.md)): your
+   league's rules, your squad and how you like to play. Keep that copy out of this repository.
+5. In that project, ask "Who do I field this round?". The first time, Claude saves your rules and squad from the profile,
+   or asks for them, with the Fantacalcio Classic values offered. When facts are missing or stale, Claude reads the
    approved pages, submits what they say, and asks again.
 
 A second player installs it from [`docs/player-setup.md`](docs/player-setup.md), step by step.
 
-Your league rules, the lake and the decision log stay in git-ignored `data/local/`.
+Your league rules, your squads, the lake and the decision log stay in git-ignored `data/local/`.
 
 ## How this project works
 
