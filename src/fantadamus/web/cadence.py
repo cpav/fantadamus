@@ -43,7 +43,11 @@ _EVERY = {
     "official_lineups": dt.timedelta(minutes=15),
 }
 _LAST_DAY = {"probable_lineups": 3 * _HOUR, "match_odds": 3 * _HOUR}
-_ON_DEMAND_EVERY: dict[PageKind, dt.timedelta] = {"round": dt.timedelta(minutes=15), "statistics": 24 * _HOUR}
+_ON_DEMAND_EVERY: dict[PageKind, dt.timedelta] = {
+    "round": dt.timedelta(minutes=15),
+    "statistics": 24 * _HOUR,
+    "finished_round": dt.timedelta(minutes=15),
+}
 """The shortest interval of each page's facts in the table."""
 
 
@@ -77,7 +81,9 @@ def may_read(fact: str, log: CollectLog | None, now: dt.datetime) -> bool:
     """Whether an answer may ask the collector for `fact` now (mvp-collect R1.4)."""
     if log is None:
         return True
-    page: PageKind = "statistics" if fact in STATS_FACTS else "round"
+    page: PageKind = (
+        "statistics" if fact in STATS_FACTS else "finished_round" if fact == "finished_round" else "round"
+    )
     last = log.last_attempt(now, page)
     return last is None or now - last >= _ON_DEMAND_EVERY[page]
 

@@ -67,7 +67,14 @@ def test_same_outlet_counts_once() -> None:
         ),
     ]
     found = gold.availability(
-        NOVE, **match, views=[status_row], outlet_views=percent_rows, officials=[], players=[NOVE], as_of=LATE
+        NOVE,
+        home=match["home"],
+        away=match["away"],
+        views=[status_row],
+        outlet_views=percent_rows,
+        officials=[],
+        players=[NOVE],
+        as_of=LATE,
     )
     assert found is not None
     assert [(view.outlet, view.status, view.p_start) for view in found.outlets] == [
@@ -75,7 +82,8 @@ def test_same_outlet_counts_once() -> None:
     ]
     earlier = gold.availability(
         NOVE,
-        **match,
+        home=match["home"],
+        away=match["away"],
         views=[status_row],
         outlet_views=percent_rows,
         officials=[],
@@ -87,7 +95,8 @@ def test_same_outlet_counts_once() -> None:
     quattordici = KnownPlayer(player_id=14, name="Alfa Quattordici", club="alfa")
     out = gold.availability(
         quattordici,
-        **match,
+        home=match["home"],
+        away=match["away"],
         views=[],
         outlet_views=percent_rows,
         officials=[],

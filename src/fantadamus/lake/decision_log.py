@@ -22,6 +22,9 @@ class LoggedPlayer(BaseModel):
     name: str
     p_start: float
     p_cameo: float
+    p_rating: float | None = None
+    """His chance of a rating. Lines older than the cameo's fix (mvp-lineup R8.3) don't have it, and their
+    `p_cameo` is his chance of coming on, so calibration can't score them on it."""
     p_scores: float | None = None
     """An outfield player's; a keeper has P(clean sheet) instead (mvp-roles R6.3)."""
     key: float

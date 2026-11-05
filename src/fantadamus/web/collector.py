@@ -46,7 +46,7 @@ ROUND_FACTS = ("fixtures", "probable_lineups", "official_lineups", "match_odds")
 STATS_FACTS = ("player_season",)
 """And the statistics page's (mvp-roles R1.6)."""
 FACTS = ROUND_FACTS + STATS_FACTS
-PageKind = Literal["round", "statistics"]
+PageKind = Literal["round", "statistics", "finished_round"]
 
 Outcome = Literal[
     "stored",
@@ -168,18 +168,25 @@ class Collector:
             reports.append(self._statistics_page(fetcher, self.config.statistics))
         return CollectReport(started_at=started, finished_at=self.clock(), round=round, pages=reports)
 
-    def _round_page(self, fetcher: Fetcher, round: int | None) -> PageReport:
+    def collect_finished(self, round: int) -> CollectReport:
+        """A finished round's page, for who really started (mvp-lineup R7.2). It's a kind of its own in the
+        log, so that it doesn't count as an attempt at the current round's page."""
+        started = self.clock()
+        page = self._round_page(self.fetcher(), round, kind="finished_round")
+        return CollectReport(started_at=started, finished_at=self.clock(), round=round, pages=[page])
+
+    def _round_page(self, fetcher: Fetcher, round: int | None, *, kind: PageKind = "round") -> PageReport:
         url = self.config.round.format(round=round) if round is not None else self.config.current_round
         if not self.config.enabled:
-            return PageReport(url=url, outcome="switched off", for_claude=list(ROUND_FACTS))
-        fetched = _fetch(fetcher, url, "round", ROUND_FACTS)
+            return PageReport(url=url, page=kind, outcome="switched off", for_claude=list(ROUND_FACTS))
+        fetched = _fetch(fetcher, url, kind, ROUND_FACTS)
         if isinstance(fetched, PageReport):
             return fetched
         try:
             facts = read_round(fetched.text, round)
         except UnreadablePageError as error:
-            return _unreadable(fetched, "round", ROUND_FACTS, error)
-        return self._store(fetched, "round", ROUND_FACTS, submissions(facts), facts.problems)
+            return _unreadable(fetched, kind, ROUND_FACTS, error)
+        return self._store(fetched, kind, ROUND_FACTS, submissions(facts), facts.problems)
 
     def _statistics_page(self, fetcher: Fetcher, url: str) -> PageReport:
         if not self.config.statistics_enabled:

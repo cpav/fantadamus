@@ -219,13 +219,16 @@ Calibration asks a player for nothing, so it fits the routine of a draft, a chec
 Chances don't depend on a league's rules, so calibration is the same for every user and adds nothing to the league profile.
 
 **When.** A round is finished 12 hours after its last kickoff *(start)*, so the statistics page has had time to update. Both
-`collect --due` and an answer check for a finished, unscored round. An answer scores it first, so the first question after a
-round takes a few seconds longer, once; step 7 measures it against a 5-second budget, and if scoring everyone runs over, that
-set moves to `collect --due` and the command. It's skipped in the last hour before a deadline, when speed matters most. A failed
-read is tried again at the next run or question, no more often than every 15 minutes, and the answer carries on without it.
+`collect --due` and an answer check for a finished, unscored round. An answer scores it after its own read of the pages, which
+is what shows the next deadline, so the first question after a round takes a few seconds longer, once. Measured on real data
+against the 5-second budget, it takes about 4 seconds: under 1.5 to read the page and under 3 to score everyone. If it ever runs
+over, that set moves to `collect --due` and the command. It's skipped in the last hour before a deadline, when speed matters
+most. A failed read is tried again at the next run or question, no more often than every 15 minutes, and the answer carries on
+without it. Scoring waits for a read of the statistics page after the round, which keeps its usual limit of one a day, until the
+next round starts; then what needs that read counts as unscored.
 
-**The finished round's page.** `Collector.collect(round=N)` already reads a past round's page. Its reads are logged as a new
-page kind, `finished_round`, so they don't count as an attempt at the current round's page and delay its reads (C7 of
+**The finished round's page.** `Collector.collect_finished(N)` reads a past round's page. Its reads are logged as a new page
+kind, `finished_round`, so they don't count as an attempt at the current round's page and delay its reads (C7 of
 `mvp-collect`).
 
 **What's scored.**
@@ -245,10 +248,14 @@ unscored, with the reason (R7.3); so do a postponed match's, which has no marks.
 
 - **What users were told:** the decision log's last chances for each player before his kickoff. It's the honest record of what
   was published, and small: about 25 players per squad asked about.
-- **The model on everyone:** `gather` (C5) and the engine, for every player the page lists, as of his kickoff, with the
-  official lineup left out so that it scores the forecast and not the answer. It's the current model on the facts held then, so
-  it can test a changed constant on past rounds. Starting needs no model: it's the mean of the outlets' percentages on the
-  page. A player whose facts weren't held before kickoff counts as unscored.
+- **The model on everyone:** the engine, for every player the page lists, on the facts held before his kickoff, with the
+  official lineup left out so that it scores the forecast and not the answer. It doesn't use `gather` (C5), whose freshness
+  limits are for answers and would drop facts that were fresh then. It's the current model on the facts held then, so it can
+  test a changed constant on past rounds. Starting needs no model: with no lineup held before kickoff, it's the mean of the
+  outlets' percentages on the page. A player whose facts weren't held counts as unscored for the other chances.
+
+A logged line has the chance of a rating from the cameo's fix on (R8.3). An older line's `p_cameo` is his chance of coming on,
+so that chance counts as unscored for it.
 
 **Output.** Each set's Brier score and reliability by bucket, next to always guessing the set's average, and what's unscored and
 why. It's stored as `data/local/calibration/round-<N>.json` and never appended to the decision log, because it's derived and can

@@ -15,6 +15,7 @@ mvp-roles design C9, R4, R5; mvp-lineup C5): the facts, the models and the steps
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import tomllib
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
@@ -35,6 +36,7 @@ from fantadamus.domains.availability.silver import (
     LineupViewRow,
     OutletViewRow,
 )
+from fantadamus.domains.calibration import CalibrationStore
 from fantadamus.domains.facts import SilverRow, Source, read_silver
 from fantadamus.domains.fixtures.gold import deadline, fixture, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES, FixtureRow
@@ -72,6 +74,7 @@ from fantadamus.web.cadence import may_read
 from fantadamus.web.collector import ROUND_FACTS, STATS_FACTS, Collector, CollectReport
 
 ROME = ZoneInfo("Europe/Rome")
+_LOG = logging.getLogger(__name__)
 DEFAULT_READING_LIST = Path("config/reading_list.toml")
 _PLAN_ORDER = {
     "probable_lineups": 0,
@@ -384,6 +387,20 @@ class Advisor:
     """The collector's runs: each is logged, and a read that found a page unchanged keeps its facts fresh."""
     squads: SquadStore | None = None
     """Whether the user has a squad changes where a two-role question points (mvp-lineup R6.2)."""
+    scores: CalibrationStore | None = None
+    """The rounds scored so far, for the line in the next lineup (mvp-lineup R7.6)."""
+    before_answering: Callable[[dt.datetime], object] | None = None
+    """Scores a finished round if one is due (mvp-lineup R7.2)."""
+
+    def get_ready(self, now: dt.datetime) -> None:
+        """What's due before an answer goes out, once its own read of the pages has shown the next deadline.
+        It never stops or changes one, so a failure is logged and left for later."""
+        if self.before_answering is None:
+            return
+        try:
+            self.before_answering(now)
+        except Exception:
+            _LOG.exception("Couldn't score a finished round; it's tried again later")
 
     def refresh_item(self, fact: str, why: Why, about: str, **values: str) -> RefreshItem:
         entry = self.reading[fact]
@@ -448,6 +465,8 @@ class Advisor:
             result = self.answer_at(
                 names, when, odds_unavailable=odds_unavailable, facts=facts, tried=tried_notes(report)
             )
+        if as_of is None:
+            self.get_ready(when)
         if result.answer is None:
             return result
         answer = self._with_movement(result.answer, names, odds_unavailable, facts)
@@ -1004,6 +1023,7 @@ def _logged(part: PlayerAnswer) -> LoggedPlayer:
         name=part.name,
         p_start=value.p_start,
         p_cameo=value.p_cameo,
+        p_rating=value.p_start + value.p_cameo,
         p_scores=value.p_scores if isinstance(value, OutfieldValue) else None,
         key=value.key,
         p_clean_sheet=value.p_clean_sheet if isinstance(value, KeeperValue) and playing else None,

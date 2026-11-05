@@ -195,24 +195,28 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Requirements: R8.3_
     - _Test: the same questions before and after, on real data_
 
-- [ ] 7. Calibration
+- [x] 7. Calibration
   - Branch: `feat/ml-7-calibration` · Depends on: 5, 10 · ADRs: ADR-0006
-  - [ ] 7.1 The finished round's page: read once, 12 hours after the round's last kickoff, as its own page kind, so it never
+  - [x] 7.1 The finished round's page: read once, 12 hours after the round's last kickoff, as its own page kind, so it never
     delays a read of the current round's page. A failed read is tried again, no more often than every 15 minutes.
     - _Requirements: R7.2_
-    - _Test: `tests/unit/lineup/test_finished_round.py::test_when_a_round_has_finished`,
-      `tests/integration/lineup/test_finished_round.py::test_read_once`, `::test_current_round_reads_not_delayed`,
+    - _Test: `tests/unit/lineup/test_calibration.py::test_when_a_round_has_finished`,
+      `tests/integration/lineup/test_finished_round.py::test_read_once`,
+      `::test_nothing_is_read_before_the_round_has_finished`, `::test_current_round_reads_not_delayed`,
       `::test_failed_read_tried_again`_
-  - [ ] 7.2 `domains/calibration.py`, scoring both sets apart:
+  - [x] 7.2 `domains/calibration.py`, scoring both sets apart:
     - what users were told, and the model on everyone with the official lineup left out;
     - starting, getting a rating, scoring if he started, and a clean sheet if he started;
     - the Brier score and reliability by bucket, next to always guessing the set's average;
     - what couldn't be scored and why, with no page text.
     - _Requirements: R7.2, R7.3, R7.4_
     - _Test: **P9** `tests/property/lineup/test_calibration.py::test_p9_brier_scores_are_bounded`,
-      **P10** `::test_p10_nothing_after_kickoff`;
-      `tests/unit/lineup/test_calibration.py::test_hand_worked_scores`, `::test_unscored_named_with_the_reason`_
-  - [ ] 7.3 A round scores itself:
+      `::test_p9_a_forecast_right_every_time_scores_0`, **P10** `::test_p10_nothing_after_kickoff`;
+      `tests/unit/lineup/test_calibration.py::test_hand_worked_scores`, `::test_unscored_named_with_the_reason`,
+      `::test_what_users_were_told_is_the_last_before_kickoff`, `::test_a_replay_logged_after_kickoff_doesnt_count`;
+      `tests/acceptance/lineup/test_calibration.py::test_at12_an_official_lineup_never_feeds_the_model`,
+      `::test_at12_what_cant_be_scored_is_named`, `::test_at12_starting_needs_only_the_page`_
+  - [x] 7.3 A round scores itself:
     - `collect --due` and an answer check for a finished, unscored round; an answer does it first, except in the last hour before
       a deadline, and carries on if it fails;
     - the result stored under `data/local/calibration/`, `fantadamus calibrate --round N` to print it and `--again` to recompute
@@ -221,7 +225,10 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - the time measured against the 5-second budget; if scoring everyone runs over, that set moves to `collect --due` and the
       command, and the task report says so.
     - _Requirements: R7.2, R7.5, R7.6_
-    - _Test: **AT-12** `tests/acceptance/lineup/test_calibration.py::test_at12_a_round_scores_itself`_
+    - _Test: **AT-12** `tests/acceptance/lineup/test_calibration.py::test_at12_a_round_scores_itself`,
+      `::test_at12_the_schedule_scores_it_too`, `::test_at12_the_command_prints_the_report`;
+      `tests/integration/lineup/test_finished_round.py::test_skipped_in_the_last_hour_before_a_deadline`,
+      `::test_a_failure_never_stops_the_answer`, `::test_the_answer_is_the_same_either_way`_
 
 - [ ] 8. The agent prompt, the league profile and the docs
   - Branch: `docs/ml-8-prompt` · Depends on: 6, 7 · ADRs: none

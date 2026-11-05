@@ -13,12 +13,14 @@ from mcp.types import Tool
 
 from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
+from fantadamus.domains.calibration import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore
 from fantadamus.league.squads import SquadStore
 from fantadamus.mcp.advisor import Advisor, ReadingItem
+from fantadamus.mcp.calibrate import Calibrator
 from fantadamus.mcp.tools import collect, compare, league, lineup, outlook, pages, squad, submit
 from fantadamus.web.collector import Collector, CollectorConfig
 from fantadamus.web.fetch import Fetcher
@@ -110,6 +112,15 @@ def build_advisor(
     collect.register(server, reader, collect_log)
     pages.register(server, pages.PageReader(reading, page_fetcher))
     squads = SquadStore(rules.root)
+    scores = CalibrationStore(lake.root.parent / "calibration")
+    calibrator = Calibrator(
+        lake=lake,
+        log=log,
+        store=scores,
+        clock=clock,
+        collector=reader,
+        collect_log=collect_log,
+    )
     advisor = Advisor(
         lake=lake,
         rules=rules,
@@ -121,6 +132,8 @@ def build_advisor(
         collector=reader,
         collect_log=collect_log,
         squads=squads,
+        scores=scores,
+        before_answering=calibrator.if_due,
     )
     compare.register(server, advisor)
     outlook.register(server, advisor)

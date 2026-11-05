@@ -1,9 +1,9 @@
 """The `fantadamus` command line.
 
-fantadamus serve     run the advisor's MCP server on stdio, for Claude Desktop (ADR-0005)
-fantadamus collect   read the round page now and store its facts; `--due` only if something is past its
-                     cadence (the schedule, C7); `--report` shows the last run (C10)
-"""
+fantadamus serve run the advisor's MCP server on stdio, for Claude Desktop (ADR-0005) fantadamus collect read
+the round page now and store its facts; `--due` only if something is past its cadence (the schedule, C7), and
+score a finished round; `--report` shows the last run (C10) fantadamus calibrate print a finished round's
+report, scoring it if it hasn't been; `--again` recomputes it"""
 
 from __future__ import annotations
 
@@ -13,11 +13,13 @@ from pathlib import Path
 
 from fantadamus.core.clock import utc_now
 from fantadamus.core.clubs import Clubs
+from fantadamus.domains.calibration import CalibrationStore, render
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import DEFAULT_ROOT, LakeStore
 from fantadamus.league.rules import RulesStore
 from fantadamus.mcp.advisor import DEFAULT_READING_LIST, load_reading_list
+from fantadamus.mcp.calibrate import Calibrator
 from fantadamus.mcp.server import DEFAULT_SOURCES, build_advisor, load_allowed_hosts, load_instructions
 from fantadamus.web.cadence import collect_due
 from fantadamus.web.collector import FACTS, Collector, CollectReport, PageReport, load_collector
@@ -30,7 +32,7 @@ def _serve(args: argparse.Namespace) -> int:
     server = build_advisor(
         LakeStore(Path(args.lake)),
         allowed_hosts=load_allowed_hosts(Path(args.sources)),
-        clubs=Clubs.from_toml(DEFAULT_CLUBS.read_text(encoding="utf-8")),
+        clubs=_clubs(),
         rules=RulesStore(),
         log=DecisionLog(),
         reading=load_reading_list(),
@@ -59,6 +61,44 @@ def _run_lines(report: CollectReport) -> list[str]:
     return [line for page in report.pages for line in _page_lines(page)]
 
 
+def _collector(args: argparse.Namespace, log: CollectLog) -> Collector:
+    hosts = load_allowed_hosts(Path(args.sources))
+    return Collector(
+        fetcher=lambda: Fetcher(allowed_hosts=hosts, clock=utc_now, robots_cache=log.root / "robots"),
+        lake=LakeStore(Path(args.lake)),
+        clubs=_clubs(),
+        config=load_collector(Path(args.reading_list)),
+        allowed_hosts=hosts,
+        clock=utc_now,
+    )
+
+
+def _clubs() -> Clubs:
+    return Clubs.from_toml(DEFAULT_CLUBS.read_text(encoding="utf-8"))
+
+
+def _calibrator(args: argparse.Namespace) -> Calibrator:
+    lake_root = Path(args.lake)
+    log = CollectLog(lake_root.parent / "collect")
+    return Calibrator(
+        lake=LakeStore(lake_root),
+        log=DecisionLog(lake_root.parent / "decisions"),
+        store=CalibrationStore(lake_root.parent / "calibration"),
+        clock=utc_now,
+        collector=_collector(args, log),
+        collect_log=log,
+    )
+
+
+def _calibrate(args: argparse.Namespace) -> int:
+    report = _calibrator(args).report(args.round, again=args.again)
+    if report is None:
+        print(f"Round {args.round} hasn't finished, or the lake doesn't know it.")
+        return 1
+    print(render(report))
+    return 0
+
+
 def _collect(args: argparse.Namespace) -> int:
     lake_root = Path(args.lake)
     log = CollectLog(lake_root.parent / "collect")  # next to the lake: data/local/collect by default
@@ -74,17 +114,13 @@ def _collect(args: argparse.Namespace) -> int:
         for url, when in sorted(log.last_worked().items()):
             print(f"  {url}: {when:%Y-%m-%d %H:%M} UTC")
         return 0
-    hosts = load_allowed_hosts(Path(args.sources))
-    collector = Collector(
-        fetcher=lambda: Fetcher(allowed_hosts=hosts, clock=utc_now, robots_cache=log.root / "robots"),
-        lake=LakeStore(lake_root),
-        clubs=Clubs.from_toml(DEFAULT_CLUBS.read_text(encoding="utf-8")),
-        config=load_collector(Path(args.reading_list)),
-        allowed_hosts=hosts,
-        clock=utc_now,
-    )
+    collector = _collector(args, log)
     if args.due:
         due = collect_due(collector, log)
+        calibrator = _calibrator(args)
+        scored = calibrator.if_due(calibrator.clock())
+        if scored is not None:
+            print(f"Round {scored.round} scored.")
         if due is None:
             print("Nothing due.")
             return 0
@@ -121,6 +157,14 @@ def _parser() -> argparse.ArgumentParser:
     collect.add_argument("--sources", default=str(DEFAULT_SOURCES), help="allowlist (TOML)")
     collect.add_argument("--reading-list", default=str(DEFAULT_READING_LIST), help="reading list (TOML)")
     collect.set_defaults(handler=_collect)
+
+    calibrate = commands.add_parser("calibrate", help="print a finished round's report on the forecasts")
+    calibrate.add_argument("--round", type=int, required=True, help="the round")
+    calibrate.add_argument("--again", action="store_true", help="score it again, reading the page again")
+    calibrate.add_argument("--lake", default=str(DEFAULT_ROOT), help="lake root directory")
+    calibrate.add_argument("--sources", default=str(DEFAULT_SOURCES), help="allowlist (TOML)")
+    calibrate.add_argument("--reading-list", default=str(DEFAULT_READING_LIST), help="reading list (TOML)")
+    calibrate.set_defaults(handler=_calibrate)
     return parser
 
 
