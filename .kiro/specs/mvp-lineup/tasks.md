@@ -264,7 +264,7 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Requirements: R9.2_
     - _Test: `tests/unit/test_repo_hygiene.py::test_player_guide_covers_the_lineup`_
 
-- [ ] 9. The real round and Phase 2's gate
+- [ ] 9. The real round and this slice's sign-off
   - Branch: `docs/ml-9-gate` · Depends on: 8 · ADRs: none
   - [ ] 9.1 Testing from Claude Code on real data, with the local tools and a real squad kept in private memory: a draft, a check
     after the official lineups, an override and a league-mate's squad. Bugs found get their own failing tests and fixes.
@@ -293,10 +293,10 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     won't run on the owner's Mac, say so and ask before choosing another way.
     - _Requirements: R3.2, R4.1, R7.2; phase gate (`quality.md`)_
     - _Test: the score and the survivors, in the phase report_
-  - [ ] 9.5 The phase report: tests, coverage, quality results, cost and open risks, all six of method §A9, and the acceptance
+  - [ ] 9.5 The slice report: tests, coverage, quality results, cost and open risks, all six of method §A9, and the acceptance
     tests of this slice.
     - _Requirements: Phase gate (`quality.md`), R9.2_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 9.6 **Owner:** sign off Phase 2 → Phase 3 may start
+  - [ ] 9.6 **Owner:** sign off this slice → the next slice in `product.md` may start
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the phase report_

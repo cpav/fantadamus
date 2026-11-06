@@ -11,8 +11,9 @@ amended so a round scores itself, **all approved the same day** · Workflow: req
 Fantadamus prices every player and answers "X or Y?" within a role. The owner's main question is bigger: "who do I
 field?" This slice answers it. Given the user's squad and the league's full rules, it picks the eleven, the bench in
 order and the formation, simulates the round under the league's real substitution rules, and reports the expected
-score and the chance of reaching each goal threshold. It's the last slice before Phase 2's gate, so it also delivers
-the first calibration report.
+score and the chance of reaching each goal threshold. It also delivers the first calibration report. It was to be the
+last slice before Phase 2's gate; on 2026-11-06 the owner put every other feature discussed before going online, so Phase 2
+goes on with the slices in `product.md`, and this slice ends with its own sign-off.
 
 It adds no new source. The round page and the statistics page already give every player of a squad at once.
 

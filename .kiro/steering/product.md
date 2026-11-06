@@ -107,7 +107,7 @@ not what happens to it.
 ## Delivery order
 
 Re-planned on 2026-10-26 to reach a usable advisor sooner: work goes in thin vertical slices, each taking one
-question from data to answer, instead of three full specs one after another. Brought up to date on 2026-10-31.
+question from data to answer, instead of three full specs one after another. Brought up to date on 2026-11-06.
 
 **Phases 1 to 3 are the MVP**: two players, data fetched by Fantadamus from the approved pages and the rest read
 by their Claude through `read_page`. **Phase 4 is v1.** Every feature is built once, in the MVP's slices, and
@@ -118,12 +118,26 @@ carries over: v1 changes how the data arrives (licensed or permitted sources, on
 |---|---|---|
 | 0 | `engineering-foundation`: repository, tooling, CI, test harness, agent hooks | Done, signed off 2026-10-26; its AWS skeleton moved to Phase 3 |
 | 1 | `mvp-x-or-y`: "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method for forwards, `compare_players` | Done, signed off 2026-10-26 |
-| 2 | Slices, one small spec each, toward the full lineup: **(a)** `mvp-collect`: Fantadamus collects the round's facts itself, sources compared, forecast-style answers (signed off 2026-11-04); **(b)** `mvp-roles`: "X or Y?" and one player's outlook for keepers, defenders and midfielders, with players' season figures read in bulk (signed off 2026-11-04); **(c)** `mvp-lineup`, the full lineup: the user's squad, the league's full rules, the eleven, the bench order and the formation, simulated to give the expected score and the chance of each threshold; **(d)** later, match cards | Each after the previous slice has answered a real round |
-| 3 | Online for the second player: the remote MCP endpoint, plus the AWS skeleton, budget alarm and deploy gate moved from Phase 0 | After the slices the second player needs |
+| 2 | Slices, one small spec each, until every feature discussed is built: **(a)** `mvp-collect`: Fantadamus collects the round's facts itself, sources compared, forecast-style answers (signed off 2026-11-04); **(b)** `mvp-roles`: "X or Y?" and one player's outlook for keepers, defenders and midfielders, with players' season figures read in bulk (signed off 2026-11-04); **(c)** `mvp-lineup`, the full lineup: the user's squad, the league's full rules, the eleven, the bench order and the formation, simulated to give the expected score and the chance of each threshold; **(d)** onward, the slices listed below | A slice that changes the numbers waits until the previous one has answered a real round; any other starts when the previous one is signed off |
+| 3 | Online and easy to install: the remote MCP endpoint, so that a player installs nothing, plus the AWS skeleton, budget alarm and deploy gate moved from Phase 0 | After every slice of Phase 2 |
 | 4 | v1: automated, scheduled pipelines on licensed or permitted sources; more users | After the MVP has been used for real rounds |
 
-Live forecasts during a match, and alerts such as "the official lineup changes your call", come in their own
-specs once the full lineup works.
+**Every feature discussed comes before going online** (the owner's decision, 2026-11-06). Phase 3 then does one thing:
+making Fantadamus easy to reach and install. The slices after `mvp-lineup`, each its own spec, in this order:
+
+| Order | Slice | Needs |
+|---|---|---|
+| 1 | The review of a user's lineup after a round: what they chose, what the advice was, what each decision cost, and whether overrides paid off | Nothing new |
+| 2 | Match cards, numbers: one card per fixture, from the facts already collected | Nothing new |
+| 3 | Recalibration of the *(start)* constants, and the market's chances beside ours | Calibration reports |
+| 4 | The defence modifier and the captain | Nothing new |
+| 5 | New sources, research first, each route approved by the owner: rest days and midweek European fixtures, set-piece takers, injury detail, match context for the cards, anytime-scorer odds, per-match ratings and rater bias | ADRs, then the source registry |
+| 6 | Alerts: "the official lineup changes your call" | A way to reach the user unprompted |
+| 7 | Live forecasts during a match | A live data source: asked first if it's paid |
+| 8 | League rules that need the opponent's team (the home factor, draw and superiority bonuses, the rule of 59), and Mantra leagues | All the league's squads; Mantra's roles and rules |
+| 9 | Pundit consensus | A route decision first: FantaCreators' videos are off limits today |
+
+Trades, auctions and market valuation stay out of scope.
 
 Gates and the Definition of Done are in `quality.md`.
 

@@ -49,10 +49,10 @@ Re-planned on 2026-10-26: the work now goes in thin slices, each taking one ques
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton (retired 2026-10-31) | Done, signed off 2026-10-26 |
 | 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Done, signed off 2026-10-26 ([report](docs/reports/phase-1-report.md)) |
-| 2 Slices | `mvp-collect` and `mvp-roles` (every role), signed off 2026-11-04; `mvp-lineup` (the full lineup, the bench, the formation and calibration), built | In progress: a real round, then the gate |
-| 3 Online | The MCP server online for a second player, with the AWS work moved from Phase 0 | Prompt written |
+| 2 Slices | `mvp-collect` and `mvp-roles` (every role), signed off 2026-11-04; `mvp-lineup` (the full lineup, the bench, the formation and calibration), built; then every other feature discussed, in the order in [`product.md`](.kiro/steering/product.md#delivery-order) | In progress: `mvp-lineup`'s real round |
+| 3 Online | The MCP server online, so that a player installs nothing, with the AWS work moved from Phase 0 | After Phase 2 |
 
-For now each player runs Fantadamus on their own Mac; the shared online server comes with Phase 3.
+For now each player installs and runs Fantadamus on their own Mac; going online in Phase 3 removes the install.
 
 ## Run it locally
 
