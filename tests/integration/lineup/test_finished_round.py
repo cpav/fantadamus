@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from fantadamus.domains.calibration import CalibrationStore
 from fantadamus.domains.freshness import FACTS_WINDOW
+from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.web.fetch import Response
 from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE
 from tests.collect_pages import FcoMatch, fco_round_page

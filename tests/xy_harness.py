@@ -15,7 +15,7 @@ from mcp.types import CallToolResult
 
 from fantadamus.core.clock import Clock, fixed_clock
 from fantadamus.core.clubs import Clubs
-from fantadamus.domains.calibration import CalibrationStore
+from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore

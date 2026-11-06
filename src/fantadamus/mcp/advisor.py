@@ -17,7 +17,7 @@ from __future__ import annotations
 import datetime as dt
 import logging
 import tomllib
-from collections.abc import Callable, Collection, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -36,7 +36,6 @@ from fantadamus.domains.availability.silver import (
     LineupViewRow,
     OutletViewRow,
 )
-from fantadamus.domains.calibration import CalibrationStore
 from fantadamus.domains.facts import SilverRow, Source, read_silver
 from fantadamus.domains.fixtures.gold import deadline, fixture, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES, FixtureRow
@@ -63,8 +62,10 @@ from fantadamus.domains.season.silver import (
 from fantadamus.domains.sources import Confidence, describe, disagreement, of_odds, of_outlets, weaker
 from fantadamus.engine import keepers, outfield
 from fantadamus.engine.keepers import KeeperInputs, KeeperValue
+from fantadamus.engine.lineup import ROLE_WORDS
 from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue
 from fantadamus.engine.rank import Scoring, Verdict
+from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import Decision, DecisionLog, LoggedPlayer
 from fantadamus.lake.duckdb_store import LakeStore
@@ -87,7 +88,6 @@ _BETTER_TO_HAVE = {"probable_lineups", "match_odds"}
 """What a lineup goes ahead without, on what's known and with a warning (mvp-lineup R5.5). "X or Y?" asks
 first."""
 _LATEST = dt.datetime.max.replace(tzinfo=dt.UTC)
-_ROLE_WORDS = {"P": "keeper", "D": "defender", "C": "midfielder", "A": "forward"}
 REFRESH = (
     "Some facts are missing or stale. For each item read with `read_page`, read its pages best first until "
     "one gives the fact; for an item read with `search`, find a page on a listed site with its search hint. "
@@ -358,6 +358,7 @@ class Gathered:
     fixtures: list[FixtureRow]
     teams: list[TeamSeasonRow]
     plan: _Plan
+    known: list[KnownPlayer]
 
     @property
     def needed(self) -> list[RefreshItem]:
@@ -368,6 +369,17 @@ class Gathered:
     def better(self) -> list[RefreshItem]:
         """Without these, a number rests on what's known."""
         return [item for item in self.plan.items if item.fact in _BETTER_TO_HAVE]
+
+
+@dataclass(frozen=True)
+class Collected[R]:
+    """An answer, and what it rests on once the collector has had its turn."""
+
+    result: R
+    when: dt.datetime
+    facts: Facts
+    tried: Mapping[str, str]
+    """What the collector found, by fact, for the plan's items."""
 
 
 @dataclass(frozen=True)
@@ -450,26 +462,41 @@ class Advisor:
         """One player's forecast (mvp-roles R5)."""
         return self._ask((player,), as_of, odds_unavailable)
 
-    def _ask(self, names: Sequence[str], as_of: dt.datetime | None, odds_unavailable: bool) -> CompareResult:
-        """The answer, after the collector has read the pages of what was missing or stale. A replay of an
-        earlier `as_of` never collects. The lake's facts are read once, and again only after the collector
-        stored something: a season of statistics rows costs 0.8 s a read (mvp-roles C2)."""
+    def after_collecting[R](
+        self,
+        as_of: dt.datetime | None,
+        ask: Callable[[dt.datetime, Facts, Mapping[str, str] | None], R],
+        wanted: Callable[[R], Iterable[str]],
+    ) -> Collected[R]:
+        """`ask`'s answer, after the collector has read the pages of what it found missing or stale. A replay
+        of an earlier `as_of` never collects. The lake's facts are read once, and again only after the
+        collector stored something: a season of statistics rows costs 0.8 s a read (mvp-roles C2)."""
         when = (as_of or self.clock()).astimezone(dt.UTC)
         facts = Facts.read(self.lake, when)
-        result = self.answer_at(names, when, odds_unavailable=odds_unavailable, facts=facts)
-        report = self.collect_now({item.fact for item in result.refresh}, when) if as_of is None else None
+        result = ask(when, facts, None)
+        tried: Mapping[str, str] = {}
+        report = self.collect_now(set(wanted(result)), when) if as_of is None else None
         if report is not None:
+            tried = tried_notes(report)
             when = self.clock().astimezone(dt.UTC)
             if any(page.stored for page in report.pages):
                 facts = Facts.read(self.lake, when)
-            result = self.answer_at(
-                names, when, odds_unavailable=odds_unavailable, facts=facts, tried=tried_notes(report)
-            )
+            result = ask(when, facts, tried)
         if as_of is None:
             self.get_ready(when)
+        return Collected(result, when, facts, tried)
+
+    def _ask(self, names: Sequence[str], as_of: dt.datetime | None, odds_unavailable: bool) -> CompareResult:
+        """The answer to a question about one or two players."""
+
+        def ask(when: dt.datetime, facts: Facts, tried: Mapping[str, str] | None) -> CompareResult:
+            return self.answer_at(names, when, odds_unavailable=odds_unavailable, facts=facts, tried=tried)
+
+        done = self.after_collecting(as_of, ask, lambda found: [item.fact for item in found.refresh])
+        result = done.result
         if result.answer is None:
             return result
-        answer = self._with_movement(result.answer, names, odds_unavailable, facts)
+        answer = self._with_movement(result.answer, names, odds_unavailable, done.facts)
         self._log(answer)
         return result.model_copy(update={"answer": answer})
 
@@ -595,7 +622,7 @@ class Advisor:
                 sides.append(PlayerFacts(player, form, table, order, match, present, xg, notes))
 
         first_kickoff = deadline(fixtures, round, as_of) if round is not None else None
-        return Gathered(sides, round, first_kickoff, fixtures, teams, plan)
+        return Gathered(sides, round, first_kickoff, fixtures, teams, plan, known)
 
     def _disagreements(
         self,
@@ -725,7 +752,7 @@ class Advisor:
 
     def _outlooks_message(self, sides: Sequence[PlayerFacts]) -> str:
         """Two roles: that choice is the formation call, which the lineup makes (mvp-lineup R6.2)."""
-        who = " and ".join(f"{side.player.name} ({_ROLE_WORDS[side.form.role]})" for side in sides)
+        who = " and ".join(f"{side.player.name} ({ROLE_WORDS[side.form.role]})" for side in sides)
         has_squad = self.squads is not None and self.squads.get(self.user) is not None
         where = (
             "best_lineup makes it for this squad" if has_squad else "set_squad, then best_lineup, makes it"
@@ -780,7 +807,10 @@ class Advisor:
                 logged_at=self.clock(),
                 user=self.user,
                 round=answer.round,
-                players=[_logged(part) for part in answer.players],
+                players=[
+                    logged_player(part.player_id, part.name, part.value, playing=part.fixture is not None)
+                    for part in answer.players
+                ],
                 first=verdict.first if verdict else None,
                 second=verdict.second if verdict else None,
                 margin=verdict.margin if verdict else None,
@@ -984,7 +1014,7 @@ def _judged(inputs: Sequence[OutfieldInputs | KeeperInputs], scoring: Scoring) -
 
 
 def _verdict_message(verdict: Verdict, role: str) -> str:
-    word = _ROLE_WORDS[role]
+    word = ROLE_WORDS[role]
     first, second = verdict.first, verdict.second
     if verdict.first_plays and verdict.label == "covered":
         return (
@@ -1003,7 +1033,7 @@ def _verdict_message(verdict: Verdict, role: str) -> str:
 
 
 def _outlook_message(part: PlayerAnswer) -> str:
-    who, value = f"{part.name} ({_ROLE_WORDS[part.role]})", part.value
+    who, value = f"{part.name} ({ROLE_WORDS[part.role]})", part.value
     if value.p_start + value.p_cameo == 0:
         return f"{who} won't play this round."
     return f"{who}: {value.p_start:.0%} to start, worth about {value.e_start:.1f} if he does."
@@ -1015,18 +1045,19 @@ def _kind(answer: Answer) -> Literal["compare", "outlooks", "outlook"]:
     return "outlooks" if len(answer.players) == 2 else "outlook"
 
 
-def _logged(part: PlayerAnswer) -> LoggedPlayer:
+def logged_player(
+    player_id: int, name: str, value: OutfieldValue | KeeperValue, *, playing: bool
+) -> LoggedPlayer:
     """A keeper without a match has no clean sheet to log: he isn't playing."""
-    value = part.value
-    playing = part.fixture is not None
+    keeper = value if isinstance(value, KeeperValue) and playing else None
     return LoggedPlayer(
-        player_id=part.player_id,
-        name=part.name,
+        player_id=player_id,
+        name=name,
         p_start=value.p_start,
         p_cameo=value.p_cameo,
-        p_rating=value.p_start + value.p_cameo,
+        p_rating=value.p_rating,
         p_scores=value.p_scores if isinstance(value, OutfieldValue) else None,
         key=value.key,
-        p_clean_sheet=value.p_clean_sheet if isinstance(value, KeeperValue) and playing else None,
-        expected_conceded=value.expected_conceded if isinstance(value, KeeperValue) and playing else None,
+        p_clean_sheet=keeper.p_clean_sheet if keeper else None,
+        expected_conceded=keeper.expected_conceded if keeper else None,
     )

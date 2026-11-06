@@ -15,7 +15,8 @@ from pathlib import Path
 from fantadamus.web.collector import CollectReport, PageKind, PageReport
 
 DEFAULT_ROOT = Path("data/local/collect")
-_WORKED = {"stored", "unchanged"}
+WORKED = {"stored", "unchanged"}
+"""A read that gave facts, whether or not they were new."""
 
 
 @dataclass(frozen=True)
@@ -55,9 +56,17 @@ class CollectLog:
         """For each page, the newest time (at or before `as_of`) it was read and gave facts."""
         worked: dict[str, dt.datetime] = {}
         for page, fetched_at in self._reads(as_of):
-            if page.outcome in _WORKED:
+            if page.outcome in WORKED:
                 worked[page.url] = max(fetched_at, worked.get(page.url, fetched_at))
         return worked
+
+    def worked(self, page: PageKind, as_of: dt.datetime) -> list[dt.datetime]:
+        """When this kind of page was read and gave facts, at or before `as_of`."""
+        return [
+            fetched_at
+            for report, fetched_at in self._reads(as_of)
+            if report.page == page and report.outcome in WORKED
+        ]
 
     def confirmed(self, as_of: dt.datetime) -> dict[str, dict[str, dt.datetime]]:
         """By table, then page: the newest read at or before `as_of` that found the facts unchanged."""
