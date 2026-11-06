@@ -85,7 +85,7 @@ updated with the final list.
 | Tool versions | Every non-Python tool pinned with its checksum and installed by `make setup` into a project-local `bin/`; a version mismatch fails | Hook, CI |
 | IAM policy self-test | Deny-wins evaluator (adapted from gamegusto's `verify_policy.py`) on the rendered deploy policy and boundary: escalation, blast radius (including `gamegusto-*`), still-does-its-job, size limit | CI |
 | Commit messages | Conventional Commits | Pre-commit (commit-msg) |
-| Mutation testing | `mutmut` on the core modules | Phase gate only |
+| Mutation testing | `make mutate`: `mutmut` on the core modules, on fast tests only, and it stops itself after 10 minutes. `ONLY=<names>` runs just what a task changed | Phase gate; a task's own module with `ONLY` |
 
 - Dependencies are managed with `uv` and a committed lockfile.
 - **The pull-request gate stays under 5 minutes**: the median of the last 10 runs, wall clock, all required

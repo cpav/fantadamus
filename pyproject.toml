@@ -18,6 +18,11 @@ requires = ["uv_build>=0.11,<0.14"]
 build-backend = "uv_build"
 
 [dependency-groups]
+mutation = [
+    # 3.8 needs libcst 1.9, which has no macOS x86_64 wheel for Python 3.12 (ADR-0001).
+    "libcst<1.9",
+    "mutmut>=3.7,<3.8",
+]
 dev = [
     "conventional-pre-commit>=4.4,<5",
     "hypothesis>=6.170,<7",
@@ -41,6 +46,27 @@ constraint-dependencies = [
     "cryptography<49; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     # Everywhere else (CI, Linux servers), take the patched releases (PYSEC-2026-3552 to 3554).
     "cryptography>=50; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+]
+
+[tool.mutmut]
+# The phase gate's run (`make mutate`). `mutmut` forks for each change and DuckDB hangs in a fork, so fast tests
+# only: anything that reaches the lake would hang until its timeout and count as a kill.
+source_paths = ["src"]
+only_mutate = ["src/fantadamus/engine/*", "src/fantadamus/domains/calibration.py"]
+also_copy = ["config", "scripts"]
+pytest_add_cli_args_test_selection = [
+    "tests/unit/lineup",
+    "tests/unit/xy",
+    "tests/unit/roles",
+    "tests/property/lineup",
+    "tests/property/roles",
+    "tests/property/xy",
+]
+pytest_add_cli_args = [
+    "--timeout=30",
+    "--ignore=tests/property/lineup/test_squads.py",
+    "--ignore=tests/property/xy/test_as_of.py",
+    "--ignore=tests/property/xy/test_decision_log.py",
 ]
 
 [tool.pytest.ini_options]
