@@ -8,10 +8,12 @@ from pathlib import Path
 import pytest
 
 from fantadamus.domains.calibration import CalibrationStore
+from fantadamus.domains.freshness import FACTS_WINDOW
 from fantadamus.web.fetch import Response
 from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE
 from tests.collect_pages import FcoMatch, fco_round_page
 from tests.lineup_harness import Round, a_round, stats_after, the_next_round
+from tests.xy_harness import NOW
 from tests.xy_harness import ask as compare
 
 pytestmark = pytest.mark.anyio
@@ -210,6 +212,29 @@ async def test_a_page_that_hasnt_moved_isnt_the_read_after(tmp_path: Path) -> No
         here.routes[f"{here.base}{ROUND_10}"] = Response(200, HTML, fco_round_page(*_marks()).encode())
         here.routes[f"{here.base}{ROUND_ROUTE}"] = Response(200, HTML, the_next_round().encode())
         here.clock.now = AFTER
+        await here.ask()
+        assert here.scores.get(10) is None
+        here.routes[f"{here.base}{STATS_ROUTE}"] = Response(200, HTML, stats_after().encode())
+        here.clock.now += dt.timedelta(hours=25)
+        await here.ask()
+        report = here.scores.get(10)
+    assert report is not None
+    rated = next(chance for chance in report.model.scored if chance.chance == "Getting a rating")
+    assert sum(bucket.happened * bucket.count for bucket in rated.buckets) == pytest.approx(44, abs=0.01)
+
+
+async def test_a_page_stored_again_isnt_the_read_after(tmp_path: Path) -> None:
+    """A page unchanged since before the round can be stored again once its last read leaves the window. That
+    says nothing has moved, so scoring still waits, rather than saying nobody got a rating."""
+    async with a_round(tmp_path) as here:
+        await here.ask()
+        here.routes[f"{here.base}{ROUND_10}"] = Response(200, HTML, fco_round_page(*_marks()).encode())
+        here.routes[f"{here.base}{ROUND_ROUTE}"] = Response(
+            200,
+            HTML,
+            fco_round_page(FcoMatch("Alfa", "Gamma", kickoff="30/12/2026 15:00"), round=11).encode(),
+        )
+        here.clock.now = NOW + FACTS_WINDOW + dt.timedelta(days=1)
         await here.ask()
         assert here.scores.get(10) is None
         here.routes[f"{here.base}{STATS_ROUTE}"] = Response(200, HTML, stats_after().encode())

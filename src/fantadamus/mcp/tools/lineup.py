@@ -518,7 +518,7 @@ def _warnings(
     found += left_out
     if rules.other_rules:
         found.append(f"The score doesn't include {', '.join(rules.other_rules)}.")
-    return found
+    return list(dict.fromkeys(found))  # sources disagreeing on a club is one fact, whoever it's about
 
 
 def _sources(priced: Sequence[_Priced]) -> list[Source]:
@@ -694,7 +694,7 @@ def lineup_for(
     wanted = [player.player_id for player in squad.players]
     facts = Facts.read(advisor.lake, when)
     known = known_players(facts.players, when)
-    gathered = advisor.gather(_squad_players(known, wanted), when, facts=facts, known=known)
+    gathered = _gather_squad(advisor, wanted, facts, known, when)
     tried: Mapping[str, str] = {}
     report = advisor.collect_now({item.fact for item in gathered.plan.items}, when) if as_of is None else None
     if report is not None:
@@ -703,7 +703,7 @@ def lineup_for(
         if any(page.stored for page in report.pages):
             facts = Facts.read(advisor.lake, when)
             known = known_players(facts.players, when)
-        gathered = advisor.gather(_squad_players(known, wanted), when, facts=facts, known=known)
+        gathered = _gather_squad(advisor, wanted, facts, known, when)
     if as_of is None:
         advisor.get_ready(when)
 
@@ -776,6 +776,16 @@ def _override(advised: Simulated, chosen: Simulated, arranged: Arrangement) -> O
 def _squad_players(known: Sequence[KnownPlayer], wanted: Sequence[int]) -> list[KnownPlayer]:
     ids = set(wanted)
     return [player for player in known if player.player_id in ids]
+
+
+def _gather_squad(
+    advisor: Advisor, wanted: Sequence[int], facts: Facts, known: list[KnownPlayer], when: dt.datetime
+) -> Gathered:
+    players = _squad_players(known, wanted)
+    gathered = advisor.gather(players, when, facts=facts, known=known)
+    if not players:  # nothing else would ask for the page that says who they are
+        gathered.plan.need(advisor.refresh_item("player_season", "stale", "the squad's season figures"))
+    return gathered
 
 
 def _answer(

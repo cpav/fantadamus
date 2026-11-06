@@ -234,9 +234,12 @@ def read_silver[R: SilverRow](
     return [domain.row.model_validate(row) for row in rows]
 
 
-def last_read(store: LakeStore, domain: Domain[Any, Any], source_url: str) -> set[str]:
-    """The content hashes of the newest stored read of `source_url` in the domain: what the page said last."""
-    rows = [row for row in read_silver(store, domain) if row.source_url == source_url]
+def last_read(
+    store: LakeStore, domain: Domain[Any, Any], source_url: str, since: dt.datetime | None = None
+) -> set[str]:
+    """The content hashes of the newest stored read of `source_url` in the domain, from `since` on: what the
+    page said last."""
+    rows = [row for row in read_silver(store, domain, since) if row.source_url == source_url]
     newest = max((row.captured_at for row in rows), default=None)
     return {row.content_sha256 for row in rows if row.captured_at == newest}
 

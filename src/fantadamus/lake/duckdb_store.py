@@ -24,6 +24,7 @@ from typing import Literal
 import duckdb
 
 from fantadamus.contracts.envelope import BronzeEnvelope
+from fantadamus.core.files import temporary_beside
 from fantadamus.core.hashing import canonical_json
 
 DEFAULT_ROOT = Path("data/local/lake")
@@ -175,7 +176,7 @@ class LakeStore:
         """Replace a silver or gold table atomically."""
         path = self.root / layer / f"{table.name}.parquet"
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(f".{path.name}.tmp")
+        temporary = temporary_beside(path)
         _write_parquet(table, rows, temporary)
         temporary.replace(path)
         return path

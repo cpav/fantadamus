@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from fantadamus.contracts.types import Role, UtcDatetime
 from fantadamus.contracts.xy.league import GoalByRole, LeagueRules, LineupRules
+from fantadamus.core.files import temporary_beside
 from fantadamus.engine.rank import Scoring
 
 DEFAULT_ROOT = Path("data/local/league")
@@ -181,7 +182,7 @@ class RulesStore:
             path.rename(self.root / f"{user}.{previous.saved_at:%Y%m%dT%H%M%S%fZ}.json")
         stored = StoredRules(user=user, saved_at=at, rules=rules)
         self.root.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(f".{path.name}.tmp")
+        temporary = temporary_beside(path)
         temporary.write_text(stored.model_dump_json(indent=2) + "\n", encoding="utf-8")
         temporary.replace(path)
         return stored
