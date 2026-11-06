@@ -7,6 +7,7 @@ import math
 import pytest
 
 from fantadamus.engine import outfield, rank
+from fantadamus.engine.constants import DEFENDER_SHARE_WEIGHT
 from fantadamus.engine.outfield import OutfieldInputs
 from fantadamus.engine.rank import Scoring
 
@@ -116,3 +117,24 @@ def test_verdict_knows_who_can_play() -> None:
     assert (neither.first_plays, neither.second_plays) == (False, False)
     both = rank.verdict(fit, fit.model_copy(update={"name": "W"}))
     assert (both.first_plays, both.second_plays) == (True, True)
+
+
+def test_what_would_flip_it_doesnt_depend_on_who_is_asked_first() -> None:
+    strong, weak = striker(name="Strong"), striker(name="Weak", goals=3)
+    one, other = outfield.compare(strong, weak, CLASSIC), outfield.compare(weak, strong, CLASSIC)
+    assert one.verdict.first == other.verdict.first == "Strong"
+    assert one.flip_team_xg is not None
+    assert one.flip_team_xg == other.flip_team_xg
+    assert one.flip_p_start == other.flip_p_start
+
+
+def test_a_defenders_assists_shrink_with_his_own_weight() -> None:
+    forward = outfield.value(striker(role="D", mantra_role="Dd", assists=3), CLASSIC)
+    assert forward.assist_share == pytest.approx(
+        outfield.share(
+            outfield.priors("D", "Dd").assist,
+            events=3,
+            team_goals=2.0 * 5,
+            weight=DEFENDER_SHARE_WEIGHT,
+        )
+    )

@@ -8,7 +8,7 @@ UV := uv run --frozen
 # it, every run recompiles the tests and their libraries, about 3 seconds of each pytest start.
 unexport PYTHONDONTWRITEBYTECODE
 
-.PHONY: help setup check check-audit test-fast task-check
+.PHONY: help setup check check-audit test-fast task-check mutate
 
 help: ## List the targets
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -28,6 +28,9 @@ test-fast: ## Format, lint, and unit and property tests with the fast profile (R
 	$(UV) ruff format --check .
 	$(UV) ruff check .
 	HYPOTHESIS_PROFILE=dev $(UV) pytest -m "unit or property" -p no:cacheprovider -n 4 --dist worksteal
+
+mutate: ## Break the core modules on purpose, on fast tests; stops itself after 10 minutes (ONLY=<names> for part)
+	HYPOTHESIS_PROFILE=dev perl -e 'alarm shift; exec @ARGV' 600 uv run --frozen --group mutation mutmut run --max-children 6 $(ONLY)
 
 task-check: ## Before a task: dependencies done, requirements and tests named, ADRs Accepted (TASK=<id> [SPEC=<spec>], R17.4)
 	@$(UV) python -m scripts.checks.task_check $(if $(SPEC),--spec $(SPEC)) $(TASK)

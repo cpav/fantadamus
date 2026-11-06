@@ -176,9 +176,9 @@ def test_p6_simulate_is_repeatable() -> None:
         )
         for candidate in SQUAD
     ]
-    assert simulate(players, [(1.4, 1.2)], arrangements, rules, rounds=100) == simulate(
-        players, [(1.4, 1.2)], arrangements, rules, rounds=100
-    )
+    results = simulate(players, [(1.4, 1.2)], arrangements, rules, rounds=100)
+    assert results == simulate(players, [(1.4, 1.2)], arrangements, rules, rounds=100)
+    assert all(result.thresholds for result in results)  # each carries the league's thresholds
 
 
 def test_p2_a_clubs_keepers_never_start_together() -> None:

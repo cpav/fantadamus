@@ -2,12 +2,26 @@
 
 from __future__ import annotations
 
+import dataclasses
+import math
+import statistics
+from typing import Any
+
 import pytest
 
+from fantadamus.contracts.types import Role
+from fantadamus.contracts.xy.season import MantraRole
 from fantadamus.engine import keepers, outfield
-from fantadamus.engine.constants import GOAL_VOTE_LIFT, KEEPER_BETA
+from fantadamus.engine.constants import (
+    CAMEO_GOAL_VALUE,
+    GOAL_VOTE_LIFT,
+    KEEPER_BETA,
+    KEEPER_VOTE_NOISE,
+    VOTE_NOISE,
+)
 from fantadamus.engine.rank import Scoring
 from fantadamus.engine.simulate import (
+    Outfielder,
     draw_rounds,
     keeper_player,
     keeper_points,
@@ -59,3 +73,37 @@ def test_a_starter_gets_the_goals_and_assists_his_minutes_allow() -> None:
     drawn = draw_rounds([player], [(1.4, 1.0)], rounds=rounds, seed=31)
     assists = sum(round((scores[1] or 0.0) / 100) for scores, _ in drawn)
     assert assists / rounds == pytest.approx(value.e_assists, abs=0.012)  # 5 standard errors
+
+
+def _player(role: Role, mantra: MantraRole | None, **changes: Any) -> Outfielder:
+    inputs = outfield_inputs(role, mantra, team_xg=1.4, p_start=1.0, p_cameo=0.0, **changes)
+    return outfield_player(1, inputs, outfield.value(inputs, SCORING), SCORING, (0, 0))
+
+
+def test_his_mantra_role_decides_how_a_cameo_is_priced() -> None:
+    attacker = _player("A", "Pc")
+    assert attacker.priced_cameo
+    assert attacker.cameo_per_goal > 0
+    for flat in (_player("C", "C"), _player("D", None), _player("A", "C")):
+        assert (flat.priced_cameo, flat.cameo_per_goal) == (False, 0.0)
+
+
+def test_a_takers_cameo_can_score_from_the_spot() -> None:
+    """With no goals in the match, only a penalty can give a cameo a goal's value."""
+    assert _player("A", "Pc", penalty_taker=False).cameo_penalties == 0.0
+    taker = dataclasses.replace(_player("A", "Pc", penalty_taker=True), p_start=0.0, p_cameo=1.0)
+    assert taker.cameo_penalties > 0.0
+    rounds = 20_000
+    drawn = draw_rounds([taker], [(0.0, 1.0)], rounds=rounds, seed=5)
+    goals = sum(scores[1] == CAMEO_GOAL_VALUE for scores, _ in drawn)
+    assert goals / rounds == pytest.approx(1 - math.exp(-taker.cameo_penalties), abs=0.01)
+
+
+def test_how_much_a_rating_varies() -> None:
+    """With no goals in the match and no cards, all that moves a starter's points is his rating's noise."""
+    rounds = 5_000
+    striker = dataclasses.replace(STRIKER, p_yellow=0.0)
+    drawn = list(draw_rounds([striker, KEEPER], [(0.0, 0.0)], rounds=rounds, seed=9))
+    assert statistics.stdev(scores[1] or 0.0 for scores, _ in drawn) == pytest.approx(VOTE_NOISE, rel=0.05)
+    keeper = statistics.stdev(scores[2] or 0.0 for scores, _ in drawn)
+    assert keeper == pytest.approx(KEEPER_VOTE_NOISE, rel=0.05)

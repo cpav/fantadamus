@@ -110,7 +110,8 @@ the owner's review with task 3:
 - **mutmut 3.7** instead of 3.8, with `libcst<1.9`: mutmut 3.8 needs libcst 1.9, which ships no macOS
   x86_64 wheel for Python 3.12, so installing it on the owner's Intel Mac would need a Rust toolchain.
   *Removed 2026-10-26 (clean-up):* mutmut and the libcst pin left the project until mutation testing starts
-  in Phase 2.
+  in Phase 2. *Restored 2026-11-06* for Phase 2's gate, in a `mutation` dependency group that nothing installs by
+  default, run with `make mutate`.
 - **`cryptography<49` on Intel Macs only** (pulled in by moto and mcp), for the same reason: 49 and later
   ship no macOS x86_64 wheel. *Revised 2026-10-25 (task 7):* the dependency audit found three advisories
   in 48.0.1 (PYSEC-2026-3552, -3553, -3554, fixed in 49 and 50), so the constraint is now limited to

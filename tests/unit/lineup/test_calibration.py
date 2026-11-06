@@ -22,6 +22,7 @@ from fantadamus.domains.calibration import (
     SetReport,
     StatsLine,
     Tally,
+    Unscored,
     add_outcomes,
     brier,
     club_sheet,
@@ -29,6 +30,7 @@ from fantadamus.domains.calibration import (
     last_told,
     outcome_of,
     render,
+    round_frame,
     scored_chance,
     statistics_reads,
     summary_line,
@@ -369,3 +371,125 @@ def test_names_shared_over_a_match_keep_its_clubs_apart() -> None:
     assert p_start(home, shared) == pytest.approx(p_start(home, None))
     assert p_start(away, shared) == pytest.approx(p_start(away, None))
     assert p_start(away, shared) > p_start(home, shared)
+
+
+def test_the_report_word_for_word() -> None:
+    report = RoundReport(
+        round=11,
+        scored_at=T0,
+        told=SetReport(scored=[], unscored=[]),
+        model=SetReport(
+            scored=[scored_chance("Starting", [(0.9, True)])],
+            unscored=[Unscored(reason="Starting: no official lineup stored", count=2)],
+        ),
+        overrides=1,
+        override_cost=0.5,
+    )
+    assert render(report).splitlines() == [
+        "Round 11, scored 2026-11-06 19:45 UTC",
+        "The model on everyone",
+        "  Starting: Brier 0.010 over 1, against 0.000 for always guessing the average",
+        "    said 90%-100%: 90.0% on average, 100.0% happened, 1 players",
+        "  Couldn't score:",
+        "    Starting: no official lineup stored: 2",
+        "What users were told",
+        "  Nothing scored.",
+        "Overrides: 1, at a stated cost of 0.50 points",
+    ]
+
+
+def test_a_logged_line_without_the_chance_of_a_rating() -> None:
+    """A keeper: his chance of scoring isn't there, and his clean sheet still counts after it."""
+    tally = Tally()
+    add_outcomes(
+        tally,
+        Outcome(True, rated=True, scored=False, clean_sheet=True),
+        p_start=0.9,
+        p_rating=None,
+        p_scores=None,
+        p_clean_sheet=0.3,
+    )
+    report = tally.report()
+    assert [chance.chance for chance in report.scored] == ["Starting", "Clean sheet, if he started"]
+    assert report.unscored == [
+        Unscored(reason="Getting a rating: logged before the chance of a rating was", count=1)
+    ]
+
+
+def test_a_sheet_writes_a_name_its_own_way() -> None:
+    mates = [
+        KnownPlayer(player_id=1, name="Rossi A.", club="alfa"),
+        KnownPlayer(player_id=2, name="Verdi", club="alfa"),
+    ]
+    assert club_sheet([_official("Rossi", "starter")], mates).starters == frozenset({1})
+    assert club_sheet([_official("Verdi", "starter")], mates).starters == frozenset({2})
+    assert club_sheet([_official("A. Rossi", "starter")], mates).starters == frozenset({1})
+    squad = [
+        KnownPlayer(player_id=number, name=f"Alfa {word}", club="alfa")
+        for number, word in enumerate(("Uno", "Nove", "Dieci"))
+    ]
+    assert club_sheet([_official("Alfa N.", "starter")], squad).starters == frozenset({1})
+
+
+def test_a_round_finishes_at_its_last_kickoff_whatever_the_order() -> None:
+    rows = [_fixture(11, "gamma", "delta", LAST), _fixture(11, "alfa", "beta", T0)]
+    assert finished_round(rows, T0 + FINISHED_AFTER) is None
+    assert finished_round(rows, LAST + FINISHED_AFTER) == 11
+
+
+def test_a_rounds_frame() -> None:
+    frame = round_frame(FIXTURES, 11, T0 - dt.timedelta(days=1))
+    assert frame is not None
+    assert frame.round == 11
+    assert {(row.home, row.away) for row in frame.matches} == {("alfa", "beta"), ("gamma", "delta")}
+    assert (frame.first_kickoff, frame.last_kickoff) == (T0, LAST)
+    assert frame.next_kickoff == T0 + dt.timedelta(days=7)
+    assert frame.finished_at == LAST + FINISHED_AFTER
+    last = round_frame(FIXTURES, 12, T0)
+    assert last is not None
+    assert last.next_kickoff is None
+    assert round_frame(FIXTURES, 99, T0) is None
+    assert round_frame(FIXTURES, 11, T0 - dt.timedelta(days=30)) is None  # not read yet
+
+
+def test_nothing_stops_at_a_player_who_doesnt_count() -> None:
+    """Another round's line, or one after his kickoff, doesn't hide the lines after it."""
+    early = T0 - dt.timedelta(days=2)
+    decisions = [
+        _decision(early, _logged(4, 0.3), round=10),
+        _decision(T0 + dt.timedelta(minutes=1), _logged(1, 0.99)),
+        _decision(early, _logged(1, 0.5), _logged(2, 0.4)),
+    ]
+    assert _last(decisions) == {1: 0.5, 2: 0.4}
+    told = last_told(
+        [_decision(early, _logged(9, 0.5), _logged(1, 0.7))],
+        11,
+        lambda player_id: T0 if player_id == 1 else None,
+    )
+    assert set(told) == {1}
+
+
+def test_a_line_at_the_kickoff_is_too_late() -> None:
+    assert _last([_decision(T0, _logged(1, 0.9), logged_at=T0 - dt.timedelta(hours=1))]) == {}
+    assert _last([_decision(T0 - dt.timedelta(hours=1), _logged(1, 0.9), logged_at=T0)]) == {}
+
+
+def test_what_isnt_known_is_named_for_every_chance() -> None:
+    sheet = ClubSheet(frozenset({1}), frozenset({1}), False)
+    reason = "no statistics read before the round"
+    assert outcome_of(1, sheet, None, None) == Outcome(True, reason, reason, reason)
+    before = {1: StatsLine(rated_appearances=8, goals=2, goals_conceded=5)}
+    missing = "not on the statistics page before and after the round"
+    assert outcome_of(1, sheet, before, {}) == Outcome(True, missing, missing, missing)
+    unknown = {1: StatsLine(rated_appearances=8, goals=2, goals_conceded=None)}
+    conceded = "his goals conceded aren't known"
+    assert outcome_of(1, sheet, before, unknown).clean_sheet == conceded
+    assert outcome_of(1, sheet, unknown, before).clean_sheet == conceded
+    moved = {1: StatsLine(rated_appearances=9, goals=2, goals_conceded=5)}
+    assert outcome_of(1, sheet, before, moved) == Outcome(True, rated=True, scored=False, clean_sheet=True)
+
+
+def test_a_store_makes_its_own_folders(tmp_path: Path) -> None:
+    store = CalibrationStore(tmp_path / "local" / "calibration")
+    store.set(_report())
+    assert store.get(11) is not None

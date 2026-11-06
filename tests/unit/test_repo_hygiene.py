@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import plistlib
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -194,3 +195,35 @@ def test_player_guide_covers_the_lineup() -> None:
         assert part in full, part
     assert "Built in `mvp-lineup`" in formats.split("## 3. The formation call", 1)[1].split("## 4.", 1)[0]
     assert "Built in `mvp-lineup`" in formats.split("## 6. The bench order", 1)[1].split("## Later", 1)[0]
+
+
+def test_mutation_run_stays_fast() -> None:
+    """Phase gate (`quality.md`). `mutmut` forks for each change and DuckDB hangs in a fork, so any test that
+    reaches the lake hangs until its timeout and counts as a kill. A real run spent 97% of its time on that,
+    and the score was false. The run uses fast tests only, and stops itself."""
+    config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    mutmut = config["tool"]["mutmut"]
+    assert mutmut["only_mutate"] == ["src/fantadamus/engine/*", "src/fantadamus/domains/calibration.py"]
+
+    selected: set[Path] = set()
+    for path in mutmut["pytest_add_cli_args_test_selection"]:
+        selected.update((ROOT / path).glob("test_*.py"))
+    ignored = {
+        ROOT / arg.removeprefix("--ignore=")
+        for arg in mutmut["pytest_add_cli_args"]
+        if arg.startswith("--ignore=")
+    }
+    assert ignored <= selected
+    assert len(selected - ignored) > 25
+    for test in selected - ignored:
+        text = test.read_text(encoding="utf-8")
+        for slow in ("LakeStore", "duckdb", "_harness", "fantadamus.mcp"):
+            assert slow not in text, f"{test.name} reaches the lake or the tools: {slow}"
+    assert "--timeout=30" in mutmut["pytest_add_cli_args"]
+
+    target = (ROOT / "Makefile").read_text(encoding="utf-8").split("\nmutate:", 1)[1].split("\n\n", 1)[0]
+    assert "alarm" in target
+    assert "600" in target
+    assert "HYPOTHESIS_PROFILE=dev" in target
+    assert "--group mutation" in target
+    assert "mutants/" in (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
