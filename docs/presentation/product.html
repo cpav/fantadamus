@@ -292,6 +292,7 @@
   }
   .ask:first-child { border-top: none; }
   .ask h3 { font-family: var(--display); font-weight: 800; font-size: 25px; text-transform: uppercase; line-height: 1.05; }
+  .ask h3 small { display: block; margin-top: 4px; font-family: var(--data); font-size: 11.5px; font-weight: 400; letter-spacing: .1em; color: var(--sub); }
   .ask > div { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
   .ask .say { font-family: var(--data); font-size: 14px; color: var(--accent); }
   .ask p { font-size: 16px; color: var(--sub); }
@@ -388,8 +389,8 @@
     <h1>Who do I field <em>this round?</em></h1>
     <p class="lede">
       Fantadamus answers the question every Fantacalcio player asks before the deadline. You ask in your
-      own Claude app; it picks your eleven, your bench and your formation, or answers "X or Y?", with the reasons and what to
-      check before the lineups lock.
+      own Claude app; it picks your eleven, your bench and your formation, or answers "X or Y?", with the
+      reasons and what to check before the lineups lock.
     </p>
 
     <div class="board" aria-label="A sample answer">
@@ -450,16 +451,17 @@
         </div>
       </div>
       <div class="ask">
-        <h3>The fixture</h3>
+        <h3>The fixture <small>coming next</small></h3>
         <div>
           <span class="say">“What's the story for Genoa–Lazio?”</span>
           <p>Form, goals for and against, injuries, suspensions, penalty takers and midweek European games,
-            plus what each means for the players you own.</p>
+            plus what each means for the players you own. Not built yet.</p>
         </div>
       </div>
     </div>
-    <p class="caption">It plays by your league's rules: bonuses, maluses, modifiers, bench size and
-      substitutions. Tell it once and it remembers. If you don't, it uses standard Classic rules and says so.</p>
+    <p class="caption">It plays by your league's rules: bonuses, maluses, goal thresholds, bench size,
+      substitutions and formations. Tell it once and it remembers. Modifiers are still to come: until then, it
+      says its score leaves them out.</p>
   </section>
 
   <section class="sec" aria-labelledby="how-title">
@@ -493,8 +495,8 @@
       </div>
       <div class="rule">
         <h3>Disagreement stays visible</h3>
-        <p>Probable lineups come from two or three outlets. When they disagree, the answer says so instead of
-          averaging it away.</p>
+        <p>Probable lineups come from four outlets. When they disagree, the answer says so and shows how far
+          apart they are.</p>
       </div>
       <div class="rule">
         <h3>News moves certainty</h3>
@@ -511,16 +513,17 @@
 
   <section class="sec" aria-labelledby="flow-title">
     <span class="label">What happens when you ask</span>
-    <h2 id="flow-title">Your Claude reads, Fantadamus decides</h2>
+    <h2 id="flow-title">Fantadamus reads, your Claude fills the gaps</h2>
     <ol class="steps">
       <li><div>
         <h3>You ask in your Claude app</h3>
         <span class="say">“Beto o Laurienté?”</span>
       </div></li>
       <li><div>
-        <h3>If anything is stale, your Claude fetches it</h3>
-        <p>Fantadamus says which facts are missing and which approved sites have them. Your Claude reads
-          those pages and hands over what they say, with the link and the time.</p>
+        <h3>If anything is stale, it gets read again</h3>
+        <p>Fantadamus reads the round's lineups and odds and everyone's season figures from approved sites
+          itself. For the few other pages, your Claude reads them and hands over what they say, with the link
+          and the time.</p>
         <span class="say">refreshing Genoa's lineup news…</span>
       </div></li>
       <li><div>
@@ -530,8 +533,8 @@
       </div></li>
       <li><div>
         <h3>You get the answer</h3>
-        <p>The verdict, the margin and the reasons, each traceable to its source. Facts one of you collects
-          serve the other too.</p>
+        <p>The verdict, the margin and the reasons, each traceable to its source. Once it's online, facts read
+          for one player serve the others too.</p>
       </div></li>
     </ol>
   </section>
@@ -543,7 +546,7 @@
       <div class="panel">
         <h3>Cost</h3>
         <ul>
-          <li><b>Nothing to subscribe to.</b> It runs inside your Claude app, so collecting uses your Claude
+          <li><b>Nothing to subscribe to.</b> It runs inside your Claude app, so the conversation uses your Claude
             plan's allowance.</li>
           <li><b>Hosting costs cents.</b> At two players' volume the AWS bill is expected to stay in cents
             a month, with a €20 budget alarm to catch mistakes.</li>
