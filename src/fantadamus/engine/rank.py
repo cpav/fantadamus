@@ -45,6 +45,11 @@ class Option(BaseModel):
     e_cameo: float
     """What that rating is worth."""
 
+    @property
+    def p_rating(self) -> float:
+        """His chance of a rating, whichever way he gets it."""
+        return self.p_start + self.p_cameo
+
     def figures(self) -> dict[str, float]:
         return {
             "p_start": self.p_start,
@@ -92,11 +97,6 @@ def label(margin: float) -> Label:
     return "lean" if margin <= CLEAR else "clear"
 
 
-def _rating(option: Option) -> float:
-    """His chance of a rating."""
-    return option.p_start + option.p_cameo
-
-
 def _rank(option: Option) -> tuple[float, float, str]:
     return key(**option.figures()), no_cover(**option.figures()), option.name
 
@@ -106,7 +106,7 @@ def verdict(a: Option, b: Option) -> Verdict:
     first, second = sorted((a, b), key=_rank, reverse=True)
     covered = max((a, b), key=lambda option: (no_cover(**option.figures()), option.name))
     key_margin = _rank(first)[0] - _rank(second)[0]
-    both_rated = _rating(first) * _rating(second)
+    both_rated = first.p_rating * second.p_rating
     margin = both_rated * key_margin if both_rated else key_margin
     return Verdict(
         first=first.name,
@@ -116,8 +116,8 @@ def verdict(a: Option, b: Option) -> Verdict:
         label=label(margin),
         no_cover_first=covered.name,
         no_cover_differs=covered.name != first.name,
-        first_plays=_rating(first) > 0,
-        second_plays=_rating(second) > 0,
+        first_plays=first.p_rating > 0,
+        second_plays=second.p_rating > 0,
     )
 
 

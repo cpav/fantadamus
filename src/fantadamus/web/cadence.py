@@ -79,11 +79,13 @@ def due(
 
 def may_read(fact: str, log: CollectLog | None, now: dt.datetime) -> bool:
     """Whether an answer may ask the collector for `fact` now (mvp-collect R1.4)."""
+    return may_read_page("statistics" if fact in STATS_FACTS else "round", log, now)
+
+
+def may_read_page(page: PageKind, log: CollectLog | None, now: dt.datetime) -> bool:
+    """Whether this kind of page may be read now: each has its shortest interval."""
     if log is None:
         return True
-    page: PageKind = (
-        "statistics" if fact in STATS_FACTS else "finished_round" if fact == "finished_round" else "round"
-    )
     last = log.last_attempt(now, page)
     return last is None or now - last >= _ON_DEMAND_EVERY[page]
 

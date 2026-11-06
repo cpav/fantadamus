@@ -21,7 +21,6 @@ from fantadamus.domains.availability.silver import (
 from fantadamus.domains.calibration import (
     STARTING,
     THE_REST,
-    CalibrationStore,
     ClubSheet,
     RoundFrame,
     RoundReport,
@@ -51,17 +50,17 @@ from fantadamus.domains.season.gold import (
 from fantadamus.domains.season.silver import PLAYER_SEASONS, SEASON_STATS, PlayerSeasonRow
 from fantadamus.engine.keepers import KeeperValue
 from fantadamus.engine.outfield import OutfieldValue
-from fantadamus.lake.collect_log import CollectLog
+from fantadamus.lake.calibration_store import CalibrationStore
+from fantadamus.lake.collect_log import WORKED, CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, scoring_for
 from fantadamus.league.squads import MINE
 from fantadamus.mcp.advisor import Facts, PlayerFacts, model_inputs, model_value, takes_penalties
-from fantadamus.web.cadence import may_read
+from fantadamus.web.cadence import may_read, may_read_page
 from fantadamus.web.collector import Collector, CollectReport
 
 _QUIET_BEFORE_DEADLINE = dt.timedelta(hours=1)
-_WORKED = {"stored", "unchanged"}
 
 
 @dataclass(frozen=True)
@@ -113,15 +112,7 @@ class Calibrator:
         return statistics_reads(changed, frame, worked=[*same, *self._worked(now)])[1] is not None
 
     def _worked(self, now: dt.datetime) -> list[dt.datetime]:
-        """When the statistics page was read, whether or not it had changed."""
-        if self.collect_log is None:
-            return []
-        return [
-            run.started_at
-            for run in self.collect_log.runs()
-            for page in run.pages
-            if page.page == "statistics" and page.outcome in _WORKED and run.started_at <= now
-        ]
+        return self.collect_log.worked("statistics", now) if self.collect_log is not None else []
 
     def _statistics_ready(self, frame: RoundFrame, now: dt.datetime) -> bool:
         """Whether scoring can go ahead: a read of the statistics page after the round, read now if need be,
@@ -140,11 +131,11 @@ class Calibrator:
         """Whether the round's page gave who started: it's asked again later if not (R7.2)."""
         if self.collector is None:
             return True
-        if wait and not may_read("finished_round", self.collect_log, now):
+        if wait and not may_read_page("finished_round", self.collect_log, now):
             return False
         report = self.collector.collect_finished(round)
         self._logged(report)
-        return all(page.outcome in _WORKED for page in report.pages)
+        return all(page.outcome in WORKED for page in report.pages)
 
     def _logged(self, report: CollectReport) -> None:
         if self.collect_log is not None:
@@ -322,7 +313,7 @@ def _score_match(
             tally,
             outcome,
             p_start=value.p_start,
-            p_rating=value.p_start + value.p_cameo,
+            p_rating=value.p_rating,
             p_scores=value.p_scores if isinstance(value, OutfieldValue) else None,
             p_clean_sheet=value.p_clean_sheet if isinstance(value, KeeperValue) else None,
         )

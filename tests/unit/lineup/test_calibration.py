@@ -14,7 +14,6 @@ from fantadamus.domains.availability.silver import LineupViewRow, OfficialLineup
 from fantadamus.domains.calibration import (
     FINISHED_AFTER,
     Bucket,
-    CalibrationStore,
     ClubSheet,
     Outcome,
     RoundFrame,
@@ -38,6 +37,7 @@ from fantadamus.domains.calibration import (
 )
 from fantadamus.domains.fixtures.silver import FixtureRow
 from fantadamus.domains.players.resolve import KnownPlayer
+from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.decision_log import Decision, LoggedPlayer
 from fantadamus.league.rules import CLASSIC, StoredRules
 
