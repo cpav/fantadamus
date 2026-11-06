@@ -61,6 +61,17 @@ def test_finished_rounds_give_every_official_lineup() -> None:
         assert len(facts.officials) == (len(facts.fixtures.matches) if finished else 0), path.name
 
 
+@pytest.mark.skipif(
+    not ROUNDS, reason="no real pages saved under data/private/pages/, which is never committed"
+)
+def test_every_match_with_odds_gives_its_goals_chance() -> None:
+    """The page names whichever side of 3 goals is likelier. Reading only "3 o più" lost the figure for about
+    two matches a round, and the answers said the page didn't carry it."""
+    for path in ROUNDS:
+        facts = read_round(path.read_text(encoding="utf-8"))
+        assert all(odds.payload.over_2_5_percent is not None for odds in facts.odds), path.name
+
+
 def _published(html: str) -> set[tuple[str, str]]:
     """The matches whose lineup tables the page shows, from the HTML itself: early in the week, none."""
     published = set()

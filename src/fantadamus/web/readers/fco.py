@@ -152,7 +152,7 @@ def _read_match(pane: Element, home: str, away: str, kickoff: dt.datetime, found
             found.problems.append(f"{home} v {away}, {what}: {error.errors()[0]['msg']}")
             return None
 
-    price = _odds(pane, home, away)
+    price = _odds(pane, home, away, found)
     if price is not None:
         prices, over3, updated = price
         payload = attempt(
@@ -201,8 +201,22 @@ def _decimal(text: str) -> float:
     return float(text.replace(",", "."))
 
 
-def _odds(pane: Element, home: str, away: str) -> tuple[dict[str, float], float | None, str | None] | None:
-    """The 1X2 odds, the chance of 3+ goals and the update text; None when the page shows no odds yet."""
+def _over3(line: str) -> float | None:
+    """The chance of 3 or more goals from the page's goals line, which names the likelier side: "3 o più 53%",
+    or "meno di 3 55%", which is 45%. None when it reads neither way."""
+    percent = _PERCENT.search(line)
+    if percent is None:
+        return None
+    if "3 o più" in line:
+        return _decimal(percent.group(1))
+    return 100 - _decimal(percent.group(1)) if "meno di 3" in line else None
+
+
+def _odds(
+    pane: Element, home: str, away: str, found: _Found
+) -> tuple[dict[str, float], float | None, str | None] | None:
+    """The 1X2 odds, the chance of 3+ goals and the update text; None when the page shows no odds yet. A goals
+    line that doesn't read is named in `found.problems`, and the odds still count."""
     boxes = pane.find_all("div", "stp-qbox")
     if not boxes:
         return None
@@ -221,8 +235,10 @@ def _odds(pane: Element, home: str, away: str) -> tuple[dict[str, float], float 
         text = item.text()
         if item.has_class("prb-sintesi__ora"):
             updated = text
-        elif "3 o più" in text and (percent := _PERCENT.search(text)):
-            over3 = _decimal(percent.group(1))
+        elif "Gol attesi" in text:
+            over3 = _over3(text)
+            if over3 is None:
+                found.problems.append(f"{home} v {away}: the goals line doesn't read")
     return prices, over3, updated
 
 

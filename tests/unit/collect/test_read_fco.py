@@ -50,6 +50,21 @@ def test_round_page_facts() -> None:
     assert gazzetta.away_team.unavailable == ["QUATTORDICI B"]
 
 
+def test_fewer_than_three_goals_is_read_back() -> None:
+    """The page names the likelier side: "meno di 3 55%" means a 45% chance of 3 or more goals."""
+    facts = read_round(fco_round_page(FcoMatch("Alfa", "Beta", goals="meno di 3", over3="55%")), round=10)
+    assert facts.odds[0].payload.over_2_5_percent == 45
+    assert not facts.problems
+
+
+def test_a_goals_line_that_does_not_read_is_named() -> None:
+    """A new wording mustn't look like a page without the figure: the odds stay, and the problem is named."""
+    facts = read_round(fco_round_page(FcoMatch("Alfa", "Beta", goals="2 o più")), round=10)
+    assert facts.odds[0].payload.over_2_5_percent is None
+    assert facts.odds[0].payload.home_win == 2.1
+    assert facts.problems == ["Alfa v Beta: the goals line doesn't read"]
+
+
 def test_page_average_skipped() -> None:
     facts = read_round(PAGE, round=10)
     assert sorted(view.outlet for view in facts.outlets) == sorted(
