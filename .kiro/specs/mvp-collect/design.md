@@ -99,7 +99,8 @@ the match tabs at the top; corrected 2026-10-31 from the real page). In each:
 - **The match:** the home and away names (`.prb-incontro__nome`) and the kickoff (`.prb-incontro__data`,
   "31/10/2026 15:00" in Italian time), read into `FixturesPayload`.
 - **The odds:** three `.stp-qbox` blocks give the 1X2 decimal odds. `.prb-sintesi__mercati` gives "Gol attesi
-  3 o più 53%". `.prb-sintesi__ora` gives "quote aggiornate il 30 ottobre alle 18:13", which becomes the facts'
+  3 o più 53%" or, when fewer goals are likelier, "Gol attesi meno di 3 55%", which is 45%; a goals line that
+  reads neither way is reported as a problem. `.prb-sintesi__ora` gives "quote aggiornate il 30 ottobre alle 18:13", which becomes the facts'
   `published_at`. Together they make a `MatchOddsPayload` with `over_2_5_percent` (C4), bookmaker
   "Fantacalcio-Online".
 - **Each team** is a `section.prb-squadra--home` or `--away`, headed by `h2.prb-squadra__nome`, with two tables

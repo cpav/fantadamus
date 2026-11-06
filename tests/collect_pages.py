@@ -30,6 +30,7 @@ class FcoMatch:
     kickoff: str = "31/10/2026 15:00"
     odds: tuple[str, str, str] | None = ("2,10", "3,30", "3,60")  # None: no odds shown yet
     over3: str = "53%"
+    goals: str = "3 o più"  # the side of 3 goals that `over3` is the chance of: the page names the likelier
     updated: str = "quote aggiornate il 30 ottobre alle 18:13"
     percents: Mapping[str, tuple[int | None, ...]] = field(default_factory=dict)  # None: the outlet's dash
     confirmed: bool = False  # True: the 11 probable starters are the real ones, all marked
@@ -139,7 +140,7 @@ def _fco_summary(match: FcoMatch) -> str:
     return (
         f'<div class="prb-sintesi"><div class="prb-sintesi__quote">{boxes}</div>'
         '<ul class="prb-sintesi__mercati">'
-        f"<li><span>Gol attesi</span> <b>3 o più</b> <i>{match.over3}</i></li>"
+        f"<li><span>Gol attesi</span> <b>{match.goals}</b> <i>{match.over3}</i></li>"
         f'<li class="prb-sintesi__ora">{match.updated}</li></ul></div>'
     )
 
