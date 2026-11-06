@@ -67,8 +67,9 @@ P(scores)  = 1 − e^(−E[goals])
   with a Poisson model and a Dixon-Coles low-score correction. Without lines, use regressed team form
   (§A5).
 - **Goal share** is his share of the team's goals while he's on the pitch, shrunk toward a role prior:
-  `(prior × W + his goals) / (W + team goals in his games)`. Use xG share instead of goals when it's
-  available; it settles much faster.
+  `(prior × W + his open-play goals) / (W + team goals in his games)`. Penalties he has scored don't count,
+  because the penalty term below prices them; team goals keep theirs, as team xG does. Use xG share instead of
+  goals when it's available; it settles much faster.
   - Goal-share priors *(start)*: centre-forward 0.30, second striker 0.20, attacking midfielder or wide
     forward 0.15, central midfielder 0.06, wing-back 0.04, full-back 0.03, aerial centre-back 0.05.
   - Assist-share priors *(start)*: attackers 0.10–0.12, midfielders and wing-backs 0.08, other defenders
