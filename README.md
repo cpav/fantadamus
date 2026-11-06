@@ -15,15 +15,15 @@ published copies.
 ## How it works
 
 ```text
-your Claude app ──ask──▶ best_lineup, compare_players… ──▶ collector reads its two pages ──▶ checks ──▶ bronze ─▶ silver ─▶ gold ─▶ engine
+your Claude app ──ask──▶ best_lineup, compare_players… ──▶ collector reads its pages ──▶ checks ──▶ bronze ─▶ silver ─▶ gold ─▶ engine
        │                      │                                                                         ▲
        │                      └─▶ answer, or a plan for what's still missing                            │
        └─read_page (Fantadamus fetches the listed page) ──▶ submit tools ───────────────────────────────┘
 ```
 
-- **Fantadamus collects, Claude fills the gaps, the tools decide.** Fantadamus reads two pages itself,
+- **Fantadamus collects, Claude fills the gaps, the tools decide.** Fantadamus reads three pages itself,
   politely: Fantacalcio-Online's round page (fixtures, four outlets' chances of starting, official lineups and
-  odds) and Fantacalcio.it's statistics page (every player's season figures). For the rest, Claude reads the listed pages through `read_page`, which fetches them, and submits what they say.
+  odds), and Fantacalcio.it's statistics page (every player's season figures) and penalty-takers page. For the rest, Claude reads the listed pages through `read_page`, which fetches them, and submits what they say.
   Fantadamus checks every fact, stores it, and computes every probability in tested Python
   ([ADR-0006](docs/adr/0006-mvp-fantadamus-collects-round-facts.md)).
 - **The method** is the owner's own: [`docs/method.md`](docs/method.md). Bonuses are priced from the betting

@@ -52,10 +52,11 @@ class OutfieldInputs(BaseModel):
     assists: int
     yellow_cards: int
     club_goals_per_match: float
-    penalty_taker: bool
+    penalty_share: float
+    """His share of his club's penalties: all of them if he's listed first, and what those ahead of him leave
+    otherwise (mvp-lineup R10.1)."""
     penalties_scored: int = 0
     """Among his goals. They stay out of his goal share: his penalty term prices them (mvp-lineup R8.4)."""
-    """His club's first penalty taker."""
     team_xg: float
     p_win: float
     p_loss: float
@@ -112,9 +113,9 @@ def expected_goals(team_xg: float, share: float, *, minutes: float) -> float:
     return team_xg * share * minutes
 
 
-def penalty_goals(*, minutes: float, taker: bool) -> float:
-    """Penalty goals expected for his club's first taker, in his minutes (R9.5; mvp-roles R2.4)."""
-    return PENALTY_RATE * PENALTY_CONVERSION * minutes if taker else 0.0
+def penalty_goals(*, minutes: float, share: float) -> float:
+    """Penalty goals expected in his minutes, for his share of them (R9.5; mvp-lineup R10.1)."""
+    return PENALTY_RATE * PENALTY_CONVERSION * minutes * share
 
 
 def p_scores(goals: float) -> float:
@@ -143,7 +144,7 @@ def value(player: OutfieldInputs, scoring: Scoring) -> OutfieldValue:
     goal_share = share(prior.goal, events=open_play, team_goals=team_goals, weight=weight)
     assist_share = share(prior.assist, events=player.assists, team_goals=team_goals, weight=weight)
     open_goals = expected_goals(player.team_xg, goal_share, minutes=prior.minutes)
-    penalties = penalty_goals(minutes=prior.minutes, taker=player.penalty_taker)
+    penalties = penalty_goals(minutes=prior.minutes, share=player.penalty_share)
     assists = expected_goals(player.team_xg, assist_share, minutes=prior.minutes)
     yellow = p_yellow(player.yellow_cards, appearances=player.appearances)
     vote = expected_vote(
@@ -157,7 +158,7 @@ def value(player: OutfieldInputs, scoring: Scoring) -> OutfieldValue:
         + scoring.yellow * yellow
     )
     cameo_goals = expected_goals(player.team_xg, goal_share, minutes=MINUTES_CAMEO) + penalty_goals(
-        minutes=MINUTES_CAMEO, taker=player.penalty_taker
+        minutes=MINUTES_CAMEO, share=player.penalty_share
     )
     rated, cameo = cameo_rating(cameo_goals) if prior.priced_cameo else (1.0, CAMEO_FLAT)
     p_cameo = player.p_cameo * rated

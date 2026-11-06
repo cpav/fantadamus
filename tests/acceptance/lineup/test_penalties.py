@@ -21,13 +21,13 @@ def _forward(**changes: Any) -> outfield.OutfieldInputs:
 
 def test_at17_a_share_counts_open_play_goals() -> None:
     """A centre-forward's prior is 0.30 at a weight of 15, and his club scores 1.5 a match over his 10."""
-    value = outfield.value(_forward(goals=5, penalties_scored=3, penalty_taker=True), CLASSIC)
+    value = outfield.value(_forward(goals=5, penalties_scored=3, penalty_share=1.0), CLASSIC)
     assert value.goal_share == pytest.approx((0.30 * 15 + 2) / (15 + 15))
 
 
 def test_at17_the_same_open_play_goals_the_same_share() -> None:
-    taker = outfield.value(_forward(goals=5, penalties_scored=3, penalty_taker=True), CLASSIC)
-    open_play = outfield.value(_forward(goals=2, penalties_scored=0, penalty_taker=True), CLASSIC)
+    taker = outfield.value(_forward(goals=5, penalties_scored=3, penalty_share=1.0), CLASSIC)
+    open_play = outfield.value(_forward(goals=2, penalties_scored=0, penalty_share=1.0), CLASSIC)
     assert taker.goal_share == pytest.approx(open_play.goal_share)
     assert taker.p_scores == pytest.approx(open_play.p_scores)
     assert taker.key == pytest.approx(open_play.key)

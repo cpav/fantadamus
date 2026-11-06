@@ -66,9 +66,9 @@ async def test_statuses(tmp_path: Path) -> None:
         assert "set_squad" in no_squad["message"]
 
         await here.set_squad()
-        needed = await here.ask()  # the pages are read, but nothing gives the table or the takers
+        needed = await here.ask()  # the pages are read, but nothing gives the table
         assert needed["status"] == "refresh"
-        assert {item["fact"] for item in needed["refresh"]} == {"team_season", "penalty_takers"}
+        assert {item["fact"] for item in needed["refresh"]} == {"team_season"}
         assert needed["lineup"] is None
 
 

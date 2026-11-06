@@ -19,6 +19,9 @@ round = "https://www.fantacalcio-online.com/it/serie-a/2026-2027/probabili-forma
 # Fantacalcio.it's statistics page: every player's season figures, read daily (mvp-roles R1). Set
 # `statistics_enabled = false` to switch it off: Claude then reads them through read_page.
 statistics = "https://www.fantacalcio.it/statistiche-serie-a"
+# Fantacalcio.it's penalty takers, read daily (mvp-lineup R10.3). Set `takers_enabled = false` to switch it off:
+# Claude then reads them through read_page.
+takers = "https://www.fantacalcio.it/rigoristi-serie-a"
 
 [facts.fixtures]
 need = "N2"

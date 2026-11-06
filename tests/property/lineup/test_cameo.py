@@ -32,7 +32,7 @@ def test_p11_chance_and_key_reproduce_the_simulated_mean(
         appearances=8,
         goals=3,
         team_xg=team_xg,
-        penalty_taker=taker,
+        penalty_share=float(taker),
         p_start=p_start,
         p_cameo=comes_on,
     )

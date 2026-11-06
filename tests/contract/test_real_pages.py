@@ -13,6 +13,7 @@ from fantadamus.core.clubs import Clubs
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
 from fantadamus.web.html import parse
 from fantadamus.web.readers.fcit_stats import read_stats
+from fantadamus.web.readers.fcit_takers import read_takers
 from fantadamus.web.readers.fco import read_round
 from fantadamus.web.text import page_text, parts
 
@@ -20,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PAGES = ROOT / "data" / "private" / "pages"
 SAVED = sorted(PAGES.glob("*.html")) if PAGES.is_dir() else []
 STATS = PAGES / "fcit-statistiche.html"
+TAKERS = PAGES / "fcit-rigoristi.html"
 ROUNDS = [path for path in SAVED if path.name.startswith("fco-round")]
 CLUBS = Clubs.from_toml((ROOT / "config" / "clubs.toml").read_text(encoding="utf-8"))
 RESOLVED = 0.95
@@ -70,6 +72,17 @@ def test_every_match_with_odds_gives_its_goals_chance() -> None:
     for path in ROUNDS:
         facts = read_round(path.read_text(encoding="utf-8"))
         assert all(odds.payload.over_2_5_percent is not None for odds in facts.odds), path.name
+
+
+@pytest.mark.skipif(
+    not TAKERS.exists(), reason="no real pages saved under data/private/pages/, which is never committed"
+)
+def test_every_club_on_the_takers_page() -> None:
+    """Every club has a list, under a name the club list knows, or a club's penalties would go unread."""
+    facts = read_takers(TAKERS.read_text(encoding="utf-8"))
+    assert not facts.problems
+    assert len(facts.payload.clubs) == len(CLUBS.names)
+    assert all(CLUBS.key(club.club) for club in facts.payload.clubs)
 
 
 def _published(html: str) -> set[tuple[str, str]]:

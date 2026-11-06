@@ -33,11 +33,12 @@ from fantadamus.domains.facts import (
 from fantadamus.domains.fixtures.silver import FIXTURES
 from fantadamus.domains.freshness import FACTS_WINDOW
 from fantadamus.domains.odds.silver import ODDS
-from fantadamus.domains.season.silver import SEASON_STATS
+from fantadamus.domains.season.silver import PENALTY_TAKERS, SEASON_STATS
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.web.fetch import DisallowedError, Fetcher, FetchError, HostBlockedError, NotAllowedError, Page
 from fantadamus.web.readers import UnreadablePageError
 from fantadamus.web.readers.fcit_stats import StatsFacts, read_stats
+from fantadamus.web.readers.fcit_takers import TakersFacts, read_takers
 from fantadamus.web.readers.fco import RoundFacts, read_round
 
 DEFAULT_READING_LIST = Path("config/reading_list.toml")
@@ -46,8 +47,24 @@ ROUND_FACTS = ("fixtures", "probable_lineups", "official_lineups", "match_odds")
 """The reading list's facts the round page carries: Claude's to read when the page can't be used."""
 STATS_FACTS = ("player_season",)
 """And the statistics page's (mvp-roles R1.6)."""
-FACTS = ROUND_FACTS + STATS_FACTS
-PageKind = Literal["round", "statistics", "finished_round"]
+TAKERS_FACTS = ("penalty_takers",)
+"""And the penalty-takers page's (mvp-lineup R10.3)."""
+FACTS = ROUND_FACTS + STATS_FACTS + TAKERS_FACTS
+PageKind = Literal["round", "statistics", "finished_round", "takers"]
+PAGE_FACTS: dict[PageKind, tuple[str, ...]] = {
+    "round": ROUND_FACTS,
+    "finished_round": ROUND_FACTS,
+    "statistics": STATS_FACTS,
+    "takers": TAKERS_FACTS,
+}
+
+
+def page_of(fact: str) -> PageKind:
+    """The kind of page that carries `fact`."""
+    if fact in STATS_FACTS:
+        return "statistics"
+    return "takers" if fact in TAKERS_FACTS else "round"
+
 
 Outcome = Literal[
     "stored",
@@ -74,6 +91,9 @@ class CollectorConfig(BaseModel):
     statistics: str | None = None
     """The statistics page; None reads none (mvp-roles R1.1)."""
     statistics_enabled: bool = True
+    takers: str | None = None
+    """The penalty-takers page; None reads none (mvp-lineup R10.3)."""
+    takers_enabled: bool = True
 
 
 def load_collector(path: Path = DEFAULT_READING_LIST) -> CollectorConfig:
@@ -122,6 +142,11 @@ def season_submissions(facts: StatsFacts) -> Submissions:
     return {SEASON_STATS: [Submission(facts.payload)]}
 
 
+def takers_submissions(facts: TakersFacts) -> Submissions:
+    """The penalty-takers page's one read, ready to store (mvp-lineup C13)."""
+    return {PENALTY_TAKERS: [Submission(facts.payload)]}
+
+
 def to_store(new: Submissions, last: Mapping[str, set[str]]) -> Submissions:
     """The kinds of fact whose payloads differ from the page's last stored read (`last`, content hashes by
     domain source): the rest would store nothing new."""
@@ -154,11 +179,15 @@ class Collector:
 
     def reads(self, fact: str) -> bool:
         """Whether a page this collector reads carries `fact`."""
-        return fact in ROUND_FACTS or (fact in STATS_FACTS and self.config.statistics is not None)
+        return (
+            fact in ROUND_FACTS
+            or (fact in STATS_FACTS and self.config.statistics is not None)
+            or (fact in TAKERS_FACTS and self.config.takers is not None)
+        )
 
     def collect(self, round: int | None = None, facts: Collection[str] | None = None) -> CollectReport:
         """Read the pages that carry `facts`, by default the round page and, without `round`, the statistics
-        page: round `round`'s page, or the current round's. Store what's new."""
+        and penalty-takers pages: round `round`'s page, or the current round's. Store what's new."""
         started = self.clock()
         wanted = set(facts) if facts is not None else set(ROUND_FACTS if round is not None else FACTS)
         fetcher = self.fetcher()
@@ -167,6 +196,8 @@ class Collector:
             reports.append(self._round_page(fetcher, round))
         if wanted & set(STATS_FACTS) and self.config.statistics is not None:
             reports.append(self._statistics_page(fetcher, self.config.statistics))
+        if wanted & set(TAKERS_FACTS) and self.config.takers is not None:
+            reports.append(self._takers_page(fetcher, self.config.takers))
         return CollectReport(started_at=started, finished_at=self.clock(), round=round, pages=reports)
 
     def collect_finished(self, round: int) -> CollectReport:
@@ -202,6 +233,18 @@ class Collector:
         except UnreadablePageError as error:
             return _unreadable(fetched, "statistics", STATS_FACTS, error)
         return self._store(fetched, "statistics", STATS_FACTS, season_submissions(facts), facts.problems)
+
+    def _takers_page(self, fetcher: Fetcher, url: str) -> PageReport:
+        if not self.config.takers_enabled:
+            return PageReport(url=url, page="takers", outcome="switched off", for_claude=list(TAKERS_FACTS))
+        fetched = _fetch(fetcher, url, "takers", TAKERS_FACTS)
+        if isinstance(fetched, PageReport):
+            return fetched
+        try:
+            facts = read_takers(fetched.text)
+        except UnreadablePageError as error:
+            return _unreadable(fetched, "takers", TAKERS_FACTS, error)
+        return self._store(fetched, "takers", TAKERS_FACTS, takers_submissions(facts), facts.problems)
 
     def _store(
         self, fetched: Page, page: PageKind, carried: tuple[str, ...], new: Submissions, found: list[str]

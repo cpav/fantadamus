@@ -64,7 +64,7 @@ def outfield(role: Role, mantra_role: str | None, **changes: Any) -> OutfieldInp
         assists=0,
         yellow_cards=0,
         club_goals_per_match=1.5,
-        penalty_taker=False,
+        penalty_share=0.0,
         team_xg=1.4,
         p_win=0.45,
         p_loss=0.30,

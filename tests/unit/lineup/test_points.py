@@ -90,8 +90,8 @@ def test_his_mantra_role_decides_how_a_cameo_is_priced() -> None:
 
 def test_a_takers_cameo_can_score_from_the_spot() -> None:
     """With no goals in the match, only a penalty can give a cameo a goal's value."""
-    assert _player("A", "Pc", penalty_taker=False).cameo_penalties == 0.0
-    taker = dataclasses.replace(_player("A", "Pc", penalty_taker=True), p_start=0.0, p_cameo=1.0)
+    assert _player("A", "Pc", penalty_share=0.0).cameo_penalties == 0.0
+    taker = dataclasses.replace(_player("A", "Pc", penalty_share=1.0), p_start=0.0, p_cameo=1.0)
     assert taker.cameo_penalties > 0.0
     rounds = 20_000
     drawn = draw_rounds([taker], [(0.0, 1.0)], rounds=rounds, seed=5)

@@ -26,7 +26,7 @@ def striker(**changes: object) -> OutfieldInputs:
         assists=1,
         yellow_cards=1,
         club_goals_per_match=2.0,
-        penalty_taker=False,
+        penalty_share=0.0,
         team_xg=1.35,
         p_win=0.5,
         p_loss=0.25,
@@ -43,8 +43,8 @@ def test_formulas_by_hand() -> None:
     assert outfield.expected_vote(0, None, p_win=0.5, p_loss=0.5) == 6.0
     assert outfield.share(0.30, events=4, team_goals=10) == pytest.approx(0.34)
     assert outfield.expected_goals(1.35, 0.34, minutes=0.85) == pytest.approx(0.39015)
-    assert outfield.penalty_goals(minutes=0.85, taker=True) == pytest.approx(0.15 * 0.78 * 0.85)
-    assert outfield.penalty_goals(minutes=0.85, taker=False) == 0
+    assert outfield.penalty_goals(minutes=0.85, share=1.0) == pytest.approx(0.15 * 0.78 * 0.85)
+    assert outfield.penalty_goals(minutes=0.85, share=0.0) == 0
     assert outfield.p_yellow(2, appearances=8) == pytest.approx(3.5 / 18)
     scored = 1 - math.exp(-0.2)
     rated = scored + (1 - scored) * 0.6
@@ -52,7 +52,7 @@ def test_formulas_by_hand() -> None:
         (rated, (scored * 9.8 + (1 - scored) * 0.6 * 5.75) / rated)
     )
 
-    value = outfield.value(striker(penalty_taker=True), CLASSIC)
+    value = outfield.value(striker(penalty_share=1.0), CLASSIC)
     vote = 6 + 5 / 15 * 0.6 + 0.3 * 0.25
     goal_share, assist_share = (0.30 * 15 + 4) / 25, (0.11 * 15 + 1) / 25
     goals = 1.35 * goal_share * 0.85 + 0.15 * 0.78 * 0.85
@@ -146,3 +146,8 @@ def test_a_takers_share_leaves_his_penalties_out() -> None:
     assert taker.goal_share == pytest.approx(outfield.share(0.30, events=1, team_goals=2.0 * 5))
     odd = outfield.value(striker(goals=1, penalties_scored=3, appearances=5), CLASSIC)
     assert odd.goal_share == pytest.approx(outfield.share(0.30, events=0, team_goals=2.0 * 5))
+
+
+def test_penalty_term_scales_with_the_share() -> None:
+    """A taker with half of them gets half the term, whichever his minutes (R10.1)."""
+    assert outfield.penalty_goals(minutes=0.85, share=0.5) == pytest.approx(0.15 * 0.78 * 0.85 * 0.5)

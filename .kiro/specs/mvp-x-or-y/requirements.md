@@ -149,7 +149,7 @@ challenge an answer.
   |---|---|
   | Probable lineups | 12 h; 3 h within 24 h of the match |
   | Match odds | 24 h; 6 h within 24 h of the match |
-  | Player and team season figures, penalty takers | 7 days |
+  | Player and team season figures, penalty takers | 7 days (penalty takers 48 hours: `mvp-lineup` R10.3, 2026-11-06) |
   | Fixtures | 7 days |
 
 - **R7.4** WHEN facts are read for an answer THE SYSTEM SHALL use only facts captured before the answer's

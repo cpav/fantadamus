@@ -15,6 +15,7 @@ mvp-roles design C9, R4, R5; mvp-lineup C5): the facts, the models and the steps
 from __future__ import annotations
 
 import datetime as dt
+import functools
 import logging
 import tomllib
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
@@ -36,7 +37,7 @@ from fantadamus.domains.availability.silver import (
     LineupViewRow,
     OutletViewRow,
 )
-from fantadamus.domains.facts import SilverRow, Source, read_silver
+from fantadamus.domains.facts import SilverRow, Source, latest_by, read_silver
 from fantadamus.domains.fixtures.gold import deadline, fixture, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES, FixtureRow
 from fantadamus.domains.freshness import FACTS_WINDOW, Fact, is_fresh
@@ -47,14 +48,18 @@ from fantadamus.domains.season.gold import (
     PenaltyOrder,
     known_players,
     league_goals_per_match,
+    order_change,
+    penalty_mismatch,
     penalty_order,
-    player_form,
+    penalty_share,
+    takers_ahead,
     team_season,
 )
 from fantadamus.domains.season.silver import (
     PENALTY_TAKERS,
     SEASON_STATS,
     TEAM_SEASONS,
+    PenaltyTakerRow,
     PlayerSeasonRow,
     TeamSeasonRow,
     read_player_seasons,
@@ -72,7 +77,7 @@ from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import RulesStore, SetupStep, StoredRules, scoring_for, setup_step
 from fantadamus.league.squads import SquadStore
 from fantadamus.web.cadence import may_read
-from fantadamus.web.collector import ROUND_FACTS, STATS_FACTS, Collector, CollectReport
+from fantadamus.web.collector import PAGE_FACTS, Collector, CollectReport
 
 ROME = ZoneInfo("Europe/Rome")
 _LOG = logging.getLogger(__name__)
@@ -84,6 +89,10 @@ _PLAN_ORDER = {
     "team_season": 2,
     "penalty_takers": 2,
 }
+TAKES_PENALTIES = 0.5
+"""An answer describes a player as taking the penalties from this share (mvp-lineup R10.2)."""
+SHARE_SHOWN = 0.1
+"""An answer explains a share from those listed ahead from here: below it, a sure starter is ahead of him."""
 _BETTER_TO_HAVE = {"probable_lineups", "match_odds"}
 """What a lineup goes ahead without, on what's known and with a warning (mvp-lineup R5.5). "X or Y?" asks
 first."""
@@ -183,7 +192,9 @@ class PlayerAnswer(BaseModel):
     official: OfficialView | None
     disputed: bool
     penalty_taker: bool
-    """His club's first penalty taker."""
+    """Whether he's the likeliest to take his club's penalties: at least half are his (mvp-lineup R10.2)."""
+    penalty_share: float
+    """How much of the penalty term counts for him (mvp-lineup R10.1)."""
     penalties_scored: int
     penalties_taken: int
     appearances: int
@@ -313,7 +324,10 @@ class PlayerFacts:
     present: Availability | None
     xg: TeamXg | None
     disagreements: list[str]
-    """Where sources differ on his match's kickoff or his club's table (mvp-collect R5.1)."""
+    """Where sources differ on his match's kickoff or his club's table (mvp-collect R5.1), and what his club's
+    penalty list says about him (mvp-lineup R10.2, R10.4, R10.5)."""
+    penalty_share: float
+    """His share of his club's penalties (mvp-lineup R10.1)."""
 
 
 @dataclass(frozen=True)
@@ -577,10 +591,13 @@ class Advisor:
         plan = _Plan()
         need = plan.need
         recent = _Recent(as_of, confirmed, {})
-        forms = {player.player_id: player_form(facts.players, player.player_id, as_of) for player in players}
+        seasons = latest_by(facts.players, as_of, key=lambda row: row.player_id)
+        forms = {player.player_id: seasons.get(player.player_id) for player in players}
 
         teams = _fresh(facts.teams, "team_season", as_of)
-        takers = _fresh(facts.takers, "penalty_takers", as_of)
+        takers = _fresh(
+            facts.takers, "penalty_takers", as_of, confirmed=confirmed.get(PENALTY_TAKERS.table.name)
+        )
         for rows, fresh, fact, about in (
             (facts.teams, teams, "team_season", "the Serie A table"),
             (facts.takers, takers, "penalty_takers", "the penalty takers"),
@@ -618,8 +635,18 @@ class Advisor:
                 else (None, None)
             )
             if form is not None and table is not None and order is not None:
+                mates = [mate for mate in known if mate.club == player.club]
+                share = penalty_share(
+                    player,
+                    order,
+                    mates,
+                    functools.partial(
+                        self._starts, match=match, facts=facts, known=known, as_of=as_of, recent=recent
+                    ),
+                )
                 notes = self._disagreements(player, match, fixtures, teams, as_of)
-                sides.append(PlayerFacts(player, form, table, order, match, present, xg, notes))
+                notes += self._taker_notes(player, order, mates, share, facts.takers, seasons, as_of)
+                sides.append(PlayerFacts(player, form, table, order, match, present, xg, notes, share))
 
         first_kickoff = deadline(fixtures, round, as_of) if round is not None else None
         return Gathered(sides, round, first_kickoff, fixtures, teams, plan, known)
@@ -651,6 +678,69 @@ class Advisor:
                 )
             )
         return [f"Sources disagree, the first is used: {note}." for note in found if note is not None]
+
+    def _starts(
+        self,
+        mate: KnownPlayer,
+        match: FixtureRow | None,
+        facts: Facts,
+        known: list[KnownPlayer],
+        as_of: dt.datetime,
+        recent: _Recent,
+    ) -> float:
+        """A listed taker's chance of starting; with no lineup known, nothing says he won't (R10.1)."""
+        if match is None:
+            return 1.0
+        present = availability(
+            mate,
+            home=match.home,
+            away=match.away,
+            views=recent.of(facts.views, "probable_lineups", LINEUP_VIEWS.table.name, match.kickoff_at),
+            outlet_views=recent.of(
+                facts.outlet_views, "probable_lineups", OUTLET_VIEWS.table.name, match.kickoff_at
+            ),
+            officials=facts.officials,
+            players=known,
+            as_of=as_of,
+        )
+        return present.p_start if present is not None else 1.0
+
+    def _taker_notes(
+        self,
+        player: KnownPlayer,
+        order: PenaltyOrder,
+        mates: Sequence[KnownPlayer],
+        share: float,
+        rows: Sequence[PenaltyTakerRow],
+        seasons: Mapping[int, PlayerSeasonRow],
+        as_of: dt.datetime,
+    ) -> list[str]:
+        """What an answer should say about his club's penalty list (mvp-lineup R10.2, R10.4, R10.5)."""
+        club = self.clubs.names[player.club]
+        notes = []
+        ahead = takers_ahead(player, order, mates)
+        if ahead and share >= SHARE_SHOWN:
+            miss = "misses" if len(ahead) == 1 else "miss"
+            notes.append(
+                f"{player.name} takes {club}'s penalties if {' and '.join(ahead)} {miss} the start: "
+                f"they count at {share:.0%}."
+            )
+        change = order_change(rows, player.club, as_of)
+        if change is not None:
+            notes.append(
+                f"{club}'s penalty order changed on {change.at.astimezone(ROME):%d %b}: "
+                f"{', '.join(change.after)} (was {', '.join(change.before)})."
+            )
+        mismatch = penalty_mismatch(player, order, mates, seasons)
+        if mismatch is not None:
+            first, other = mismatch.first, mismatch.other
+            notes.append(
+                f"{club}'s list puts {first.name} first, but {other.name} has taken more penalties this "
+                "season: "
+                f"{other.penalties_taken} (scored {other.penalties_scored}), against {first.penalties_taken} "
+                f"(scored {first.penalties_scored}). The number follows the list."
+            )
+        return notes
 
     def _match_facts(
         self,
@@ -714,16 +804,12 @@ class Advisor:
         stored: StoredRules,
         league: float,
     ) -> Answer:
-        takers = [takes_penalties(side, known) for side in sides]
-        inputs = [model_inputs(side, taker, league) for side, taker in zip(sides, takers, strict=True)]
+        inputs = [model_inputs(side, league) for side in sides]
         values = [
             model_value(part, scoring_for(stored.rules, side.form.role))
             for part, side in zip(inputs, sides, strict=True)
         ]
-        players = [
-            self._player_answer(side, value, taker, round)
-            for side, value, taker in zip(sides, values, takers, strict=True)
-        ]
+        players = [self._player_answer(side, value, round) for side, value in zip(sides, values, strict=True)]
         judged = _judged(inputs, scoring_for(stored.rules, sides[0].form.role))
         verdict, flip = judged if judged is not None else (None, None)
         if verdict is not None:
@@ -742,7 +828,7 @@ class Advisor:
                 f"{part.kickoff:%a %d %b %H:%M} Rome time): his official lineup is out about an hour before "
                 "the deadline, so check it then."
                 for part in players
-                if part.kickoff is not None and part.kickoff == first_kickoff
+                if part.kickoff is not None and part.kickoff == first_kickoff and part.official is None
             ],
             rules=stored,
             updated=self._updated(players, as_of),
@@ -823,7 +909,7 @@ class Advisor:
         )
 
     def _player_answer(
-        self, side: PlayerFacts, value: OutfieldValue | KeeperValue, penalty_taker: bool, round: int
+        self, side: PlayerFacts, value: OutfieldValue | KeeperValue, round: int
     ) -> PlayerAnswer:
         match, present, xg = side.match, side.present, side.xg
         notes = list(side.disagreements)
@@ -875,7 +961,8 @@ class Advisor:
             outlets=present.outlets if present else [],
             official=present.official if present else None,
             disputed=bool(present and present.disputed),
-            penalty_taker=penalty_taker,
+            penalty_taker=side.penalty_share >= TAKES_PENALTIES,
+            penalty_share=side.penalty_share,
             penalties_scored=form.penalties_scored,
             penalties_taken=form.penalties_taken,
             appearances=form.appearances,
@@ -942,17 +1029,11 @@ def tried_notes(report: CollectReport) -> dict[str, str]:
             if page.outcome in {"stored", "unchanged"}
             else f"Fantadamus couldn't read {page.url}: {page.outcome}{reason}"
         )
-        tried |= dict.fromkeys(ROUND_FACTS if page.page == "round" else STATS_FACTS, said)
+        tried |= dict.fromkeys(PAGE_FACTS[page.page], said)
     return tried
 
 
-def takes_penalties(side: PlayerFacts, known: list[KnownPlayer]) -> bool:
-    """Whether he is his club's first penalty taker."""
-    mates = [mate for mate in known if mate.club == side.player.club]
-    return resolve(side.order.takers[0], mates).player == side.player
-
-
-def model_inputs(side: PlayerFacts, taker: bool, league: float) -> OutfieldInputs | KeeperInputs:
+def model_inputs(side: PlayerFacts, league: float) -> OutfieldInputs | KeeperInputs:
     """His model's inputs; a player without a match has no chance of a rating (R2.3)."""
     home = side.match is not None and side.match.home == side.player.club
     xg, present, form = side.xg, side.present, side.form
@@ -978,7 +1059,7 @@ def model_inputs(side: PlayerFacts, taker: bool, league: float) -> OutfieldInput
         assists=form.assists,
         yellow_cards=form.yellow_cards,
         club_goals_per_match=side.table.goals_for / side.table.played if side.table.played else 0.0,
-        penalty_taker=taker,
+        penalty_share=side.penalty_share,
         penalties_scored=form.penalties_scored,
         team_xg=(xg.home_xg if home else xg.away_xg) if xg else 0.0,
         p_win=(xg.p_home_win if home else xg.p_away_win) if xg else 0.0,

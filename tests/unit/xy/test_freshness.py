@@ -19,7 +19,7 @@ HOUR, DAY = dt.timedelta(hours=1), dt.timedelta(days=1)
         ("match_odds", 24 * HOUR, 6 * HOUR),
         ("player_season", 2 * DAY, 2 * DAY),  # 48 hours from mvp-roles R1.4
         ("team_season", 7 * DAY, 7 * DAY),
-        ("penalty_takers", 7 * DAY, 7 * DAY),
+        ("penalty_takers", 2 * DAY, 2 * DAY),  # 48 hours from mvp-lineup R10.3
         ("fixtures", 7 * DAY, 7 * DAY),
     ],
 )

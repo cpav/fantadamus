@@ -77,8 +77,9 @@ P(scores)  = 1 − e^(−E[goals])
   - Prior weight W: 15 team goals for attackers and midfielders, 25 for defenders *(start)*.
 - **Minutes share** if he starts: about 0.85 for forwards, 0.80 for attacking midfielders, 0.95 for
   defenders *(start)*. Use the player's own minutes once there's enough data.
-- **Penalties**, for the designated taker only: P(team gets a penalty) ≈ 0.15 per match × conversion ≈ 0.78
-  × his minutes share *(start)*.
+- **Penalties**: P(team gets a penalty) ≈ 0.15 per match × conversion ≈ 0.78 × his minutes share *(start)* × his
+  share of them. The first on the club's list has all of them when he plays; each next one has what those ahead
+  leave: the product of (1 − p_start) for everyone listed ahead of him. A first taker who is out hands them all on.
 - **Check against the market.** Compare P(scores) with de-margined anytime-scorer odds where a permitted
   source exists. A large gap is a flag to investigate, not something to average.
 

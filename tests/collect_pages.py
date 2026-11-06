@@ -164,6 +164,33 @@ def fco_round_page(*matches: FcoMatch, round: int | None = 10) -> str:
     )
 
 
+TAKERS_TITLE = "Rigoristi e tiratori da fermo Serie A"
+
+
+def takers_page(
+    clubs: Mapping[str, Sequence[str]], *, title: str = TAKERS_TITLE, heading: str = "Rigori"
+) -> str:
+    """Fantacalcio.it's penalty-takers page: one card per club, with a ranked list per kind of set piece."""
+
+    def ranked(names: Sequence[str]) -> str:
+        items = "".join(
+            f'<li><img class="player-image" alt="Campioncino {name}"/>'
+            f'<a class="player-name player-link" href="/serie-a/squadre/x/y/1"><span>{name}</span></a></li>'
+            for name in names
+        )
+        return f'<ol class="pill-list ranked dark">{items}</ol>'
+
+    cards = "".join(
+        f'<div id="team-{index}" class="card team-card"><header class="team-info">'
+        f'<span class="team-name">{club}</span></header><hr/><div class="row row-responsive">'
+        f'<div class="col"><header class="primary">{heading}</header>{ranked(names)}</div>'
+        f'<div class="col"><header class="primary">Punizioni</header>{ranked([f"{club} Punizioni"])}</div>'
+        "</div></div>"
+        for index, (club, names) in enumerate(clubs.items(), start=1)
+    )
+    return f"<html><head><title>{title}</title></head><body><main>{cards}</main></body></html>"
+
+
 STATS_TITLE = "Statistiche Fantacalcio Serie A - Stagione 2026/27"
 STATS_COLUMNS = (
     ("sq", "Squadra", "Sq"),
