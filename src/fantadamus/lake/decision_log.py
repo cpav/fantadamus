@@ -12,6 +12,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from fantadamus.contracts.types import UtcDatetime
+from fantadamus.lake.jsonl import read_lines
 from fantadamus.league.rules import StoredRules
 
 DEFAULT_ROOT = Path("data/local/decisions")
@@ -76,8 +77,4 @@ class DecisionLog:
         return path
 
     def read(self) -> list[Decision]:
-        return [
-            Decision.model_validate_json(line)
-            for path in sorted(self.root.glob("*.jsonl"))
-            for line in path.read_text(encoding="utf-8").splitlines()
-        ]
+        return read_lines(self.root, Decision)
