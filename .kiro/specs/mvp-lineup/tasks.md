@@ -261,7 +261,9 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     after the official lineups, an override and a league-mate's squad. Bugs found get their own failing tests and fixes.
     Results stay out of the repository.
     - _Requirements: R3.1, R5.1, R5.5, R7.1_
-    - _Test: what each answer used, and the time and size of each, recorded in the report without players' figures_
+    - _Test: what each answer used, and the time and size of each, recorded in the report without players' figures;
+      bugs: `tests/integration/lineup/test_formation_call.py`,
+      `tests/acceptance/lineup/test_calibration.py::test_at12_a_name_nobody_knows_is_named_as_unscored`_
   - [ ] 9.2 **Owner:** give a real squad and rules in Claude Desktop, and compare a lineup for a real round with your own
     choice.
     - _Requirements: AT-13_

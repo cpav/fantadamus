@@ -354,10 +354,16 @@ def formation_call(results: Sequence[Simulated], arrangements: Mapping[str, Arra
     gained = [player for player in ours if player not in theirs]
     lost = [player for player in theirs if player not in ours]
     ceiling = None
-    text = (
-        f"{best.formation} over {other.formation}: {worded}, {gap:.2f} points. "
-        f"{_worded(gained)} over {_worded(lost)}."
-    )
+    text = f"{best.formation} over {other.formation}: {worded}, {gap:.2f} points. "
+    if sum(player.key for player in gained) >= sum(player.key for player in lost):
+        text += f"{_worded(gained)} over {_worded(lost)}."
+    else:
+        one = len(lost) == 1
+        text += (
+            f"On paper {_worded(lost)} {'is' if one else 'are'} worth more than {_worded(gained)}, but the "
+            f"simulated rounds favour this lineup: from the bench {'he covers' if one else 'they cover'} a "
+            "starter who misses out."
+        )
     if worded == "coin flip":
         ceiling = other.formation if other.high > best.high else best.formation
         text += f" {ceiling} has the higher ceiling, which helps an underdog."

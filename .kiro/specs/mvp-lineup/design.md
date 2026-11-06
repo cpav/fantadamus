@@ -186,7 +186,7 @@ reason), `refresh` and `lineup`. A replay never collects and isn't logged.
 | `summary` | Round and lock; formation; expected score and range; the chance of each threshold; when it was updated |
 | `starters`, `bench` | Per player: name, club, match, chance of starting and its confidence, rivals, value, chance of scoring or clean sheet, penalties. The bench by role and in order, with who's left off |
 | `formations` | Each allowed formation: expected score, range, fantasy goals, threshold chances. Enough for format 3 (R6.1) |
-| `calls` | The two or three that matter. The formation, from the marginal players of each role (§A7), and the closest choices between a starter and the player behind him, each with what it's worth |
+| `calls` | The two or three that matter. The formation, from the marginal players of each role (§A7), and the closest choices between a starter and the player behind him, each with what it's worth. The simulation can prefer a lower value in the eleven, because the higher one covers from the bench; the call then says so |
 | `out_and_doubtful` | Who, and whether the bench covers him |
 | `likely_scorers`, `moved`, `check_before_lock` | Format 2's closing lines. `moved` compares with the previous lineup's log entry for this team, with no replay |
 | `warnings`, `improve` | Every number on basic data, and what could improve it (R5.5, R5.6) |

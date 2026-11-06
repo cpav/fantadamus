@@ -290,7 +290,10 @@ def _score_match(
     for club, name in sorted({(row.club, row.name) for row in on_page}):
         mates = [player for player in known if player.club == club]
         player = resolve(name, mates).player or same_surname(name, mates)
-        if player is None or player.player_id in seen:
+        if player is None:
+            tally.note("Everything", "on the round's page but not on the statistics page")
+            continue
+        if player.player_id in seen:
             continue
         seen.add(player.player_id)
         present = chances(player, as_of)
