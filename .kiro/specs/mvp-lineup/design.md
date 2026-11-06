@@ -241,11 +241,11 @@ kind, `finished_round`, so they don't count as an attempt at the current round's
 | Scoring, if he started | Whether his goals rose | The same reads |
 | Clean sheet, if he started | Whether a keeper's goals conceded stayed the same | The same reads |
 
-The "before" read is the last before the round's first kickoff, and the "after" read the first once the round has finished,
-if it comes before the next round starts. A read that finds the page unchanged stores nothing, so it counts as the last stored
+The "before" read is the last before the round's first kickoff, if a read shows the previous round had finished by then, and
+the "after" read the first once the round has finished, if it comes before the next round starts. A read that finds the page unchanged stores nothing, so it counts as the last stored
 read, if that's from after the first kickoff: the page may have updated inside the 12 hours. One that still shows the figures
 from before the round hasn't updated yet, and scoring waits. The player's own draft normally gives both. Otherwise those
-chances count as unscored, with the reason (R7.3); so do a postponed match's, which has no marks.
+chances count as unscored, with the reason (R7.3); so does every chance in a match without marks, such as a postponed one.
 
 **Two sets (R7.4).**
 
@@ -268,7 +268,8 @@ report; per-player detail stays in `data/local/`.
 **Left out of this slice.**
 
 - **The market:** comparing with it, which §A8 also asks for, waits for the market's chances to be logged.
-- **Overrides:** the report counts them and the costs stated at the time. Whether they paid off needs each player's score for
+- **Overrides:** the report counts each user's last lineup for their own team before the lock, if it went against the advice, and
+  the cost stated at the time. Asking what a choice would cost isn't making it. Whether they paid off needs each player's score for
   the round, so it comes with the review of a user's lineup (open point 2).
 
 **An assumption to check.** The two rounds read so far suggest a finished page keeps the outlets' last percentages from before

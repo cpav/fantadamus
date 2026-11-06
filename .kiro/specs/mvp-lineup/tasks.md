@@ -214,7 +214,9 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
       `::test_p9_a_forecast_right_every_time_scores_0`, **P10** `::test_p10_nothing_after_kickoff`;
       `tests/unit/lineup/test_calibration.py::test_hand_worked_scores`, `::test_unscored_named_with_the_reason`,
       `::test_what_users_were_told_is_the_last_before_kickoff`, `::test_a_replay_logged_after_kickoff_doesnt_count`,
-      `::test_which_statistics_reads_count`, `::test_a_read_that_found_the_page_unchanged_counts`;
+      `::test_which_statistics_reads_count`, `::test_a_read_that_found_the_page_unchanged_counts`,
+      `::test_a_match_without_a_sheet_scores_nothing`, `::test_the_read_before_must_follow_the_last_round`,
+      `::test_an_override_is_the_last_word_before_the_lock`;
       `tests/integration/lineup/test_finished_round.py::test_a_page_updated_before_the_mark_still_counts`,
       `::test_a_page_that_hasnt_moved_isnt_the_read_after`;
       `tests/acceptance/lineup/test_calibration.py::test_at12_an_official_lineup_never_feeds_the_model`,
