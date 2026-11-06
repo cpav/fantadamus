@@ -11,12 +11,10 @@ import datetime as dt
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 
 from pydantic import BaseModel
 
 from fantadamus.contracts.types import UtcDatetime
-from fantadamus.core.files import temporary_beside
 from fantadamus.core.names import name_key
 from fantadamus.domains.availability.silver import OfficialLineupRow
 from fantadamus.domains.fixtures.gold import matches
@@ -32,7 +30,6 @@ SCORING = "Scoring, if he started"
 CLEAN_SHEET = "Clean sheet, if he started"
 THE_REST = "Chances other than starting"
 _BUCKETS = 10
-DEFAULT_ROOT = Path("data/local/calibration")
 
 Pair = tuple[float, bool]
 """A chance, and whether it happened."""
@@ -178,31 +175,6 @@ def summary_line(report: RoundReport) -> str | None:
         f"{chance.count} players, against {chance.baseline:.3f} for always guessing the average. "
         "Lower is better."
     )
-
-
-class CalibrationStore:
-    """One file per round, derived and so recomputable: it isn't part of the decision log."""
-
-    def __init__(self, root: Path = DEFAULT_ROOT) -> None:
-        self.root = root
-
-    def _path(self, round: int) -> Path:
-        return self.root / f"round-{round}.json"
-
-    def get(self, round: int) -> RoundReport | None:
-        path = self._path(round)
-        return RoundReport.model_validate_json(path.read_text(encoding="utf-8")) if path.is_file() else None
-
-    def set(self, report: RoundReport) -> None:
-        self.root.mkdir(parents=True, exist_ok=True)
-        path = self._path(report.round)
-        temporary = temporary_beside(path)
-        temporary.write_text(report.model_dump_json(indent=2) + "\n", encoding="utf-8")
-        temporary.replace(path)
-
-    def latest(self) -> RoundReport | None:
-        rounds = [int(path.stem.removeprefix("round-")) for path in self.root.glob("round-*.json")]
-        return self.get(max(rounds)) if rounds else None
 
 
 @dataclass(frozen=True)

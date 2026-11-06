@@ -13,7 +13,8 @@ from pathlib import Path
 
 from fantadamus.core.clock import utc_now
 from fantadamus.core.clubs import Clubs
-from fantadamus.domains.calibration import CalibrationStore, render
+from fantadamus.domains.calibration import render
+from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import DEFAULT_ROOT, LakeStore

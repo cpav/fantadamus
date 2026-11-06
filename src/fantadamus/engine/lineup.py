@@ -14,7 +14,7 @@ from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.league import LineupRules, formation_lines
 
 ROLES: tuple[Role, ...] = ("P", "D", "C", "A")
-_WORDS = {"P": "keeper", "D": "defender", "C": "midfielder", "A": "forward"}
+ROLE_WORDS = {"P": "keeper", "D": "defender", "C": "midfielder", "A": "forward"}
 
 
 class CannotFieldError(ValueError):
@@ -117,12 +117,12 @@ def arrange(
         forced = sum(player.player_id in start for player in order)
         if forced > places[role]:
             raise CannotFieldError(
-                f"{formation} has {places[role]} {_WORDS[role]} places, and {forced} are told to start"
+                f"{formation} has {places[role]} {ROLE_WORDS[role]} places, and {forced} are told to start"
             )
         fielded = _fielded(order, places[role], start, leave_out)
         if len(fielded) < places[role]:
             raise CannotFieldError(
-                f"{formation} needs {places[role]} {_WORDS[role]}s, and {len(fielded)} can play"
+                f"{formation} needs {places[role]} {ROLE_WORDS[role]}s, and {len(fielded)} can play"
             )
         starters += fielded
         bench[role] = [player for player in order if player not in fielded]

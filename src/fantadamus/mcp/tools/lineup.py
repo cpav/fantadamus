@@ -35,7 +35,7 @@ from fantadamus.engine.constants import (
     SIMULATIONS,
 )
 from fantadamus.engine.keepers import KeeperInputs, KeeperValue
-from fantadamus.engine.lineup import ROLES, Arrangement, Candidate, CannotFieldError, arrange
+from fantadamus.engine.lineup import ROLE_WORDS, ROLES, Arrangement, Candidate, CannotFieldError, arrange
 from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue
 from fantadamus.engine.rank import Label, Option, Scoring, label, verdict
 from fantadamus.engine.simulate import (
@@ -48,7 +48,7 @@ from fantadamus.engine.simulate import (
     ranked,
     simulate,
 )
-from fantadamus.lake.decision_log import Decision, LoggedPlayer
+from fantadamus.lake.decision_log import Decision
 from fantadamus.league.rules import (
     LineupSetup,
     SetupStep,
@@ -67,16 +67,15 @@ from fantadamus.mcp.advisor import (
     PlayerFacts,
     RefreshItem,
     Updated,
+    logged_player,
     model_inputs,
     model_value,
     takes_penalties,
-    tried_notes,
 )
 
 SCORERS_SHOWN = 5
 PLACE_CALLS = 2
 MOVES_SHOWN = 5
-_WORDS: dict[Role, str] = {"P": "keeper", "D": "defender", "C": "midfielder", "A": "forward"}
 _RULES = {
     "same_role": "role for role",
     "role_first": "role first, then bench order",
@@ -222,7 +221,7 @@ class _Priced:
 
     @property
     def rating(self) -> float:
-        return self.value.p_start + self.value.p_cameo
+        return self.value.p_rating
 
 
 def _assumed(facts: PlayerFacts) -> Availability:
@@ -330,8 +329,8 @@ def _bench_reason(player: Candidate, arranged: Arrangement, first_in_role: bool,
     if not part.rating:
         return "won't play"
     if first_in_role:
-        return f"first in if a {_WORDS[player.role]} misses out: {part.rating:.0%} to get a rating"
-    return f"next {_WORDS[player.role]} in"
+        return f"first in if a {ROLE_WORDS[player.role]} misses out: {part.rating:.0%} to get a rating"
+    return f"next {ROLE_WORDS[player.role]} in"
 
 
 def _ordinal(number: int) -> str:
@@ -406,7 +405,7 @@ def place_calls(arranged: Arrangement, options: Mapping[int, Option]) -> list[Ca
                 second=behind.name,
                 worth=round(choice.margin, 3),
                 label=choice.label,
-                text=f"{_ordinal(len(line))} {_WORDS[role]}: {last.name} {last.key:.1f} v "
+                text=f"{_ordinal(len(line))} {ROLE_WORDS[role]}: {last.name} {last.key:.1f} v "
                 f"{behind.name} {behind.key:.1f}: {choice.label}, worth {choice.margin:.2f}.",
             )
         )
@@ -610,22 +609,6 @@ def _before_lock(
     ]
 
 
-def _logged(part: _Priced) -> LoggedPlayer:
-    value = part.value
-    playing = part.facts.match is not None
-    return LoggedPlayer(
-        player_id=part.facts.player.player_id,
-        name=part.facts.player.name,
-        p_start=value.p_start,
-        p_cameo=value.p_cameo,
-        p_rating=value.p_start + value.p_cameo,
-        p_scores=value.p_scores if isinstance(value, OutfieldValue) else None,
-        key=value.key,
-        p_clean_sheet=value.p_clean_sheet if isinstance(value, KeeperValue) and playing else None,
-        expected_conceded=value.expected_conceded if isinstance(value, KeeperValue) and playing else None,
-    )
-
-
 def last_round(advisor: Advisor) -> str | None:
     report = advisor.scores.latest() if advisor.scores is not None else None
     return summary_line(report) if report is not None else None
@@ -690,22 +673,13 @@ def lineup_for(
         return LineupResult(
             status="refused", message=f"{formation} isn't a formation this league allows: {allowed}."
         )
-    when = (as_of or advisor.clock()).astimezone(dt.UTC)
     wanted = [player.player_id for player in squad.players]
-    facts = Facts.read(advisor.lake, when)
-    known = known_players(facts.players, when)
-    gathered = _gather_squad(advisor, wanted, facts, known, when)
-    tried: Mapping[str, str] = {}
-    report = advisor.collect_now({item.fact for item in gathered.plan.items}, when) if as_of is None else None
-    if report is not None:
-        tried = tried_notes(report)
-        when = advisor.clock().astimezone(dt.UTC)
-        if any(page.stored for page in report.pages):
-            facts = Facts.read(advisor.lake, when)
-            known = known_players(facts.players, when)
-        gathered = _gather_squad(advisor, wanted, facts, known, when)
-    if as_of is None:
-        advisor.get_ready(when)
+
+    def ask(when: dt.datetime, facts: Facts, _tried: Mapping[str, str] | None) -> Gathered:
+        return _gather_squad(advisor, wanted, facts, known_players(facts.players, when), when)
+
+    done = advisor.after_collecting(as_of, ask, lambda found: [item.fact for item in found.plan.items])
+    gathered, when, tried = done.result, done.when, done.tried
 
     def noted(items: Sequence[RefreshItem]) -> list[RefreshItem]:
         return [
@@ -725,7 +699,6 @@ def lineup_for(
         rules,
         squad,
         gathered,
-        known,
         when,
         round,
         first_kickoff,
@@ -788,34 +761,26 @@ def _gather_squad(
     return gathered
 
 
-def _answer(
-    advisor: Advisor,
-    stored: StoredRules,
-    rules: LineupRules,
-    squad: StoredSquad,
-    gathered: Gathered,
-    known: list[KnownPlayer],
-    when: dt.datetime,
-    round: int,
-    first_kickoff: dt.datetime,
-    improve: list[RefreshItem],
-    asked: _Asked,
-    *,
-    log: bool,
-    rounds: int,
-) -> LineupResult:
-    team = squad.team
-    priced = _priced(gathered, known, stored, when)
-    by_id = {part.facts.player.player_id: part for part in priced}
-    candidates = [_candidate(part) for part in priced]
-    arrangements: dict[str, Arrangement] = {}
+@dataclass(frozen=True)
+class _Fielding:
+    """Who plays in each formation: as advised, and as the user chose (R3.5)."""
+
+    advised: dict[str, Arrangement]
+    chosen: dict[str, Arrangement]
+    left_out: list[str]
+
+
+def _fielding(
+    candidates: Sequence[Candidate], priced: Sequence[_Priced], rules: LineupRules, asked: _Asked
+) -> _Fielding | LineupResult:
+    advised: dict[str, Arrangement] = {}
     left_out: list[str] = []
     for formation in rules.formations or ():
         try:
-            arrangements[formation] = arrange(candidates, formation, rules)
+            advised[formation] = arrange(candidates, formation, rules)
         except CannotFieldError as problem:
             left_out.append(f"{formation} is left out: {problem}.")
-    if not arrangements:
+    if not advised:
         return LineupResult(
             status="squad",
             message="This squad can't field any formation the league allows. " + " ".join(left_out),
@@ -835,6 +800,57 @@ def _answer(
                 problems.append(f"{problem}.")
         if not chosen:
             return LineupResult(status="refused", message=problems[0])
+    return _Fielding(advised, chosen, left_out)
+
+
+def _bench_places(advisor: Advisor, arranged: Arrangement, by_id: Mapping[int, _Priced]) -> list[BenchPlace]:
+    bench = []
+    seen: set[Role] = set()
+    for player in arranged.bench:
+        part = by_id[player.player_id]
+        reason = _bench_reason(player, arranged, player.role not in seen, part)
+        seen.add(player.role)
+        bench.append(BenchPlace.model_validate(_line(advisor, part) | {"reason": reason}))
+    return bench
+
+
+def _message(best: Simulated, override: Override | None) -> str:
+    thresholds = ", ".join(f"{mark.points:g}: {mark.chance:.0%}" for mark in best.thresholds[:3])
+    message = f"{best.formation}, expected about {best.mean:.0f} points" + (
+        f"; chance of reaching {thresholds}." if thresholds else "."
+    )
+    if override is not None:
+        message += (
+            f" Against the advice ({override.advised_formation}, about {override.advised_expected:.0f}), "
+            f"this costs {override.cost:.2f} points."
+        )
+    return message
+
+
+def _answer(
+    advisor: Advisor,
+    stored: StoredRules,
+    rules: LineupRules,
+    squad: StoredSquad,
+    gathered: Gathered,
+    when: dt.datetime,
+    round: int,
+    first_kickoff: dt.datetime,
+    improve: list[RefreshItem],
+    asked: _Asked,
+    *,
+    log: bool,
+    rounds: int,
+) -> LineupResult:
+    team = squad.team
+    known = gathered.known
+    priced = _priced(gathered, known, stored, when)
+    by_id = {part.facts.player.player_id: part for part in priced}
+    candidates = [_candidate(part) for part in priced]
+    fielding = _fielding(candidates, priced, rules, asked)
+    if isinstance(fielding, LineupResult):
+        return fielding
+    arrangements, chosen = fielding.advised, fielding.chosen
     players, matches = _simulated(priced)
     # The advice and the user's choice over the same simulated rounds, so that the cost isn't luck (R3.5).
     simulated = simulate(players, matches, [*arrangements.values(), *chosen.values()], rules, rounds=rounds)
@@ -848,27 +864,12 @@ def _answer(
         for row in round_matches(gathered.fixtures, when)
         if row.round == round and row.kickoff_at == first_kickoff
     )
-    bench = []
-    seen: set[Role] = set()
-    for player in arranged.bench:
-        part = by_id[player.player_id]
-        reason = _bench_reason(player, arranged, player.role not in seen, part)
-        seen.add(player.role)
-        bench.append(BenchPlace.model_validate(_line(advisor, part) | {"reason": reason}))
     known_ids = {player.player_id for player in known}
     gone = [player.name for player in squad.players if player.player_id not in known_ids]
     sources = _sources(priced)
     lines = _source_lines(sources, advisor, when)
     times = [line.captured_at for line in lines]
-    thresholds = ", ".join(f"{mark.points:g}: {mark.chance:.0%}" for mark in best.thresholds[:3])
-    message = f"{best.formation}, expected about {best.mean:.0f} points" + (
-        f"; chance of reaching {thresholds}." if thresholds else "."
-    )
-    if override is not None:
-        message += (
-            f" Against the advice ({override.advised_formation}, about {override.advised_expected:.0f}), "
-            f"this costs {override.cost:.2f} points."
-        )
+    message = _message(best, override)
     moved = [] if asked else _moved(advisor, team, round, when, best, priced)
     options: dict[int, Option] = {player_id: part.value for player_id, part in by_id.items()}
     formation_choice = None if asked else formation_call(results, arrangements)
@@ -891,7 +892,7 @@ def _answer(
             LineupPlayer.model_validate(_line(advisor, by_id[player.player_id]))
             for player in arranged.starters
         ],
-        bench=bench,
+        bench=_bench_places(advisor, arranged, by_id),
         bench_rule=f"Your league substitutes {_RULES[rules.substitution_mode or 'same_role']}, the first "
         f"bench player with a rating, up to {rules.substitutions}.",
         left_off=[player.name for player in arranged.left_off],
@@ -903,7 +904,7 @@ def _answer(
         likely_scorers=_scorers(by_id, arranged),
         moved=moved,
         check_before_lock=_before_lock(advisor, priced, first_kickoff, first_match),
-        warnings=_warnings(advisor, priced, gone, left_out, round, rules),
+        warnings=_warnings(advisor, priced, gone, fielding.left_out, round, rules),
         improve=improve,
         sources=lines,
     )
@@ -915,7 +916,15 @@ def _answer(
                 logged_at=advisor.clock(),
                 user=advisor.user,
                 round=round,
-                players=[_logged(part) for part in priced],
+                players=[
+                    logged_player(
+                        part.facts.player.player_id,
+                        part.facts.player.name,
+                        part.value,
+                        playing=part.facts.match is not None,
+                    )
+                    for part in priced
+                ],
                 team=team,
                 formation=best.formation,
                 expected=best.mean,

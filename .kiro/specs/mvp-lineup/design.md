@@ -206,7 +206,7 @@ player, much of it repeated sources, and the target here is about 300 bytes per 
 `Decision` gains `kind="lineup"`, and the optional `team`, `formation`, `expected`, `thresholds` (each threshold's chance)
 `starters`, `bench`, `override_cost` and, with an override, `advised_starters`. Every squad player's published chances are logged. Earlier lines still read.
 
-### C10. Calibration (`domains/calibration.py`, `cli/`; R7.2 to R7.6)
+### C10. Calibration (`domains/calibration.py`, `mcp/calibrate.py`, `lake/calibration_store.py`, `cli/`; R7.2 to R7.6)
 
 Calibration asks a player for nothing, so it fits the routine of a draft, a check before the lock and a look back:
 
