@@ -26,6 +26,7 @@ from fantadamus.domains.calibration import (
     add_outcomes,
     brier,
     club_sheet,
+    final_overrides,
     finished_round,
     last_told,
     outcome_of,
@@ -493,3 +494,71 @@ def test_a_store_makes_its_own_folders(tmp_path: Path) -> None:
     store = CalibrationStore(tmp_path / "local" / "calibration")
     store.set(_report())
     assert store.get(11) is not None
+
+
+def test_a_match_without_a_sheet_scores_nothing() -> None:
+    """A postponed match has no marks, and nobody in it got a rating because nobody played: that says nothing
+    about the chances (design C10)."""
+    before = {1: StatsLine(rated_appearances=8, goals=2, goals_conceded=5)}
+    reason = "no official lineup stored"
+    assert outcome_of(1, None, before, before) == Outcome(reason, reason, reason, reason)
+
+
+def test_the_read_before_must_follow_the_last_round() -> None:
+    """A read during the last round would count the rest of that round's matches as this one's."""
+    ended = T0 - dt.timedelta(days=2)
+    frame = RoundFrame(
+        round=11, matches=[], first_kickoff=T0, last_kickoff=LAST, next_kickoff=NEXT, previous_kickoff=ended
+    )
+    settled = ended + FINISHED_AFTER
+    during, after = ended - dt.timedelta(hours=1), FINISHED + dt.timedelta(hours=1)
+    assert statistics_reads([during, after], frame) == (None, after)
+    assert statistics_reads([settled, after], frame) == (settled, after)
+    # A read that found the page unchanged since then counts, as it does after the round.
+    assert statistics_reads([during, after], frame, worked=[settled]) == (during, after)
+    assert statistics_reads([during, after], frame, worked=[ended]) == (None, after)
+    assert statistics_reads([during, after], frame, worked=[T0]) == (None, after)
+
+
+def test_a_frame_knows_when_the_last_round_ended() -> None:
+    earlier = [
+        _fixture(10, "alfa", "gamma", T0 - dt.timedelta(days=4)),
+        _fixture(10, "beta", "delta", T0 - dt.timedelta(days=3)),
+    ]
+    recovery = _fixture(9, "alfa", "delta", T0 + dt.timedelta(days=1))  # played after this round began
+    frame = round_frame([*earlier, recovery, *FIXTURES], 11, T0 - dt.timedelta(days=1))
+    assert frame is not None
+    assert frame.previous_kickoff == T0 - dt.timedelta(days=3)
+    first = round_frame(FIXTURES, 11, T0)
+    assert first is not None
+    assert first.previous_kickoff is None
+
+
+def _lineup_decision(
+    at: dt.datetime, cost: float | None, *, team: str = "mine", round: int = 11, user: str = "u"
+) -> Decision:
+    return _decision(at, round=round).model_copy(
+        update={"kind": "lineup", "team": team, "override_cost": cost, "user": user}
+    )
+
+
+def test_an_override_is_the_last_word_before_the_lock() -> None:
+    """Asking what a choice costs isn't making it: what counts is each user's last lineup before the lock."""
+    early, late = T0 - dt.timedelta(days=1), T0 - dt.timedelta(hours=1)
+    what_if = _lineup_decision(early, 0.7)
+    assert final_overrides([what_if, _lineup_decision(late, None)], 11, T0, "mine") == []
+    assert final_overrides([_lineup_decision(early, None), _lineup_decision(late, 0.7)], 11, T0, "mine") == [
+        0.7
+    ]
+    assert final_overrides([_lineup_decision(late, 0.3), what_if], 11, T0, "mine") == [0.3]  # in time order
+    assert final_overrides([what_if, _lineup_decision(late, 0.2, team="Other")], 11, T0, "mine") == [0.7]
+    assert final_overrides([_lineup_decision(late, 0.7, round=10)], 11, T0, "mine") == []
+    assert final_overrides([what_if, _lineup_decision(T0, None)], 11, T0, "mine") == [
+        0.7
+    ]  # too late to change it
+    assert final_overrides([_lineup_decision(late, 0.1, round=10), what_if], 11, T0, "mine") == [0.7]
+    assert final_overrides([_lineup_decision(late, None), _lineup_decision(late, 0.7)], 11, T0, "mine") == [
+        0.7
+    ]
+    two = [what_if, _lineup_decision(late, 0.4, user="v")]
+    assert sorted(final_overrides(two, 11, T0, "mine")) == [0.4, 0.7]
