@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from fantadamus.contracts.types import Role, UtcDatetime
 from fantadamus.contracts.xy.league import formation_lines
 from fantadamus.core.clubs import Clubs, UnknownClubError
+from fantadamus.core.files import temporary_beside
 from fantadamus.core.names import name_key
 from fantadamus.domains.players.resolve import KnownPlayer, resolve
 from fantadamus.league.rules import DEFAULT_ROOT, user_file
@@ -72,7 +73,7 @@ class SquadStore:
         squads.teams[_team_key(team)] = stored
         path = self._path(user)
         self.root.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(f".{path.name}.tmp")
+        temporary = temporary_beside(path)
         temporary.write_text(squads.model_dump_json(indent=2) + "\n", encoding="utf-8")
         temporary.replace(path)
         return stored

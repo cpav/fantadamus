@@ -102,7 +102,8 @@ Asking about a real 25-player squad took about 5 s under a profiler, nearly all 
 - **Names.** `_words` and `_spellings` are cached, and `availability` resolves each distinct name of a club once per call.
 - **Freshness.** The check goes through every row, so `gather` works it out once per kickoff, not once per player. Each match
   keeps its own answer, because lineups go stale sooner close to kickoff.
-- **A window on the lake.** `Facts.read(lake, as_of)` reads only rows captured in the 14 days up to `as_of`, filtered in
+- **A window on the lake.** A page unchanged for longer than the window is stored again, so its facts stay in it.
+  `Facts.read(lake, as_of)` reads only rows captured in the 14 days up to `as_of`, filtered in
   DuckDB. No freshness target is longer than 7 days, so no live answer needs more. A replay still works, since the window
   moves with `as_of`. Movement older than 7 days now has no earlier value, which the answer already handles. This also
   removes the 0.8 s a season's statistics rows would have cost.

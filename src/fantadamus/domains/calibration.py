@@ -16,6 +16,7 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from fantadamus.contracts.types import UtcDatetime
+from fantadamus.core.files import temporary_beside
 from fantadamus.core.names import name_key
 from fantadamus.domains.availability.silver import OfficialLineupRow
 from fantadamus.domains.fixtures.gold import matches
@@ -195,7 +196,7 @@ class CalibrationStore:
     def set(self, report: RoundReport) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
         path = self._path(report.round)
-        temporary = path.with_name(f".{path.name}.tmp")
+        temporary = temporary_beside(path)
         temporary.write_text(report.model_dump_json(indent=2) + "\n", encoding="utf-8")
         temporary.replace(path)
 

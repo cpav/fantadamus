@@ -108,11 +108,9 @@ class Calibrator:
         return kickoff is not None and kickoff - now < _QUIET_BEFORE_DEADLINE
 
     def _has_a_read_after(self, frame: RoundFrame, now: dt.datetime) -> bool:
-        rows = read_silver(self.lake, SEASON_STATS, frame.first_kickoff, now)
-        return (
-            statistics_reads((row.captured_at for row in rows), frame, worked=self._worked(now))[1]
-            is not None
-        )
+        rows = read_silver(self.lake, SEASON_STATS, frame.first_kickoff - FACTS_WINDOW, now)
+        changed, same = changed_reads(rows)
+        return statistics_reads(changed, frame, worked=[*same, *self._worked(now)])[1] is not None
 
     def _worked(self, now: dt.datetime) -> list[dt.datetime]:
         """When the statistics page was read, whether or not it had changed."""
@@ -233,6 +231,18 @@ class Calibrator:
         return tally
 
 
+def changed_reads(rows: Sequence[PlayerSeasonRow]) -> tuple[list[dt.datetime], list[dt.datetime]]:
+    """The reads that changed the figures, and those that stored the same ones again: a page unchanged for
+    longer than an answer's window is stored again, which says nothing has moved."""
+    changed: list[dt.datetime] = []
+    same: list[dt.datetime] = []
+    last = None
+    for captured_at, content in sorted({(row.captured_at, row.content_sha256) for row in rows}):
+        (changed if content != last else same).append(captured_at)
+        last = content
+    return changed, same
+
+
 def _statistics(
     rows: Sequence[PlayerSeasonRow], frame: RoundFrame, worked: Sequence[dt.datetime]
 ) -> tuple[Mapping[int, StatsLine] | None, Mapping[int, StatsLine] | None]:
@@ -249,7 +259,8 @@ def _statistics(
             if row.captured_at == when
         }
 
-    before, after = statistics_reads((row.captured_at for row in rows), frame, worked=worked)
+    changed, same = changed_reads(rows)
+    before, after = statistics_reads(changed, frame, worked=[*same, *worked])
     return read_at(before), read_at(after)
 
 

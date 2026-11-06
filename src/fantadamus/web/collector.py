@@ -31,6 +31,7 @@ from fantadamus.domains.facts import (
     submit_many,
 )
 from fantadamus.domains.fixtures.silver import FIXTURES
+from fantadamus.domains.freshness import FACTS_WINDOW
 from fantadamus.domains.odds.silver import ODDS
 from fantadamus.domains.season.silver import SEASON_STATS
 from fantadamus.lake.duckdb_store import LakeStore
@@ -205,8 +206,10 @@ class Collector:
     def _store(
         self, fetched: Page, page: PageKind, carried: tuple[str, ...], new: Submissions, found: list[str]
     ) -> PageReport:
-        """Store each kind of fact that changed since the page's last stored read (R1.4)."""
-        last = {domain.source: last_read(self.lake, domain, fetched.url) for domain in new}
+        """Store each kind of fact that changed since the page's last stored read (R1.4). A read older than an
+        answer's window doesn't count, so that an unchanged page's facts stay where answers look for them."""
+        since = fetched.fetched_at - FACTS_WINDOW
+        last = {domain.source: last_read(self.lake, domain, fetched.url, since) for domain in new}
         stored: dict[str, int] = {}
         problems = list(found)
         changed = to_store(new, last)
