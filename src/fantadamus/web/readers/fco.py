@@ -60,6 +60,7 @@ _SIGNS = (("1", "home_win"), ("X", "draw"), ("2", "away_win"))  # the 1X2 boxes,
 _FEWEST_MARKS = STARTERS - 1
 """The page marks a team's real starters: on ten finished rounds' pages (4 November), 177 of 200 teams had 11
 marks and 23 had 10, because the eleventh wasn't on the page. Fewer means the lineup isn't out yet."""
+_UPDATED_AFTER_KICKOFF = dt.timedelta(days=30)
 _ROUND = re.compile(r"(\d+)\s*ª\s*Giornata", re.IGNORECASE)
 _UPDATED = re.compile(r"(\d{1,2}) (\w+) alle (\d{1,2}):(\d{2})")
 _NUMBER = re.compile(r"\d+(?:,\d+)?")
@@ -126,7 +127,10 @@ def read_round(html: str, round: int | None = None) -> RoundFacts:
     found = _Found()
     for pane, header in panes:
         home, away, kickoff = _match(header)
-        fixtures.append(Fixture(home=home, away=away, kickoff_at=kickoff))
+        try:
+            fixtures.append(Fixture(home=home, away=away, kickoff_at=kickoff))
+        except ValidationError as error:
+            raise UnreadablePageError(f"{home} v {away}: {error.errors()[0]['msg']}") from error
         _read_match(pane, home, away, kickoff, found)
     try:
         in_order = sorted(fixtures, key=lambda match: (match.kickoff_at, match.home, match.away))
@@ -223,7 +227,8 @@ def _odds(pane: Element, home: str, away: str) -> tuple[dict[str, float], float 
 
 
 def _updated_at(text: str, kickoff: dt.datetime) -> dt.datetime | None:
-    """`quote aggiornate il 30 ottobre alle 18:13`, Italian time, in the year that puts it before kickoff."""
+    """`quote aggiornate il 30 ottobre alle 18:13`, Italian time, in the year that puts it near the kickoff. A
+    finished round's page can show a time a little after it."""
     found = _UPDATED.search(text)
     if found is None or found.group(2).lower() not in _MONTHS:
         return None
@@ -234,7 +239,7 @@ def _updated_at(text: str, kickoff: dt.datetime) -> dt.datetime | None:
             stamp = dt.datetime(year, month, day, hour, minute, tzinfo=ROME).astimezone(dt.UTC)
         except ValueError:  # 29 February in a year without it
             continue
-        if stamp <= kickoff:
+        if stamp <= kickoff + _UPDATED_AFTER_KICKOFF:
             return stamp
     return None
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import http.client
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -150,3 +151,47 @@ def test_block_expires(tmp_path: Path) -> None:
         fetcher.fetch("https://example.org/page")
     time.now += 2
     assert fetcher.fetch("https://example.org/page").text == "<p>ok</p>"
+
+
+@pytest.mark.parametrize(
+    "unreadable", [TimeoutError("timed out"), Response(503, {}, b""), Response(429, {}, b"")]
+)
+def test_a_robots_failure_isnt_remembered(tmp_path: Path, unreadable: Response | Exception) -> None:
+    """Found by the code review: nothing is fetched while robots.txt can't be read, but one failure isn't the
+    site's answer, so the next run asks again rather than staying away all day."""
+    down = FakeWeb(
+        {
+            "https://site.example/robots.txt": unreadable,
+            "https://site.example/page": WEB["https://site.example/page"],
+        }
+    )
+    with pytest.raises(DisallowedError):
+        _fetcher(down, tmp_path).fetch("https://site.example/page")
+    assert _fetcher(FakeWeb(dict(WEB)), tmp_path).fetch("https://site.example/page").status == 200
+
+
+def test_a_damaged_robots_cache_is_read_again(tmp_path: Path) -> None:
+    (tmp_path / "site.example.json").write_text('{"date": "2026-10', encoding="utf-8")
+    assert _fetcher(FakeWeb(dict(WEB)), tmp_path).fetch("https://site.example/page").status == 200
+    assert not list(tmp_path.glob(".*.tmp"))
+
+
+@pytest.mark.parametrize(
+    "broken", [http.client.IncompleteRead(b"half"), http.client.BadStatusLine("nonsense")]
+)
+def test_a_broken_answer_is_a_failed_fetch(tmp_path: Path, broken: Exception) -> None:
+    web = FakeWeb(
+        {"https://site.example/robots.txt": Response(404, {}, b""), "https://site.example/page": broken}
+    )
+    with pytest.raises(FetchFailedError):
+        _fetcher(web, tmp_path).fetch("https://site.example/page")
+
+
+def test_an_unknown_charset_falls_back(tmp_path: Path) -> None:
+    web = FakeWeb(
+        {
+            "https://site.example/robots.txt": Response(404, {}, b""),
+            "https://site.example/page": Response(200, {"Content-Type": "text/html; charset=nonsense"}, BODY),
+        }
+    )
+    assert _fetcher(web, tmp_path).fetch("https://site.example/page").text == BODY.decode()
