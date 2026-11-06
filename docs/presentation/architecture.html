@@ -286,7 +286,7 @@
     <figure class="fig">
       <div class="scroll">
         <svg viewBox="0 0 1000 470" role="img"
-             aria-label="Your Claude app asks the read tools and gets an answer or a refresh plan. When asked, it reads approved sites and sends facts to the submit tools. Checks pass facts into bronze storage, which feeds silver and gold. The planned decision engine reads gold and gives the read tools their numbers.">
+             aria-label="Your Claude app asks the read tools and gets an answer or a refresh plan. When asked, it reads approved sites and sends facts to the submit tools. Checks pass facts into bronze storage, which feeds silver and gold. Fantadamus's collector also reads two approved pages itself and sends their facts to the checks. The decision engine gives the read tools their numbers.">
           <defs>
             <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0 0 L10 5 L0 10 z" class="mk" />
@@ -315,12 +315,15 @@
           <text class="gl" x="262" y="56">MCP SERVER</text>
           <rect class="bx" x="265" y="80" width="200" height="104" rx="8" />
           <text class="t" x="365" y="114" text-anchor="middle">Read tools</text>
-          <text class="ts" x="365" y="138" text-anchor="middle">today:</text>
-          <text class="ts" x="365" y="156" text-anchor="middle">best_lineup and more</text>
+          <text class="ts" x="365" y="138" text-anchor="middle">best_lineup · outlook</text>
+          <text class="ts" x="365" y="156" text-anchor="middle">compare_players</text>
+          <rect class="bx" x="265" y="196" width="200" height="88" rx="8" />
+          <text class="t" x="365" y="230" text-anchor="middle">Collector</text>
+          <text class="ts" x="365" y="254" text-anchor="middle">reads its two main pages</text>
           <rect class="bx" x="265" y="296" width="200" height="104" rx="8" />
           <text class="t" x="365" y="330" text-anchor="middle">Submit tools</text>
-          <text class="ts" x="365" y="354" text-anchor="middle">today:</text>
-          <text class="ts" x="365" y="372" text-anchor="middle">the submit tools</text>
+          <text class="ts" x="365" y="354" text-anchor="middle">what Claude reads</text>
+          <text class="ts" x="365" y="372" text-anchor="middle">through read_page</text>
 
           <!-- checks and engine -->
           <rect class="bx" x="530" y="296" width="170" height="104" rx="8" />
@@ -358,6 +361,9 @@
           <text class="tl" x="224" y="305" text-anchor="end">time read</text>
 
           <!-- edges: the server -->
+          <polyline class="ar" points="265,270 240,270 240,420 202,420" marker-end="url(#ah)" />
+          <text class="tl" x="240" y="460" text-anchor="end">the collector reads</text>
+          <polyline class="ar hot" points="465,270 498,270 498,330 528,330" marker-end="url(#ahh)" />
           <line class="ar hot" x1="465" y1="348" x2="528" y2="348" marker-end="url(#ahh)" />
           <line class="ar hot" x1="700" y1="348" x2="763" y2="348" marker-end="url(#ahh)" />
           <text class="tl hot" x="731" y="338" text-anchor="middle">pass</text>
@@ -372,7 +378,6 @@
       </div>
       <div class="legend">
         <span><i></i>runs today</span>
-        <span><i class="plan"></i>planned</span>
         <span><i class="claude"></i>the player's own Claude</span>
       </div>
       <figcaption>
@@ -395,8 +400,8 @@
       </div>
       <div class="note">
         <h3>Why collect once</h3>
-        <p>Facts are stored with their source and time and shared. When one player refreshes Genoa's lineup
-          news, the other's next question uses it too.</p>
+        <p>Facts are stored with their source and time. Once the server is online, when one player refreshes
+          Genoa's lineup news, the other's next question uses it too.</p>
       </div>
     </div>
   </section>
@@ -411,7 +416,7 @@
       <li><span class="who claude">Claude</span><p>Says “refreshing Genoa's lineup news…” and reads those pages through <code>read_page</code>.</p></li>
       <li><span class="who claude">Claude</span><p>Submits structured facts with the page's link, when the page was published and when it was read. It leaves a field empty rather than guess.</p></li>
       <li><span class="who us">Fantadamus</span><p>Checks the contract, the source host, the player names and the quality rules. A rejection comes back with its reason; Claude fixes only what the reason names.</p></li>
-      <li><span class="who us">Fantadamus</span><p>Appends the submission to bronze, rebuilds silver and gold, and recomputes the engine's numbers.</p></li>
+      <li><span class="who us">Fantadamus</span><p>Appends the submission to bronze, rebuilds silver, and works out the engine's numbers from it.</p></li>
       <li><span class="who claude">Claude</span><p>Calls the read tool again and relays the verdict, the margin and the reasons, in the player's language.</p></li>
     </ol>
   </section>
@@ -430,7 +435,7 @@
         <tbody>
           <tr><th scope="row">Bronze</th><td>Each submission exactly as received, inside its envelope.</td><td>Append-only. The same payload sent twice adds a second file; no file is ever rewritten.</td></tr>
           <tr><th scope="row">Silver</th><td>Validated rows, one per player, the latest by when the source was read.</td><td>Invalid rows stay out and are reported with field-level reasons. Ties break on content, so the order facts arrive in never changes the result.</td></tr>
-          <tr><th scope="row">Gold</th><td>The data products the read tools serve, each row carrying its source links.</td><td>Rebuilt from silver. Tests compare gold with reviewed golden files.</td></tr>
+          <tr><th scope="row">Gold</th><td>The data products the read tools serve, each carrying its source links.</td><td>Worked out from silver when asked, as of any moment.</td></tr>
         </tbody>
       </table>
     </div>
@@ -525,15 +530,15 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
     <span class="label">Gates</span>
     <h2>Nothing moves on a red check</h2>
     <div class="stats">
-      <div class="stat"><b>245</b><span>tests, written before the code they test</span></div>
-      <div class="stat"><b>98.3%</b><span>of lines covered (95.5% of branches); the floor is 90% and only goes up</span></div>
+      <div class="stat"><b>997</b><span>tests, written before the code they test</span></div>
+      <div class="stat"><b>98.6%</b><span>of lines covered (95.1% of branches); the floor is 90% and only goes up</span></div>
       <div class="stat"><b>500</b><span>generated examples per property test in <code>make check</code></span></div>
       <div class="stat"><b>0</b><span>errors from <code>mypy --strict</code></span></div>
     </div>
     <div class="checks">
       <div class="group">
-        <span class="label">Static · 15</span>
-        <div class="pills"><span>lockfile</span><span>tool versions</span><span>format</span><span>lint</span><span>types</span><span>YAML</span><span>SQL</span><span>Markdown</span><span>Actions</span><span>suppressions</span><span>thresholds</span><span>ADR lint</span><span>contracts</span><span>identities</span><span>secrets</span></div>
+        <span class="label">Static · 16</span>
+        <div class="pills"><span>lockfile</span><span>tool versions</span><span>format</span><span>lint</span><span>types</span><span>YAML</span><span>SQL</span><span>Markdown</span><span>Actions</span><span>suppressions</span><span>thresholds</span><span>ADR lint</span><span>contracts</span><span>hook config</span><span>identities</span><span>secrets</span></div>
       </div>
       <div class="group">
         <span class="label">Tests · 2</span>
@@ -566,8 +571,8 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
       <div class="stage">
         <span class="label">MVP · Phase 3</span>
         <h3>Online, nothing to install</h3>
-        <p>The same server as an AWS Lambda endpoint that Claude apps connect to, with nothing to install, with the lake on a
-          private S3 prefix. How players sign in is decided in Phase 3.</p>
+        <p>The same server as an AWS Lambda endpoint that Claude apps connect to, so a player installs nothing, with
+          the lake on a private S3 prefix. How players sign in is decided in Phase 3.</p>
       </div>
       <div class="stage">
         <span class="label">v1 · later</span>
@@ -613,7 +618,7 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
   </section>
 
   <div class="foot">
-    <p class="fineprint">Figures measured against the code on 6 November 2026 (main at b57ddc8). Update them when the system changes.</p>
+    <p class="fineprint">Figures measured against the code on 6 November 2026 (main at ccd73df). Update them when the system changes.</p>
     <p class="fineprint">Source of truth: .kiro/steering/, ADR-0005, ADR-0006 and docs/method.md.</p>
   </div>
 </div>
