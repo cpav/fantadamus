@@ -21,8 +21,8 @@ from fantadamus.league.rules import CLASSIC
 from fantadamus.league.squads import SquadStore
 from fantadamus.mcp.calibrate import Calibrator
 from fantadamus.web.fetch import Response
-from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE, FakeWeb, round_collector
-from tests.collect_pages import FcoMatch, fco_round_page, stats_page
+from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE, TAKERS_ROUTE, FakeWeb, round_collector
+from tests.collect_pages import FcoMatch, fco_round_page, stats_page, takers_page
 from tests.lineup_data import FORMATIONS
 from tests.roles_data import stats_row
 from tests.xy_harness import NOW, TAKERS, TEAM_TABLE, WORDS, SetClock, send, tools
@@ -62,6 +62,11 @@ SQUAD = [
     *(f"{club} {word}" for club in ("Alfa", "Gamma") for word in ("Sei", "Sette", "Otto", "Dodici")),
     *(f"{club} {word}" for club in ("Beta", "Delta") for word in ("Nove", "Dieci", "Undici")),
 ]
+
+
+def _usual_takers() -> str:
+    """The takers page, listing what `TAKERS` lists."""
+    return takers_page({club: [f"{club} Nove", f"{club} Dieci"] for club in CLUBS})
 
 
 def player_id(club: str, word: str) -> int:
@@ -130,18 +135,28 @@ async def a_round(
     squad: bool = True,
     table: bool = True,
     rounds: int = 500,
+    takers: str | None = None,
 ) -> AsyncIterator[Round]:
-    """The tools over a lake that holds the table and the takers; the collector reads the pages when asked."""
+    """The tools over a lake that holds the table and the takers; the collector reads the pages when asked,
+    the takers too once they're stale. With `takers`, it reads them from that page, and the lake has none."""
     store, clock = LakeStore(tmp_path / "lake"), SetClock(NOW)
     base = "https://example.org"
     routes: dict[str, Response | Exception] = {
         f"{base}/robots.txt": Response(404, {}, b""),
         f"{base}{ROUND_ROUTE}": Response(200, HTML, fco_round_page(*matches).encode()),
         f"{base}{STATS_ROUTE}": Response(200, HTML, stats_page(players or rows()).encode()),
+        f"{base}{TAKERS_ROUTE}": Response(200, HTML, (takers or _usual_takers()).encode()),
     }
     web = FakeWeb(routes)
     collector = round_collector(
-        store, base, tmp_path / "robots", transport=web, hosts=["example.org"], clock=clock, statistics=True
+        store,
+        base,
+        tmp_path / "robots",
+        transport=web,
+        hosts=["example.org"],
+        clock=clock,
+        statistics=True,
+        takers=True,
     )
     log = CollectLog(tmp_path / "collect")
     async with tools(
@@ -169,8 +184,9 @@ async def a_round(
             ),
         )
         if table:
-            for tool, payload in (("submit_team_season", TEAM_TABLE), ("submit_penalty_takers", TAKERS)):
-                assert not (await send(client, tool, payload, READ)).is_error
+            assert not (await send(client, "submit_team_season", TEAM_TABLE, READ)).is_error
+            if takers is None:
+                assert not (await send(client, "submit_penalty_takers", TAKERS, READ)).is_error
         if league:
             await here.set_rules()
         if squad:

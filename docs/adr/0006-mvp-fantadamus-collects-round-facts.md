@@ -9,6 +9,8 @@
   reader (Fantacalcio-Online's round page); the user's Claude reads the other listed pages from text that
   Fantadamus fetched under these rules, through `read_page` (`mvp-collect` requirements R3, amended). So the
   "each page needs a reader" consequence below applies to that one page.
+- **Note, 2026-11-06:** the penalty-takers page, already among the pages below, also gets a reader, at the owner's request:
+  takers change during the season, and an answer should notice (`mvp-lineup` R10.3). The same rules apply.
 
 ## Context
 

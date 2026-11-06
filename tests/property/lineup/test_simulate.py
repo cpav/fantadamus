@@ -102,7 +102,7 @@ def test_p4_means_match_the_models(
         average_rating=6.3,
         goals=goals,
         yellow_cards=cards,
-        penalty_taker=taker,
+        penalty_share=float(taker),
         team_xg=team_xg,
         p_start=1.0,
         p_cameo=0.0,

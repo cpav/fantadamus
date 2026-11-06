@@ -40,7 +40,7 @@ def test_at2_goal_chances() -> None:
         assists=0,
         yellow_cards=0,
         club_goals_per_match=2.0,
-        penalty_taker=False,
+        penalty_share=0.0,
         team_xg=1.35,
         p_win=0.45,
         p_loss=0.30,

@@ -27,6 +27,7 @@ from tests.xy_harness import CLUBS, NOW
 HTML = {"Content-Type": "text/html; charset=utf-8"}
 ROUND_ROUTE = "/probabili-formazioni/ultima-giornata"
 STATS_ROUTE = "/statistiche-serie-a"
+TAKERS_ROUTE = "/rigoristi-serie-a"
 
 
 @dataclass
@@ -130,10 +131,12 @@ def round_collector(
     clock: Clock | None = None,
     statistics: bool = False,
     statistics_enabled: bool = True,
+    takers: bool = False,
+    takers_enabled: bool = True,
 ) -> Collector:
     """The collector over `store`, reading the round page at `base_url` + `ROUND_ROUTE` (or round n's page),
-    and with `statistics` the statistics page at `base_url` + `STATS_ROUTE`, with a fake monotonic clock so
-    the rate limit costs no time."""
+    with `statistics` the statistics page at `base_url` + `STATS_ROUTE`, and with `takers` the penalty takers
+    at `base_url` + `TAKERS_ROUTE`, with a fake monotonic clock so the rate limit costs no time."""
     clock = clock or ticking()
     time = FakeTime()
 
@@ -153,6 +156,8 @@ def round_collector(
         round=base_url + "/probabili-formazioni/{round}-giornata",
         statistics=base_url + STATS_ROUTE if statistics else None,
         statistics_enabled=statistics_enabled,
+        takers=base_url + TAKERS_ROUTE if takers else None,
+        takers_enabled=takers_enabled,
     )
     return Collector(
         fetcher=fetcher, lake=store, clubs=CLUBS, config=config, allowed_hosts=tuple(hosts), clock=clock

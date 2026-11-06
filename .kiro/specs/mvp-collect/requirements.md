@@ -177,6 +177,7 @@ deadline is answered at once.
 
   The table, penalty takers and players' season figures aren't scheduled: a scheduled run has no Claude to read
   their pages. They are read through `read_page` when an answer finds them past their 7-day freshness target.
+  *(Amended by `mvp-lineup` R10.3, 2026-11-06: the collector reads the penalty takers daily, with a 48-hour target.)*
 
 - **R7.2** THE SYSTEM SHALL document how a player sets up their Mac to run `collect --due` every 15 minutes
   (launchd). The player installs it themselves; the collector does nothing when nothing is due.

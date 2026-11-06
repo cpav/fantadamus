@@ -11,14 +11,14 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
   every step names its requirements and test, and that its ADRs are Accepted. Task 1's branch makes this spec the default
   (`CURRENT_SPEC` in `scripts/checks/task_check.py`).
 - **A ticked box** (`- [x]`) marks a task or step as done; the agent ticks it on the task's branch.
-- **The property tests P1–P11 in the design are required.** No task is optional.
+- **The property tests P1–P12 in the design are required.** No task is optional.
 - **Each task ends with the task report**; the owner approves the pull request, the agent squash-merges it.
 - **Breaking the code on purpose** has found tests that couldn't fail, in every slice so far. Each code task does it once before
   its report, and says what it found.
 - **Tests for this spec** live in a `lineup/` folder in each test layer:
   - squads are invented, and a real squad never reaches the repository, fixtures or committed logs;
   - tests never touch the internet: the collector runs against the local server on 127.0.0.1.
-- **The order:** 1 and 2 in turn; then 3 and 4 in either order, since the engine is pure; then 5, 6, 10, 7, 8 and 9.
+- **The order:** 1 and 2 in turn; then 3 and 4 in either order, since the engine is pure; then 5, 6, 10, 7, 8, 11, 12 and 9.
 
 ## Tasks
 
@@ -201,6 +201,32 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Requirements: R8.4_
     - _Test: **AT-17** `tests/acceptance/lineup/test_penalties.py::test_at17_a_share_counts_open_play_goals`,
       `::test_at17_the_same_open_play_goals_the_same_share`, `::test_at17_the_tools_pass_the_penalties_through`_
+
+- [x] 12. Penalty takers (added 2026-11-06, the owner's request after round 11)
+  - Branch: `feat/ml-12-takers` · Depends on: 11 · ADRs: ADR-0006
+  - [x] 12.1 The share: a listed taker's penalty term counts the chance that everyone listed ahead of him misses the start, through
+    the value, the cameo, the simulation, the answers and calibration; the method's §A4 says so.
+    - _Requirements: R10.1, R10.2_
+    - _Test: **AT-18** `tests/acceptance/lineup/test_takers.py::test_at18_the_next_taker_gets_what_the_first_leaves`,
+      `::test_at18_a_first_taker_out_hands_it_all_on`; **P12** `tests/property/lineup/test_takers.py::test_p12_a_share_never_rises_down_the_list`;
+      `tests/unit/lineup/test_takers.py::test_share_by_hand`, `::test_a_name_nobody_knows_counts_as_missing`, `::test_not_listed_gets_none`,
+      `tests/unit/xy/test_forwards.py::test_penalty_term_scales_with_the_share`_
+  - [x] 12.2 The takers page: its reader, a third page kind, on demand and daily on the schedule, and 48 hours' freshness.
+    - _Requirements: R10.3_
+    - _Test: **AT-19** `tests/acceptance/lineup/test_takers.py::test_at19_the_collector_reads_the_takers`,
+      `::test_at19_a_missing_list_is_read_by_the_answer`, `::test_at19_an_unchanged_list_stays_fresh`, `::test_at19_due_daily`,
+      `tests/unit/collect/test_read_takers.py::test_each_club_in_order`, `::test_a_changed_layout_is_unreadable`,
+      `tests/contract/test_real_pages.py::test_every_club_on_the_takers_page`_
+  - [x] 12.3 A changed order, and the list against the record, in every answer.
+    - _Requirements: R10.4, R10.5_
+    - _Test: **AT-20** `tests/acceptance/lineup/test_takers.py::test_at20_a_changed_order_is_named`, `::test_at20_the_list_against_the_record`;
+      `tests/unit/lineup/test_takers.py::test_a_change_is_shown_for_a_week`, `::test_a_repeated_order_is_no_change`, `::test_level_figures_say_nothing`_
+  - [x] 12.4 A note to check an official lineup only while it isn't out.
+    - _Requirements: R10.6_
+    - _Test: **AT-21** `tests/acceptance/lineup/test_takers.py::test_at21_the_note_follows_the_official_lineup`_
+  - [x] 12.5 The agent prompt, the README and the presentation pages: Fantadamus reads the takers itself.
+    - _Requirements: R10.3_
+    - _Test: `tests/unit/test_repo_hygiene.py` stays green, and the prompt stays within what a Project takes_
 
 - [x] 7. Calibration
   - Branch: `feat/ml-7-calibration` · Depends on: 5, 10 · ADRs: ADR-0006

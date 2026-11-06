@@ -89,7 +89,7 @@ FRESH_FOR_HOURS = {
     "match_odds": 24,
     "player_season": 48,  # a round's ratings count before the next round (mvp-roles R1.4)
     "team_season": 7 * 24,
-    "penalty_takers": 7 * 24,
+    "penalty_takers": 48,  # read daily, so that a change is noticed (mvp-lineup R10.3)
     "fixtures": 7 * 24,
 }
 FRESH_NEAR_MATCH_HOURS = {"probable_lineups": 3, "match_odds": 6}

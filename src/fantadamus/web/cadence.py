@@ -8,6 +8,7 @@ design C7; R7.1, R7.2).
 | Match odds | Daily from 72 hours before the match; every 3 hours in the last 24 |
 | Fixtures | Weekly |
 | Players' season figures | Daily (mvp-roles R1.4) |
+| Penalty takers | Daily (mvp-lineup R10.3) |
 
 A match's facts stop being due at its kickoff: there's nothing left to forecast. Each interval counts from the
 collector's last attempt at the page that carries the fact, successful or not: a site that refuses is asked
@@ -26,11 +27,18 @@ from fantadamus.domains.fixtures.gold import matches, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.web.collector import STATS_FACTS, Collector, CollectReport, PageKind
+from fantadamus.web.collector import Collector, CollectReport, PageKind, page_of
 
-SCHEDULED = ("fixtures", "probable_lineups", "official_lineups", "match_odds", "player_season")
+SCHEDULED = (
+    "fixtures",
+    "probable_lineups",
+    "official_lineups",
+    "match_odds",
+    "player_season",
+    "penalty_takers",
+)
 _HOUR = dt.timedelta(hours=1)
-_ALWAYS = {"fixtures": 7 * 24 * _HOUR, "player_season": 24 * _HOUR}
+_ALWAYS = {"fixtures": 7 * 24 * _HOUR, "player_season": 24 * _HOUR, "penalty_takers": 24 * _HOUR}
 """Due at these intervals whatever the matches."""
 _WINDOW = {
     "probable_lineups": 72 * _HOUR,
@@ -47,6 +55,7 @@ _ON_DEMAND_EVERY: dict[PageKind, dt.timedelta] = {
     "round": dt.timedelta(minutes=15),
     "statistics": 24 * _HOUR,
     "finished_round": dt.timedelta(minutes=15),
+    "takers": 24 * _HOUR,
 }
 """The shortest interval of each page's facts in the table."""
 
@@ -79,7 +88,7 @@ def due(
 
 def may_read(fact: str, log: CollectLog | None, now: dt.datetime) -> bool:
     """Whether an answer may ask the collector for `fact` now (mvp-collect R1.4)."""
-    return may_read_page("statistics" if fact in STATS_FACTS else "round", log, now)
+    return may_read_page(page_of(fact), log, now)
 
 
 def may_read_page(page: PageKind, log: CollectLog | None, now: dt.datetime) -> bool:
@@ -93,7 +102,6 @@ def may_read_page(page: PageKind, log: CollectLog | None, now: dt.datetime) -> b
 def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]:
     """The facts past their cadence at `now`, in the table's order."""
     last_read = log.last_attempt(now)
-    statistics_read = log.last_attempt(now, "statistics")
     fixtures = read_silver(lake, FIXTURES)
     round = next_round(fixtures, now)
     upcoming = [row for row in matches(fixtures, now) if row.round == round] if round is not None else []
@@ -103,7 +111,7 @@ def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]
     found = []
     for fact in SCHEDULED:
         if fact in _ALWAYS:
-            if due(fact, statistics_read if fact == "player_season" else last_read, now, None):
+            if due(fact, log.last_attempt(now, page_of(fact)), now, None):
                 found.append(fact)
         elif any(
             due(fact, last_read, now, row.kickoff_at, confirmed=(row.home, row.away) in confirmed)

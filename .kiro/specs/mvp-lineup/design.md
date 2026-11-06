@@ -298,6 +298,24 @@ have this repository.
 `improve` once; state an override's cost once, then help with the user's choice. When a user with a squad asks about two roles, point to `best_lineup`. `compare_players`'
 two-role message says so too. The README and the player guide say how to give a squad and rules.
 
+### C13. Penalty takers (`domains/season/gold.py`, `web/readers/fcit_takers.py`, `web/collector.py`, `web/cadence.py`; R10)
+
+- **The share (R10.1).** `penalty_share(player, order, mates, chance_of_starting)` walks the list: 1 for the first, then times
+  (1 − p_start) for each taker ahead. It is 0 for a player not listed. `PlayerFacts` carries it, the advisor and calibration work it
+  out with their own chances of starting, and `OutfieldInputs.penalty_share` replaces `penalty_taker`, scaling the penalty term in
+  the value, the cameo and the simulation. Only a listed player's list is walked, so an answer's cost barely moves.
+- **Saying so (R10.2).** The share and these notes join a player's `disagreements`, which every answer already shows. The answer's
+  `penalty_taker` becomes `share >= 0.5`, and `penalty_share` is added beside it.
+- **The page (R10.3).** Each club is a `div.team-card` with a `span.team-name`, and a column headed "Rigori" whose ranked list holds
+  the names, written as on the statistics page. The page's title and that heading are checked, so a changed layout is unreadable,
+  not misread. It's a third page kind, `takers`, with its own fact tuple and a 24-hour interval like the statistics page's, and
+  `collector.takers` switches it on and `takers_enabled` off. `_fresh` gets its `confirmed` reads, so an unchanged list stays fresh.
+- **A changed order (R10.4).** `order_change(rows, club, as_of)` compares a club's latest read with the one before it, from the same
+  window of rows. Reads that repeat the same order, such as the one stored again when the window runs out, don't count.
+- **The list against the record (R10.5).** `penalty_mismatch(order, player, seasons, mates)` compares the listed first's penalties taken
+  with his club-mates', from one pass over the season rows. It only speaks when the player asked about is one of the two.
+- **The official lineup (R10.6).** `_before_lock` and `check_before_deadline` look at whether the first match's official lineup is in.
+
 ## Error handling
 
 | Condition | Behaviour |
@@ -330,6 +348,7 @@ These Hypothesis tests are required:
 | P8 | `set_squad` resolves the same players whatever order the names arrive in, and stores nothing if any name fails | R1.2 |
 | P9 | Brier scores stay between 0 and 1, and a forecast that was right every time scores 0 | R7.2 |
 | P11 | For any forward, the chance of a rating and the key reproduce his simulated mean, starting or coming on, so they can be trusted for ordering | R8.3 |
+| P12 | A taker's share stays between 0 and 1, the first listed has all of it, and it never rises going down the list | R10.1 |
 | P10 | Scoring never uses a chance logged, or a fact captured, after a player's kickoff, and an official lineup never feeds the model on everyone | R7.4 |
 
 ## Testing strategy
@@ -360,7 +379,8 @@ $0. No new pages or requests: a lineup reads the same two pages as today, within
 6. **Overrides and calls:** `start`, `leave_out`, `formation`, and the cost.
 7. **Calibration:** a finished round scored by itself, both sets, and `fantadamus calibrate`.
 8. **The agent prompt, the league profile and the docs.**
-9. **The real round and this slice's sign-off:** testing from Claude Code, AT-13, the first calibration report, a mutation-testing
+9. **Penalty takers:** the share, the takers page, a changed order, the list against the record.
+10. **The real round and this slice's sign-off:** testing from Claude Code, AT-13, the first calibration report, a mutation-testing
    run on the core modules, and the phase report.
 
 ## Open points for the owner

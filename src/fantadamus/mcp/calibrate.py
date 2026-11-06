@@ -45,6 +45,7 @@ from fantadamus.domains.season.gold import (
     known_players,
     league_goals_per_match,
     penalty_order,
+    penalty_share,
     team_season,
 )
 from fantadamus.domains.season.silver import PLAYER_SEASONS, SEASON_STATS, PlayerSeasonRow
@@ -56,7 +57,7 @@ from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, scoring_for
 from fantadamus.league.squads import MINE
-from fantadamus.mcp.advisor import Facts, PlayerFacts, model_inputs, model_value, takes_penalties
+from fantadamus.mcp.advisor import Facts, PlayerFacts, model_inputs, model_value
 from fantadamus.web.cadence import may_read, may_read_page
 from fantadamus.web.collector import Collector, CollectReport
 
@@ -286,6 +287,10 @@ def _score_match(
             names=names,
         )
 
+    def starts(mate: KnownPlayer) -> float:
+        present = chances(mate, as_of)
+        return present.p_start if present is not None else 1.0
+
     seen: set[int] = set()
     for club, name in sorted({(row.club, row.name) for row in on_page}):
         mates = [player for player in known if player.club == club]
@@ -306,8 +311,8 @@ def _score_match(
                 tally.add(STARTING, page.p_start, outcome.started)
             tally.note(THE_REST, "no facts held before his kickoff")
             continue
-        side = PlayerFacts(player, form, table, order, match, present, xg, [])
-        inputs = model_inputs(side, takes_penalties(side, known), league)
+        share = penalty_share(player, order, mates, starts)
+        inputs = model_inputs(PlayerFacts(player, form, table, order, match, present, xg, [], share), league)
         value = model_value(inputs, scoring_for(CLASSIC, form.role))
         add_outcomes(
             tally,

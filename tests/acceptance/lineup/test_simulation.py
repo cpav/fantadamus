@@ -122,7 +122,7 @@ def test_at3_a_cameo_with_a_rating_blocks_his_substitute() -> None:
 def test_at3_a_cameo_can_end_with_no_rating_and_then_is_replaced(taker: bool) -> None:
     """A forward's cameo gets a rating 60% of the time without a goal (R9.7): both happen, and the mean is the
     model's, with a taker's penalties in it."""
-    inputs = outfield_inputs("A", "Pc", team_xg=1.4, penalty_taker=taker, p_start=0.0, p_cameo=1.0)
+    inputs = outfield_inputs("A", "Pc", team_xg=1.4, penalty_share=float(taker), p_start=0.0, p_cameo=1.0)
     value = outfield.value(inputs, CLASSIC)
     player = outfield_player(1, inputs, value, CLASSIC, (0, 0))
     scores = [scores[1] for scores, _ in draw_rounds([player], [(1.4, 1.0)], rounds=40_000, seed=3)]

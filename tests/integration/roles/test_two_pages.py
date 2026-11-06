@@ -99,7 +99,7 @@ def test_due_reads_only_the_pages_due(tmp_path: Path) -> None:
         day_later = round_collector(
             store, site.base_url, tmp_path, statistics=True, clock=ticking(START + dt.timedelta(hours=25))
         )
-        assert what_is_due(store, log, START + dt.timedelta(hours=25)) == ["player_season"]
+        assert what_is_due(store, log, START + dt.timedelta(hours=25)) == ["player_season", "penalty_takers"]
         second = collect_due(day_later, log)
         requests = [path for path, _ in site.requests]
         round_only = round_collector(

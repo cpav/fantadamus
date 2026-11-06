@@ -2,7 +2,8 @@
 
 Status: **Approved by the owner, 2026-11-04**, with the amendment to R5.5 and R5.6; R1.5, R2.1, R2.3, R3.3 to R3.5, R4.4
 and AT-6, AT-7, AT-10 amended the same day from the owner's league notes, R9.3, R9.4 and AT-15 added, and R7 and AT-12
-amended so a round scores itself, **all approved the same day** · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
+amended so a round scores itself, **all approved the same day**; R8.4 and AT-17 added on 2026-11-06, and R10 and AT-18 to
+AT-21 the same day · Workflow: requirements-first · Depends on: `mvp-x-or-y`,
 `mvp-collect` and `mvp-roles` (signed off) · Method: [`docs/method.md`](../../../docs/method.md) §A1 to §A3, §A7, §A8,
 §A9 tests 1 and 5 · Answers: [`docs/answer-formats.md`](../../../docs/answer-formats.md), formats 2, 3 and 6
 
@@ -209,6 +210,29 @@ the starting values get better (method §A8), and because Phase 2's gate needs i
   and squads with the tools on first use, instead of asking; to ask only for what it leaves out; and to let its
   preferences shape the explanation, never the numbers. Without a profile, Claude asks, as it does today.
 
+### Requirement 10: Penalty takers
+
+**User Story:** As a player, I want the penalty credit to follow who will really take them, and to hear when the list moves or
+doesn't match what has happened, so that an old list doesn't pick my eleven.
+
+- **R10.1** THE SYSTEM SHALL give a listed taker the penalty term times his share of the club's penalties: the chance that
+  everyone listed ahead of him misses the start. The first listed has all of it, and the next has what the first leaves, so a
+  first taker who is out hands all of it on. A name on the list that no club-mate answers to counts as missing; a taker ahead of
+  him with no lineup known yet counts as starting. This amends method §A4 and `mvp-roles` R2.4 (the owner's decision,
+  2026-11-06).
+- **R10.2** WHERE a player's share comes from those listed ahead of him and is at least 10% THE SYSTEM SHALL say so in the answer,
+  naming who is ahead and the share. An answer SHALL describe a player as taking the penalties when his share is at least half.
+- **R10.3** THE SYSTEM SHALL read Fantacalcio.it's penalty-takers page itself, with its own reader, under ADR-0006's rules: daily on
+  the schedule, and when an answer finds the takers missing or stale. A page it can't read leaves them to Claude, through
+  `read_page`. The takers SHALL count as fresh for 48 hours. This amends `mvp-collect` R7.1 and `mvp-x-or-y` R7.3.
+- **R10.4** WHEN a club's listed order differs between its two latest reads and the newer read is at most 7 days old THE SYSTEM SHALL
+  say so in any answer that involves a player of that club, with the old order, the new one and the date.
+- **R10.5** WHERE a player other than the listed first taker has taken more of his club's penalties this season than the listed
+  first has THE SYSTEM SHALL say so in any answer that involves either of them, with both players' figures. The number SHALL still
+  follow the list.
+- **R10.6** THE SYSTEM SHALL tell a player to check an official lineup only while it isn't out. Once it is, a lineup SHALL say that it
+  uses it.
+
 ## Acceptance tests
 
 | ID | Acceptance test | Proves |
@@ -229,6 +253,10 @@ the starting values get better (method §A8), and because Phase 2's gate needs i
 | AT-15 | The blank profile names every setting `set_league_rules` takes, so the two can't drift apart, and holds no user's details; the agent prompt tells Claude to use it | R9.3, R9.4 |
 | AT-16 | A forward's cameo: by hand, his chance of a rating and what it's worth; for two forwards in either order, those numbers give the simulated mean; the higher key is the better one to field; his expected points without bench cover don't change; a defender's flat cameo doesn't change | R8.3 |
 | AT-17 | A penalty taker: by hand, his goal share counts only his open-play goals; a player with the same open-play goals and no penalties has the same share; the tools pass the penalties through | R8.4 |
+| AT-18 | A club's first taker is out: the next listed gets the whole penalty term, by hand, and the answer says why; with the first at 60% to start, the next gets 40% of it and the first keeps all of his; a player not on the list gets none | R10.1, R10.2 |
+| AT-19 | On the local server, the collector stores every club's takers in order; an unchanged page stores nothing new and keeps them fresh past their target; a scheduled run reads the page daily; an answer that finds them missing reads it; a changed layout is unreadable, and the takers go to Claude | R10.3 |
+| AT-20 | Two reads with different orders: `best_lineup` and `compare_players` name the old and the new order, until 7 days have passed. A player who has taken more penalties than the listed first gets the line, and so does the listed first; level figures, or a club with no player in the answer, get none; the number doesn't change | R10.4, R10.5 |
+| AT-21 | While the first match's official lineup isn't out, the lineup says to check it. Once it is, it says that it uses it, and `compare_players` no longer says to check it | R10.6 |
 | AT-13 | Manual: the owner gives a real squad and rules in Claude Desktop, and gets a lineup for a real round to compare with their own choice | All |
 
 Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
@@ -257,6 +285,10 @@ Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
   A finished round's page still marks who really started (`mvp-collect` R3.1), so nothing has to be caught live and a round
   can score itself (R7.2). Scoring only the players someone asked about would give about 20 a round, so the model is also
   scored on everyone (R7.4). A command is no longer needed, but stays for reports and for trying a changed constant (R7.5).
+- **2026-11-06, penalty takers:** the owner said takers change during the season and need watching. Round 11 showed four gaps: the
+  list was read rarely; a change was never reported; at several clubs the list disagreed with who had really taken penalties; and a
+  first taker who was out took his club's penalties with him, which changed a real eleven. The owner approved fixing all four
+  (R10.1 to R10.5). The agent chose a share over an "out" rule, so that a doubtful first taker needs no cut-off.
 - **2026-11-04, building task 3:** R2.2 gained three details the requirement had left open. A total-points league isn't asked
   for thresholds. The no-rating vote and other rules are asked about but don't hold a lineup back. And a later call that leaves
   a lineup setting out keeps it, so a change of bonuses doesn't lose the lineup rules.

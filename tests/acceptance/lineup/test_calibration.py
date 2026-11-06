@@ -241,7 +241,7 @@ async def test_at12_overrides_counted_at_their_stated_cost(tmp_path: Path) -> No
     """How many this round, and what each said it cost. Whether they paid off comes with the review."""
     async with a_round(tmp_path) as here:
         advised = (await here.ask())["lineup"]
-        dropped = advised["starters"][1]["name"]
+        dropped = max(advised["starters"], key=lambda player: player["value"])["name"]
         chosen = (await here.ask(leave_out=[dropped]))["lineup"]
         cost = chosen["override"]["cost"]
         assert cost > 0

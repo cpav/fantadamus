@@ -61,6 +61,7 @@ from fantadamus.league.squads import MINE, SquadStore, StoredSquad
 from fantadamus.mcp.advisor import (
     REFRESH,
     ROME,
+    TAKES_PENALTIES,
     Advisor,
     Facts,
     Gathered,
@@ -70,7 +71,6 @@ from fantadamus.mcp.advisor import (
     logged_player,
     model_inputs,
     model_value,
-    takes_penalties,
 )
 
 SCORERS_SHOWN = 5
@@ -239,17 +239,15 @@ def _assumed(facts: PlayerFacts) -> Availability:
     )
 
 
-def _priced(
-    gathered: Gathered, known: list[KnownPlayer], stored: StoredRules, as_of: dt.datetime
-) -> list[_Priced]:
+def _priced(gathered: Gathered, stored: StoredRules, as_of: dt.datetime) -> list[_Priced]:
     league = league_goals_per_match(gathered.teams, as_of)
     priced = []
     for facts in gathered.sides:
         scoring = scoring_for(stored.rules, facts.form.role)
-        taker = takes_penalties(facts, known)
+        taker = facts.penalty_share >= TAKES_PENALTIES
         no_lineups = facts.match is not None and facts.present is None
         modelled = dataclasses.replace(facts, present=_assumed(facts)) if no_lineups else facts
-        inputs = model_inputs(modelled, taker, league)
+        inputs = model_inputs(modelled, league)
         priced.append(_Priced(facts, inputs, model_value(inputs, scoring), scoring, taker, no_lineups))
     return priced
 
@@ -597,14 +595,19 @@ def _before_lock(
     advisor: Advisor, priced: Sequence[_Priced], first_kickoff: dt.datetime, first_match: str
 ) -> list[str]:
     early = [
-        part.facts.player.name
+        part.facts
         for part in priced
         if part.facts.match is not None and part.facts.match.kickoff_at == first_kickoff
     ]
     if not early:
         return [f"No player of yours is in {first_match}, so this lineup is final unless news breaks."]
+    waiting = [
+        facts.player.name for facts in early if facts.present is None or facts.present.official is None
+    ]
+    if not waiting:
+        return [f"The official lineup for {first_match} is out, and this lineup uses it."]
     return [
-        f"{', '.join(early)} play in the round's first match ({first_match}): the official lineup is out "
+        f"{', '.join(waiting)} play in the round's first match ({first_match}): the official lineup is out "
         "about an hour before the lock, so check it then."
     ]
 
@@ -844,7 +847,7 @@ def _answer(
 ) -> LineupResult:
     team = squad.team
     known = gathered.known
-    priced = _priced(gathered, known, stored, when)
+    priced = _priced(gathered, stored, when)
     by_id = {part.facts.player.player_id: part for part in priced}
     candidates = [_candidate(part) for part in priced]
     fielding = _fielding(candidates, priced, rules, asked)

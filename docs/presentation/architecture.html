@@ -278,7 +278,7 @@
     <h2>Fantadamus collects, the tools decide</h2>
     <p class="lede">
       Each player's Claude app talks to the Fantadamus MCP server. Read tools answer from stored data, once
-      Fantadamus has read what was missing from its two main pages; if that's not enough, they say what to read
+      Fantadamus has read what was missing from its main pages; if that's not enough, they say what to read
       and where. Submit tools take the facts Claude found, and
       only facts that pass every check reach storage.
     </p>
@@ -319,7 +319,7 @@
           <text class="ts" x="365" y="156" text-anchor="middle">compare_players</text>
           <rect class="bx" x="265" y="196" width="200" height="88" rx="8" />
           <text class="t" x="365" y="230" text-anchor="middle">Collector</text>
-          <text class="ts" x="365" y="254" text-anchor="middle">reads its two main pages</text>
+          <text class="ts" x="365" y="254" text-anchor="middle">reads its main pages</text>
           <rect class="bx" x="265" y="296" width="200" height="104" rx="8" />
           <text class="t" x="365" y="330" text-anchor="middle">Submit tools</text>
           <text class="ts" x="365" y="354" text-anchor="middle">what Claude reads</text>
@@ -382,7 +382,7 @@
       </div>
       <figcaption>
         <b>Green marks the path a fact takes</b> once it passes the checks: appended to bronze, promoted to
-        silver, built into gold. Real rounds run this path end to end. Fantadamus now reads its two main pages itself
+        silver, built into gold. Real rounds run this path end to end. Fantadamus now reads its main pages itself
         (ADR-0006), and Claude fills only what's left.
       </figcaption>
     </figure>
@@ -390,7 +390,7 @@
     <div class="notes">
       <div class="note">
         <h3>Why Fantadamus collects</h3>
-        <p>Reading its two main pages itself makes answers fast and the same for every player (ADR-0006). Claude
+        <p>Reading its main pages itself makes answers fast and the same for every player (ADR-0006). Claude
           reads the few other pages, and takes over if one can't be read (ADR-0005).</p>
       </div>
       <div class="note">
@@ -412,7 +412,7 @@
     <h2>From “Beto o Laurienté?” to a verdict</h2>
     <ol class="walk">
       <li><span class="who claude">Claude</span><p>The player asks. Claude calls the read tool <code>compare_players</code>.</p></li>
-      <li><span class="who us">Fantadamus</span><p>The tool reads what's missing from its two main pages and answers, or returns a refresh plan: which facts are missing or stale, which approved pages have them, and which submit tool takes each one.</p></li>
+      <li><span class="who us">Fantadamus</span><p>The tool reads what's missing from its main pages and answers, or returns a refresh plan: which facts are missing or stale, which approved pages have them, and which submit tool takes each one.</p></li>
       <li><span class="who claude">Claude</span><p>Says “refreshing Genoa's lineup news…” and reads those pages through <code>read_page</code>.</p></li>
       <li><span class="who claude">Claude</span><p>Submits structured facts with the page's link, when the page was published and when it was read. It leaves a field empty rather than guess.</p></li>
       <li><span class="who us">Fantadamus</span><p>Checks the contract, the source host, the player names and the quality rules. A rejection comes back with its reason; Claude fixes only what the reason names.</p></li>

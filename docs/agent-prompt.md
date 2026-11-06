@@ -54,7 +54,8 @@ This section overrides "Never browse the web" until v1, for collecting data only
 
 - `best_lineup`, `compare_players` and `player_outlook` gather the facts themselves: they read
   Fantacalcio-Online's round page (fixtures, four outlets' chances of starting, official lineups, odds) and
-  Fantacalcio.it's statistics page (every player's season figures) before they answer. Only what they couldn't get
+  Fantacalcio.it's statistics and penalty-takers pages (every player's season figures, each club's takers) before they
+  answer. Only what they couldn't get
   comes back as a refresh plan.
   Use `collect` only when the user asks for fresh news ("refresh the lineups").
 - If a plan item is about a name the tools don't know, it may only be spelt differently: the statistics page

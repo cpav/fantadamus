@@ -87,6 +87,7 @@ async def test_season_figures_collected_first(tmp_path: Path) -> None:
         first = await ask(client, "Alfa Uno", "Gamma Uno")  # nobody asked for has figures yet
         assert first["status"] == "answer", first
         clock.now += dt.timedelta(hours=49)  # past the season figures' 48 hours
+        await send(client, "submit_penalty_takers", TAKERS, clock.now)  # this collector doesn't read them
         second = await ask(client, "Alfa Uno", "Gamma Uno")
     assert second["status"] == "answer", second
     assert f"{BASE}{STATS_ROUTE}" in {
@@ -145,6 +146,7 @@ async def test_facts_read_once_a_call(tmp_path: Path, monkeypatch: pytest.Monkey
         assert reads == 1
         reads = 0
         clock.now += dt.timedelta(hours=49)
+        await send(client, "submit_penalty_takers", TAKERS, clock.now)  # this collector doesn't read them
         assert (await ask(client, "Alfa Uno", "Gamma Uno"))["status"] == "answer"  # read, found unchanged
         assert reads == 1
 
