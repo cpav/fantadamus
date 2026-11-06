@@ -12,6 +12,6 @@ browser. The fonts load from Google Fonts; without a network the pages fall back
   ([method §A9](../method.md)), with the players anonymised. They show the shape of an answer, not real
   data, and the page says so.
 - **Figures** on both pages (tasks done, tests, coverage, checks, contracts, approved sites) were measured
-  against the code on 25 October 2026. Update them when the system changes, and re-measure before sharing.
+  against the code on 6 November 2026. Update them when the system changes, and re-measure before sharing.
 - **To republish** a page as a claude.ai artifact, drop its first four lines (the doctype, `html` and
   `meta` tags): the artifact host adds its own document wrapper.

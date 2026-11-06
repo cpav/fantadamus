@@ -360,7 +360,7 @@ $0. No new pages or requests: a lineup reads the same two pages as today, within
 6. **Overrides and calls:** `start`, `leave_out`, `formation`, and the cost.
 7. **Calibration:** a finished round scored by itself, both sets, and `fantadamus calibrate`.
 8. **The agent prompt, the league profile and the docs.**
-9. **The real round and Phase 2's gate:** testing from Claude Code, AT-13, the first calibration report, a mutation-testing
+9. **The real round and this slice's sign-off:** testing from Claude Code, AT-13, the first calibration report, a mutation-testing
    run on the core modules, and the phase report.
 
 ## Open points for the owner
