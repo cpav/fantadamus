@@ -16,6 +16,7 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from fantadamus.contracts.types import UtcDatetime
+from fantadamus.core.names import name_key
 from fantadamus.domains.availability.silver import OfficialLineupRow
 from fantadamus.domains.fixtures.gold import matches
 from fantadamus.domains.fixtures.silver import FixtureRow
@@ -213,6 +214,8 @@ class RoundFrame:
     last_kickoff: dt.datetime
     next_kickoff: dt.datetime | None
     """The next round's first kickoff, if it's known."""
+    previous_kickoff: dt.datetime | None = None
+    """The last kickoff before this round began, if it's known."""
 
     @property
     def finished_at(self) -> dt.datetime:
@@ -224,13 +227,16 @@ def round_frame(fixtures: Sequence[FixtureRow], round: int, as_of: dt.datetime) 
     played = [row for row in known if row.round == round]
     if not played:
         return None
+    first_kickoff = min(row.kickoff_at for row in played)
     later = [row.kickoff_at for row in known if row.round > round]
+    earlier = [row.kickoff_at for row in known if row.round < round and row.kickoff_at < first_kickoff]
     return RoundFrame(
         round=round,
         matches=played,
-        first_kickoff=min(row.kickoff_at for row in played),
+        first_kickoff=first_kickoff,
         last_kickoff=max(row.kickoff_at for row in played),
         next_kickoff=min(later, default=None),
+        previous_kickoff=max(earlier, default=None),
     )
 
 
@@ -260,6 +266,24 @@ def last_told(
             if seen is None or decision.as_of >= seen[0]:
                 told[logged.player_id] = decision.as_of, logged
     return {player_id: logged for player_id, (_, logged) in told.items()}
+
+
+def final_overrides(decisions: Iterable[Decision], round: int, lock: dt.datetime, team: str) -> list[float]:
+    """What each user's choice was said to cost: their last lineup for `team` before the lock, if it went
+    against the advice. Asking what a choice would cost isn't making it, however often it's asked."""
+    last: dict[str, Decision] = {}
+    for decision in decisions:
+        if (
+            decision.kind != "lineup"
+            or decision.round != round
+            or name_key(decision.team or "") != name_key(team)
+            or decision.logged_at >= lock
+        ):
+            continue
+        seen = last.get(decision.user)
+        if seen is None or decision.logged_at >= seen.logged_at:
+            last[decision.user] = decision
+    return [decision.override_cost for decision in last.values() if decision.override_cost is not None]
 
 
 @dataclass(frozen=True)
@@ -298,14 +322,17 @@ class Outcome:
 def statistics_reads(
     stored: Iterable[dt.datetime], frame: RoundFrame, *, worked: Iterable[dt.datetime] = ()
 ) -> tuple[dt.datetime | None, dt.datetime | None]:
-    """The last stored read of the statistics page before the round, and the stored read that shows what the
-    page held once it had finished, before the next. `worked` adds the reads that found the page unchanged:
-    they store nothing, and show that it still held what the last stored read did. A page that hasn't moved
-    since before the round hasn't updated yet."""
+    """The stored reads that show what the page held before the round and once it had finished. `worked` adds
+    the reads that found the page unchanged: they store nothing, and show that it still held what the last
+    stored read did. The first must show the last round finished, or this round's gains would include some
+    of its matches. A page that hasn't moved since before the round hasn't updated yet."""
     times = sorted(set(stored))
+    seen = sorted({*times, *worked})
     start = bisect.bisect_left(times, frame.first_kickoff)
-    before = times[start - 1] if start else None
-    for when in sorted({*times, *worked}):
+    settled = frame.previous_kickoff + FINISHED_AFTER if frame.previous_kickoff is not None else None
+    in_time_before = settled is None or any(settled <= when < frame.first_kickoff for when in seen)
+    before = times[start - 1] if start and in_time_before else None
+    for when in seen:
         in_time = when >= frame.finished_at and (frame.next_kickoff is None or when < frame.next_kickoff)
         place = bisect.bisect_right(times, when)
         if in_time and place > start:
@@ -327,10 +354,11 @@ def outcome_of(
     before: Mapping[int, StatsLine] | None,
     after: Mapping[int, StatsLine] | None,
 ) -> Outcome:
+    if sheet is None:  # a postponed match has no marks either, and nobody in it could get a rating
+        reason = "no official lineup stored"
+        return Outcome(reason, reason, reason, reason)
     started: Result
-    if sheet is None:
-        started = "no official lineup stored"
-    elif player_id in sheet.starters:
+    if player_id in sheet.starters:
         started = True
     elif player_id not in sheet.named and sheet.unnamed_starters:
         started = "his club's lineup doesn't name every starter"

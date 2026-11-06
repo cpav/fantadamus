@@ -29,6 +29,7 @@ from fantadamus.domains.calibration import (
     Tally,
     add_outcomes,
     club_sheet,
+    final_overrides,
     finished_round,
     last_told,
     outcome_of,
@@ -54,6 +55,7 @@ from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, scoring_for
+from fantadamus.league.squads import MINE
 from fantadamus.mcp.advisor import Facts, PlayerFacts, model_inputs, model_value, takes_penalties
 from fantadamus.web.cadence import may_read
 from fantadamus.web.collector import Collector, CollectReport
@@ -182,11 +184,7 @@ class Calibrator:
                 p_scores=logged.p_scores,
                 p_clean_sheet=logged.p_clean_sheet,
             )
-        overrides = [
-            decision.override_cost
-            for decision in decisions
-            if decision.round == round and decision.override_cost is not None
-        ]
+        overrides = final_overrides(decisions, round, frame.first_kickoff, MINE)
         report = RoundReport(
             round=round,
             scored_at=now,
