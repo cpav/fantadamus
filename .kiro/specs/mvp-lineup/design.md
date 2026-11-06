@@ -331,6 +331,7 @@ two-role message says so too. The README and the player guide say how to give a 
 | No match of the squad has lineups, or a needed fact is missing | A refresh plan, as today |
 | A chance can't be scored | Counted, with the reason |
 | A finished round's page can't be read | The answer is unaffected, and it's tried again later |
+| A line in the collection or decision log can't be read | It's skipped with a warning naming the file and line; the answer is unaffected |
 
 ## Correctness properties
 

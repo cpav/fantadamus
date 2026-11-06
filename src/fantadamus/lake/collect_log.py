@@ -12,6 +12,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
+from fantadamus.lake.jsonl import read_lines
 from fantadamus.web.collector import CollectReport, PageKind, PageReport
 
 DEFAULT_ROOT = Path("data/local/collect")
@@ -29,13 +30,8 @@ class CollectLog:
             log.write(report.model_dump_json() + "\n")
 
     def runs(self) -> list[CollectReport]:
-        """Every run, oldest first."""
-        return [
-            CollectReport.model_validate_json(line)
-            for path in sorted(self.root.glob("*.jsonl"))
-            for line in path.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
+        """Every run it can read, oldest first."""
+        return read_lines(self.root, CollectReport)
 
     def last(self) -> CollectReport | None:
         runs = self.runs()

@@ -303,7 +303,10 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
       `tests/unit/collect/test_fetch.py::test_a_robots_failure_isnt_remembered`,
       `::test_a_damaged_robots_cache_is_read_again`, `::test_a_broken_answer_is_a_failed_fetch`,
       `tests/unit/collect/test_read_fco.py::test_a_match_the_contract_refuses_is_an_unreadable_page`,
-      `tests/integration/lineup/test_finished_round.py::test_a_page_stored_again_isnt_the_read_after`_
+      `tests/integration/lineup/test_finished_round.py::test_a_page_stored_again_isnt_the_read_after`,
+      `tests/integration/test_log_lines.py::test_a_bad_line_doesnt_stop_the_answer`,
+      `::test_the_collect_log_skips_a_line_it_cant_read`, `::test_the_decision_log_skips_a_line_it_cant_read`,
+      `::test_a_bad_byte_costs_only_its_line`_
   - [ ] 9.2 **Owner:** give a real squad and rules in Claude Desktop, and compare a lineup for a real round with your own
     choice.
     - _Requirements: AT-13_
