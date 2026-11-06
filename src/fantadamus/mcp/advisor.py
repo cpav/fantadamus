@@ -979,6 +979,7 @@ def model_inputs(side: PlayerFacts, taker: bool, league: float) -> OutfieldInput
         yellow_cards=form.yellow_cards,
         club_goals_per_match=side.table.goals_for / side.table.played if side.table.played else 0.0,
         penalty_taker=taker,
+        penalties_scored=form.penalties_scored,
         team_xg=(xg.home_xg if home else xg.away_xg) if xg else 0.0,
         p_win=(xg.p_home_win if home else xg.p_away_win) if xg else 0.0,
         p_loss=(xg.p_away_win if home else xg.p_home_win) if xg else 0.0,

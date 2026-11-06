@@ -195,6 +195,13 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Requirements: R8.3_
     - _Test: the same questions before and after, on real data_
 
+- [x] 11. A taker's penalties, counted once (added 2026-11-06, a finding from the code review)
+  - Branch: `fix/ml-11-penalties` · Depends on: 10 · ADRs: none
+  - [x] 11.1 `outfield.value` leaves the penalties a player has scored out of his goal share.
+    - _Requirements: R8.4_
+    - _Test: **AT-17** `tests/acceptance/lineup/test_penalties.py::test_at17_a_share_counts_open_play_goals`,
+      `::test_at17_the_same_open_play_goals_the_same_share`, `::test_at17_the_tools_pass_the_penalties_through`_
+
 - [x] 7. Calibration
   - Branch: `feat/ml-7-calibration` · Depends on: 5, 10 · ADRs: ADR-0006
   - [x] 7.1 The finished round's page: read once, 12 hours after the round's last kickoff, as its own page kind, so it never

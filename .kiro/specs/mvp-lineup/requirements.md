@@ -189,6 +189,9 @@ the starting values get better (method §A8), and because Phase 2's gate needs i
 - **R8.3** THE SYSTEM SHALL price a forward's cameo by the method's three outcomes (§A2): his chance of a rating counts only
   the cameos that get one, and his key counts only what a rating is worth. A cameo with no rating isn't a low score, since
   his substitute comes in. This amends `mvp-x-or-y` R9.7.
+- **R8.4** THE SYSTEM SHALL leave the penalties a player has scored out of his goal share, because the first taker's penalty
+  term prices them. The statistics page's goals include penalties, so a taker's were counted twice. This amends
+  `mvp-x-or-y` R9.4 (the owner's decision, 2026-11-06).
 
 ### Requirement 9: The agent prompt and the docs
 
@@ -224,6 +227,7 @@ the starting values get better (method §A8), and because Phase 2's gate needs i
 | AT-14 | A squad with a player in a match without over/under gets its lineup in one call, with a warning naming the match and the pages that could improve it; once better odds are submitted, the warning goes and the numbers use them. A player without rated games and one no outlet lists each get their warning | R5.5, R5.6 |
 | AT-15 | The blank profile names every setting `set_league_rules` takes, so the two can't drift apart, and holds no user's details; the agent prompt tells Claude to use it | R9.3, R9.4 |
 | AT-16 | A forward's cameo: by hand, his chance of a rating and what it's worth; for two forwards in either order, those numbers give the simulated mean; the higher key is the better one to field; his expected points without bench cover don't change; a defender's flat cameo doesn't change | R8.3 |
+| AT-17 | A penalty taker: by hand, his goal share counts only his open-play goals; a player with the same open-play goals and no penalties has the same share; the tools pass the penalties through | R8.4 |
 | AT-13 | Manual: the owner gives a real squad and rules in Claude Desktop, and gets a lineup for a real round to compare with their own choice | All |
 
 Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.

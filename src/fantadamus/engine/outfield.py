@@ -53,6 +53,8 @@ class OutfieldInputs(BaseModel):
     yellow_cards: int
     club_goals_per_match: float
     penalty_taker: bool
+    penalties_scored: int = 0
+    """Among his goals. They stay out of his goal share: his penalty term prices them (mvp-lineup R8.4)."""
     """His club's first penalty taker."""
     team_xg: float
     p_win: float
@@ -137,7 +139,8 @@ def value(player: OutfieldInputs, scoring: Scoring) -> OutfieldValue:
     prior = priors(player.role, player.mantra_role)
     weight = DEFENDER_SHARE_WEIGHT if player.role == "D" else SHARE_WEIGHT
     team_goals = player.club_goals_per_match * player.appearances
-    goal_share = share(prior.goal, events=player.goals, team_goals=team_goals, weight=weight)
+    open_play = max(player.goals - player.penalties_scored, 0)
+    goal_share = share(prior.goal, events=open_play, team_goals=team_goals, weight=weight)
     assist_share = share(prior.assist, events=player.assists, team_goals=team_goals, weight=weight)
     open_goals = expected_goals(player.team_xg, goal_share, minutes=prior.minutes)
     penalties = penalty_goals(minutes=prior.minutes, taker=player.penalty_taker)

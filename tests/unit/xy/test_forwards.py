@@ -138,3 +138,11 @@ def test_a_defenders_assists_shrink_with_his_own_weight() -> None:
             weight=DEFENDER_SHARE_WEIGHT,
         )
     )
+
+
+def test_a_takers_share_leaves_his_penalties_out() -> None:
+    """R8.4: the statistics page's goals include penalties, and his penalty term already prices them."""
+    taker = outfield.value(striker(goals=4, penalties_scored=3, appearances=5), CLASSIC)
+    assert taker.goal_share == pytest.approx(outfield.share(0.30, events=1, team_goals=2.0 * 5))
+    odd = outfield.value(striker(goals=1, penalties_scored=3, appearances=5), CLASSIC)
+    assert odd.goal_share == pytest.approx(outfield.share(0.30, events=0, team_goals=2.0 * 5))
