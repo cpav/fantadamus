@@ -1,13 +1,15 @@
 """The polite fetcher (mvp-collect design C1; R2; ADR-0004's rules, ADR-0006).
 
-Before any request: the host must be on the allowlist and the path allowed by the host's robots.txt, which
-is read at most once a day per host. Requests to one host are at least a second apart, carry a user agent
+Before any request: the host must be on the allowlist and the path allowed by the host's robots.txt. The
+site's answer is kept for the day; a failure isn't, so the next run asks again, and until then nothing is
+fetched from that host. Requests to one host are at least a second apart, carry a user agent
 naming Fantadamus, and get one attempt. A block, a bot check or "too many requests" stops the host for the
 rest of the run: nothing tries to get around it. Redirects are followed only within the same rules.
 """
 
 from __future__ import annotations
 
+import codecs
 import datetime as dt
 import hashlib
 import http.client
@@ -21,6 +23,7 @@ from urllib.parse import urljoin, urlsplit
 from urllib.robotparser import RobotFileParser
 
 from fantadamus.core.clock import Clock
+from fantadamus.core.files import temporary_beside
 from fantadamus.core.urls import host_allowed, url_host
 
 ROBOTS_AGENT = "Fantadamus"
@@ -179,7 +182,7 @@ class Fetcher:
         self._last[host] = self._monotonic()
         try:
             return self._transport(url, {"User-Agent": USER_AGENT}, timeout)
-        except (OSError, ValueError) as error:  # timeouts and network errors are OSErrors
+        except (OSError, ValueError, http.client.HTTPException) as error:  # timeouts, network, broken answers
             raise FetchFailedError(f"{url}: {error}") from error
 
     def _left(self, url: str, after: float = 0.0) -> float:
@@ -197,11 +200,7 @@ class Fetcher:
             return self._robots[host]
         today = self._clock().date().isoformat()
         cached = self._cache / f"{host}.json"
-        status, text = None, ""
-        if cached.is_file():
-            entry = json.loads(cached.read_text(encoding="utf-8"))
-            if entry["date"] == today:
-                status, text = entry["status"], entry["text"]
+        status, text = _cached_robots(cached, today)
         if status is None:
             robots_url = f"{urlsplit(url).scheme}://{urlsplit(url).netloc}/robots.txt"
             try:
@@ -211,8 +210,13 @@ class Fetcher:
                 raise  # not the site's answer: nothing to remember for the day
             except FetchFailedError:
                 status, text = 0, ""
-            self._cache.mkdir(parents=True, exist_ok=True)
-            cached.write_text(json.dumps({"date": today, "status": status, "text": text}), encoding="utf-8")
+            if status and status < 500 and status != 429:  # the site's own answer, not a passing failure
+                self._cache.mkdir(parents=True, exist_ok=True)
+                temporary = temporary_beside(cached)
+                temporary.write_text(
+                    json.dumps({"date": today, "status": status, "text": text}), encoding="utf-8"
+                )
+                temporary.replace(cached)
         rules = RobotFileParser()
         if status == 200:
             rules.parse(text.splitlines())
@@ -224,10 +228,22 @@ class Fetcher:
         return rules
 
 
+def _cached_robots(path: Path, today: str) -> tuple[int | None, str]:
+    """Today's stored answer, or none: a damaged file is the same as no file."""
+    try:
+        entry = json.loads(path.read_text(encoding="utf-8"))
+        return (entry["status"], entry["text"]) if entry["date"] == today else (None, "")
+    except (OSError, ValueError, KeyError, TypeError):
+        return None, ""
+
+
 def _charset(headers: Mapping[str, str]) -> str:
     content_type = headers.get("Content-Type") or headers.get("content-type") or ""
     for part in content_type.split(";"):
         name, _, value = part.strip().partition("=")
         if name.lower() == "charset" and value:
-            return value.strip('"')
+            try:
+                return codecs.lookup(value.strip('"')).name
+            except LookupError:
+                break
     return "utf-8"

@@ -267,6 +267,9 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
       bugs: `tests/integration/lineup/test_formation_call.py`,
       `tests/acceptance/lineup/test_calibration.py::test_at12_a_name_nobody_knows_is_named_as_unscored`,
       `tests/integration/lineup/test_long_pause.py`, `tests/integration/test_atomic_writes.py`,
+      `tests/unit/collect/test_fetch.py::test_a_robots_failure_isnt_remembered`,
+      `::test_a_damaged_robots_cache_is_read_again`, `::test_a_broken_answer_is_a_failed_fetch`,
+      `tests/unit/collect/test_read_fco.py::test_a_match_the_contract_refuses_is_an_unreadable_page`,
       `tests/integration/lineup/test_finished_round.py::test_a_page_stored_again_isnt_the_read_after`_
   - [ ] 9.2 **Owner:** give a real squad and rules in Claude Desktop, and compare a lineup for a real round with your own
     choice.
