@@ -10,7 +10,7 @@ import pytest
 
 from fantadamus.domains.facts import payload_hash
 from fantadamus.web.readers import UnreadablePageError
-from fantadamus.web.readers.fco import read_round
+from fantadamus.web.readers.fco import _updated_at, read_round
 from tests.collect_pages import OUTLETS, FcoMatch, fco_round_page, squad
 
 PAGE = fco_round_page(
@@ -170,3 +170,21 @@ def test_outlet_not_published_yet() -> None:
     assert alfa == ["Fantacalcio.it", "Gazzetta", "SOS Fanta"]
     assert len([view for view in facts.outlets if view.home == "Gamma"]) == 4
     assert facts.problems == []
+
+
+def test_a_match_the_contract_refuses_is_an_unreadable_page() -> None:
+    """Found by the code review: a club playing itself isn't a crash, it's a page that doesn't read."""
+    with pytest.raises(UnreadablePageError, match="plays itself"):
+        read_round(fco_round_page(FcoMatch("Alfa", "Alfa")))
+
+
+def test_odds_updated_after_kickoff_keep_their_year() -> None:
+    """A finished round's page can show odds updated once the match began."""
+    kickoff = dt.datetime(2026, 11, 8, 19, 45, tzinfo=dt.UTC)
+    assert _updated_at("quote aggiornate il 8 novembre alle 22:00", kickoff) == dt.datetime(
+        2026, 11, 8, 21, 0, tzinfo=dt.UTC
+    )
+    january = dt.datetime(2027, 1, 3, 19, 45, tzinfo=dt.UTC)
+    assert _updated_at("quote aggiornate il 30 dicembre alle 18:00", january) == dt.datetime(
+        2026, 12, 30, 17, 0, tzinfo=dt.UTC
+    )
