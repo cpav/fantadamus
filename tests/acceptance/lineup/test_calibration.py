@@ -286,5 +286,26 @@ async def test_at12_a_name_written_two_ways_counts_once(tmp_path: Path) -> None:
     assert _chance(report.model.scored, "Starting").count == 56
 
 
+async def test_at12_a_name_nobody_knows_is_named_as_unscored(tmp_path: Path) -> None:
+    """A player the page lists and the statistics page doesn't: he's counted among what couldn't be scored,
+    never dropped in silence (R7.3)."""
+    finished = fco_round_page(
+        FcoMatch("Alfa", "Beta", confirmed=True),
+        FcoMatch("Gamma", "Delta", kickoff="31/10/2026 18:00", confirmed=True),
+    ).replace(fco_name("Alfa Dodici"), fco_name("Nessuno Sconosciuto"))
+    async with a_round(tmp_path) as here:
+        await here.ask()
+        here.routes[f"{here.base}{ROUND_10}"] = Response(200, HTML, finished.encode())
+        here.routes[f"{here.base}{ROUND_ROUTE}"] = Response(200, HTML, the_next_round().encode())
+        here.routes[f"{here.base}{STATS_ROUTE}"] = Response(200, HTML, stats_after().encode())
+        here.clock.now = AFTER
+        await here.ask()
+        report = here.scores.get(10)
+    assert report is not None
+    assert {entry.reason: entry.count for entry in report.model.unscored}[
+        "Everything: on the round's page but not on the statistics page"
+    ] == 1
+
+
 def _reads(here: Round) -> int:
     return [url for url, _, _ in here.web.calls].count(f"{here.base}{ROUND_10}")
