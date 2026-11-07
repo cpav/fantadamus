@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-rules` (Phase 2, fourth slice)
 
-Status: **Draft for the owner's approval** · Workflow: requirements-first · Depends on: `mvp-lineup` (signed off 2026-11-07) ·
+Status: **Approved by the owner, 2026-11-07**, with all three recommendations · Workflow: requirements-first · Depends on: `mvp-lineup` (signed off 2026-11-07) ·
 Abbreviation: `ru` · Method: [`docs/method.md`](../../../docs/method.md) §A1, §A4, §A6 · Answers:
 [`docs/answer-formats.md`](../../../docs/answer-formats.md)
 
@@ -180,17 +180,13 @@ Modifiers can be combined, and their effects add up.
 | AT-13 | The blank profile names the new settings and the ready-made entries, holds no user's details, and the prompt stays within its budget | R4.1, R4.5 |
 | AT-14 | Manual: a rulebook pasted into a Claude app becomes the right rules, read back correctly, with what's left out named | R4 |
 
-## Open points for the owner
-
-1. **Which share-based events go in now?** **Recommendation:** set-piece assists and decisive goals, which Fantacalcio.it's template lists.
-   Player of the match and the three kinds of assist stay left out until a league needs them, because we have nothing to base them on.
-2. **Should the tool pick the captain?** **Recommendation:** yes, it recommends a captain and a vice from the simulated rounds, and you can
-   overrule it, as with any override.
-3. **How far should the lineup adapt to a modifier?** **Recommendation:** order by the key and compare formations, as today, and say when a
-   choice is close enough to matter (R3.5). Trying swaps can come later, if a real league shows it's worth the time, because answers
-   are already near their 3-second budget.
-
 ## Owner decisions
 
 - **2026-11-07:** the owner asked for league rules to be as flexible as possible without crafting each one in code, and approved this
   slice in place of building the defence modifier and the captain by hand, ahead of recalibration.
+- **2026-11-07, these requirements approved,** with three decisions:
+  1. **Share-based events:** set-piece assists and decisive goals go in now. Player of the match and the three kinds of assist stay left out until
+     a league needs them, because there's nothing to base them on.
+  2. **The captain:** the tool recommends a captain and a vice from the simulated rounds, and the user can overrule it, as with any override.
+  3. **How far the lineup adapts to a modifier:** it orders by the key and compares formations, as today, and says when a choice is close enough to
+     matter (R3.5). Trying swaps can come later, if a real league shows it's worth the time.
