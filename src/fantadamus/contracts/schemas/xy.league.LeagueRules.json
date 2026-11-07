@@ -2,6 +2,32 @@
   "contract": "xy.league.LeagueRules",
   "schema": {
     "$defs": {
+      "Band": {
+        "additionalProperties": false,
+        "description": "A range of values and the points it gives: from `from_value` up to the next band's.",
+        "properties": {
+          "from_value": {
+            "description": "This value and up, until the next band",
+            "maximum": 100,
+            "minimum": -100,
+            "title": "From Value",
+            "type": "number"
+          },
+          "points": {
+            "description": "The points it gives, from -10 to 10",
+            "maximum": 10,
+            "minimum": -10,
+            "title": "Points",
+            "type": "number"
+          }
+        },
+        "required": [
+          "from_value",
+          "points"
+        ],
+        "title": "Band",
+        "type": "object"
+      },
       "EventRow": {
         "additionalProperties": false,
         "description": "What one event is worth to some roles.",
@@ -54,6 +80,100 @@
           "roles"
         ],
         "title": "EventRow",
+        "type": "object"
+      },
+      "FormulaRule": {
+        "additionalProperties": false,
+        "description": "A rule worked out from a round's pure votes after substitutions, such as a modifier or the captain\n(mvp-rules R2.1). Every field is a number or a fixed word, so a rule is data and never code.",
+        "properties": {
+          "bands": {
+            "description": "Rising values and their points; below the first, none",
+            "items": {
+              "$ref": "#/$defs/Band"
+            },
+            "minItems": 1,
+            "title": "Bands",
+            "type": "array"
+          },
+          "base": {
+            "anyOf": [
+              {
+                "maximum": 11,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "How many players the unit counts: its best, or fill with stand-ins",
+            "title": "Base"
+          },
+          "combine": {
+            "description": "Average or sum their pure votes, or give each player's own vote its band",
+            "enum": [
+              "average",
+              "sum",
+              "each"
+            ],
+            "title": "Combine",
+            "type": "string"
+          },
+          "leave_out": {
+            "default": "nobody",
+            "description": "Leave out a player who scored, conceded or saved a penalty",
+            "enum": [
+              "nobody",
+              "bonus_or_goal"
+            ],
+            "title": "Leave Out",
+            "type": "string"
+          },
+          "name": {
+            "description": "What the league calls it",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "stand_in": {
+            "default": [],
+            "description": "The vote counted for the first missing player, and for the rest; none averages those present",
+            "items": {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "number"
+            },
+            "maxItems": 2,
+            "title": "Stand In",
+            "type": "array"
+          },
+          "who": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/Unit"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "const": "captain",
+                "type": "string"
+              }
+            ],
+            "description": "The roles it counts, or the captain",
+            "title": "Who"
+          }
+        },
+        "required": [
+          "name",
+          "who",
+          "combine",
+          "bands"
+        ],
+        "title": "FormulaRule",
         "type": "object"
       },
       "LineupRules": {
@@ -185,6 +305,73 @@
         },
         "title": "LineupRules",
         "type": "object"
+      },
+      "Unit": {
+        "additionalProperties": false,
+        "description": "Players of one role that a formula rule counts.",
+        "properties": {
+          "at_least": {
+            "anyOf": [
+              {
+                "maximum": 11,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The rule gives points only when at least this many are fielded",
+            "title": "At Least"
+          },
+          "at_most": {
+            "anyOf": [
+              {
+                "maximum": 11,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "And only when at most this many are",
+            "title": "At Most"
+          },
+          "best": {
+            "anyOf": [
+              {
+                "maximum": 11,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Only his role's best n by pure vote; leave out to count them all",
+            "title": "Best"
+          },
+          "role": {
+            "description": "P, D, C or A",
+            "enum": [
+              "P",
+              "D",
+              "C",
+              "A"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "Unit",
+        "type": "object"
       }
     },
     "additionalProperties": false,
@@ -197,6 +384,15 @@
         },
         "minItems": 1,
         "title": "Events",
+        "type": "array"
+      },
+      "formula_rules": {
+        "default": [],
+        "description": "Rules worked out from a round's pure votes after substitutions: modifiers, the captain",
+        "items": {
+          "$ref": "#/$defs/FormulaRule"
+        },
+        "title": "Formula Rules",
         "type": "array"
       },
       "lineup": {
@@ -218,5 +414,5 @@
     "title": "LeagueRules",
     "type": "object"
   },
-  "version": "2.0.0"
+  "version": "2.1.0"
 }

@@ -38,16 +38,20 @@ Status: **Approved by the owner, 2026-11-07** · From the approved [requirements
     - _Requirements: R1.5_
     - _Test: **AT-4** `tests/acceptance/rules/test_events.py::test_at4_share_events_by_hand`_
 
-- [ ] 2. Formula rules, pure
+- [x] 2. Formula rules, pure
   - Branch: `feat/ru-2-formula` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 `FormulaRule` and its parts in the contract, with the validators; no rule can carry code.
+  - [x] 2.1 `FormulaRule` and its parts in the contract, with the validators; no rule can carry code.
     - _Requirements: R2.1, R2.4_
-    - _Test: **AT-11** `tests/acceptance/rules/test_formula.py::test_at11_an_impossible_rule_is_refused`, `::test_at11_a_rule_cant_carry_code`_
-  - [ ] 2.2 `engine/formula.py`: the unit, who's left out, stand-ins, the condition, how they combine, and the bands.
+    - _Test: **AT-11** `tests/acceptance/rules/test_formula.py::test_at11_an_impossible_rule_is_refused`, `::test_at11_a_rule_cant_carry_code`,
+      `::test_at11_two_rules_with_one_name_are_refused`, `::test_at11_a_league_keeps_its_rules`;
+      `tests/integration/rules/test_interim.py::test_a_formula_rule_is_named_until_it_is_priced`_
+  - [x] 2.2 `engine/formula.py`: the unit, who's left out, stand-ins, the condition, how they combine, and the bands.
     - _Requirements: R2.1, R2.2_
     - _Test: **AT-5** `tests/acceptance/rules/test_formula.py::test_at5_the_defence_modifier_by_hand`, `::test_at5_a_stand_in_and_the_condition`;
       **AT-6** `::test_at6_the_attack_modifier_by_hand`;
-      **P1** `tests/property/rules/test_formula.py::test_p1_a_value_gets_its_bands_points`_
+      **P1** `tests/property/rules/test_formula.py::test_p1_a_value_gets_its_bands_points`;
+      `tests/unit/rules/test_formula.py::test_a_sum`, `::test_more_than_the_base_counts_the_best`, `::test_no_stand_in_averages_those_present`,
+      `::test_nobody_and_no_stand_in_gives_nothing`, `::test_a_captain_rule`_
 
 - [ ] 3. Formula rules in the simulation and the answer
   - Branch: `feat/ru-3-simulate` · Depends on: 2 · ADRs: none

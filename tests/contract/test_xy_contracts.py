@@ -169,7 +169,7 @@ CLASSIC = {
 )
 def test_league_rules_ranges(change: dict[str, Any], message: str | None) -> None:
     if message is None:
-        assert parse(LeagueRules, CLASSIC | change).__version__ == "2.0.0"
+        assert parse(LeagueRules, CLASSIC | change).__version__ == "2.1.0"
     else:
         with pytest.raises(ValidationError, match=message):
             parse(LeagueRules, CLASSIC | change)

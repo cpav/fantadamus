@@ -661,6 +661,11 @@ def lineup_for(
             setup=setup_step(),
         )
     rules = stored.rules.lineup
+    if (
+        rules is not None and stored.rules.formula_rules
+    ):  # named as left out until they're priced (mvp-rules task 3)
+        unpriced = [rule.name for rule in stored.rules.formula_rules]
+        rules = rules.model_copy(update={"other_rules": [*rules.other_rules, *unpriced]})
     step = lineup_setup_step(stored.rules)
     if step is not None or rules is None:
         step = step or lineup_setup_step(stored.rules.model_copy(update={"lineup": LineupRules()}))

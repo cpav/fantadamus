@@ -71,6 +71,11 @@ Headings are `## <Contract> <version> (<date>)`.
 - Adds an optional `unnamed_starters` per team, at most 1: a source can name only 10 of a team's 11 starters. The lineup
   must still account for 11 (mvp-x-or-y R8.1). A widening change, so a minor version.
 
+## LeagueRules 2.1.0 (2026-11-07)
+
+- Adds `formula_rules`: modifiers and the captain as data, from a fixed set of parts (mvp-rules R2.1). Rules
+  stored before it stay valid. A widening change, so a minor version.
+
 ## LeagueRules 2.0.0 (2026-11-07)
 
 - One table of events (`events`) in place of ten fixed values and `GoalByRole` (mvp-rules R1.1). An event left out

@@ -6,7 +6,7 @@ from __future__ import annotations
 import itertools
 import re
 from collections.abc import Mapping
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
@@ -172,15 +172,95 @@ class EventRow(Part):
         return self
 
 
+class Band(Part):
+    """A range of values and the points it gives: from `from_value` up to the next band's."""
+
+    from_value: float = Field(ge=-100, le=100, description="This value and up, until the next band")
+    points: float = Field(ge=-10, le=10, description="The points it gives, from -10 to 10")
+
+
+class Unit(Part):
+    """Players of one role that a formula rule counts."""
+
+    role: Role = Field(description="P, D, C or A")
+    best: int | None = Field(
+        default=None,
+        ge=1,
+        le=11,
+        description="Only his role's best n by pure vote; leave out to count them all",
+    )
+    at_least: int | None = Field(
+        default=None,
+        ge=0,
+        le=11,
+        description="The rule gives points only when at least this many are fielded",
+    )
+    at_most: int | None = Field(default=None, ge=0, le=11, description="And only when at most this many are")
+
+    @model_validator(mode="after")
+    def _limits_make_sense(self) -> Self:
+        if self.at_least is not None and self.at_most is not None and self.at_least > self.at_most:
+            raise ValueError("at_least is above at_most")
+        return self
+
+
+class FormulaRule(Part):
+    """A rule worked out from a round's pure votes after substitutions, such as a modifier or the captain
+    (mvp-rules R2.1). Every field is a number or a fixed word, so a rule is data and never code."""
+
+    name: Name = Field(description="What the league calls it")
+    who: Annotated[list[Unit], Field(min_length=1)] | Literal["captain"] = Field(
+        description="The roles it counts, or the captain"
+    )
+    combine: Literal["average", "sum", "each"] = Field(
+        description="Average or sum their pure votes, or give each player's own vote its band"
+    )
+    leave_out: Literal["nobody", "bonus_or_goal"] = Field(
+        default="nobody", description="Leave out a player who scored, conceded or saved a penalty"
+    )
+    base: int | None = Field(
+        default=None,
+        ge=1,
+        le=11,
+        description="How many players the unit counts: its best, or fill with stand-ins",
+    )
+    stand_in: list[Annotated[float, Field(ge=0, le=10)]] = Field(
+        default=[],
+        max_length=2,
+        description="The vote counted for the first missing player, and for the rest; none averages those "
+        "present",
+    )
+    bands: list[Band] = Field(
+        min_length=1, description="Rising values and their points; below the first, none"
+    )
+
+    @model_validator(mode="after")
+    def _makes_sense(self) -> Self:
+        starts = [band.from_value for band in self.bands]
+        if any(after <= before for before, after in itertools.pairwise(starts)):
+            raise ValueError("bands must rise")
+        if self.who == "captain" and self.combine != "each":
+            raise ValueError("the captain is one player: combine must be 'each'")
+        if self.combine == "each" and (self.base is not None or self.stand_in) and self.who != "captain":
+            raise ValueError("each player on his own has no base or stand-in votes")
+        if self.who != "captain":
+            once_each((unit.role for unit in self.who), "{name} is listed twice")
+        return self
+
+
 class LeagueRules(Contract):
     """A league's rules: one table of events, and what a lineup needs. An event left out isn't scored."""
 
-    __version__ = "2.0.0"
+    __version__ = "2.1.0"
 
     events: list[EventRow] = Field(
         min_length=1,
         description="Every event this league scores, with its points and the roles they apply to. An event "
         "left out isn't scored. For different values by role, give one row per value",
+    )
+    formula_rules: list[FormulaRule] = Field(
+        default=[],
+        description="Rules worked out from a round's pure votes after substitutions: modifiers, the captain",
     )
     lineup: LineupRules | None = Field(
         default=None,
@@ -212,6 +292,7 @@ class LeagueRules(Contract):
 
     @model_validator(mode="after")
     def _one_row_per_event_and_role(self) -> Self:
+        once_each((rule.name for rule in self.formula_rules), "{name} is listed twice")
         seen: set[tuple[str, str]] = set()
         for row in self.events:
             for role in row.roles:
