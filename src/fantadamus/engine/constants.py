@@ -56,9 +56,16 @@ USUAL_MANTRA_ROLE = {"A": "A", "C": "C", "D": "Dc"}  # by Classic role, when his
 MINUTES_CAMEO = 0.28  # an attacker's minutes share if he comes on
 PENALTY_RATE = 0.15  # P(his team gets a penalty) per match
 PENALTY_CONVERSION = 0.78
+PENALTY_SAVED_SHARE = (
+    0.80  # of the penalties missed, how many the keeper saved (mvp-rules C3); 7 of 8 this season
+)
+RED_RATE = {"P": 0.001, "D": 0.005, "C": 0.003, "A": 0.002}  # red cards per rated game, by role
+OWN_GOAL_RATE = {"P": 0.001, "D": 0.005, "C": 0.001, "A": 0.001}  # own goals per rated game, by role
+DECISIVE_GOAL_SHARE = 0.20  # of a team's goals, how many win or draw the match, from the odds model
+SET_PIECE_ASSIST_SHARE = 0.25  # of assists, how many come from set pieces
 YELLOW_PRIOR = 0.15  # yellow cards per appearance, before his own count
 YELLOW_WEIGHT = 10  # appearances' weight of that prior
-CAMEO_GOAL_VALUE = 9.8  # a cameo with a goal
+CAMEO_GOAL_VOTE = 6.8  # the vote of a cameo with a goal, before the league's goal value
 CAMEO_RATED = 0.6  # a cameo without a goal gets a rating this often
 CAMEO_RATING = 5.75  # and is worth this
 CAMEO_FLAT = 5.5  # anyone else's cameo (method §A4)

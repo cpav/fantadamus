@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict
 from fantadamus.contracts.types import Role
 from fantadamus.engine.constants import (
     CAMEO_FLAT,
-    CAMEO_GOAL_VALUE,
+    CAMEO_GOAL_VOTE,
     CAMEO_RATED,
     CAMEO_RATING,
     DEFENDER_SHARE_WEIGHT,
@@ -33,6 +33,7 @@ from fantadamus.engine.constants import (
     YELLOW_WEIGHT,
     RolePriors,
 )
+from fantadamus.engine.points import event_points, rare_points
 from fantadamus.engine.rank import Option, Scoring, Verdict, flip, key, no_cover, verdict
 
 
@@ -63,6 +64,8 @@ class OutfieldInputs(BaseModel):
     p_start: float
     p_cameo: float
     """His chance of coming on, from the outlets. His value's `p_cameo` is his chance of a rating that way."""
+    opponent_xg: float | None = None
+    """What his opponents are expected to score: it counts where the league scores his role's clean sheets."""
 
 
 class OutfieldValue(Option):
@@ -113,6 +116,11 @@ def expected_goals(team_xg: float, share: float, *, minutes: float) -> float:
     return team_xg * share * minutes
 
 
+def penalty_misses(*, minutes: float, share: float) -> float:
+    """Penalties expected to be missed in his minutes, for his share of them (mvp-rules R1.3)."""
+    return PENALTY_RATE * (1 - PENALTY_CONVERSION) * minutes * share
+
+
 def penalty_goals(*, minutes: float, share: float) -> float:
     """Penalty goals expected in his minutes, for his share of them (R9.5; mvp-lineup R10.1)."""
     return PENALTY_RATE * PENALTY_CONVERSION * minutes * share
@@ -127,12 +135,14 @@ def p_yellow(cards: int, *, appearances: int) -> float:
     return (YELLOW_PRIOR * YELLOW_WEIGHT + cards) / (YELLOW_WEIGHT + appearances)
 
 
-def cameo_rating(goals: float) -> tuple[float, float]:
+def cameo_rating(goals: float, goal_value: float) -> tuple[float, float]:
     """An attacker's cameo: his chance of a rating once he's on, and what it's worth. He gets one with a goal,
-    at 9.8, or else 60% of the time, at 5.75 (R9.7; mvp-lineup R8.3)."""
+    at 6.8 plus the league's goal value, or else 60% of the time, at 5.75 (R9.7; mvp-lineup R8.3)."""
     scored = p_scores(goals)
     rated = scored + (1 - scored) * CAMEO_RATED
-    return rated, (scored * CAMEO_GOAL_VALUE + (1 - scored) * CAMEO_RATED * CAMEO_RATING) / rated
+    return rated, (
+        scored * (CAMEO_GOAL_VOTE + goal_value) + (1 - scored) * CAMEO_RATED * CAMEO_RATING
+    ) / rated
 
 
 def value(player: OutfieldInputs, scoring: Scoring) -> OutfieldValue:
@@ -150,17 +160,28 @@ def value(player: OutfieldInputs, scoring: Scoring) -> OutfieldValue:
     vote = expected_vote(
         player.rated_appearances, player.average_rating, p_win=player.p_win, p_loss=player.p_loss
     )
+    conceded = player.opponent_xg or 0.0
     start = (
         vote
-        + scoring.goal * open_goals
-        + scoring.penalty_scored * penalties
-        + scoring.assist * assists
-        + scoring.yellow * yellow
+        + event_points(
+            scoring,
+            goals=open_goals,
+            penalties=penalties,
+            assists=assists,
+            yellows=yellow,
+            clean_sheets=math.exp(-conceded) if player.opponent_xg is not None else 0.0,
+            conceded=conceded,
+        )
+        + rare_points(
+            scoring,
+            player.role,
+            penalties_missed=penalty_misses(minutes=prior.minutes, share=player.penalty_share),
+        )
     )
     cameo_goals = expected_goals(player.team_xg, goal_share, minutes=MINUTES_CAMEO) + penalty_goals(
         minutes=MINUTES_CAMEO, share=player.penalty_share
     )
-    rated, cameo = cameo_rating(cameo_goals) if prior.priced_cameo else (1.0, CAMEO_FLAT)
+    rated, cameo = cameo_rating(cameo_goals, scoring.goal) if prior.priced_cameo else (1.0, CAMEO_FLAT)
     p_cameo = player.p_cameo * rated
     return OutfieldValue(
         name=player.name,

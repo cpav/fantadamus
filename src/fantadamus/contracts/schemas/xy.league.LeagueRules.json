@@ -2,42 +2,58 @@
   "contract": "xy.league.LeagueRules",
   "schema": {
     "$defs": {
-      "GoalByRole": {
+      "EventRow": {
         "additionalProperties": false,
-        "description": "A goal's bonus for each Classic role, for leagues that set it that way.",
+        "description": "What one event is worth to some roles.",
         "properties": {
-          "defender": {
+          "event": {
+            "description": "The event",
+            "enum": [
+              "goal",
+              "decisive_goal",
+              "assist",
+              "set_piece_assist",
+              "penalty_scored",
+              "penalty_missed",
+              "penalty_saved",
+              "own_goal",
+              "yellow_card",
+              "red_card",
+              "goal_conceded",
+              "clean_sheet"
+            ],
+            "title": "Event",
+            "type": "string"
+          },
+          "points": {
+            "description": "Its points: a bonus from 0 to 10, a malus from -10 to 0",
             "maximum": 10,
-            "minimum": 0,
-            "title": "Defender",
+            "minimum": -10,
+            "title": "Points",
             "type": "number"
           },
-          "forward": {
-            "maximum": 10,
-            "minimum": 0,
-            "title": "Forward",
-            "type": "number"
-          },
-          "keeper": {
-            "maximum": 10,
-            "minimum": 0,
-            "title": "Keeper",
-            "type": "number"
-          },
-          "midfielder": {
-            "maximum": 10,
-            "minimum": 0,
-            "title": "Midfielder",
-            "type": "number"
+          "roles": {
+            "description": "Who it applies to: P, D, C and A",
+            "items": {
+              "enum": [
+                "P",
+                "D",
+                "C",
+                "A"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Roles",
+            "type": "array"
           }
         },
         "required": [
-          "keeper",
-          "defender",
-          "midfielder",
-          "forward"
+          "event",
+          "points",
+          "roles"
         ],
-        "title": "GoalByRole",
+        "title": "EventRow",
         "type": "object"
       },
       "LineupRules": {
@@ -172,42 +188,16 @@
       }
     },
     "additionalProperties": false,
-    "description": "The league's bonus and malus table, and what a lineup needs. Bonuses are 0 to 10, maluses -10 to 0.",
+    "description": "A league's rules: one table of events, and what a lineup needs. An event left out isn't scored.",
     "properties": {
-      "assist": {
-        "description": "An assist",
-        "maximum": 10,
-        "minimum": 0,
-        "title": "Assist",
-        "type": "number"
-      },
-      "clean_sheet": {
-        "description": "A keeper's clean sheet",
-        "maximum": 10,
-        "minimum": 0,
-        "title": "Clean Sheet",
-        "type": "number"
-      },
-      "goal": {
-        "anyOf": [
-          {
-            "maximum": 10,
-            "minimum": 0,
-            "type": "number"
-          },
-          {
-            "$ref": "#/$defs/GoalByRole"
-          }
-        ],
-        "description": "A goal scored: one value, or one per role",
-        "title": "Goal"
-      },
-      "goal_conceded": {
-        "description": "Each goal a keeper concedes",
-        "maximum": 0,
-        "minimum": -10,
-        "title": "Goal Conceded",
-        "type": "number"
+      "events": {
+        "description": "Every event this league scores, with its points and the roles they apply to. An event left out isn't scored. For different values by role, give one row per value",
+        "items": {
+          "$ref": "#/$defs/EventRow"
+        },
+        "minItems": 1,
+        "title": "Events",
+        "type": "array"
       },
       "lineup": {
         "anyOf": [
@@ -220,64 +210,13 @@
         ],
         "default": null,
         "description": "What a lineup needs: thresholds, the bench, substitutions and formations. Not needed for 'X or Y?'. A call without it, or with only some of it, keeps what's stored"
-      },
-      "own_goal": {
-        "description": "An own goal",
-        "maximum": 0,
-        "minimum": -10,
-        "title": "Own Goal",
-        "type": "number"
-      },
-      "penalty_missed": {
-        "description": "A penalty missed",
-        "maximum": 0,
-        "minimum": -10,
-        "title": "Penalty Missed",
-        "type": "number"
-      },
-      "penalty_saved": {
-        "description": "A penalty saved, for keepers",
-        "maximum": 10,
-        "minimum": 0,
-        "title": "Penalty Saved",
-        "type": "number"
-      },
-      "penalty_scored": {
-        "description": "A penalty scored, counted in place of the goal bonus",
-        "maximum": 10,
-        "minimum": 0,
-        "title": "Penalty Scored",
-        "type": "number"
-      },
-      "red_card": {
-        "description": "A red card",
-        "maximum": 0,
-        "minimum": -10,
-        "title": "Red Card",
-        "type": "number"
-      },
-      "yellow_card": {
-        "description": "A yellow card",
-        "maximum": 0,
-        "minimum": -10,
-        "title": "Yellow Card",
-        "type": "number"
       }
     },
     "required": [
-      "goal",
-      "assist",
-      "penalty_scored",
-      "penalty_missed",
-      "penalty_saved",
-      "own_goal",
-      "yellow_card",
-      "red_card",
-      "goal_conceded",
-      "clean_sheet"
+      "events"
     ],
     "title": "LeagueRules",
     "type": "object"
   },
-  "version": "1.1.0"
+  "version": "2.0.0"
 }

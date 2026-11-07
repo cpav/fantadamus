@@ -58,8 +58,10 @@ pytest_add_cli_args_test_selection = [
     "tests/unit/lineup",
     "tests/unit/xy",
     "tests/unit/roles",
+    "tests/unit/rules",
     "tests/property/lineup",
     "tests/property/roles",
+    "tests/property/rules",
     "tests/property/xy",
 ]
 pytest_add_cli_args = [

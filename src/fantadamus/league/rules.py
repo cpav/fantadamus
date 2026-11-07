@@ -14,25 +14,28 @@ from typing import Any
 from pydantic import BaseModel
 
 from fantadamus.contracts.types import Role, UtcDatetime
-from fantadamus.contracts.xy.league import GoalByRole, LeagueRules, LineupRules
+from fantadamus.contracts.xy.league import EVENT_MEANINGS, EventRow, LeagueRules, LineupRules
 from fantadamus.core.files import temporary_beside
+from fantadamus.engine.constants import DECISIVE_GOAL_SHARE, SET_PIECE_ASSIST_SHARE
 from fantadamus.engine.rank import Scoring
 
 DEFAULT_ROOT = Path("data/local/league")
 _USER = re.compile(r"[a-z0-9][a-z0-9_-]{0,39}")
-_ROLE_FIELDS = {"P": "keeper", "D": "defender", "C": "midfielder", "A": "forward"}
 
+_EVERY_ROLE: list[Role] = ["P", "D", "C", "A"]
 CLASSIC = LeagueRules(
-    goal=3.0,
-    assist=1.0,
-    penalty_scored=3.0,
-    penalty_missed=-3.0,
-    penalty_saved=3.0,
-    own_goal=-2.0,
-    yellow_card=-0.5,
-    red_card=-1.0,
-    goal_conceded=-1.0,
-    clean_sheet=1.0,
+    events=[
+        EventRow(event="goal", points=3.0, roles=_EVERY_ROLE),
+        EventRow(event="assist", points=1.0, roles=_EVERY_ROLE),
+        EventRow(event="penalty_scored", points=3.0, roles=_EVERY_ROLE),
+        EventRow(event="penalty_missed", points=-3.0, roles=_EVERY_ROLE),
+        EventRow(event="penalty_saved", points=3.0, roles=["P"]),
+        EventRow(event="own_goal", points=-2.0, roles=_EVERY_ROLE),
+        EventRow(event="yellow_card", points=-0.5, roles=_EVERY_ROLE),
+        EventRow(event="red_card", points=-1.0, roles=_EVERY_ROLE),
+        EventRow(event="goal_conceded", points=-1.0, roles=["P"]),
+        EventRow(event="clean_sheet", points=1.0, roles=["P"]),
+    ]
 )
 """Fantacalcio.it Classic values, offered as the starting choice (R12.3)."""
 
@@ -64,6 +67,7 @@ class RuleField(BaseModel):
     field: str
     classic: float
     meaning: str
+    roles: list[Role]
 
 
 class SetupStep(BaseModel):
@@ -130,30 +134,36 @@ def with_stored_lineup(rules: LeagueRules, stored: LeagueRules | None) -> League
 
 
 def setup_step() -> SetupStep:
-    classic = CLASSIC.model_dump()
     return SetupStep(
         message="Fantadamus needs this league's bonuses and maluses before it can answer. Ask the user for "
-        "each value, offering the Fantacalcio Classic values below as the starting choice; the goal bonus "
-        "can also be set per role (keeper, defender, midfielder, forward). Then call set_league_rules.",
+        "each value, offering the Fantacalcio Classic values below as the starting choice; any value can "
+        "also differ by role (P, D, C, A), with one row per value. Then call set_league_rules with them as "
+        "`events`.",
         tool="set_league_rules",
         fields=[
-            RuleField(field=name, classic=classic[name], meaning=info.description or name)
-            for name, info in LeagueRules.model_fields.items()
-            if name != "lineup"
+            RuleField(field=row.event, classic=row.points, meaning=EVENT_MEANINGS[row.event], roles=row.roles)
+            for row in CLASSIC.events
         ],
     )
 
 
 def scoring_for(rules: LeagueRules, role: Role) -> Scoring:
-    """The values the models use for a player of `role` (R12.5; mvp-roles R2.5, R3.1)."""
-    goal = getattr(rules.goal, _ROLE_FIELDS[role]) if isinstance(rules.goal, GoalByRole) else rules.goal
+    """What the table says for a player of `role`, as the models read it (mvp-rules R1). An event it leaves
+    out is worth nothing, and a share-based event joins the worth of the event it's a share of (R1.5)."""
+    points = {row.event: row.points for row in rules.events if role in row.roles}
+    decisive = DECISIVE_GOAL_SHARE * points.get("decisive_goal", 0.0)
+    assist = points.get("assist", 0.0)
     return Scoring(
-        goal=goal,
-        penalty_scored=rules.penalty_scored,
-        assist=rules.assist,
-        yellow=rules.yellow_card,
-        clean_sheet=rules.clean_sheet,
-        goal_conceded=rules.goal_conceded,
+        goal=points.get("goal", 0.0) + decisive,
+        penalty_scored=points.get("penalty_scored", 0.0) + decisive,
+        assist=assist + SET_PIECE_ASSIST_SHARE * (points.get("set_piece_assist", assist) - assist),
+        yellow=points.get("yellow_card", 0.0),
+        clean_sheet=points.get("clean_sheet", 0.0),
+        goal_conceded=points.get("goal_conceded", 0.0),
+        penalty_missed=points.get("penalty_missed", 0.0),
+        penalty_saved=points.get("penalty_saved", 0.0),
+        own_goal=points.get("own_goal", 0.0),
+        red=points.get("red_card", 0.0),
     )
 
 

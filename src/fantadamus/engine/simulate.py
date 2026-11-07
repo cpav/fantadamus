@@ -19,7 +19,7 @@ from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.league import LineupRules, formation_lines
 from fantadamus.engine.constants import (
     CAMEO_FLAT,
-    CAMEO_GOAL_VALUE,
+    CAMEO_GOAL_VOTE,
     CAMEO_RATED,
     CAMEO_RATING,
     GOAL_VOTE_LIFT,
@@ -33,7 +33,14 @@ from fantadamus.engine.constants import (
 )
 from fantadamus.engine.keepers import KeeperInputs, KeeperValue
 from fantadamus.engine.lineup import Arrangement
-from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue, penalty_goals, priors
+from fantadamus.engine.outfield import (
+    OutfieldInputs,
+    OutfieldValue,
+    penalty_goals,
+    penalty_misses,
+    priors,
+)
+from fantadamus.engine.points import PENALTIES_SAVED, event_points, rare_points
 from fantadamus.engine.rank import Scoring
 
 Side = tuple[int, int]
@@ -67,6 +74,10 @@ class Outfielder:
     p_yellow: float
     priced_cameo: bool
     scoring: Scoring
+    rare: float = 0.0
+    """What the rare events are worth in a start, on average."""
+    defends: bool = False
+    """Whether the league scores his role's clean sheets or goals conceded."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +90,8 @@ class Keeper:
     p_start: float
     skill: float
     scoring: Scoring
+    rare: float = 0.0
+    """What the rare events are worth in a start, on average."""
 
 
 SimPlayer = Outfielder | Keeper
@@ -102,6 +115,12 @@ def outfield_player(
         p_yellow=value.p_yellow,
         priced_cameo=prior.priced_cameo,
         scoring=scoring,
+        rare=rare_points(
+            scoring,
+            inputs.role,
+            penalties_missed=penalty_misses(minutes=prior.minutes, share=inputs.penalty_share),
+        ),
+        defends=inputs.opponent_xg is not None and bool(scoring.clean_sheet or scoring.goal_conceded),
     )
 
 
@@ -115,24 +134,45 @@ def keeper_player(
         p_start=value.p_start,
         skill=value.skill,
         scoring=scoring,
+        rare=rare_points(scoring, "P", penalties_saved=PENALTIES_SAVED),
     )
 
 
 def outfield_points(
-    player: Outfielder, noise: float, open_goals: int, penalties: int, assists: int, yellow: bool
+    player: Outfielder,
+    noise: float,
+    open_goals: int,
+    penalties: int,
+    assists: int,
+    yellow: bool,
+    conceded: int | None = None,
 ) -> float:
-    """A starter's score: his vote plus noise, lifted by each goal, and his bonuses."""
-    scoring = player.scoring
+    """A starter's score: his vote plus noise, lifted by each goal, and his events. `conceded` is his team's
+    goals against, where the league scores them for his role."""
     vote = player.lowered_vote + noise + GOAL_VOTE_LIFT * (open_goals + penalties)
-    bonuses = scoring.goal * open_goals + scoring.penalty_scored * penalties + scoring.assist * assists
-    return vote + bonuses + (scoring.yellow if yellow else 0.0)
+    return (
+        vote
+        + player.rare
+        + event_points(
+            player.scoring,
+            goals=open_goals,
+            penalties=penalties,
+            assists=assists,
+            yellows=1.0 if yellow else 0.0,
+            clean_sheets=1.0 if conceded == 0 else 0.0,
+            conceded=conceded or 0,
+        )
+    )
 
 
 def keeper_points(keeper: Keeper, noise: float, conceded: int) -> float:
-    """A starter's score: his skill less what each goal conceded costs his vote, plus noise and bonuses."""
-    scoring = keeper.scoring
+    """A starter's score: his skill less what each goal conceded costs his vote, plus noise and his events."""
     vote = keeper.skill - KEEPER_BETA * conceded + noise
-    return vote + (scoring.clean_sheet if not conceded else 0.0) + scoring.goal_conceded * conceded
+    return (
+        vote
+        + keeper.rare
+        + event_points(keeper.scoring, clean_sheets=0.0 if conceded else 1.0, conceded=conceded)
+    )
 
 
 def _poisson(limit: float, draw: Callable[[], float]) -> int:
@@ -149,7 +189,7 @@ def _cameo_points(player: Outfielder, open_goals: int, draw: Callable[[], float]
     if not player.priced_cameo:
         return CAMEO_FLAT
     if open_goals or _poisson(math.exp(-player.cameo_penalties), draw):
-        return CAMEO_GOAL_VALUE
+        return CAMEO_GOAL_VOTE + player.scoring.goal
     return CAMEO_RATING if draw() < CAMEO_RATED else None
 
 
@@ -214,6 +254,9 @@ def draw_rounds(
                     penalties,
                     assists[index],
                     draw() < player.p_yellow,
+                    goals[player.side[0]][1 - player.side[1]]
+                    if player.defends and player.side is not None
+                    else None,
                 )
             elif state[index] == _COMES_ON:
                 scores[player.player_id] = _cameo_points(player, open_goals[index], draw)

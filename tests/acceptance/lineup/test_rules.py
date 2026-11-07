@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.league.rules import CLASSIC, RulesStore, lineup_setup_step
+from fantadamus.league.rules import CLASSIC, RulesStore, lineup_setup_step, scoring_for
 from tests.xy_harness import ask, collect, error_text, set_classic, tools
 
 pytestmark = pytest.mark.anyio
@@ -65,7 +65,7 @@ async def test_at8_setup_step_only_for_what_is_missing(tmp_path: Path) -> None:
         await set_classic(client, goal=3.5)  # a change of bonuses doesn't lose the lineup rules
         stored = rules.get("user-1")
         assert stored is not None
-        assert stored.rules.goal == 3.5
+        assert scoring_for(stored.rules, "A").goal == 3.5
         assert stored.rules.lineup is not None
         assert missing() is None
 

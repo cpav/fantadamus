@@ -15,6 +15,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from fantadamus.engine.constants import KEEPER_BETA, KEEPER_SKILL_WEIGHT, VOTE_BASELINE, XG_RANGE
+from fantadamus.engine.points import PENALTIES_SAVED, event_points, rare_points
 from fantadamus.engine.rank import Option, Scoring, Verdict, covering, flip, key, no_cover, verdict
 
 
@@ -76,7 +77,11 @@ def value(keeper: KeeperInputs, scoring: Scoring) -> KeeperValue:
     conceded = keeper.opponent_xg
     vote = shrunk - KEEPER_BETA * conceded
     clean_sheet = math.exp(-conceded)
-    start = vote + scoring.clean_sheet * clean_sheet + scoring.goal_conceded * conceded
+    start = (
+        vote
+        + event_points(scoring, clean_sheets=clean_sheet, conceded=conceded)
+        + rare_points(scoring, "P", penalties_saved=PENALTIES_SAVED)
+    )
     return KeeperValue(
         name=keeper.name,
         p_start=keeper.p_start,

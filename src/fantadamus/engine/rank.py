@@ -30,6 +30,10 @@ class Scoring(BaseModel):
     yellow: float
     clean_sheet: float
     goal_conceded: float
+    penalty_missed: float = 0.0
+    penalty_saved: float = 0.0
+    own_goal: float = 0.0
+    red: float = 0.0
 
 
 class Option(BaseModel):

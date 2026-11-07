@@ -14,11 +14,11 @@ def register(server: MCPServer, store: RulesStore, *, user: str, clock: Clock) -
     """Add `set_league_rules` to `server`, storing the rules of `user`."""
 
     @server.tool(
-        description="Set this user's league rules: the bonus and malus for each event, and under `lineup` "
-        "what a lineup needs. Ask the user for every value first (compare_players lists the bonuses, with "
-        "the Fantacalcio Classic values as the starting choice), and call it again whenever their league "
-        "changes. Bonuses are 0 to 10, maluses -10 to 0; an impossible value is rejected with the reason. "
-        "Lineup settings left out keep their stored values."
+        description="Set this user's league rules: one row in `events` for each thing the league scores, and "
+        "under `lineup` what a lineup needs. Ask the user for every value first (compare_players lists the "
+        "events, with the Fantacalcio Classic values as the starting choice), and call it again whenever "
+        "their league changes. An event left out isn't scored. Bonuses are 0 to 10, maluses -10 to 0; an "
+        "impossible value is rejected with the reason. Lineup settings left out keep their stored values."
     )
     def set_league_rules(rules: LeagueRules) -> StoredRules:
         stored = store.get(user)

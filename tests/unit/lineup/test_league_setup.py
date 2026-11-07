@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from fantadamus.contracts.xy.league import LeagueRules, LineupRules
+from fantadamus.contracts.xy.league import EventRow, LeagueRules, LineupRules
 from fantadamus.league.rules import (
     CLASSIC,
     COMMON_LINEUP,
@@ -84,9 +84,9 @@ def test_every_common_value_is_a_valid_one(field: str, values: list[Any]) -> Non
 
 def test_a_call_without_lineup_keeps_the_stored_one() -> None:
     stored = _with(**COMPLETE)
-    richer = LeagueRules.model_validate(CLASSIC.model_dump() | {"goal": 3.5})
+    richer = LeagueRules(events=[EventRow(event="goal", points=3.5, roles=["A"])])
     kept = with_stored_lineup(richer, stored)
-    assert kept.goal == 3.5
+    assert kept.events == richer.events
     assert kept.lineup == stored.lineup
 
 
