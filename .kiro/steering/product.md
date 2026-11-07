@@ -34,6 +34,8 @@ most of the architecture: facts are collected once and served many times (see `t
    - The options mirror the settings of official Fantacalcio.it leagues: goal thresholds, bonuses and
      penalties, modifiers, bench size, substitutions and allowed formations. They are researched and
      enumerated in the requirements of the spec that owns the League domain.
+   - **A league's rules are data.** A new league's rule should need no new code wherever the simulation already
+     has what it measures (the owner, 2026-11-07).
    - When the league is unknown (a live chat, say), default to standard Classic rules, ask once and
      remember the answer.
 2. **"Who do I play?" at three levels.**
@@ -128,10 +130,10 @@ one thing: making Fantadamus easy to reach and install. The slices after `mvp-li
 
 | Order | Slice | Needs |
 |---|---|---|
-| 1 | The review of a user's lineup after a round: what they chose, what the advice was, what each decision cost, and whether overrides paid off | Nothing new |
-| 2 | Match cards, numbers: one card per fixture, from the facts already collected | Nothing new |
-| 3 | Recalibration of the *(start)* constants, and the market's chances beside ours | Calibration reports |
-| 4 | The defence modifier and the captain | Nothing new |
+| 1 | Custom league rules (`mvp-rules`): a league's rules as data read by one engine, instead of a feature per rule: a table of events by role, and formula rules, with the defence modifier and the captain as two entries; a player's Claude translates the rulebook | Nothing new |
+| 2 | Recalibration of the *(start)* constants, and the market's chances beside ours | Calibration reports |
+| 3 | The review of a user's lineup after a round: what they chose, what the advice was, what each decision cost, and whether overrides paid off | Nothing new |
+| 4 | Match cards, numbers: one card per fixture, from the facts already collected | Nothing new |
 | 5 | New sources, research first, each route approved by the owner: rest days and midweek European fixtures, set-piece takers, injury detail, match context for the cards, anytime-scorer odds, per-match ratings and rater bias | ADRs, then the source registry |
 | 6 | Alerts: "the official lineup changes your call" | A way to reach the user unprompted |
 | 7 | League rules that need the opponent's team (the home factor, draw and superiority bonuses, the rule of 59), and Mantra leagues | All the league's squads; Mantra's roles and rules |
