@@ -290,9 +290,9 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
     - _Requirements: R9.2_
     - _Test: `tests/unit/test_repo_hygiene.py::test_player_guide_covers_the_lineup`_
 
-- [ ] 9. The real round and this slice's sign-off
+- [x] 9. The real round and this slice's sign-off
   - Branch: `docs/ml-9-gate` · Depends on: 8 · ADRs: none
-  - [ ] 9.1 Testing from Claude Code on real data, with the local tools and a real squad kept in private memory: a draft, a check
+  - [x] 9.1 Testing from Claude Code on real data, with the local tools and a real squad kept in private memory: a draft, a check
     after the official lineups, an override and a league-mate's squad. Bugs found get their own failing tests and fixes.
     Results stay out of the repository.
     - _Requirements: R3.1, R5.1, R5.5, R7.1_
@@ -307,25 +307,26 @@ Status: **Approved by the owner, 2026-11-04** · From the approved [requirements
       `tests/integration/test_log_lines.py::test_a_bad_line_doesnt_stop_the_answer`,
       `::test_the_collect_log_skips_a_line_it_cant_read`, `::test_the_decision_log_skips_a_line_it_cant_read`,
       `::test_a_bad_byte_costs_only_its_line`_
-  - [ ] 9.2 **Owner:** give a real squad and rules in Claude Desktop, and compare a lineup for a real round with your own
+  - [x] 9.2 **Owner:** give a real squad and rules in Claude Desktop, and compare a lineup for a real round with your own
     choice.
     - _Requirements: AT-13_
     - _Test: recorded in the report, without players' figures_
-  - [ ] 9.3 The first calibration report, in `docs/reports/`, aggregates only, after a real round has finished:
+  - [x] 9.3 The first calibration report, in `docs/reports/`, aggregates only, after a real round has finished:
     - both sets, and what couldn't be scored;
     - whether 12 hours was long enough for the statistics page;
     - whether a finished page keeps the outlets' last percentages, against a read before kickoff;
     - any change proposed to a starting value, for the owner to approve.
+    - Round 10's report, by the owner's decision of 2026-11-07: round 11 feeds the recalibration slice instead of holding up this one.
     - _Requirements: R7.2, R7.4, R7.6_
     - _Test: the report exists with every section, and names the round; no player's figures in it_
-  - [ ] 9.4 A mutation-testing run on the core modules (`engine/`, `domains/calibration.py`), with survivors looked at. If `mutmut`
+  - [x] 9.4 A mutation-testing run on the core modules (`engine/`, `domains/calibration.py`), with survivors looked at. If `mutmut`
     won't run on the owner's Mac, say so and ask before choosing another way.
     - _Requirements: R3.2, R4.1, R7.2; phase gate (`quality.md`)_
-    - _Test: the score and the survivors, in the phase report_
-  - [ ] 9.5 The slice report: tests, coverage, quality results, cost and open risks, all six of method §A9, and the acceptance
+    - _Test: the score and the survivors, in the phase report; the gap it found: `tests/unit/roles/test_rank.py::test_two_keepers_who_are_both_out_are_covered_by_nobody`_
+  - [x] 9.5 The slice report: tests, coverage, quality results, cost and open risks, all six of method §A9, and the acceptance
     tests of this slice.
     - _Requirements: Phase gate (`quality.md`), R9.2_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 9.6 **Owner:** sign off this slice → the next slice in `product.md` may start
+  - [x] 9.6 **Owner:** sign off this slice → the next slice in `product.md` may start
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the phase report_

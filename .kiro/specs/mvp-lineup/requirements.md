@@ -25,7 +25,7 @@ It adds no new source. The round page and the statistics page already give every
 - Mantra leagues;
 - modifiers, including the defence modifier and the captain (R2.3);
 - trades, auctions and market values (out of scope for v1);
-- match cards, live forecasts and alerts: later specs;
+- match cards and alerts: later specs; live forecasts aren't planned (`product.md`, Further notes);
 - the online endpoint: Phase 3.
 
 ## Glossary
@@ -289,6 +289,9 @@ Method §A9 is then complete: tests 2, 3, 4 and 6 passed in earlier slices.
   list was read rarely; a change was never reported; at several clubs the list disagreed with who had really taken penalties; and a
   first taker who was out took his club's penalties with him, which changed a real eleven. The owner approved fixing all four
   (R10.1 to R10.5). The agent chose a share over an "out" rule, so that a doubtful first taker needs no cut-off.
+- **2026-11-07, closing the slice:** the owner decided not to wait for round 11. The gate asks for a calibration report on at least
+  one real round, and round 10's exists, so nothing is weakened. Round 11 scores itself when it can and feeds the recalibration
+  slice. The owner also took live forecasts and pundit consensus out of scope (`product.md`, Further notes).
 - **2026-11-04, building task 3:** R2.2 gained three details the requirement had left open. A total-points league isn't asked
   for thresholds. The no-rating vote and other rules are asked about but don't hold a lineup back. And a later call that leaves
   a lineup setting out keeps it, so a change of bonuses doesn't lose the lineup rules.

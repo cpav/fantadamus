@@ -63,3 +63,10 @@ def test_a_keeper_without_rated_games_is_an_average_one() -> None:
     average = keepers.skill(keeper(rated_appearances=0, average_rating=None))
     assert keepers.skill(keeper(rated_appearances=0, average_rating=8.0)) == average
     assert keepers.skill(keeper(rated_appearances=8, average_rating=None)) == average
+
+
+def test_two_keepers_who_are_both_out_are_covered_by_nobody() -> None:
+    """Neither plays, so the answer has to say so rather than pick one."""
+    out = rank.Option(name="A", p_start=0.0, p_cameo=0.0, e_start=6.0, e_cameo=0.0)
+    result = rank.covering(out, out.model_copy(update={"name": "B"}))
+    assert (result.first_plays, result.second_plays) == (False, False)
