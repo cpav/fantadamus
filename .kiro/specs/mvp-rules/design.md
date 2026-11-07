@@ -1,15 +1,15 @@
 # Design Document: `mvp-rules` (Phase 2, fourth slice)
 
-Status: **Draft for the owner's approval** · From the approved [requirements](requirements.md)
+Status: **Approved by the owner, 2026-11-07** · From the approved [requirements](requirements.md)
 
 ## Overview
 
-A league's rules become data, read by one engine. A league's events go in a table that the player models read, and its formula
-rules run inside the simulated rounds that already draw every player's vote. A player's Claude does the translating, and the tools
+A league's rules become data, read by one engine. Every event goes in one table, with Classic as a ready-made entry and no special path for the
+basics, and formula rules run inside the simulated rounds that already draw every player's vote. A player's Claude does the translating, and the tools
 validate the result and say what they priced.
 
-The slice adds no page, source or paid service. Rules stored today keep working, and a league that sets nothing new gets today's
-numbers, apart from the four events that were never priced.
+The slice adds no page, source or paid service. Rules stored today are read as the same table, and a league's numbers stay as they are, apart
+from the four events that were never priced.
 
 **What was measured first** (real squad, real round, on the owner's Mac): a full answer takes 1.8 seconds, of which the
 simulation is 0.7. Three formula rules, evaluated in each of 70,000 arrangement-rounds, add about 0.8 seconds, for about 2.5 in
@@ -25,15 +25,15 @@ all. So they can run in the same loop, with no special machinery.
 
 ## Components
 
-### C1. The rules contract (`contracts/xy/league.py`; R1.1, R1.6, R2.1, R2.4)
+### C1. One table (`contracts/xy/league.py`; R1.1, R1.6, R2.1, R2.4)
 
-`LeagueRules` 1.2.0 only adds, so stored rules load unchanged. Today's ten values stay as the base of the table, with two new lists:
+`LeagueRules` 2.0.0 holds `events`, `formula_rules` and `lineup`. The ten fixed fields and `GoalByRole` go.
 
 ```python
 class EventRow(Part):
-    event: EventName  # the ten of today, plus set_piece_assist and decisive_goal
-    points: float  # -10 to 10
-    roles: list[Role]  # empty means every role that event applies to
+    event: EventName  # goal, penalty_scored, penalty_missed, penalty_saved, assist, set_piece_assist, ...
+    points: float  # a bonus 0 to 10, a malus -10 to 0, by the event
+    roles: list[Role]  # who it applies to
 
 
 class Band(Part):
@@ -43,13 +43,12 @@ class Band(Part):
 
 class Unit(Part):
     role: Role
-    best: int | None  # his role's best n by the measure; None counts all of them
+    best: int | None  # his role's best n by pure vote; None counts all of them
 
 
 class FormulaRule(Part):
     name: Name
     who: list[Unit] | Literal["captain"]
-    measure: Literal["pure_vote", "yellow_cards"]
     combine: Literal["average", "sum", "each"]
     leave_out: Literal["nobody", "bonus_or_goal"]
     base: int | None  # how many the unit counts
@@ -58,33 +57,39 @@ class FormulaRule(Part):
     bands: list[Band]  # rising; below the first, no points
 ```
 
-`LeagueRules` gains `events: list[EventRow] = []` and `formula_rules: list[FormulaRule] = []`. `other_rules` stays, now holding each
-left-out rule's name and what it needs.
+**One row per event and role.** An event not in the table isn't scored, so there are no defaults to look up. `CLASSIC` is a ready-made value of this
+same contract. `other_rules` stays, holding each left-out rule's name and what it needs.
 
-**No rule can carry code.** Every field is a number or a fixed word, `Part` forbids extra fields, and nothing is evaluated.
-Validators refuse bands that don't rise, a `leave_out` with a measure it can't apply to, `each` with a `base`, and a keeper-only
-event on another role, each with its reason.
+**Earlier rules are read as the same table.** Rules are stored in a user's file and inside every line of the decision log, so the conversion sits in
+`LeagueRules` itself, as a validator that runs before the fields are checked. A dictionary with the old fields becomes rows, so neither the files
+nor the log need rewriting, and a line isn't lost by the shared log reader for failing to parse.
 
-The parts follow Fantacalcio-Online's own builder, so a rule from a real rulebook fits as written. For example, the *Gazzetta*
-defence modifier is `who=[{role: P}, {role: D, best: 3}]`, `pure_vote`, `average`, `base=4`, and fair play is every role,
-`yellow_cards`, `sum`, `only_when_fielded=11`, with bands that give the bonus at zero.
+**No rule can carry code.** Every field is a number or a fixed word, `Part` forbids extra fields, and nothing is evaluated. Validators refuse a
+second row for one event and role, a value of the wrong sign, a keeper's penalty save on another role, bands that don't rise, and `each` with a
+`base`, each with its reason.
 
-### C2. The table of events (`league/rules.py`, `engine/rank.py`; R1.1, R1.2, R1.5)
+The parts follow Fantacalcio-Online's own builder, so a rule from a real rulebook fits as written. The *Gazzetta* defence modifier is
+`who=[{role: P}, {role: D, best: 3}]`, `average`, `base=4`.
 
-`scoring_for(rules, role)` builds `Scoring` from the table: the base values, then any row for that role. `Scoring` gains
-`penalty_missed`, `penalty_saved`, `own_goal`, `red` and an outfield player's `clean_sheet` and `goal_conceded`, which are zero unless a
-row sets them.
+### C2. One calculation (`league/rules.py`, `engine/rank.py`, `engine/points.py`; R1.1, R1.2, R1.5)
 
-**A share-based event is one row of one table** (`engine/constants.py`), an event, its base and a share, with no logic of its own:
+`scoring_for(rules, role)` reads the table for that role into `Scoring`, which stays the engine's only view of a league, with a zero for anything
+the table doesn't score. `Scoring` gains `penalty_missed`, `penalty_saved`, `own_goal` and `red`.
 
-| Event | Of | Share *(start)* | Effect on a base event's worth | Where the share comes from |
+**`event_points(scoring, goals, penalties, assists, yellows, clean_sheets, conceded)`** in `engine/points.py` is the one place a league's points meet a
+player's counts. The player models call it with expected counts, and the simulation calls it with drawn ones, for outfield players and keepers
+alike, replacing today's four hand-written sums.
+
+**A share-based event is a share of a known count,** so `scoring_for` folds it into that event's worth, and the engine never sees it:
+
+| Event | Of | Share *(start)* | Worth of the base event | Where the share comes from |
 |---|---|---:|---|---|
-| Decisive goal | Goals | 0.20 | Added on top | The odds model: about 0.57 decisive goals in a match of 3 goals |
-| Set-piece assist | Assists | 0.25 | Replaces the assist's value | The rough share of Serie A's goals from dead balls, excluding penalties |
+| Decisive goal | Goals, and penalties scored | 0.20 | Its value plus share × points | The odds model: about 0.57 decisive goals in a match of 3 goals |
+| Set-piece assist | Assists | 0.25 | (1 − share) × assist + share × points | The rough share of Serie A's goals from dead balls, excluding penalties |
 
-The models then read one effective value for a goal or an assist, so these rows add no draws. The recalibration slice owns the numbers.
+Recalibration owns those numbers.
 
-### C3. The four unpriced events (`engine/outfield.py`, `engine/keepers.py`, `engine/constants.py`; R1.3, R1.6)
+### C3. The four unpriced events (`engine/points.py`, `engine/constants.py`; R1.3, R1.6)
 
 | Event | Expected per start | Starting values *(start)* | Worth to a typical player |
 |---|---|---|---|
@@ -93,30 +98,28 @@ The models then read one effective value for a goal or an assist, so these rows 
 | Red card | A rate per rated game, by role | D 0.005, C 0.003, A 0.002, P 0.001 (this season: 9 in 2,882) | About −0.005 |
 | Own goal | A rate per rated game, by role | D 0.005, others 0.001 (22 in a recent season) | About −0.01 for a defender |
 
-**They enter the simulation as expected values, not draws.** Each is too rare to change the spread, and a fixed term keeps the same
-random stream, so a league that sets nothing new can be compared with today's numbers exactly (AT-1). A player's simulated mean still
-matches his model (P4 of `mvp-lineup`).
+**They enter the simulation as a fixed term, not draws.** Each is too rare to change the spread, and a fixed term keeps the same random stream, so a
+league's numbers can be compared with today's exactly (AT-1). A player's simulated mean still matches his model (P4 of `mvp-lineup`).
 
-A cameo's goal is worth `6.8 + the league's goal value` instead of a fixed 9.8, which assumed +3: another hard-coded rule found while
-reading the code.
+A cameo's goal is worth `6.8 + the league's goal value` instead of a fixed 9.8, which assumed +3: another hard-coded rule found while reading the code.
 
 ### C4. An outfield role's clean sheet (`engine/outfield.py`, `engine/simulate.py`; R1.4)
 
-`OutfieldInputs` gains the opponent's xG, and a defender's `E_start` adds the clean-sheet chance and goals conceded at the league's
-values, when a row sets them. In the simulation an `Outfielder` knows which side it's on, so it reads the opponent's goals from the same
+`OutfieldInputs` gains the opponent's xG, and a defender's expected counts include the clean-sheet chance and goals conceded, which count only if
+the table has a row for his role. In the simulation an `Outfielder` knows which side it's on, so it reads the opponent's goals from the same
 draw as his keeper: the link is the one that already ties a striker's goal to the keeper who concedes it.
 
 ### C5. Formula rules (`engine/formula.py`; R2.1, R2.2)
 
 A pure module with one job. Given a rule and who was fielded this round, it returns the points:
 
-1. Take the players in the unit: all, or the best n by the measure.
+1. Take the players in the unit: all, or the best n by pure vote.
 2. Leave out anyone the rule excludes, and fill any gap up to `base` with the stand-in votes.
 3. If `only_when_fielded` isn't met, there are no points.
 4. Combine them, or take each on his own, and look the value up in the bands with `bisect`.
 
 **The simulation supplies what it needs.** `draw_rounds` also yields a light mark per player when a league has formula rules: his pure
-vote, whether he was booked, and whether he scored, conceded or saved a penalty. A cameo's pure vote is 5.5 for a flat cameo, 5.75 for a
+vote, and whether he scored or conceded. A cameo's pure vote is 5.5 for a flat cameo, 5.75 for a
 priced one and 6.8 with a goal. A league without formula rules builds no marks and pays nothing.
 
 **After substitutions.** `field` already returns the moves, so the fielded eleven is known. Fantacalcio-Online adds modifier totals to the
@@ -146,8 +149,9 @@ That's about 50,000 lookups, and it needs no second pass over the rounds.
 - **`set_league_rules`** returns `SavedRules`: the stored rules, `priced` (every event and formula rule that counts) and `left_out`
   (each name and what it needs). Its schema's field descriptions carry the vocabulary, so the agent prompt needs only one more sentence;
   it has fewer than 500 characters of budget left.
-- **Ready-made entries:** `READY_MADE` in `league/rules.py` holds the *Gazzetta* defence modifier, the attack modifier, the captain and
-  fair play at the researched values, and they're offered in the setup step's `also`, replacing today's three names.
+- **One setup step:** `setup_step` replaces today's two. It lists whatever the question still needs, and offers the ready-made entries.
+- **Ready-made entries:** `READY_MADE` in `league/rules.py` holds Classic's table, the *Gazzetta* defence modifier, the attack modifier and the
+  captain, at the researched values.
 - **The agent prompt and profile:** paste the rulebook, translate it into these forms, read back `priced` and `left_out`, and never guess a
   value. Rules that need the opponent, or have no estimate, go in `other_rules` with what they need. The profile's "Other rules" section
   points to the same.
@@ -161,7 +165,7 @@ That's about 50,000 lookups, and it needs no second pass over the rounds.
 |---|---|
 | An impossible rule | Refused with the reason; nothing stored |
 | A rule that needs the opponent, or has no estimate | Saved in `other_rules` with what it needs, and named in every answer |
-| Rules stored by an earlier version | Read as they are, with no rows and no formula rules |
+| Rules stored by an earlier version, or in an old log line | Read as the same table |
 | A unit with nobody and no stand-in vote | The rule gives no points that round |
 | The captain and the vice both without a rating | The rule's stand-in vote applies; without one, no points |
 | A named captain who isn't in the squad | Refused with the reason, like any override |
@@ -174,10 +178,10 @@ These Hypothesis tests are required:
 |---|---|---|
 | P1 | A value in a band gets that band's points, for any rising bands, and below the first band there are none | R2.1 |
 | P2 | A formula rule whose bands are all zero leaves every round's total as it was | R2.2 |
-| P3 | A row for one role never changes another role's values | R1.1 |
+| P3 | A row for one role never changes another role's values, and an event not in the table adds nothing | R1.1 |
 | P4 | Over many rounds, a player's mean still matches his model's value with the new events, for any table | R1.2 |
 | P5 | The same inputs give the same results with any rules | R3.4 |
-| P6 | Stored rules of the earlier version load, and give the same `Scoring` apart from the four events | R1.6 |
+| P6 | Any rules in the earlier form convert to a table that gives the same `Scoring` | R1.6 |
 | P7 | A captain's points never exceed the top band or fall below the bottom one, and the recommended captain is never worse over the rounds than another candidate | R3.3 |
 
 ## Testing strategy
@@ -196,11 +200,11 @@ $0. No new pages or requests. The answer grows by a few hundred bytes per rule; 
 
 ## Build order (input to tasks.md)
 
-1. **The table of events:** the contract, the four events, an outfield clean sheet and share-based events.
+1. **One table:** the contract, the conversion, one calculation, the four events, an outfield clean sheet and share-based events.
 2. **Formula rules, pure:** the contract's rules, `formula.py`.
 3. **In the simulation and the answer:** marks, rule totals, the formation comparison, overrides, what each is worth.
 4. **The captain.**
-5. **The translator:** the read-back, ready-made entries, the prompt, the profile and the docs.
+5. **The translator:** the read-back, one setup step, ready-made entries, the prompt, the profile and the docs.
 6. **A real check and this slice's sign-off.**
 
 ## Open points for the owner

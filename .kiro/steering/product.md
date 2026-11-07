@@ -136,19 +136,20 @@ one thing: making Fantadamus easy to reach and install. The slices after `mvp-li
 | 4 | Match cards, numbers: one card per fixture, from the facts already collected | Nothing new |
 | 5 | New sources, research first, each route approved by the owner: rest days and midweek European fixtures, set-piece takers, injury detail, match context for the cards, anytime-scorer odds, per-match ratings and rater bias | ADRs, then the source registry |
 | 6 | Alerts: "the official lineup changes your call" | A way to reach the user unprompted |
-| 7 | League rules that need the opponent's team (the home factor, draw and superiority bonuses, the rule of 59), and Mantra leagues | All the league's squads; Mantra's roles and rules |
+| 7 | League rules that need the opponent's team: the home factor, draw and superiority bonuses, the rule of 59 | All the league's squads |
 
 Trades, auctions and market valuation stay out of scope.
 
 ### Further notes: not planned
 
-Taken out of scope by the owner on 2026-11-07. Kept here so that the reasoning isn't lost; neither is built without a new
+Taken out of the MVP by the owner on 2026-11-07. Kept here so that the reasoning isn't lost; neither is built without a new
 decision.
 
 - **Live forecasts during a match.** Fantadamus stays a forecast like a good weather app's, but decisions are made before the
   deadline and that's it. Players follow the matches in the Fantacalcio app.
 - **Pundit consensus.** It's more information than the MVP needs, and FantaCreators' videos are off limits today, so it would need
   a route decision first.
+- **Mantra leagues.** Its roles change the structure of the team, so it isn't a matter of more rules. The MVP is Classic.
 
 Gates and the Definition of Done are in `quality.md`.
 

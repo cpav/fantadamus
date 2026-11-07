@@ -1,6 +1,6 @@
 # Implementation Plan: `mvp-rules` (Phase 2, fourth slice)
 
-Status: **Draft for the owner's approval** · From the approved [requirements](requirements.md) and the [design](design.md)
+Status: **Approved by the owner, 2026-11-07** · From the approved [requirements](requirements.md) and the [design](design.md)
 
 ## How to read and run these tasks
 
@@ -18,13 +18,14 @@ Status: **Draft for the owner's approval** · From the approved [requirements](r
 
 ## Tasks
 
-- [ ] 1. The table of events
+- [ ] 1. One table of events
   - Branch: `feat/ru-1-events` · Depends on: none · ADRs: none
-  - [ ] 1.1 `LeagueRules` 1.2.0, with `events`; `scoring_for` builds from the table; stored rules load as they are. This spec becomes the current one.
+  - [ ] 1.1 `LeagueRules` 2.0.0: one table, with Classic as a ready-made entry; rules in the earlier form, in a file or a log line, read as the same table. This spec becomes the current one.
     - _Requirements: R1.1, R1.6_
-    - _Test: **P3** `tests/property/rules/test_events.py::test_p3_a_row_changes_only_its_roles`, **P6** `::test_p6_stored_rules_still_load`;
-      `tests/unit/rules/test_events.py::test_a_row_overrides_the_base_for_its_roles`, `::test_a_keeper_only_event_on_another_role_is_refused`_
-  - [ ] 1.2 The four events priced in the value, the key and the simulation, as expected values; a cameo's goal follows the league's goal value.
+    - _Test: **P3** `tests/property/rules/test_events.py::test_p3_a_row_changes_only_its_roles`, **P6** `::test_p6_earlier_rules_convert`;
+      `tests/unit/rules/test_events.py::test_an_event_not_in_the_table_isnt_scored`, `::test_a_second_row_for_one_event_and_role_is_refused`,
+      `::test_a_value_of_the_wrong_sign_is_refused`, `::test_an_old_log_line_still_reads`_
+  - [ ] 1.2 One calculation for the models and the simulation; the four events priced as a fixed term; a cameo's goal follows the league's goal value.
     - _Requirements: R1.2, R1.3, R1.6_
     - _Test: **AT-1** `tests/acceptance/rules/test_events.py::test_at1_stored_rules_differ_only_by_the_four`, **AT-2** `::test_at2_the_four_by_hand`;
       **P4** `tests/property/rules/test_events.py::test_p4_the_mean_matches_the_model`;
@@ -32,9 +33,9 @@ Status: **Draft for the owner's approval** · From the approved [requirements](r
   - [ ] 1.3 An outfield role's clean sheet, on the same simulated goals as his keeper.
     - _Requirements: R1.1, R1.4_
     - _Test: **AT-3** `tests/acceptance/rules/test_events.py::test_at3_a_defenders_clean_sheet`, `::test_at3_a_goal_per_role_still_works`_
-  - [ ] 1.4 Share-based events, from one table.
+  - [ ] 1.4 Share-based events, folded into their base event's worth.
     - _Requirements: R1.5_
-    - _Test: **AT-4** `tests/acceptance/rules/test_events.py::test_at4_share_events_by_hand`, `::test_at4_a_new_row_needs_no_logic`_
+    - _Test: **AT-4** `tests/acceptance/rules/test_events.py::test_at4_share_events_by_hand`_
 
 - [ ] 2. Formula rules, pure
   - Branch: `feat/ru-2-formula` · Depends on: 1 · ADRs: none
@@ -44,7 +45,7 @@ Status: **Draft for the owner's approval** · From the approved [requirements](r
   - [ ] 2.2 `engine/formula.py`: the unit, who's left out, stand-ins, the condition, how they combine, and the bands.
     - _Requirements: R2.1, R2.2_
     - _Test: **AT-5** `tests/acceptance/rules/test_formula.py::test_at5_the_defence_modifier_by_hand`, `::test_at5_a_stand_in_and_the_condition`;
-      **AT-6** `::test_at6_the_attack_modifier_by_hand`, `::test_at6_fair_play`;
+      **AT-6** `::test_at6_the_attack_modifier_by_hand`;
       **P1** `tests/property/rules/test_formula.py::test_p1_a_value_gets_its_bands_points`_
 
 - [ ] 3. Formula rules in the simulation and the answer
@@ -74,7 +75,7 @@ Status: **Draft for the owner's approval** · From the approved [requirements](r
   - [ ] 5.1 `set_league_rules` returns what's priced and what's left out; a rule the engine can't price goes in `other_rules` with what it needs, and every answer names it.
     - _Requirements: R2.5, R4.2, R4.3, R4.4_
     - _Test: **AT-10** `tests/acceptance/rules/test_translator.py::test_at10_left_out_rules_are_named`, `::test_at10_the_read_back`_
-  - [ ] 5.2 Ready-made entries in the setup step; the schema's descriptions; the agent prompt within its budget; the blank profile and the player guide.
+  - [ ] 5.2 One setup step, with the ready-made entries; the schema's descriptions; the agent prompt within its budget; the blank profile and the player guide.
     - _Requirements: R2.3, R4.1, R4.5_
     - _Test: **AT-13** `tests/acceptance/rules/test_translator.py::test_at13_the_profile_names_the_new_settings`, `::test_at13_the_ready_made_entries_are_valid`;
       `tests/unit/test_repo_hygiene.py::test_agent_prompt_covers_the_lineup`_
