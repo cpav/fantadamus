@@ -250,11 +250,11 @@
       does all the arithmetic. This page
       describes the version for two players now being built, and marks what already runs.
     </p>
-    <div class="glance" aria-label="At a glance, 6 November 2026">
+    <div class="glance" aria-label="At a glance, 7 November 2026">
       <span>Phase <b>2</b> of 4</span>
       <span><b>5</b> specs built</span>
       <span><b>19</b> checks in <code>make check</code></span>
-      <span><b>997</b> tests</span>
+      <span><b>1,039</b> tests</span>
       <span><b>98%</b> line coverage</span>
       <span><b>11</b> versioned contracts</span>
       <span><b>13</b> approved sites</span>
@@ -518,8 +518,8 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
         video transcripts. A page that can't be read is reported, never forced.</li>
       <li><b>Facts, not pages.</b> Bronze stores the submitted facts with their link. No page text is
         kept.</li>
-      <li><b>Pundits stay anonymous.</b> The creators behind the pundit consensus are named only in private
-        configuration outside the repository; a check scans every commit and push for their names.</li>
+      <li><b>Pundits stay out.</b> Pundit opinion isn't used. Creators' names live only in private configuration outside
+        the repository, and a check scans every commit and push for them.</li>
       <li><b>A public repository with nothing private in it.</b> No third-party data, league members' names
         or rosters, or secrets. gitleaks runs on every commit and push.</li>
     </ul>
@@ -530,8 +530,8 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
     <span class="label">Gates</span>
     <h2>Nothing moves on a red check</h2>
     <div class="stats">
-      <div class="stat"><b>997</b><span>tests, written before the code they test</span></div>
-      <div class="stat"><b>98.6%</b><span>of lines covered (95.1% of branches); the floor is 90% and only goes up</span></div>
+      <div class="stat"><b>1,039</b><span>tests, written before the code they test</span></div>
+      <div class="stat"><b>98.7 95.4%</b><span>of lines covered (% of branches); the floor is 90% and only goes up</span></div>
       <div class="stat"><b>500</b><span>generated examples per property test in <code>make check</code></span></div>
       <div class="stat"><b>0</b><span>errors from <code>mypy --strict</code></span></div>
     </div>
@@ -610,7 +610,7 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
         <tbody>
           <tr><th scope="row">0 · Foundation</th><td>Repository, gates, CI and storage.</td><td>Its acceptance tests pass, including those proving each gate blocks a bad change.</td><td>Done</td></tr>
           <tr><th scope="row">1 · First answers</th><td>"X or Y?" for two forwards, from data to answer.</td><td>One real round answered in the owner's Claude app.</td><td>Done</td></tr>
-          <tr><th scope="row">2 · Every feature</th><td>Collection, every role, the full lineup and calibration; then the review after a round, match cards, modifiers, new sources, alerts, live forecasts and more.</td><td>Each slice's tests pass, and each ends with its own report.</td><td>In progress</td></tr>
+          <tr><th scope="row">2 · Every feature</th><td>Collection, every role, the full lineup and calibration; then the review after a round, match cards, modifiers, new sources, alerts and more.</td><td>Each slice's tests pass, and each ends with its own report.</td><td>In progress</td></tr>
           <tr><th scope="row">3 · Online</th><td>The endpoint on AWS, so that a player installs nothing.</td><td>Both players answered from their own Claude apps.</td><td>After Phase 2</td></tr>
         </tbody>
       </table>
@@ -618,7 +618,7 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
   </section>
 
   <div class="foot">
-    <p class="fineprint">Figures measured against the code on 6 November 2026 (main at ccd73df). Update them when the system changes.</p>
+    <p class="fineprint">Figures measured against the code on 7 November 2026 (main at 8f244e9). Update them when the system changes.</p>
     <p class="fineprint">Source of truth: .kiro/steering/, ADR-0005, ADR-0006 and docs/method.md.</p>
   </div>
 </div>

@@ -8,7 +8,7 @@ the players and numbers are made up; only the shape is real.
 ## The forecast frame: every answer
 
 An answer reads like a good weather forecast: a chance, why, how sure, how it has moved, how fresh. The numbers
-keep moving until the deadline, and, once live forecasts exist, until somebody scores.
+keep moving until the deadline, and that's where a forecast's job ends: decisions are made before it.
 
 1. **One context line first:** the round, when it locks and at which match, and how fresh the facts are.
    `Round 11 · locks Fri 6 Nov 20:45 at Venezia–Udinese · updated 12 minutes ago`
