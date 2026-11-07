@@ -44,6 +44,8 @@ class Band(Part):
 class Unit(Part):
     role: Role
     best: int | None  # his role's best n by pure vote; None counts all of them
+    at_least: int | None  # the rule applies only when at least this many of the role are fielded
+    at_most: int | None  # and at most this many
 
 
 class FormulaRule(Part):
@@ -52,8 +54,7 @@ class FormulaRule(Part):
     combine: Literal["average", "sum", "each"]
     leave_out: Literal["nobody", "bonus_or_goal"]
     base: int | None  # how many the unit counts
-    stand_in: tuple[float, float] | None  # for the first missing, and for the rest
-    only_when_fielded: int | None
+    stand_in: list[float]  # for the first missing, and for the rest; empty averages those present
     bands: list[Band]  # rising; below the first, no points
 ```
 
@@ -115,7 +116,7 @@ A pure module with one job. Given a rule and who was fielded this round, it retu
 
 1. Take the players in the unit: all, or the best n by pure vote.
 2. Leave out anyone the rule excludes, and fill any gap up to `base` with the stand-in votes.
-3. If `only_when_fielded` isn't met, there are no points.
+3. If a role's fielded count is outside its `at_least` and `at_most`, there are no points.
 4. Combine them, or take each on his own, and look the value up in the bands with `bisect`.
 
 **The simulation supplies what it needs.** `draw_rounds` also yields a light mark per player when a league has formula rules: his pure

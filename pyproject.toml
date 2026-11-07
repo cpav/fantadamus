@@ -62,6 +62,7 @@ pytest_add_cli_args_test_selection = [
     "tests/property/lineup",
     "tests/property/roles",
     "tests/property/rules",
+    "tests/acceptance/rules/test_formula.py",  # pure and fast: the hand-worked rules
     "tests/property/xy",
 ]
 pytest_add_cli_args = [

@@ -115,7 +115,8 @@ Modifiers can be combined, and their effects add up.
   - **how they combine:** a sum, an average, or each player on his own;
   - **who is left out:** nobody, or a player who scored, conceded or saved a penalty, as the league sets it;
   - **the base:** how many players the unit counts, and the stand-in votes for the first missing and for the rest;
-  - **a condition:** optionally, only when exactly that many are fielded;
+  - **a condition:** optionally, only when the number of a role fielded is within limits, such as four or five defenders
+    (amended while building task 2: the *Gazzetta* modifier needs a range, not an exact number);
   - **the bands:** rising values, and the points each gives.
 - **R2.2** THE SYSTEM SHALL work out every formula rule in each simulated round, after substitutions, from that round's simulated
   votes, and SHALL add its points to the team score before the fantasy goals are worked out.
