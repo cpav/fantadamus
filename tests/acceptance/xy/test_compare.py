@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -86,6 +87,11 @@ async def test_at9_one_log_entry_per_answer(tmp_path: Path) -> None:
         assert 0 <= player.p_scores <= 1
 
 
+def _goal_points(answer: dict[str, Any]) -> float:
+    rows = answer["answer"]["rules"]["rules"]["events"]
+    return next(float(row["points"]) for row in rows if row["event"] == "goal")
+
+
 async def test_at10_league_rules(tmp_path: Path) -> None:
     async with tools(LakeStore(tmp_path)) as client:
         await collect(client, READ)
@@ -96,10 +102,11 @@ async def test_at10_league_rules(tmp_path: Path) -> None:
         classic = await ask(client)
         await set_classic(client, goal=4.5)
         richer = await ask(client)
-        rejected = await client.call_tool("set_league_rules", {"rules": {"goal": 12}})
-    assert "goal" in error_text(rejected)
-    assert classic["answer"]["rules"]["rules"]["goal"] == 3
-    assert richer["answer"]["rules"]["rules"]["goal"] == 4.5
+        too_high = {"events": [{"event": "goal", "points": 12, "roles": ["A"]}]}
+        rejected = await client.call_tool("set_league_rules", {"rules": too_high})
+    assert "less than or equal to 10" in error_text(rejected)
+    assert _goal_points(classic) == 3
+    assert _goal_points(richer) == 4.5
     assert (
         richer["answer"]["players"][0]["value"]["e_start"]
         > classic["answer"]["players"][0]["value"]["e_start"]

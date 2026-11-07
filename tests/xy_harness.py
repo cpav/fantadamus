@@ -13,6 +13,7 @@ from typing import Any
 from mcp import Client
 from mcp.types import CallToolResult
 
+from fantadamus.contracts.xy.league import EVENT_MEANINGS
 from fantadamus.core.clock import Clock, fixed_clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.lake.calibration_store import CalibrationStore
@@ -32,6 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGES = ROOT / "tests" / "fixtures" / "xy"
 URL = "https://example.org/page"
 NOW = dt.datetime(2026, 10, 26, 10, 0, tzinfo=dt.UTC)
+_ROLE_OF = {"keeper": "P", "defender": "D", "midfielder": "C", "forward": "A"}
 CLUBS = Clubs.from_toml(
     "".join(f'[clubs.{key}]\nname = "{key.title()}"\n' for key in ("alfa", "beta", "gamma", "delta"))
 )
@@ -231,8 +233,27 @@ async def collect(
         assert not result.is_error, (tool, result)
 
 
+def classic_with(**changes: Any) -> dict[str, Any]:
+    """Classic's table as the tool takes it, with some events' points changed: one value, or one per role.
+    Anything else, such as `lineup`, goes in as given."""
+    rows: list[dict[str, Any]] = []
+    for row in CLASSIC.model_dump()["events"]:
+        change = changes.get(row["event"])
+        if change is None:
+            rows.append(row)
+        elif isinstance(change, dict):
+            rows += [
+                {"event": row["event"], "points": points, "roles": [_ROLE_OF[name]]}
+                for name, points in change.items()
+            ]
+        else:
+            rows.append(row | {"points": change})
+    rest = {key: value for key, value in changes.items() if key not in EVENT_MEANINGS}
+    return CLASSIC.model_dump() | rest | {"events": rows}
+
+
 async def set_classic(client: Client, **changes: object) -> None:
-    result = await client.call_tool("set_league_rules", {"rules": CLASSIC.model_dump() | changes})
+    result = await client.call_tool("set_league_rules", {"rules": classic_with(**changes)})
     assert not result.is_error, result
 
 

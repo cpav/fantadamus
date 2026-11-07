@@ -8,7 +8,7 @@ import pytest
 
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.league.rules import CLASSIC, RulesStore, scoring_for
-from tests.xy_harness import NOW, error_text, tools
+from tests.xy_harness import NOW, classic_with, error_text, tools
 
 pytestmark = pytest.mark.anyio
 
@@ -17,9 +17,7 @@ async def test_set_then_change_rules(tmp_path: Path) -> None:
     async with tools(LakeStore(tmp_path)) as client:
         first = await client.call_tool("set_league_rules", {"rules": CLASSIC.model_dump()})
         assert not first.is_error, first
-        by_role = CLASSIC.model_dump() | {
-            "goal": {"keeper": 5, "defender": 4.5, "midfielder": 3.5, "forward": 3}
-        }
+        by_role = classic_with(goal={"keeper": 5, "defender": 4.5, "midfielder": 3.5, "forward": 3})
         second = await client.call_tool("set_league_rules", {"rules": by_role})
         assert not second.is_error, second
         assert second.structured_content is not None
@@ -35,11 +33,9 @@ async def test_set_then_change_rules(tmp_path: Path) -> None:
 
 async def test_out_of_range_rejected_with_reason(tmp_path: Path) -> None:
     async with tools(LakeStore(tmp_path)) as client:
-        too_high = await client.call_tool("set_league_rules", {"rules": CLASSIC.model_dump() | {"goal": 11}})
+        too_high = await client.call_tool("set_league_rules", {"rules": classic_with(goal=11)})
         assert "less than or equal to 10" in error_text(too_high)
-        wrong_sign = await client.call_tool(
-            "set_league_rules", {"rules": CLASSIC.model_dump() | {"yellow_card": 0.5}}
-        )
+        wrong_sign = await client.call_tool("set_league_rules", {"rules": classic_with(yellow_card=0.5)})
         assert "yellow_card" in error_text(wrong_sign)
-        assert "less than or equal to 0" in error_text(wrong_sign)
+        assert "is a malus" in error_text(wrong_sign)
     assert RulesStore(tmp_path / "league").get("user-1") is None

@@ -18,22 +18,23 @@ Status: **Approved by the owner, 2026-11-07** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. One table of events
+- [x] 1. One table of events
   - Branch: `feat/ru-1-events` · Depends on: none · ADRs: none
-  - [ ] 1.1 `LeagueRules` 2.0.0: one table, with Classic as a ready-made entry; rules in the earlier form, in a file or a log line, read as the same table. This spec becomes the current one.
+  - [x] 1.1 `LeagueRules` 2.0.0: one table, with Classic as a ready-made entry; rules in the earlier form, in a file or a log line, read as the same table. This spec becomes the current one.
     - _Requirements: R1.1, R1.6_
     - _Test: **P3** `tests/property/rules/test_events.py::test_p3_a_row_changes_only_its_roles`, **P6** `::test_p6_earlier_rules_convert`;
       `tests/unit/rules/test_events.py::test_an_event_not_in_the_table_isnt_scored`, `::test_a_second_row_for_one_event_and_role_is_refused`,
-      `::test_a_value_of_the_wrong_sign_is_refused`, `::test_an_old_log_line_still_reads`_
-  - [ ] 1.2 One calculation for the models and the simulation; the four events priced as a fixed term; a cameo's goal follows the league's goal value.
+      `::test_a_value_of_the_wrong_sign_or_size_is_refused`, `::test_an_old_log_line_still_reads`_
+  - [x] 1.2 One calculation for the models and the simulation; the four events priced as a fixed term; a cameo's goal follows the league's goal value.
     - _Requirements: R1.2, R1.3, R1.6_
     - _Test: **AT-1** `tests/acceptance/rules/test_events.py::test_at1_stored_rules_differ_only_by_the_four`, **AT-2** `::test_at2_the_four_by_hand`;
       **P4** `tests/property/rules/test_events.py::test_p4_the_mean_matches_the_model`;
-      `tests/unit/rules/test_events.py::test_a_cameos_goal_follows_the_league`_
-  - [ ] 1.3 An outfield role's clean sheet, on the same simulated goals as his keeper.
+      `tests/unit/rules/test_events.py::test_a_cameos_goal_follows_the_league`, `::test_a_cameos_goal_follows_the_league_in_the_rounds`, `::test_a_keepers_rare_events_reach_the_rounds`, `::test_an_outfielders_rare_events_reach_the_rounds`, `::test_event_points_by_hand`, `::test_rare_points_by_hand`,
+      `::test_a_clean_sheet_counts_only_with_no_goals_against`_
+  - [x] 1.3 An outfield role's clean sheet, on the same simulated goals as his keeper.
     - _Requirements: R1.1, R1.4_
-    - _Test: **AT-3** `tests/acceptance/rules/test_events.py::test_at3_a_defenders_clean_sheet`, `::test_at3_a_goal_per_role_still_works`_
-  - [ ] 1.4 Share-based events, folded into their base event's worth.
+    - _Test: **AT-3** `tests/acceptance/rules/test_events.py::test_at3_a_defenders_clean_sheet`, `::test_at3_through_the_tools`, `::test_at3_a_goal_per_role_still_works`_
+  - [x] 1.4 Share-based events, folded into their base event's worth.
     - _Requirements: R1.5_
     - _Test: **AT-4** `tests/acceptance/rules/test_events.py::test_at4_share_events_by_hand`_
 

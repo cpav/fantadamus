@@ -162,19 +162,19 @@ CLASSIC = {
         ({"goal": {"keeper": 5, "defender": 4.5, "midfielder": 3.5, "forward": 3}}, None),
         ({"goal": 10.5}, "less than or equal to 10"),
         ({"goal": {"keeper": 11, "defender": 3, "midfielder": 3, "forward": 3}}, "less than or equal to 10"),
-        ({"assist": -1}, "greater than or equal to 0"),
-        ({"yellow_card": 0.5}, "less than or equal to 0"),
+        ({"assist": -1}, "assist is a bonus"),
+        ({"yellow_card": 0.5}, "yellow_card is a malus"),
         ({"own_goal": -10.5}, "greater than or equal to -10"),
     ],
 )
 def test_league_rules_ranges(change: dict[str, Any], message: str | None) -> None:
     if message is None:
-        assert parse(LeagueRules, CLASSIC | change).__version__ == "1.1.0"
+        assert parse(LeagueRules, CLASSIC | change).__version__ == "2.0.0"
     else:
         with pytest.raises(ValidationError, match=message):
             parse(LeagueRules, CLASSIC | change)
-    with pytest.raises(ValidationError, match="Field required"):
-        parse(LeagueRules, {key: value for key, value in CLASSIC.items() if key != "clean_sheet"})
+    with pytest.raises(ValidationError, match="at least 1 item"):
+        parse(LeagueRules, {"events": []})
 
 
 def test_odds_without_totals() -> None:

@@ -41,7 +41,7 @@ def test_priors_by_role(
     assert value.e_goals == pytest.approx(1.4 * goal * minutes)
     taker = outfield.value(player(role, mantra, penalty_share=1.0), CLASSIC)
     assert taker.e_goals - value.e_goals == pytest.approx(0.15 * 0.78 * minutes)  # R2.4: at his own minutes
-    rated, worth = outfield.cameo_rating(value.cameo_e_goals) if priced else (1.0, 5.5)
+    rated, worth = outfield.cameo_rating(value.cameo_e_goals, CLASSIC.goal) if priced else (1.0, 5.5)
     assert value.e_cameo == pytest.approx(worth)
     assert value.p_cameo == pytest.approx(player(role, mantra).p_cameo * rated)
     weight = 25 if role == "D" else 15  # R2.3: ten team goals in his games

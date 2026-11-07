@@ -80,7 +80,7 @@ def test_stored_rules_without_lineup_stay_valid() -> None:
         {"user": "user-1", "saved_at": "2026-10-26T09:00:00+00:00", "rules": bonuses}
     )
     assert stored.rules.lineup is None
-    assert stored.rules.goal == CLASSIC.goal
+    assert stored.rules.events == CLASSIC.events
 
 
 def test_formation_lines() -> None:

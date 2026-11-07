@@ -80,6 +80,10 @@ P(scores)  = 1 − e^(−E[goals])
 - **Penalties**: P(team gets a penalty) ≈ 0.15 per match × conversion ≈ 0.78 × his minutes share *(start)* × his
   share of them. The first on the club's list has all of them when he plays; each next one has what those ahead
   leave: the product of (1 − p_start) for everyone listed ahead of him. A first taker who is out hands them all on.
+  A league's value for a missed penalty counts too, on the same chance: rate × (1 − conversion) × minutes × share.
+- **Rare events,** as an expected value in E_start, since they're too rare to change the spread: red cards and own
+  goals at a rate per rated game for each role *(start)*, and a keeper's saved penalties at the opponents' rate ×
+  (1 − conversion) × 0.80 of misses *(start)*.
 - **Check against the market.** Compare P(scores) with de-margined anytime-scorer odds where a permitted
   source exists. A large gap is a flag to investigate, not something to average.
 

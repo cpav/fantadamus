@@ -23,7 +23,9 @@ squad with Fantadamus once, and follows your preferences in every answer.
 The Classic values are in brackets. Change any your league sets differently.
 
 - Goal: (+3); or by role, keeper / defender / midfielder / forward:
+- Decisive goal, on top of the goal: (not in Classic)
 - Assist: (+1)
+- Set-piece assist, in place of the assist: (not in Classic)
 - Penalty scored: (+3)
 - Penalty missed: (−3)
 - Penalty saved: (+3)
@@ -31,7 +33,7 @@ The Classic values are in brackets. Change any your league sets differently.
 - Yellow card: (−0.5)
 - Red card: (−1)
 - Goal conceded, for a keeper: (−1)
-- Clean sheet, for a keeper: (+1)
+- Clean sheet, for a keeper: (+1); and for other roles, if your league gives one:
 
 ## Goal thresholds
 

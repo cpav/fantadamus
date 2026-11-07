@@ -168,8 +168,11 @@ async def test_keepers_compared(tmp_path: Path) -> None:
         assert value["kind"] == "keeper"
         assert value["expected_conceded"] == part["opponent_xg"]
         assert value["p_clean_sheet"] == pytest.approx(math.exp(-part["opponent_xg"]))
+        saved_red_own = (
+            3 * 0.15 * (1 - 0.78) * 0.80 - 0.001 - 2 * 0.001
+        )  # Classic's rare events (mvp-rules R1.3)
         assert value["e_start"] == pytest.approx(
-            value["expected_vote"] + value["p_clean_sheet"] - value["expected_conceded"]
+            value["expected_vote"] + value["p_clean_sheet"] - value["expected_conceded"] + saved_red_own
         )
     assert (answer["flip"]["p_start_below"], answer["flip"]["team_xg_below"]) == (None, None)
     assert answer["flip"]["opponent_xg_above"] > alfa["opponent_xg"]
@@ -198,9 +201,12 @@ async def test_keeper_movement(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("first", "second", "bonus"), [("Alfa Due", "Gamma Due", 4.5), ("Alfa Sei", "Gamma Sei", 3.5)]
+    ("first", "second", "bonus", "red_and_own_goal"),
+    [("Alfa Due", "Gamma Due", 4.5, -0.015), ("Alfa Sei", "Gamma Sei", 3.5, -0.005)],
 )
-async def test_outfield_players_compared(tmp_path: Path, first: str, second: str, bonus: float) -> None:
+async def test_outfield_players_compared(
+    tmp_path: Path, first: str, second: str, bonus: float, red_and_own_goal: float
+) -> None:
     """A defender's or midfielder's answer, with the goal bonus of his Classic role (R2.5)."""
     async with tools(LakeStore(tmp_path)) as client:
         await _with_roles(client, goal=GOAL_BY_ROLE)
@@ -210,7 +216,11 @@ async def test_outfield_players_compared(tmp_path: Path, first: str, second: str
         value = part["value"]
         assert value["kind"] == "outfield"
         assert value["e_start"] == pytest.approx(
-            value["expected_vote"] + bonus * value["e_goals"] + value["e_assists"] - 0.5 * value["p_yellow"]
+            value["expected_vote"]
+            + bonus * value["e_goals"]
+            + value["e_assists"]
+            - 0.5 * value["p_yellow"]
+            + red_and_own_goal
         )
         assert value["e_cameo"] == 5.5 or part["name"] == "Gamma Sei"  # his Mantra role is T: priced
     keys = [part["value"]["key"] for part in result["answer"]["players"]]

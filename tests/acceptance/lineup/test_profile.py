@@ -5,18 +5,22 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import get_args
 
 import pytest
 
-from fantadamus.contracts.xy.league import LeagueRules, LineupRules
+from fantadamus.contracts.xy.league import EventName, LeagueRules, LineupRules
 from fantadamus.league.rules import CLASSIC, COMMON_LINEUP
 
 ROOT = Path(__file__).resolve().parents[3]
 PROFILE = (ROOT / "docs" / "league-profile-template.md").read_text(encoding="utf-8")
 MINUS = "\u2212"  # how the profile writes a malus
 
-_BONUSES = {
+_CLASSIC: dict[str, float] = {row.event: row.points for row in CLASSIC.events}
+_EVENTS = {
     "goal": "Goal",
+    "decisive_goal": "Decisive goal, on top of the goal",
+    "set_piece_assist": "Set-piece assist, in place of the assist",
     "assist": "Assist",
     "penalty_scored": "Penalty scored",
     "penalty_missed": "Penalty missed",
@@ -41,25 +45,26 @@ _LINEUP = {
 
 def test_at15_the_profile_names_every_setting() -> None:
     """A new setting fails here until the profile has it: it isn't in these tables."""
-    assert set(LeagueRules.model_fields) == {*_BONUSES, "lineup"}
+    assert set(LeagueRules.model_fields) == {"events", "lineup"}
+    assert set(get_args(EventName)) == set(_EVENTS)
     assert set(LineupRules.model_fields) == set(_LINEUP)
     assert "## Lineup rules" in PROFILE
     for label in _LINEUP.values():
         assert label in PROFILE, label
-    for label in _BONUSES.values():
+    for label in _EVENTS.values():
         assert f"- {label}:" in PROFILE, label
 
 
-@pytest.mark.parametrize("field", [field for field in _BONUSES if field != "goal"])
+@pytest.mark.parametrize("field", [field for field in _CLASSIC if field != "goal"])
 def test_at15_the_values_it_offers_are_classics(field: str) -> None:
-    line = next(line for line in PROFILE.splitlines() if line.startswith(f"- {_BONUSES[field]}:"))
+    line = next(line for line in PROFILE.splitlines() if line.startswith(f"- {_EVENTS[field]}:"))
     offered = re.search(rf"\(([+{MINUS}][\d.]+)\)", line)
     assert offered is not None, line
-    assert float(offered.group(1).replace(MINUS, "-")) == getattr(CLASSIC, field)
+    assert float(offered.group(1).replace(MINUS, "-")) == _CLASSIC[field]
 
 
 def test_at15_the_goal_and_the_common_values() -> None:
-    assert f"- Goal: (+{CLASSIC.goal:g})" in PROFILE
+    assert f"- Goal: (+{_CLASSIC['goal']:g})" in PROFILE
     lines = " ".join(PROFILE.split())
     for formation in COMMON_LINEUP["formations"][0]:
         assert formation in lines.split("- Allowed formations:", 1)[1].split("- A player")[0], formation

@@ -13,7 +13,7 @@ from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.season import MantraRole
 from fantadamus.engine import keepers, outfield
 from fantadamus.engine.constants import (
-    CAMEO_GOAL_VALUE,
+    CAMEO_GOAL_VOTE,
     GOAL_VOTE_LIFT,
     KEEPER_BETA,
     KEEPER_VOTE_NOISE,
@@ -95,7 +95,7 @@ def test_a_takers_cameo_can_score_from_the_spot() -> None:
     assert taker.cameo_penalties > 0.0
     rounds = 20_000
     drawn = draw_rounds([taker], [(0.0, 1.0)], rounds=rounds, seed=5)
-    goals = sum(scores[1] == CAMEO_GOAL_VALUE for scores, _ in drawn)
+    goals = sum(scores[1] == CAMEO_GOAL_VOTE + taker.scoring.goal for scores, _ in drawn)
     assert goals / rounds == pytest.approx(1 - math.exp(-taker.cameo_penalties), abs=0.01)
 
 

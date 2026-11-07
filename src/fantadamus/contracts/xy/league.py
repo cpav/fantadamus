@@ -1,20 +1,67 @@
-"""`LeagueRules`: a Fantacalcio Classic league's bonuses and maluses, set by each user (R12.1, R12.2), and
-what a lineup also needs: thresholds, the bench, substitutions and formations (mvp-lineup R2)."""
+"""`LeagueRules`: a Fantacalcio Classic league's table of events, set by each user (mvp-rules R1), and what a
+lineup also needs: thresholds, the bench, substitutions and formations (mvp-lineup R2)."""
 
 from __future__ import annotations
 
 import itertools
 import re
-from typing import Annotated, Literal
+from collections.abc import Mapping
+from typing import Any, Literal, Self
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from fantadamus.contracts.base import Contract, Part
-from fantadamus.contracts.types import Name
+from fantadamus.contracts.types import Name, Role
 from fantadamus.contracts.xy import once_each
 
-Bonus = Annotated[float, Field(ge=0, le=10)]
-Malus = Annotated[float, Field(ge=-10, le=0)]
+EventName = Literal[
+    "goal",
+    "decisive_goal",
+    "assist",
+    "set_piece_assist",
+    "penalty_scored",
+    "penalty_missed",
+    "penalty_saved",
+    "own_goal",
+    "yellow_card",
+    "red_card",
+    "goal_conceded",
+    "clean_sheet",
+]
+EVENT_MEANINGS: dict[str, str] = {
+    "goal": "A goal scored",
+    "decisive_goal": "A goal that wins or draws the match, on top of the goal's own points",
+    "assist": "An assist",
+    "set_piece_assist": "An assist from a set piece, in place of the assist's points",
+    "penalty_scored": "A penalty scored, counted in place of the goal bonus",
+    "penalty_missed": "A penalty missed",
+    "penalty_saved": "A penalty saved, for keepers",
+    "own_goal": "An own goal",
+    "yellow_card": "A yellow card",
+    "red_card": "A red card",
+    "goal_conceded": "Each goal conceded, usually a keeper's",
+    "clean_sheet": "A clean sheet, usually a keeper's",
+}
+_BONUSES = frozenset(
+    {"goal", "decisive_goal", "assist", "set_piece_assist", "penalty_scored", "penalty_saved", "clean_sheet"}
+)
+_KEEPERS_ONLY = frozenset({"penalty_saved"})
+_EVERY_ROLE: tuple[Role, ...] = ("P", "D", "C", "A")
+_KEEPER: tuple[Role, ...] = ("P",)
+_EARLIER_VALUES: dict[str, tuple[Role, ...]] = {
+    "goal": _EVERY_ROLE,
+    "assist": _EVERY_ROLE,
+    "penalty_scored": _EVERY_ROLE,
+    "penalty_missed": _EVERY_ROLE,
+    "penalty_saved": _KEEPER,
+    "own_goal": _EVERY_ROLE,
+    "yellow_card": _EVERY_ROLE,
+    "red_card": _EVERY_ROLE,
+    "goal_conceded": _KEEPER,
+    "clean_sheet": _KEEPER,
+}
+"""The ten fixed values of the earlier form, in its order, and who each applied to."""
+_EARLIER_ROLES: dict[str, Role] = {"keeper": "P", "defender": "D", "midfielder": "C", "forward": "A"}
 OUTFIELD = 10
 FEWEST_ON_THE_BENCH = 4
 _FORMATION = re.compile(r"\d-\d-\d")
@@ -24,15 +71,6 @@ def formation_lines(formation: str) -> tuple[int, int, int]:
     """Defenders, midfielders and forwards: `3-4-3` is (3, 4, 3)."""
     defenders, midfielders, forwards = map(int, formation.split("-"))
     return defenders, midfielders, forwards
-
-
-class GoalByRole(Part):
-    """A goal's bonus for each Classic role, for leagues that set it that way."""
-
-    keeper: Bonus
-    defender: Bonus
-    midfielder: Bonus
-    forward: Bonus
 
 
 class LineupRules(Part):
@@ -114,23 +152,70 @@ class LineupRules(Part):
         return formations
 
 
+class EventRow(Part):
+    """What one event is worth to some roles."""
+
+    event: EventName = Field(description="The event")
+    points: float = Field(
+        ge=-10, le=10, description="Its points: a bonus from 0 to 10, a malus from -10 to 0"
+    )
+    roles: list[Role] = Field(min_length=1, description="Who it applies to: P, D, C and A")
+
+    @model_validator(mode="after")
+    def _makes_sense(self) -> Self:
+        if self.event in _BONUSES and self.points < 0:
+            raise ValueError(f"{self.event} is a bonus, so its points can't be negative")
+        if self.event not in _BONUSES and self.points > 0:
+            raise ValueError(f"{self.event} is a malus, so its points can't be positive")
+        if self.event in _KEEPERS_ONLY and set(self.roles) != {"P"}:
+            raise ValueError(f"{self.event} is a keeper's, so it can't apply to other roles")
+        return self
+
+
 class LeagueRules(Contract):
-    """The league's bonus and malus table, and what a lineup needs. Bonuses are 0 to 10, maluses -10 to 0."""
+    """A league's rules: one table of events, and what a lineup needs. An event left out isn't scored."""
 
-    __version__ = "1.1.0"
+    __version__ = "2.0.0"
 
-    goal: Bonus | GoalByRole = Field(description="A goal scored: one value, or one per role")
-    assist: Bonus = Field(description="An assist")
-    penalty_scored: Bonus = Field(description="A penalty scored, counted in place of the goal bonus")
-    penalty_missed: Malus = Field(description="A penalty missed")
-    penalty_saved: Bonus = Field(description="A penalty saved, for keepers")
-    own_goal: Malus = Field(description="An own goal")
-    yellow_card: Malus = Field(description="A yellow card")
-    red_card: Malus = Field(description="A red card")
-    goal_conceded: Malus = Field(description="Each goal a keeper concedes")
-    clean_sheet: Bonus = Field(description="A keeper's clean sheet")
+    events: list[EventRow] = Field(
+        min_length=1,
+        description="Every event this league scores, with its points and the roles they apply to. An event "
+        "left out isn't scored. For different values by role, give one row per value",
+    )
     lineup: LineupRules | None = Field(
         default=None,
         description="What a lineup needs: thresholds, the bench, substitutions and formations. Not needed "
         "for 'X or Y?'. A call without it, or with only some of it, keeps what's stored",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_the_earlier_form(cls, data: Any) -> Any:
+        """Rules stored as ten fixed values, in a user's file or a decision log line, are the same table."""
+        if not isinstance(data, Mapping) or not _EARLIER_VALUES.keys() & data.keys():
+            return data
+        if "events" in data:
+            raise ValueError("give a league's rules either as events or in the earlier form, not both")
+        rows: list[dict[str, Any]] = []
+        for event, roles in _EARLIER_VALUES.items():
+            if event not in data:
+                continue
+            value = data[event]
+            if isinstance(value, Mapping):
+                rows += [
+                    {"event": event, "points": points, "roles": [_EARLIER_ROLES[name]]}
+                    for name, points in value.items()
+                ]
+            else:
+                rows.append({"event": event, "points": value, "roles": list(roles)})
+        return {key: value for key, value in data.items() if key not in _EARLIER_VALUES} | {"events": rows}
+
+    @model_validator(mode="after")
+    def _one_row_per_event_and_role(self) -> Self:
+        seen: set[tuple[str, str]] = set()
+        for row in self.events:
+            for role in row.roles:
+                if (row.event, role) in seen:
+                    raise ValueError(f"{row.event} is set twice for {role}")
+                seen.add((row.event, role))
+        return self

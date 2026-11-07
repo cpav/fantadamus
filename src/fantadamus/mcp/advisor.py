@@ -1066,6 +1066,7 @@ def model_inputs(side: PlayerFacts, league: float) -> OutfieldInputs | KeeperInp
         p_loss=(xg.p_away_win if home else xg.p_home_win) if xg else 0.0,
         p_start=present.p_start if present else 0.0,
         p_cameo=present.p_cameo if present else 0.0,
+        opponent_xg=(xg.away_xg if home else xg.home_xg) if xg else None,
     )
 
 

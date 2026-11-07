@@ -48,7 +48,7 @@ def test_formulas_by_hand() -> None:
     assert outfield.p_yellow(2, appearances=8) == pytest.approx(3.5 / 18)
     scored = 1 - math.exp(-0.2)
     rated = scored + (1 - scored) * 0.6
-    assert outfield.cameo_rating(0.2) == pytest.approx(
+    assert outfield.cameo_rating(0.2, 3.0) == pytest.approx(
         (rated, (scored * 9.8 + (1 - scored) * 0.6 * 5.75) / rated)
     )
 
