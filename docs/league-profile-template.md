@@ -48,13 +48,24 @@ The Classic values are in brackets. Change any your league sets differently.
 - Allowed formations: (3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1)
 - A player without a rating and no substitute keeps this vote: (none)
 
+## Modifiers and the captain
+
+Fantadamus counts these in a lineup's score. The common values are in brackets: change any your league sets differently,
+or describe your own ([what a rule can be](https://github.com/cpav/fantadamus/blob/main/docs/league-rules.md)).
+
+- Defence modifier: (the keeper and the three best defenders, averaged, with at least four defenders fielded: from 6 +1,
+  from 6.5 +3, from 7 +6)
+- Attack modifier: (each forward who didn't score: from 6.5 +0.5 up to +2 from 8, by half points)
+- Captain: (the captain's pure vote, his vice's when he has none: from −2.5 below 4 to +2.5 from 8.5, by half points)
+- Another modifier:
+
 ## Other rules my league uses
 
-Fantadamus doesn't include these in its score yet, and says so in every lineup. List any you use:
+Fantadamus can't price these yet, and every answer says its score leaves them out. List any you use, with what it needs:
 
-- Defence modifier, captain, or another modifier:
-- Home factor:
-- Draw or superiority bonuses, or the rule of 59:
+- Home factor (needs the opponent's team):
+- Draw or superiority bonuses, or the rule of 59 (need the opponent's team):
+- Fair play (not priced yet):
 - Anything else:
 
 ## My team

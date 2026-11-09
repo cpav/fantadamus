@@ -54,6 +54,7 @@ Bianchi (Genoa, forward): likely starter in a harder match
 
 Would flip it: Rossi on the bench in the official lineup (about 17:00 Sunday).
 Before the lock: neither plays in the deadline match.
+Not in these numbers: your league's attack modifier, which counts in the full lineup.
 
 Sources: Fantacalcio-Online, round 11 probable lineups · Fantacalcio.it, table · Fantacalcio.it, penalty takers
 ```

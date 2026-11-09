@@ -33,9 +33,10 @@ def test_change_keeps_previous_version(tmp_path: Path) -> None:
 
 
 def test_setup_step_offers_classic_values() -> None:
-    step = setup_step()
+    step = setup_step(None, lineup=False)
+    assert step is not None
     assert step.tool == "set_league_rules"
-    assert {field.field: field.classic for field in step.fields} == {
+    assert {field.field: field.classic for field in step.events} == {
         "goal": 3,
         "assist": 1,
         "penalty_scored": 3,
@@ -47,5 +48,5 @@ def test_setup_step_offers_classic_values() -> None:
         "goal_conceded": -1,
         "clean_sheet": 1,
     }
-    assert all(field.meaning for field in step.fields)
+    assert all(field.meaning for field in step.events)
     assert "Classic" in step.message

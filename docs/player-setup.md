@@ -113,8 +113,12 @@ In a new chat in the Fantadamus project, ask for example:
 
 - **The first time**, Claude needs your league's rules and your squad. With a league profile, it saves them itself.
   Without one, it asks: bonuses and maluses, offering the Classic values (goal +3, assist +1, yellow −0.5, and so
-  on), then the goal thresholds, the bench, substitutions and allowed formations, and your players. You can change
-  any of it later by asking.
+  on), then the goal thresholds, the bench, substitutions and allowed formations, any modifiers and the captain,
+  and your players. You can change any of it later by asking.
+- **Or paste your league's rulebook.** Claude turns it into Fantadamus's rules, then reads back what's priced and
+  what's left out: check that it understood. A rule Fantadamus can't price yet, such as the home factor, is saved
+  by name, and every answer says its score leaves it out. What a rule can be is in
+  [`docs/league-rules.md`](https://github.com/cpav/fantadamus/blob/main/docs/league-rules.md).
 - Claude Desktop asks permission before each Fantadamus tool. "Allow always" is fine: everything runs on
   your Mac.
 - Claude then reads the pages Fantadamus lists (lineups, odds, players' profiles, the table), submits what

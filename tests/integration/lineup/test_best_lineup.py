@@ -40,13 +40,14 @@ async def test_statuses(tmp_path: Path) -> None:
     async with a_round(tmp_path, league=False, squad=False, table=False) as here:
         none = await here.ask()
         assert none["status"] == "setup"
-        assert {field["field"] for field in none["setup"]["fields"]} >= {"goal", "yellow_card"}  # the bonuses
+        assert {field["field"] for field in none["setup"]["events"]} >= {"goal", "yellow_card"}  # the bonuses
+        assert none["setup"]["lineup"]  # and, in the same step, what a lineup needs
 
         await set_classic(here.client)
         bonuses = await here.ask()
         assert bonuses["status"] == "setup"
-        assert bonuses["setup"] is None
-        assert {field["field"] for field in bonuses["lineup_setup"]["fields"]} == {
+        assert bonuses["setup"]["events"] == []
+        assert {field["field"] for field in bonuses["setup"]["lineup"]} == {
             "format",
             "thresholds",
             "bench_size",
@@ -58,7 +59,7 @@ async def test_statuses(tmp_path: Path) -> None:
         await here.set_rules(format=None)
         just_one = await here.ask()
         assert just_one["status"] == "setup"
-        assert [field["field"] for field in just_one["lineup_setup"]["fields"]] == ["format"]
+        assert [field["field"] for field in just_one["setup"]["lineup"]] == ["format"]
 
         await here.set_rules()
         no_squad = await here.ask()

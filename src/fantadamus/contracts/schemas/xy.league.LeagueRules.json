@@ -244,7 +244,7 @@
           },
           "other_rules": {
             "default": [],
-            "description": "Rules this league uses that Fantadamus leaves out, such as a modifier or a captain; every lineup says its score doesn't include them",
+            "description": "Rules this league uses that Fantadamus can't price, each as 'name: what it needs', such as 'home factor: needs the opponent's team'; every answer says its score leaves them out",
             "items": {
               "maxLength": 60,
               "minLength": 1,
@@ -414,5 +414,5 @@
     "title": "LeagueRules",
     "type": "object"
   },
-  "version": "2.1.1"
+  "version": "2.1.2"
 }

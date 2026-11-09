@@ -142,15 +142,25 @@ def test_agent_prompt_covers_the_lineup() -> None:
         "Give every warning",
         "`improve`",
         "Try it once",
-        "start, leave_out or formation",
         "state the cost once and then help with their choice",
         # How the last round went.
         "last_round",
         "Say it once",
         # Two roles, with a squad.
         "formation call, which `best_lineup` makes",
+        # The translator (mvp-rules R4).
+        "ready_made",
+        "`priced` and left_out",
+        "never guess a value",
+        "what it needs",
+        # Formula rules and the captain in the answer.
+        "rules_worth",
+        "the captain and the vice",
+        "start, leave_out, formation or captain",
     ):
         assert part in prompt, part
+    for gone in ("A lineup has a setup step of its own", "start, leave_out or formation"):
+        assert gone not in prompt, gone
     for stale in ("aren't supported yet", "in a later slice", "For now they answer two questions"):
         assert stale not in prompt, stale
     assert len(prompt) < PROMPT_BUDGET
@@ -195,6 +205,35 @@ def test_player_guide_covers_the_lineup() -> None:
         assert part in full, part
     assert "Built in `mvp-lineup`" in formats.split("## 3. The formation call", 1)[1].split("## 4.", 1)[0]
     assert "Built in `mvp-lineup`" in formats.split("## 6. The bench order", 1)[1].split("## Later", 1)[0]
+
+
+def test_league_rules_guide_covers_the_vocabulary() -> None:
+    """mvp-rules task 5.3 (R5.3, R4.5): every event and every part of a formula rule, worked examples, and the
+    one case that needs code."""
+    from typing import get_args
+
+    from fantadamus.contracts.xy.league import EventName, FormulaRule, Unit
+
+    guide = " ".join((ROOT / "docs" / "league-rules.md").read_text(encoding="utf-8").split())
+    for event in get_args(EventName):
+        assert f"`{event}`" in guide, event
+    for field in (*FormulaRule.model_fields, *Unit.model_fields):
+        assert f"`{field}`" in guide, field
+    for value in ("`average`", "`sum`", "`each`", "`nobody`", "`bonus_or_goal`", "`captain`"):
+        assert value in guide, value
+    for part in (
+        "## Worked examples",
+        "## What's left out",
+        "## Adding an event with a new estimate",
+        "`other_rules`",
+        "src/fantadamus/contracts/xy/league.py",
+        "src/fantadamus/league/rules.py",
+    ):
+        assert part in guide, part
+    method = " ".join((ROOT / "docs" / "method.md").read_text(encoding="utf-8").split())
+    assert "formula rules" in method.split("## A1.", 1)[1].split("## A2.", 1)[0]
+    assert "formula rules" in method.split("## A7.", 1)[1].split("## A8.", 1)[0]
+    assert "saved penalt" in method.split("## A6.", 1)[1].split("## A7.", 1)[0]
 
 
 def test_mutation_run_stays_fast() -> None:

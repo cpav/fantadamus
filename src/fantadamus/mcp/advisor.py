@@ -74,7 +74,7 @@ from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import Decision, DecisionLog, LoggedPlayer
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.league.rules import RulesStore, SetupStep, StoredRules, scoring_for, setup_step
+from fantadamus.league.rules import RulesStore, SetupStep, StoredRules, left_out, scoring_for, setup_step
 from fantadamus.league.squads import SquadStore
 from fantadamus.web.cadence import may_read
 from fantadamus.web.collector import PAGE_FACTS, Collector, CollectReport
@@ -238,6 +238,9 @@ class Answer(BaseModel):
     check_before_deadline: list[str]
     rules: StoredRules
     """The league rules this answer used (R12.4)."""
+    left_out: list[str] = []
+    """What the league uses that this answer's numbers leave out: its rules that can't be priced, with what
+    they need, and its formula rules, which count in the full lineup only (mvp-rules R4.3)."""
     updated: Updated
     players: list[PlayerAnswer]
 
@@ -531,7 +534,7 @@ class Advisor:
             return CompareResult(
                 status="setup",
                 message="This user has no league rules yet: ask for them, then call set_league_rules.",
-                setup=setup_step(),
+                setup=setup_step(None, lineup=False),
             )
         facts = facts or Facts.read(self.lake, as_of)
         known = known_players(facts.players, as_of)
@@ -831,6 +834,13 @@ class Advisor:
                 if part.kickoff is not None and part.kickoff == first_kickoff and part.official is None
             ],
             rules=stored,
+            left_out=[
+                *left_out(stored.rules),
+                *(
+                    f"{rule.name}: counted in the full lineup, not in this answer"
+                    for rule in stored.rules.formula_rules
+                ),
+            ],
             updated=self._updated(players, as_of),
             players=players,
         )

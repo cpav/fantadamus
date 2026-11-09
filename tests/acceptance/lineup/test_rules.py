@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.league.rules import CLASSIC, RulesStore, lineup_setup_step, scoring_for
+from fantadamus.league.rules import CLASSIC, RulesStore, scoring_for, setup_step
 from tests.xy_harness import ask, collect, error_text, set_classic, tools
 
 pytestmark = pytest.mark.anyio
@@ -29,8 +29,8 @@ async def test_at8_setup_step_only_for_what_is_missing(tmp_path: Path) -> None:
     def missing() -> set[str] | None:
         stored = rules.get("user-1")
         assert stored is not None
-        step = lineup_setup_step(stored.rules)
-        return None if step is None else {field.field for field in step.fields}
+        step = setup_step(stored.rules, lineup=True)
+        return None if step is None else {field.field for field in step.lineup}
 
     async with tools(store) as client:
         await set_classic(client)

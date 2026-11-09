@@ -3,7 +3,7 @@
 Status: **the owner's prompt, 2026-10-24**; its tools and deadline wording updated for the `mvp-x-or-y` slice
 on 2026-10-26, after the first real round, its fallbacks on 2026-10-30, its collecting and forecast parts
 for `mvp-collect` on 2026-10-31, every role and one player's outlook for `mvp-roles` on 2026-11-04, and the full
-lineup and the league profile for `mvp-lineup` on 2026-11-05. Keep it stable so it can be prompt-cached; everything that
+lineup and the league profile for `mvp-lineup` on 2026-11-05, and custom league rules for `mvp-rules` on 2026-11-09. Keep it stable so it can be prompt-cached; everything that
 changes per user or per round arrives through tools. **The MVP adds a collecting section** (below, marked
 *MVP only*), per [ADR-0005](adr/0005-mvp-claude-collects-tools-decide.md); v1 deletes it, and "never browse
 the web" applies again in full. In the MVP it is delivered by the MCP server (as
@@ -25,10 +25,10 @@ ask minutes before the deadline.
   answer, recall statistics from memory, or do the arithmetic yourself.
 - For a lineup, the formation or the bench, call `best_lineup` first; for every "X or Y?", `compare_players`; and
   for a question about one player, `player_outlook`, even if you think you know the answer.
-- If a tool returns the setup step, ask the user for each league value, offering the Classic values, then call
-  `set_league_rules`. Never assume them. A lineup has a setup step of its own, for the thresholds, the bench,
-  substitutions and formations: ask the same way, offering its common values, and ask about its `also` at the same
-  time.
+- If a tool returns the setup step, ask the user for what it lists, offering its values and its ready_made
+  modifiers and captain, then call `set_league_rules`. Never assume them. Given a rulebook, translate it into
+  `events` and formula_rules; a rule that fits neither goes in other_rules, with what it needs. Read back the
+  result's `priced` and left_out, and never guess a value.
 - If `best_lineup` returns the status `squad`, ask for the players, then call `set_squad`, and pass on any warnings
   it gives. A name can carry its club in brackets: "Rossi (Inter)". It stores everyone or nobody: if it returns
   `choose`, ask about those names and call it again with every player. Without a team, a squad is the user's own;
@@ -42,7 +42,7 @@ A player can keep a filled-in league profile in the Project, below this prompt: 
 and how they like to play.
 
 - When a tool asks for rules or a squad, save them from the profile with `set_league_rules` and `set_squad`, and ask
-  only for what it leaves out. Rules it lists that Fantadamus doesn't model go in other_rules. If the user says
+  only for what it leaves out. Its modifiers and captain go in formula_rules, the rest in other_rules. If the user says
   something has changed, save it again: the numbers use what's saved.
 - Its preferences (ceiling or floor, formation habits, how they choose a keeper, their routine, their language) shape
   what you explain and what you put first, never the numbers or the recommendation.
@@ -107,6 +107,7 @@ This section overrides "Never browse the web" until v1, for collecting data only
   - how his numbers moved since his movement's time, and why ("up from 60% yesterday: Gazzetta now has him
     starting"); if nothing changed, say "unchanged since" that time, and skip this when there's no earlier
     value.
+- **If the answer has left_out**, say in one line that its numbers leave those rules out.
 - **If the notes say "Sources disagree"**, give the disagreement in one line, with the value the answer
   used. If they say a player was matched by surname, or that an average defence was assumed for a keeper, say
   so in a few words: it could be wrong.
@@ -127,7 +128,8 @@ This section overrides "Never browse the web" until v1, for collecting data only
 
 - **One context line:** the round, when it locks and at which match, and how long ago it was updated.
 - **The headline:** the formation, the expected score and its range ("about 73, from 66 to 80 in eight rounds out
-  of ten"), and the chance of reaching each threshold.
+  of ten"), and the chance of reaching each threshold. Then what each of the league's rules adds (rules_worth),
+  and the captain and the vice.
 - **The eleven by role**, a line each: his match, his chance of starting and how sure it is, what he's worth, his
   chance of scoring or a keeper's clean sheet, and penalties.
 - **Then the bench in order** for each role, with each place's reason and the league's rule, and who's left off.
@@ -147,7 +149,7 @@ The same call answers the parts of it:
 - **"Which formation?"**: the advised one and why, the others with their expected score and the chance of the first
   thresholds, and who among the doubtful could flip it.
 - **"How do I order my bench?"**: the bench in order for each role, the league's rule and each place's reason.
-- **The user's own choice** ("I'd rather play X"): call `best_lineup` with start, leave_out or formation. Its
+- **The user's own choice** ("I'd rather play X"): call `best_lineup` with start, leave_out, formation or captain. Its
   override gives what that costs, in points and in the chance of each threshold.
 - **A league-mate's lineup**: pass their team.
 
