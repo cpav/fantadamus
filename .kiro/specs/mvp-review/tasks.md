@@ -26,13 +26,17 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
       `::test_a_column_that_changes_meaning_makes_the_page_unreadable`; `tests/unit/review/test_columns.py::test_rows_stored_before_still_read`,
       `::test_the_new_columns_are_bounded`; `tests/integration/review/test_columns_kept.py::test_the_three_columns_are_kept`_
 
-- [ ] 2. One round from two reads
+- [x] 2. One round from two reads
   - Branch: `feat/rv-2-round` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 A player's round: rated or not, the rating from the averages and from FM, the events, an own goal where FM shows one, and each reason
+  - [x] 2.1 A player's round: rated or not, the rating from the averages and from FM, the events, an own goal where FM shows one, and each reason
     it can't be known. `domains/review.py` joins the mutation run.
     - _Requirements: R2.1, R2.3_
-    - _Test: **AT-2** `tests/acceptance/review/test_round.py::test_at2_a_round_by_hand`, `::test_at2_what_cant_be_known`;
-      **P1** `tests/property/review/test_round.py::test_p1_the_rating_is_found`, **P2** `::test_p2_a_round_is_never_invented`_
+    - _Test: **AT-2** `tests/acceptance/review/test_round.py::test_at2_a_round_by_hand`, `::test_at2_what_cant_be_known`,
+      `::test_at2_a_penalty_scored_and_one_missed`, `::test_at2_an_own_goal_shows_in_the_fantasy_average`, `::test_at2_a_keeper`,
+      `::test_at2_a_cameo_without_a_rating`, `::test_at2_late_in_the_season_the_fantasy_average_settles_it`, `::test_at2_a_read_stored_before_the_new_columns`,
+      `::test_at2_the_first_round_read_with_the_new_columns`, `::test_at2_a_player_not_yet_rated`,
+      `::test_at2_a_fantasy_average_that_disagrees_otherwise_names_no_own_goal`;
+      **P1** `tests/property/review/test_round.py::test_p1_the_rating_is_found`, `::test_p1_late_in_the_season_never_a_wrong_rating`, **P2** `::test_p2_a_round_is_never_invented`_
 
 - [ ] 3. The real score
   - Branch: `feat/rv-3-score` · Depends on: 2 · ADRs: none

@@ -52,7 +52,7 @@ constraint-dependencies = [
 # The phase gate's run (`make mutate`). `mutmut` forks for each change and DuckDB hangs in a fork, so fast tests
 # only: anything that reaches the lake would hang until its timeout and count as a kill.
 source_paths = ["src"]
-only_mutate = ["src/fantadamus/engine/*", "src/fantadamus/domains/calibration.py"]
+only_mutate = ["src/fantadamus/engine/*", "src/fantadamus/domains/calibration.py", "src/fantadamus/domains/review.py"]
 also_copy = ["config", "scripts"]
 pytest_add_cli_args_test_selection = [
     "tests/unit/lineup",
@@ -70,6 +70,9 @@ pytest_add_cli_args_test_selection = [
     "tests/acceptance/rules/test_events.py::test_at3_a_defenders_clean_sheet",
     "tests/acceptance/rules/test_events.py::test_at3_a_goal_per_role_still_works",
     "tests/acceptance/rules/test_events.py::test_at4_share_events_by_hand",
+    "tests/unit/review",
+    "tests/property/review",
+    "tests/acceptance/review/test_round.py",  # pure: a round from two reads, by hand
     "tests/property/xy",
 ]
 pytest_add_cli_args = [
