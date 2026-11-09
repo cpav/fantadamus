@@ -73,6 +73,7 @@ pytest_add_cli_args_test_selection = [
     "tests/unit/review",
     "tests/property/review",
     "tests/acceptance/review/test_round.py",  # pure: a round from two reads, by hand
+    "tests/acceptance/review/test_score.py",  # pure: a real score, by hand
     "tests/property/xy",
 ]
 pytest_add_cli_args = [
