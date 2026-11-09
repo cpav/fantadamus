@@ -242,7 +242,11 @@ def test_mutation_run_stays_fast() -> None:
     and the score was false. The run uses fast tests only, and stops itself."""
     config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     mutmut = config["tool"]["mutmut"]
-    assert mutmut["only_mutate"] == ["src/fantadamus/engine/*", "src/fantadamus/domains/calibration.py"]
+    assert mutmut["only_mutate"] == [
+        "src/fantadamus/engine/*",
+        "src/fantadamus/domains/calibration.py",
+        "src/fantadamus/domains/review.py",  # mvp-review task 2
+    ]
 
     selected: set[Path] = set()
     for path in mutmut["pytest_add_cli_args_test_selection"]:
