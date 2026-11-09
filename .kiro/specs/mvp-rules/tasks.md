@@ -53,18 +53,19 @@ Status: **Approved by the owner, 2026-11-07** · From the approved [requirements
       `tests/unit/rules/test_formula.py::test_a_sum`, `::test_more_than_the_base_counts_the_best`, `::test_no_stand_in_averages_those_present`,
       `::test_nobody_and_no_stand_in_gives_nothing`, `::test_a_captain_rule`_
 
-- [ ] 3. Formula rules in the simulation and the answer
+- [x] 3. Formula rules in the simulation and the answer
   - Branch: `feat/ru-3-simulate` · Depends on: 2 · ADRs: none
-  - [ ] 3.1 Marks from `draw_rounds`, only when a league has formula rules; rules worked out after substitutions, in each arrangement's total.
+  - [x] 3.1 Marks from `draw_marked`, only when a league has formula rules; rules worked out after substitutions, in each arrangement's total.
     - _Requirements: R2.2, R3.1, R3.4_
     - _Test: **AT-8** `tests/acceptance/rules/test_simulation.py::test_at8_a_rules_points_reach_the_fantasy_goals`, `::test_at8_a_modifier_can_change_the_formation`,
       `::test_at8_a_total_points_league`; **P2** `tests/property/rules/test_simulation.py::test_p2_zero_bands_change_nothing`,
-      **P5** `::test_p5_the_same_inputs_the_same_results`_
-  - [ ] 3.2 What each rule is worth in the answer and the log, an override's cost, and a close call a rule could tip.
+      **P5** `::test_p5_the_same_inputs_the_same_results`; `tests/unit/rules/test_marks.py::test_a_starters_mark_is_his_score_without_the_events`,
+      `::test_a_cameos_mark`, `::test_marking_changes_no_round`; `tests/unit/rules/test_formula.py::test_the_best_are_the_highest_votes_whatever_their_order`_
+  - [x] 3.2 What each rule is worth in the answer and the log, an override's cost, and a close call a rule could tip.
     - _Requirements: R3.2, R3.4, R3.5_
     - _Test: **AT-9** `tests/acceptance/rules/test_simulation.py::test_at9_each_rules_worth_is_in_the_answer`, `::test_at9_an_overrides_cost_includes_the_rules`;
       `tests/integration/rules/test_answer.py::test_a_close_call_says_a_rule_could_tip_it`_
-  - [ ] 3.3 The budget, measured on the invented squad and the real one.
+  - [x] 3.3 The budget, measured on the invented squad and the real one.
     - _Requirements: R5.1, R5.2_
     - _Test: **AT-12** `tests/acceptance/rules/test_simulation.py::test_at12_a_squad_with_rules_stays_in_budget`_
 

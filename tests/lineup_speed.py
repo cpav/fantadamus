@@ -6,18 +6,23 @@ the user's wait."""
 from __future__ import annotations
 
 import asyncio
+import sys
 import tempfile
 import time
 from pathlib import Path
 
 from fantadamus.engine.constants import SIMULATIONS
+from tests.lineup_data import THREE_RULES
 from tests.lineup_harness import a_round
-from tests.xy_harness import NOW
+from tests.xy_harness import NOW, classic_with
 
 
-async def _seconds() -> float:
+async def _seconds(with_rules: bool) -> float:
     with tempfile.TemporaryDirectory() as folder:
         async with a_round(Path(folder), rounds=SIMULATIONS) as here:
+            if with_rules:  # three common modifiers (mvp-rules AT-12)
+                rules = classic_with(formula_rules=THREE_RULES, lineup=None)
+                await here.client.call_tool("set_league_rules", {"rules": rules})
             await here.ask()
             started = time.process_time()
             await here.ask(as_of=NOW.isoformat())
@@ -25,4 +30,4 @@ async def _seconds() -> float:
 
 
 if __name__ == "__main__":
-    print(asyncio.run(_seconds()))
+    print(asyncio.run(_seconds("--rules" in sys.argv)))

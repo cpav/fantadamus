@@ -1,5 +1,5 @@
-"""Until the simulation prices them (mvp-rules task 3), a league's formula rules are named as left out, so
-that no rule a league holds is quietly ignored (R1.2, R4.3)."""
+"""Until the simulation prices it (mvp-rules task 4), a league's captain is named as left out, so that no rule
+a league holds is quietly ignored (R1.2, R4.3)."""
 
 from __future__ import annotations
 
@@ -25,5 +25,6 @@ async def test_a_formula_rule_is_named_until_it_is_priced(tmp_path: Path) -> Non
         rules = classic_with(formula_rules=[CAPTAIN], lineup=None)
         result = await here.client.call_tool("set_league_rules", {"rules": rules})
         assert not result.is_error, result
-        warnings = (await here.ask())["lineup"]["warnings"]
-    assert any("doesn't include" in warning and "captain" in warning for warning in warnings)
+        lineup = (await here.ask())["lineup"]
+    assert any("doesn't include" in warning and "captain" in warning for warning in lineup["warnings"])
+    assert lineup["rules_worth"] == []
