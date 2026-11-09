@@ -12,16 +12,19 @@ be pinned is unknown, with the reason."""
 from __future__ import annotations
 
 import dataclasses
+import datetime as dt
 import math
-from collections.abc import Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from typing import get_args
 
 from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.league import EventName, LeagueRules
+from fantadamus.core.names import name_key
 from fantadamus.domains.season.silver import PlayerSeasonRow
 from fantadamus.engine.formula import Mark, formula_points
 from fantadamus.engine.simulate import Move, Plan, fantasy_goals, field
+from fantadamus.lake.decision_log import Decision
 
 HALF = 0.5
 ROUNDING = 0.005
@@ -331,3 +334,78 @@ def _mark(rating: float, events: Events, role: Role) -> Mark:
     scored = events.open_goals + events.penalties_scored > 0
     kept = role == "P" and ((events.conceded or 0) > 0 or (events.penalties_saved or 0) > 0)
     return Mark(role, rating, scored or kept)
+
+
+@dataclass(frozen=True)
+class Advice:
+    """The lineup Fantadamus advised for a round (design C5)."""
+
+    formation: str
+    starters: list[int]
+    bench: list[int]
+    captain: int | None
+    vice: int | None
+    as_of: dt.datetime
+    replayed: bool = False
+    """Replayed at the lock, because the user asked for no lineup before it."""
+
+
+def last_advice(
+    decisions: Iterable[Decision], *, user: str, team: str, round: int, lock: dt.datetime
+) -> Advice | None:
+    """The last lineup answer the user was given for the team before the lock. An override is logged with the
+    advice it was priced against; an older override line without it is passed over for the answer before."""
+    answers = sorted(
+        (
+            decision
+            for decision in decisions
+            if decision.kind == "lineup"
+            and decision.user == user
+            and decision.round == round
+            and name_key(decision.team or "") == name_key(team)
+            and decision.logged_at < lock
+        ),
+        key=lambda decision: decision.logged_at,
+        reverse=True,
+    )
+    for answer in answers:
+        if answer.override_cost is None and answer.formation and answer.starters is not None:
+            return Advice(
+                answer.formation,
+                answer.starters,
+                answer.bench or [],
+                answer.captain,
+                answer.vice,
+                answer.as_of,
+            )
+        if (
+            answer.advised_formation
+            and answer.advised_starters is not None
+            and answer.advised_bench is not None
+        ):
+            return Advice(
+                answer.advised_formation,
+                answer.advised_starters,
+                answer.advised_bench,
+                answer.advised_captain,
+                answer.advised_vice,
+                answer.as_of,
+            )
+    return None
+
+
+def advice_for(
+    decisions: Iterable[Decision],
+    *,
+    user: str,
+    team: str,
+    round: int,
+    lock: dt.datetime,
+    replay: Callable[[], Advice | None],
+) -> Advice | None:
+    """The advice the user was given, or, if they asked for none, the advice replayed at the lock (R3.5)."""
+    told = last_advice(decisions, user=user, team=team, round=round, lock=lock)
+    if told is not None:
+        return told
+    replayed = replay()
+    return dataclasses.replace(replayed, replayed=True) if replayed is not None else None

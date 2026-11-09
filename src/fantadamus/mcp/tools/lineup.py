@@ -989,6 +989,12 @@ def _answer(
                 advised_starters=[player.player_id for player in arrangements[advised.formation].starters]
                 if override
                 else None,
+                advised_formation=advised.formation if override else None,
+                advised_bench=[player.player_id for player in arrangements[advised.formation].bench]
+                if override
+                else None,
+                advised_captain=advised.captain if override else None,
+                advised_vice=advised.vice if override else None,
                 rules=stored,
                 content_hashes=sorted({source.content_sha256 for source in sources}),
             )

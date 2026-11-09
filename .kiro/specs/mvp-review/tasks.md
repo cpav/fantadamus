@@ -47,16 +47,17 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
       `::test_at3_formula_rules_and_the_captain_on_real_votes`, `::test_at3_a_defenders_clean_sheet_from_his_teams_goals`,
       `::test_at3_what_the_reads_cant_say_is_named`, `::test_at3_penalties_cards_and_saves`, `::test_at3_a_keeper_who_conceded_is_left_out`_
 
-- [ ] 4. What the user fielded, and the advice
+- [x] 4. What the user fielded, and the advice
   - Branch: `feat/rv-4-fielded` · Depends on: 3 · ADRs: none
-  - [ ] 4.1 The fielded store: names resolved, "as advised", a lineup the league couldn't field refused, saving again replacing, a
+  - [x] 4.1 The fielded store: names resolved, "as advised", a lineup the league couldn't field refused, saving again replacing, a
     league-mate's team kept apart, all of it private.
     - _Requirements: R1.1, R1.2, R1.3, R1.4, R5.4_
     - _Test: **AT-1** `tests/acceptance/review/test_fielded.py::test_at1_by_name`, `::test_at1_as_advised`, `::test_at1_refused`,
-      `::test_at1_saved_again`_
-  - [ ] 4.2 The advice: the last lineup logged before the lock, or the advice replayed at the lock and marked so.
+      `::test_at1_saved_again`, `::test_at1_a_bench_longer_than_the_leagues`, `::test_at1_a_name_that_could_be_two_players`_
+  - [x] 4.2 The advice: the last lineup logged before the lock, or the advice replayed at the lock and marked so.
     - _Requirements: R3.4, R3.5_
-    - _Test: `tests/unit/review/test_advice.py::test_the_last_before_the_lock`, `::test_a_replay_when_none_was_asked`_
+    - _Test: `tests/unit/review/test_advice.py::test_the_last_before_the_lock`, `::test_a_replay_when_none_was_asked`,
+      `::test_an_override_shows_the_advice_it_was_priced_against`; `tests/integration/review/test_advice_logged.py::test_an_override_logs_the_advice`_
 
 - [ ] 5. Each decision and what it cost
   - Branch: `feat/rv-5-decisions` · Depends on: 4 · ADRs: none
