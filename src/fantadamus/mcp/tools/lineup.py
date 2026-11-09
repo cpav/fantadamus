@@ -50,10 +50,8 @@ from fantadamus.engine.simulate import (
 )
 from fantadamus.lake.decision_log import Decision
 from fantadamus.league.rules import (
-    LineupSetup,
     SetupStep,
     StoredRules,
-    lineup_setup_step,
     scoring_for,
     setup_step,
 )
@@ -214,7 +212,6 @@ class LineupResult(BaseModel):
     status: Literal["setup", "squad", "choose", "refused", "refresh", "lineup"]
     message: str
     setup: SetupStep | None = None
-    lineup_setup: LineupSetup | None = None
     unresolved: dict[str, list[KnownPlayer]] = {}
     """Names to start or leave out that could be several players of the squad."""
     refresh: list[RefreshItem] = []
@@ -682,21 +679,14 @@ def lineup_for(
     """The lineup, after the collector has read the pages of what was missing or stale. A replay of an earlier
     `as_of` never collects and isn't logged."""
     stored = advisor.rules.get(advisor.user)
-    if stored is None:
-        return LineupResult(
-            status="setup",
-            message="This user has no league rules yet: ask for them, then call set_league_rules.",
-            setup=setup_step(),
-        )
+    step = setup_step(stored.rules if stored is not None else None, lineup=True)
+    if step is not None or stored is None or stored.rules.lineup is None:
+        return LineupResult(status="setup", message=step.message if step else "", setup=step)
     rules = stored.rules.lineup
     if captain is not None and not any(rule.who == "captain" for rule in stored.rules.formula_rules):
         return LineupResult(
             status="refused", message="This league's rules have no captain, so there's none to name."
         )
-    step = lineup_setup_step(stored.rules)
-    if step is not None or rules is None:
-        step = step or lineup_setup_step(stored.rules.model_copy(update={"lineup": LineupRules()}))
-        return LineupResult(status="setup", message=step.message if step else "", lineup_setup=step)
     squad = squads.get(advisor.user, team)
     if squad is None:
         return LineupResult(

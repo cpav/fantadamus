@@ -105,8 +105,8 @@ class LineupRules(Part):
     )
     other_rules: list[Name] = Field(
         default=[],
-        description="Rules this league uses that Fantadamus leaves out, such as a modifier or a captain; "
-        "every lineup says its score doesn't include them",
+        description="Rules this league uses that Fantadamus can't price, each as 'name: what it needs', such "
+        "as 'home factor: needs the opponent's team'; every answer says its score leaves them out",
     )
 
     @field_validator("thresholds")
@@ -251,7 +251,7 @@ class FormulaRule(Part):
 class LeagueRules(Contract):
     """A league's rules: one table of events, and what a lineup needs. An event left out isn't scored."""
 
-    __version__ = "2.1.1"
+    __version__ = "2.1.2"
 
     events: list[EventRow] = Field(
         min_length=1,

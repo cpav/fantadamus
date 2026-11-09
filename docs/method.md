@@ -7,7 +7,9 @@ tests come from §A9. Numbers marked *(start)* are starting values, calibrated f
 ## A1. What we optimise
 
 The user's league rules decide everything: bonuses and maluses (per role, if the league sets them that way),
-goal thresholds, substitutions, bench size, allowed formations and modifiers. Never hardcode a league.
+goal thresholds, substitutions, bench size, allowed formations and modifiers. Never hardcode a league. A league's
+rules are data ([league-rules.md](league-rules.md)): a table of events, and formula rules for modifiers and the
+captain, which work on pure votes and run in the simulated rounds (§A7).
 
 The target is the expected number of fantasy goals: the score converted through the league's thresholds.
 Report the expected score and the chance of reaching each threshold alongside it.
@@ -115,6 +117,7 @@ E = expected vote + clean-sheet bonus × P(clean sheet) − malus per goal × ex
   mixes the keeper with his defence.
 - A backup keeper from the same club plays exactly when the starter doesn't. Put him first on the bench and
   the slot is covered.
+- A keeper's saved penalties, red cards and own goals are expected values, as in §A4.
 
 ## A7. Formation, simulation and timing
 
@@ -124,6 +127,9 @@ E = expected vote + clean-sheet bonus × P(clean sheet) − malus per goal × ex
   bench player with a rating, the cap), goals and assists drawn as Poisson, noise on the vote, and the
   league's thresholds. Report the expected score, expected fantasy goals, and the chance of reaching each
   threshold.
+- **The league's formula rules** run in every simulated round after substitutions, on the round's pure votes, and their points
+  join the score before the thresholds. The captain and the vice are the pair who bring the most over the rounds,
+  the vice counting when the captain has no rating.
 - **Model same-match links.** A keeper's goals conceded include the opposing striker's goals. Links like
   this don't change expectations, but they do change the spread.
 - **Close calls.** When options are within about 0.15, call it a coin flip and let the user's situation

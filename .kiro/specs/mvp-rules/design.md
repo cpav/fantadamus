@@ -153,9 +153,15 @@ him. The answer names the captain and the vice. A league has one captain rule, s
 - **`set_league_rules`** returns `SavedRules`: the stored rules, `priced` (every event and formula rule that counts) and `left_out`
   (each name and what it needs). Its schema's field descriptions carry the vocabulary, so the agent prompt needs only one more sentence;
   it has fewer than 500 characters of budget left.
-- **One setup step:** `setup_step` replaces today's two. It lists whatever the question still needs, and offers the ready-made entries.
-- **Ready-made entries:** `READY_MADE` in `league/rules.py` holds Classic's table, the *Gazzetta* defence modifier, the attack modifier and the
-  captain, at the researched values.
+- **One setup step:** `setup_step` replaces today's two. It lists whatever the question still needs (`events` at Classic's values when
+  the league has none, and for a lineup the settings it lacks, with `also`), and offers the ready-made entries until the league has
+  formula rules.
+- **Ready-made entries:** `READY_MADE` in `league/rules.py` holds the defence modifier on the keeper and the three best defenders, the
+  attack modifier and the captain, at the values Fantacalcio-Online's guides give (read 2026-11-09; its guide calls the defence version
+  *Fantacampionato*'s, and leaves stand-in votes to each league, so the entry has none). Classic's table stays `CLASSIC`, offered as the
+  values of `events`.
+- **"X or Y?" names what it leaves out:** its `left_out` lists the league's `other_rules`, and its formula rules, which count in the full
+  lineup only.
 - **The agent prompt and profile:** paste the rulebook, translate it into these forms, read back `priced` and `left_out`, and never guess a
   value. Rules that need the opponent, or have no estimate, go in `other_rules` with what they need. The profile's "Other rules" section
   points to the same.

@@ -71,6 +71,11 @@ Headings are `## <Contract> <version> (<date>)`.
 - Adds an optional `unnamed_starters` per team, at most 1: a source can name only 10 of a team's 11 starters. The lineup
   must still account for 11 (mvp-x-or-y R8.1). A widening change, so a minor version.
 
+## LeagueRules 2.1.2 (2026-11-09)
+
+- `other_rules` says each entry is a name with what it needs, since modifiers and the captain are now priced as
+  formula rules (mvp-rules R4.3). Only the description changes.
+
 ## LeagueRules 2.1.1 (2026-11-09)
 
 - Refuses a second captain rule: a league has one captain, and his vice covers him (mvp-rules R3.3). The

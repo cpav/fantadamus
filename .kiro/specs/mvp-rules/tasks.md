@@ -80,16 +80,17 @@ Status: **Approved by the owner, 2026-11-07** · From the approved [requirements
       `tests/acceptance/rules/test_formula.py::test_at11_a_league_has_one_captain`;
       `tests/integration/rules/test_interim.py::test_a_priced_captain_isnt_named_as_left_out`_
 
-- [ ] 5. The translator
+- [x] 5. The translator
   - Branch: `feat/ru-5-translator` · Depends on: 3, 4 · ADRs: none
-  - [ ] 5.1 `set_league_rules` returns what's priced and what's left out; a rule the engine can't price goes in `other_rules` with what it needs, and every answer names it.
+  - [x] 5.1 `set_league_rules` returns what's priced and what's left out; a rule the engine can't price goes in `other_rules` with what it needs, and every answer names it.
     - _Requirements: R2.5, R4.2, R4.3, R4.4_
-    - _Test: **AT-10** `tests/acceptance/rules/test_translator.py::test_at10_left_out_rules_are_named`, `::test_at10_the_read_back`_
-  - [ ] 5.2 One setup step, with the ready-made entries; the schema's descriptions; the agent prompt within its budget; the blank profile and the player guide.
+    - _Test: **AT-10** `tests/acceptance/rules/test_translator.py::test_at10_left_out_rules_are_named`, `::test_at10_the_read_back`;
+      `tests/unit/rules/test_read_back.py::test_each_part_is_said`, `::test_the_events_come_first_and_left_out_is_by_name`_
+  - [x] 5.2 One setup step, with the ready-made entries; the schema's descriptions; the agent prompt within its budget; the blank profile and the player guide.
     - _Requirements: R2.3, R4.1, R4.5_
-    - _Test: **AT-13** `tests/acceptance/rules/test_translator.py::test_at13_the_profile_names_the_new_settings`, `::test_at13_the_ready_made_entries_are_valid`;
+    - _Test: **AT-13** `tests/acceptance/rules/test_translator.py::test_at13_the_profile_names_the_new_settings`, `::test_at13_the_ready_made_entries_are_valid`, `::test_at13_one_setup_step`;
       `tests/unit/test_repo_hygiene.py::test_agent_prompt_covers_the_lineup`_
-  - [ ] 5.3 `docs/league-rules.md` and the method's sections.
+  - [x] 5.3 `docs/league-rules.md` and the method's sections.
     - _Requirements: R5.3, R4.5_
     - _Test: `tests/unit/test_repo_hygiene.py::test_league_rules_guide_covers_the_vocabulary`_
 

@@ -46,7 +46,7 @@ _LINEUP = {
 def test_at15_the_profile_names_every_setting() -> None:
     """A new setting fails here until the profile has it: it isn't in these tables."""
     assert set(LeagueRules.model_fields) == {"events", "formula_rules", "lineup"}
-    assert "- Defence modifier, captain, or another modifier:" in PROFILE  # where formula rules go
+    assert "- Another modifier:" in PROFILE  # where formula rules go (mvp-rules R4.5)
     assert set(get_args(EventName)) == set(_EVENTS)
     assert set(LineupRules.model_fields) == set(_LINEUP)
     assert "## Lineup rules" in PROFILE
