@@ -39,8 +39,6 @@ def test_rows_read() -> None:
     nove = next(player for player in facts.payload.players if player.player_id == 9001)
     assert (nove.mantra_role, nove.appearances, nove.average_rating) == ("Pc", 8, 7.25)  # first Mantra role
     assert (nove.penalties_scored, nove.penalties_taken) == (1, 2)
-    unread = {9001: {"mfv": "12,5", "rp": "3", "esp": "2"}}  # fantamedia, penalties saved, red cards
-    assert read_stats(stats_page(rows, cells=unread)).payload == facts.payload
 
 
 def test_no_rating_no_average() -> None:

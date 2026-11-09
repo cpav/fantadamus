@@ -49,6 +49,17 @@ class PlayerSeason(Part):
         ge=0,
         description="A keeper's goals conceded (gol subiti); none where the page doesn't say",
     )
+    fantasy_average: float | None = Field(
+        default=None,
+        ge=-10,
+        le=30,
+        description="Fantamedia (FM), with Fantacalcio.it's standard bonuses; none without rated appearances "
+        "or where the page doesn't say",
+    )
+    penalties_saved: int | None = Field(
+        default=None, ge=0, description="A keeper's penalties saved (rigori parati); none where not read"
+    )
+    red_cards: int | None = Field(default=None, ge=0, description="Espulsioni; none where not read")
 
     @model_validator(mode="after")
     def _plausible(self) -> Self:
@@ -73,13 +84,13 @@ class PlayerSeason(Part):
 class PlayerSeasonPayload(PlayerSeason, Contract):
     """A player's Serie A season so far, from his Fantacalcio.it profile or the statistics page."""
 
-    __version__ = "1.1.0"
+    __version__ = "1.2.0"
 
 
 class SeasonStatsPayload(Contract):
     """One read of Fantacalcio.it's statistics page: every player it lists, with his season so far."""
 
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     players: list[PlayerSeason] = Field(min_length=1, max_length=STATS_PLAYERS)
 

@@ -40,6 +40,10 @@ class PlayerSeasonRow(SilverRow):
     penalties_taken: int
     goals_conceded: int | None = None
     """A keeper's; none where the page doesn't say, and on rows stored before it was read."""
+    fantasy_average: float | None = None
+    """The fantamedia; like the two below, none on rows stored before mvp-review read it."""
+    penalties_saved: int | None = None
+    red_cards: int | None = None
 
 
 class TeamSeasonRow(SilverRow):
@@ -100,7 +104,8 @@ def _taker_rows(payload: PenaltyTakersPayload, clubs: Clubs, source: Source) -> 
 _SEASON_COLUMNS = (
     "player_id BIGINT, name VARCHAR, club VARCHAR, role VARCHAR, mantra_role VARCHAR, appearances BIGINT, "
     "rated_appearances BIGINT, average_rating DOUBLE, goals BIGINT, assists BIGINT, yellow_cards BIGINT, "
-    "penalties_scored BIGINT, penalties_taken BIGINT, goals_conceded BIGINT"
+    "penalties_scored BIGINT, penalties_taken BIGINT, goals_conceded BIGINT, fantasy_average DOUBLE, "
+    "penalties_saved BIGINT, red_cards BIGINT"
 )
 
 
@@ -112,7 +117,7 @@ PLAYER_SEASONS = Domain(
     Table(
         "player_seasons",
         f"CREATE TEMP TABLE player_seasons ({PROVENANCE_COLUMNS}, {_SEASON_COLUMNS})",
-        "INSERT INTO player_seasons VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO player_seasons VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 SEASON_STATS = Domain(
@@ -123,7 +128,7 @@ SEASON_STATS = Domain(
     Table(
         "season_stats",
         f"CREATE TEMP TABLE season_stats ({PROVENANCE_COLUMNS}, {_SEASON_COLUMNS})",
-        "INSERT INTO season_stats VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO season_stats VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 TEAM_SEASONS = Domain(
