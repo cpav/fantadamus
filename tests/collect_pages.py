@@ -221,21 +221,24 @@ def _decimal(value: float | None) -> str:
     return "0,0" if value is None else f"{value:g}".replace(".", ",")
 
 
+def _count(value: int | None) -> str:
+    return str(value or 0)
+
+
 def stats_cells(row: Mapping[str, Any]) -> dict[str, str]:
-    """A player's cells as the statistics page writes them, from his figures as the contract has them. The
-    fantamedia, penalties saved and red cards are made up: nothing reads them."""
+    """A player's cells as the statistics page writes them, from his figures as the contract has them."""
     return {
         "sq": row["club"][:3].upper(),
         "pg": str(row["rated_appearances"]),
         "mv": _decimal(row["average_rating"]),
-        "mfv": "7,5",
+        "mfv": _decimal(row.get("fantasy_average")),
         "gol": str(row["goals"]),
         "gs": str(row.get("goals_conceded") or 0),
         "rig": f"{row['penalties_scored']} / {row['penalties_taken']}",
-        "rp": "1",
+        "rp": _count(row.get("penalties_saved")),
         "ass": str(row["assists"]),
         "amm": str(row["yellow_cards"]),
-        "esp": "1",
+        "esp": _count(row.get("red_cards")),
     }
 
 

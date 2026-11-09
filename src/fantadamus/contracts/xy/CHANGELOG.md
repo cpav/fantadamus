@@ -55,11 +55,21 @@ Headings are `## <Contract> <version> (<date>)`.
 - Adds an optional `over_2_5_percent`: a page's own chance of 3 or more goals, used when it gives no
   over/under odds (mvp-collect C4). A widening change, so a minor version.
 
+## PlayerSeasonPayload 1.2.0 (2026-11-09)
+
+- Adds optional `fantasy_average`, `penalties_saved` and `red_cards`, from the statistics page's FM, RP and Esp
+  columns, for the lineup review (mvp-review R2.1). Rows stored before stay valid. A widening change, so a minor
+  version.
+
 ## PlayerSeasonPayload 1.1.0 (2026-11-03)
 
 - Adds an optional `goals_conceded`, a keeper's goals conceded. Only a keeper may concede, and at most 10 a
   rated appearance (mvp-roles R6.1, R6.2). The `appearances` description says that, from the statistics page,
   which gives no presenze, they are the rated appearances (R1.3). A widening change, so a minor version.
+
+## SeasonStatsPayload 1.1.0 (2026-11-09)
+
+- Its players gain the same three optional fields (mvp-review R2.1). A widening change, so a minor version.
 
 ## SeasonStatsPayload 1.0.0 (2026-11-03)
 

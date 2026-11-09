@@ -18,9 +18,10 @@ ROLES = (("P", "Por"), ("D", "Dc"), ("C", "C"), ("A", "Pc"))
 
 
 def stats_row(club: str, role: str, mantra_role: str | None, player_id: int, **change: Any) -> dict[str, Any]:
-    """One player's row: eight rated games, a keeper's with nine goals conceded."""
+    """One player's row: eight rated games, a keeper's with nine goals conceded; no fantasy average without a
+    rating."""
     keeper = role == "P"
-    return {
+    row = {
         "player_id": player_id,
         "name": f"{club} {mantra_role}",
         "club": club,
@@ -35,7 +36,13 @@ def stats_row(club: str, role: str, mantra_role: str | None, player_id: int, **c
         "yellow_cards": 1,
         "penalties_scored": 0,
         "penalties_taken": 0,
+        "fantasy_average": 5.5 if keeper else 7.0,
+        "penalties_saved": 0,
+        "red_cards": 0,
     } | change
+    if row["rated_appearances"] == 0 and "fantasy_average" not in change:
+        row["fantasy_average"] = None
+    return row
 
 
 def stats_read(*, without: tuple[str | tuple[str, str], ...] = (), clubs: Clubs = CLUBS) -> dict[str, Any]:

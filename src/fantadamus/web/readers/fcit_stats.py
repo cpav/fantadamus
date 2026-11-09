@@ -5,9 +5,10 @@ The page is one table, `table#stats`, with one `tr.player-row` per player. Its h
 key (`data-col-key`) and a title, and the reader checks the title of every column it reads, so a column that
 changes meaning makes the page unreadable instead of misread. A player's ID and club come from his profile
 link (`/serie-a/squadre/{club}/{player}/{id}`), whose club slug is the club's key in `config/clubs.toml`. The
-fantamedia, penalties saved and red cards aren't read: the method uses none of them. The page gives no
-appearances without a rating, so his appearances are his rated ones. Players come out by ID, so the same
-figures read the same whatever order the page sorts them in, and an unchanged page stores nothing new (R1.5).
+fantamedia, penalties saved and red cards are read for the lineup review, which works out a round from two
+reads (mvp-review C1). The page gives no appearances without a rating, so his appearances are his rated ones.
+Players come out by ID, so the same figures read the same whatever order the page sorts them in, and an
+unchanged page stores nothing new (R1.5).
 """
 
 from __future__ import annotations
@@ -31,6 +32,9 @@ COLUMNS = {
     "rig": "Rigori segnati / tirati",
     "ass": "Assist",
     "amm": "Ammonizioni",
+    "mfv": "Fantamedia",
+    "rp": "Rigori parati",
+    "esp": "Espulsioni",
 }
 """The columns read, by key, with the title the page gives each."""
 _ROLES: dict[str, Role] = {"p": "P", "d": "D", "c": "C", "a": "A"}
@@ -51,6 +55,8 @@ _MANTRA: dict[str, MantraRole] = {
 _PROFILE = re.compile(r"/serie-a/squadre/([^/]+)/[^/]+/(\d+)/?$")
 _COUNT = re.compile(r"\d+")
 _DECIMAL = re.compile(r"\d+(?:,\d+)?")
+_SIGNED = re.compile(r"-?\d+(?:,\d+)?")
+"""A fantasy average can fall below zero, for a keeper who concedes a lot."""
 _PENALTIES = re.compile(r"(\d+)\s*/\s*(\d+)")
 
 
@@ -120,6 +126,7 @@ def _player(row: Element) -> PlayerSeason:
             raise _BadRowError(f"no {name} cell")
     rated = _count(cells["pg"])
     average = _decimal(cells["mv"])
+    fantasy = _decimal(cells["mfv"], _SIGNED)
     penalties = _PENALTIES.fullmatch(cells["rig"])
     if penalties is None:
         raise _BadRowError(f"{cells['rig']!r} isn't scored / taken")
@@ -138,6 +145,9 @@ def _player(row: Element) -> PlayerSeason:
         penalties_scored=int(penalties.group(1)),
         penalties_taken=int(penalties.group(2)),
         goals_conceded=_count(cells["gs"]),
+        fantasy_average=fantasy if rated else None,
+        penalties_saved=_count(cells["rp"]),
+        red_cards=_count(cells["esp"]),
     )
 
 
@@ -159,8 +169,8 @@ def _count(text: str) -> int:
     return int(text)
 
 
-def _decimal(text: str) -> float:
-    if not _DECIMAL.fullmatch(text):
+def _decimal(text: str, form: re.Pattern[str] = _DECIMAL) -> float:
+    if not form.fullmatch(text):
         raise _BadRowError(f"{text!r} isn't a number")
     return float(text.replace(",", "."))
 

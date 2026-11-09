@@ -18,11 +18,13 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. Three more columns of the statistics page
+- [x] 1. Three more columns of the statistics page
   - Branch: `feat/rv-1-columns` · Depends on: none · ADRs: ADR-0006
-  - [ ] 1.1 FM, RP and Esp read, kept and named in the reading list; rows stored before stay valid. This spec becomes the current one.
+  - [x] 1.1 FM, RP and Esp read, kept and named in the reading list; rows stored before stay valid. This spec becomes the current one.
     - _Requirements: R2.1, R5.3_
-    - _Test: `tests/contract/test_fcit_stats.py::test_the_three_new_columns`, `tests/unit/review/test_columns.py::test_rows_stored_before_still_read`_
+    - _Test: `tests/contract/test_fcit_stats.py::test_the_three_new_columns`, `::test_a_fantasy_average_below_zero_reads`,
+      `::test_a_column_that_changes_meaning_makes_the_page_unreadable`; `tests/unit/review/test_columns.py::test_rows_stored_before_still_read`,
+      `::test_the_new_columns_are_bounded`; `tests/integration/review/test_columns_kept.py::test_the_three_columns_are_kept`_
 
 - [ ] 2. One round from two reads
   - Branch: `feat/rv-2-round` · Depends on: 1 · ADRs: none

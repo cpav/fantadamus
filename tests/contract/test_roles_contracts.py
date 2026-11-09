@@ -23,7 +23,7 @@ def parse[C: Contract](contract: type[C], payload: dict[str, Any]) -> C:
 def test_profile_without_goals_conceded_still_valid() -> None:
     profile = parse(PlayerSeasonPayload, page("player_season"))
     assert profile.goals_conceded is None
-    assert PlayerSeasonPayload.__version__ == "1.1.0"
+    assert PlayerSeasonPayload.__version__ == "1.2.0"
     assert "rated appearances" in str(PlayerSeasonPayload.model_fields["appearances"].description)
 
 

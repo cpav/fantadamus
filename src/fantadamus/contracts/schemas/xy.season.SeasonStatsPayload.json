@@ -39,6 +39,21 @@
             "title": "Club",
             "type": "string"
           },
+          "fantasy_average": {
+            "anyOf": [
+              {
+                "maximum": 30,
+                "minimum": -10,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Fantamedia (FM), with Fantacalcio.it's standard bonuses; none without rated appearances or where the page doesn't say",
+            "title": "Fantasy Average"
+          },
           "goals": {
             "minimum": 0,
             "title": "Goals",
@@ -92,6 +107,20 @@
             "title": "Name",
             "type": "string"
           },
+          "penalties_saved": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "A keeper's penalties saved (rigori parati); none where not read",
+            "title": "Penalties Saved"
+          },
           "penalties_scored": {
             "minimum": 0,
             "title": "Penalties Scored",
@@ -114,6 +143,20 @@
             "minimum": 0,
             "title": "Rated Appearances",
             "type": "integer"
+          },
+          "red_cards": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Espulsioni; none where not read",
+            "title": "Red Cards"
           },
           "role": {
             "description": "Classic role: P keeper, D defender, C midfielder, A forward",
@@ -168,5 +211,5 @@
     "title": "SeasonStatsPayload",
     "type": "object"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
