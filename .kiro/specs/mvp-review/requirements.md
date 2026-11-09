@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-review` (Phase 2, fifth slice)
 
-Status: **Draft for the owner's approval**, 2026-11-09 · Workflow: requirements-first · Depends on: `mvp-rules` (signed off
+Status: **Approved by the owner, 2026-11-09**, with all three recommendations · Workflow: requirements-first · Depends on: `mvp-rules` (signed off
 2026-11-09) · Abbreviation: `rv` · Method: [`docs/method.md`](../../../docs/method.md) §A7, §A8 · Answers:
 [`docs/answer-formats.md`](../../../docs/answer-formats.md), a new format
 
@@ -157,12 +157,16 @@ An Analyze-Requirements pass, before design.
 - **Privacy.** A fielded lineup says what a named team did. It stays with the squads, in private storage, and never reaches the
   repository or a report.
 
-## Decisions for the owner
+## Owner decisions
 
-1. **Where real scores come from.** Recommendation: worked out from the statistics page read before and after each round, as
+- **2026-11-09:** the owner chose the lineup review as the next slice, ahead of recalibration, which waits for a round answered on
+  `mvp-rules`' numbers.
+- **2026-11-09, these requirements approved,** with the three recommendations below ("Approve all three").
+
+1. **Where real scores come from.** Recommendation, approved: worked out from the statistics page read before and after each round, as
    above, with the user's own total from their league's app as an optional check. The alternatives are the user typing every
    player's rating, which is slow, or a ratings source with its own route, which belongs to the new-sources slice.
-2. **Which advice to compare with.** Recommendation: the last advice the user saw before the lock; and if they asked for none,
+2. **Which advice to compare with.** Recommendation, approved: the last advice the user saw before the lock; and if they asked for none,
    the advice replayed at the lock (R3.5), clearly marked.
-3. **How "paid off" is judged.** Recommendation: by expected cost, with the real result beside it and a running total that says
+3. **How "paid off" is judged.** Recommendation, approved: by expected cost, with the real result beside it and a running total that says
    how much it can tell yet (R3.3, R4.3). Judging by real results alone would reward luck.
