@@ -8,15 +8,17 @@ from __future__ import annotations
 
 import bisect
 import math
+import operator
 from collections.abc import Sequence
-from dataclasses import dataclass
+from typing import NamedTuple
 
 from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.league import Band, FormulaRule
 
+_START = operator.attrgetter("from_value")
 
-@dataclass(frozen=True, slots=True)
-class Mark:
+
+class Mark(NamedTuple):
     """What a formula rule reads about one fielded player in one round."""
 
     role: Role
@@ -28,7 +30,7 @@ class Mark:
 
 def band_points(bands: Sequence[Band], value: float) -> float:
     """The points of the highest band that `value` reaches; below the first, none."""
-    reached = bisect.bisect_right([band.from_value for band in bands], value)
+    reached = bisect.bisect_right(bands, value, key=_START)
     return bands[reached - 1].points if reached else 0.0
 
 
@@ -38,6 +40,7 @@ def formula_points(rule: FormulaRule, fielded: Sequence[Mark], captain: Mark | N
     if rule.who == "captain":
         vote = captain.vote if captain is not None else (rule.stand_in[0] if rule.stand_in else None)
         return 0.0 if vote is None else band_points(rule.bands, vote)
+    everyone = rule.leave_out == "nobody"
     votes: list[float] = []
     for unit in rule.who:
         mine = [mark for mark in fielded if mark.role == unit.role]
@@ -45,15 +48,16 @@ def formula_points(rule: FormulaRule, fielded: Sequence[Mark], captain: Mark | N
             unit.at_most is not None and len(mine) > unit.at_most
         ):
             return 0.0
-        counted = sorted(
-            (mark.vote for mark in mine if not (rule.leave_out == "bonus_or_goal" and mark.bonus_or_goal)),
-            reverse=True,
-        )
-        votes += counted[: unit.best] if unit.best is not None else counted
+        counted = [mark.vote for mark in mine if everyone or not mark.bonus_or_goal]
+        if unit.best is not None:
+            counted.sort(reverse=True)
+            del counted[unit.best :]
+        votes += counted
     if rule.combine == "each":
-        return math.fsum(band_points(rule.bands, vote) for vote in votes)
+        return math.fsum([band_points(rule.bands, vote) for vote in votes])
     if rule.base is not None:
-        votes = sorted(votes, reverse=True)[: rule.base]
+        votes.sort(reverse=True)
+        del votes[rule.base :]
         missing = rule.base - len(votes)
         if missing and rule.stand_in:
             votes += [rule.stand_in[0], *[rule.stand_in[-1]] * (missing - 1)]

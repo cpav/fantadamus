@@ -63,6 +63,8 @@ class Decision(BaseModel):
     """What the user's own choice cost against the advice, in expected points (mvp-lineup R3.5)."""
     advised_starters: list[int] | None = None
     """With an override: who the advice would have fielded."""
+    rules_worth: dict[str, float] | None = None
+    """What each of the league's formula rules added on average in this lineup (mvp-rules R3.2)."""
 
 
 class DecisionLog:

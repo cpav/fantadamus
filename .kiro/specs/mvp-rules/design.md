@@ -119,9 +119,10 @@ A pure module with one job. Given a rule and who was fielded this round, it retu
 3. If a role's fielded count is outside its `at_least` and `at_most`, there are no points.
 4. Combine them, or take each on his own, and look the value up in the bands with `bisect`.
 
-**The simulation supplies what it needs.** `draw_rounds` also yields a light mark per player when a league has formula rules: his pure
-vote, and whether he scored or conceded. A cameo's pure vote is 5.5 for a flat cameo, 5.75 for a
-priced one and 6.8 with a goal. A league without formula rules builds no marks and pays nothing.
+**The simulation supplies what it needs.** `draw_marked` draws the same rounds as `draw_rounds` and, when a league has formula rules,
+also yields a light mark per rated player: his pure vote, and whether he scored or, for a keeper, conceded. A cameo's pure vote is 5.5
+for a flat cameo, 5.75 for a priced one and 6.8 with a goal. A league without formula rules builds no marks and pays nothing.
+Formations often field the same players in a rule's roles, so each such set is worked out once a round.
 
 **After substitutions.** `field` already returns the moves, so the fielded eleven is known. Fantacalcio-Online adds modifier totals to the
 team score before goals are worked out, and describes the total as including bench players who came on, so that's the order here. Each

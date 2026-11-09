@@ -17,7 +17,7 @@ from mcp.server.mcpserver import MCPServer
 from pydantic import AwareDatetime, BaseModel
 
 from fantadamus.contracts.types import Role
-from fantadamus.contracts.xy.league import LineupRules
+from fantadamus.contracts.xy.league import FormulaRule, LineupRules
 from fantadamus.core.names import name_key
 from fantadamus.domains.availability.consensus import Availability
 from fantadamus.domains.calibration import summary_line
@@ -143,6 +143,13 @@ class Call(BaseModel):
     """In a coin flip between formations, the one with the higher ceiling: variance helps an underdog."""
 
 
+class RuleWorth(BaseModel):
+    """What one of the league's formula rules adds on average in this lineup (mvp-rules R3.2)."""
+
+    name: str
+    average: float
+
+
 class ThresholdCost(BaseModel):
     points: float
     advised: float
@@ -182,6 +189,8 @@ class Lineup(BaseModel):
     left_off: list[str]
     formations: list[Simulated]
     """Every allowed formation that can be fielded, best first, as advised (R6.1)."""
+    rules_worth: list[RuleWorth] = []
+    """What each of the league's formula rules adds on average in this lineup."""
     calls: list[Call]
     override: Override | None = None
     last_round: str | None = None
@@ -375,10 +384,12 @@ def formation_call(results: Sequence[Simulated], arrangements: Mapping[str, Arra
     )
 
 
-def place_calls(arranged: Arrangement, options: Mapping[int, Option]) -> list[Call]:
+def place_calls(
+    arranged: Arrangement, options: Mapping[int, Option], rules: Sequence[FormulaRule] = ()
+) -> list[Call]:
     """The closest choices between a role's last starter and the player behind him, with what each is worth
     (R5.2, R8). A keeper's club-mate covers him rather than competes, and nobody competes with a player who
-    won't play."""
+    won't play. A coin flip in a role a formula rule counts says the rule could tip it (mvp-rules R3.5)."""
     calls = []
     for role in ROLES:
         line = [player for player in arranged.starters if player.role == role]
@@ -396,6 +407,16 @@ def place_calls(arranged: Arrangement, options: Mapping[int, Option]) -> list[Ca
         if behind is None:
             continue
         choice = verdict(options[last.player_id], options[behind.player_id])
+        tipping = [
+            rule.name
+            for rule in rules
+            if rule.who != "captain" and any(unit.role == role for unit in rule.who)
+        ]
+        tip = (
+            f" The {' and the '.join(tipping)} could tip this."
+            if tipping and choice.label == "coin flip"
+            else ""
+        )
         calls.append(
             Call(
                 kind="place",
@@ -404,7 +425,7 @@ def place_calls(arranged: Arrangement, options: Mapping[int, Option]) -> list[Ca
                 worth=round(choice.margin, 3),
                 label=choice.label,
                 text=f"{_ordinal(len(line))} {ROLE_WORDS[role]}: {last.name} {last.key:.1f} v "
-                f"{behind.name} {behind.key:.1f}: {choice.label}, worth {choice.margin:.2f}.",
+                f"{behind.name} {behind.key:.1f}: {choice.label}, worth {choice.margin:.2f}.{tip}",
             )
         )
     return sorted(calls, key=lambda call: (call.worth, call.first))[:PLACE_CALLS]
@@ -624,6 +645,7 @@ def _rounded(result: Simulated) -> Simulated:
             "low": round(result.low, 2),
             "high": round(result.high, 2),
             "fantasy_goals": round(result.fantasy_goals, 3),
+            "rules": {name: round(points, 2) for name, points in result.rules.items()},
         }
     )
 
@@ -661,10 +683,8 @@ def lineup_for(
             setup=setup_step(),
         )
     rules = stored.rules.lineup
-    if (
-        rules is not None and stored.rules.formula_rules
-    ):  # named as left out until they're priced (mvp-rules task 3)
-        unpriced = [rule.name for rule in stored.rules.formula_rules]
+    unpriced = [rule.name for rule in stored.rules.formula_rules if rule.who == "captain"]
+    if rules is not None and unpriced:  # named as left out until it's priced (mvp-rules task 4)
         rules = rules.model_copy(update={"other_rules": [*rules.other_rules, *unpriced]})
     step = lineup_setup_step(stored.rules)
     if step is not None or rules is None:
@@ -861,7 +881,14 @@ def _answer(
     arrangements, chosen = fielding.advised, fielding.chosen
     players, matches = _simulated(priced)
     # The advice and the user's choice over the same simulated rounds, so that the cost isn't luck (R3.5).
-    simulated = simulate(players, matches, [*arrangements.values(), *chosen.values()], rules, rounds=rounds)
+    simulated = simulate(
+        players,
+        matches,
+        [*arrangements.values(), *chosen.values()],
+        rules,
+        formula_rules=stored.rules.formula_rules,
+        rounds=rounds,
+    )
     results = ranked(simulated[: len(arrangements)], rules)
     advised = results[0]
     best = ranked(simulated[len(arrangements) :], rules)[0] if asked else advised
@@ -881,7 +908,10 @@ def _answer(
     moved = [] if asked else _moved(advisor, team, round, when, best, priced)
     options: dict[int, Option] = {player_id: part.value for player_id, part in by_id.items()}
     formation_choice = None if asked else formation_call(results, arrangements)
-    calls = [*([formation_choice] if formation_choice else []), *place_calls(arranged, options)]
+    calls = [
+        *([formation_choice] if formation_choice else []),
+        *place_calls(arranged, options, stored.rules.formula_rules),
+    ]
     rounded = _rounded(best)
     lineup = Lineup(
         message=message,
@@ -905,6 +935,7 @@ def _answer(
         f"bench player with a rating, up to {rules.substitutions}.",
         left_off=[player.name for player in arranged.left_off],
         formations=[_rounded(result) for result in results],
+        rules_worth=[RuleWorth(name=name, average=points) for name, points in rounded.rules.items()],
         calls=calls,
         override=override,
         last_round=last_round(advisor),
@@ -940,6 +971,7 @@ def _answer(
                 starters=[player.player_id for player in arranged.starters],
                 bench=[player.player_id for player in arranged.bench],
                 override_cost=override.cost if override else None,
+                rules_worth=rounded.rules or None,
                 advised_starters=[player.player_id for player in arrangements[advised.formation].starters]
                 if override
                 else None,

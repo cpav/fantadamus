@@ -85,6 +85,7 @@ Round 11 · locks Fri 6 Nov 20:45 at Venezia–Udinese · updated 12 minutes ago
 
 3-4-3 · expected about 73 points (66 to 80 in eight rounds out of ten)
 Chance of reaching 66: 79% · 72: 55% · 78: 29%
+Includes your league's defence modifier, worth about +1.2 points on average
 
 Keeper    Ferrari (Napoli v Lazio)        starts 99% official · 6.3 · 34% clean sheet
 Defence   Esposito (Inter v Como)         starts 92% agree (4) · 6.6

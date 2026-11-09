@@ -48,3 +48,33 @@ def full_squad(**changes: Any) -> list[Candidate]:
             club = "a" if role == "P" and number < 2 else f"club{player_id}"
             players.append(candidate(player_id, role, club=club, key=8.0 - 0.2 * number, **changes))
     return players
+
+
+# Three common modifiers, for the budget with rules (mvp-rules AT-12).
+THREE_RULES: list[dict[str, Any]] = [
+    {
+        "name": "defence modifier",
+        "who": [{"role": "P"}, {"role": "D", "best": 3, "at_least": 4}],
+        "combine": "average",
+        "base": 4,
+        "stand_in": [5.0, 4.5],
+        "bands": [
+            {"from_value": 6.0, "points": 1.0},
+            {"from_value": 6.5, "points": 3.0},
+            {"from_value": 7.0, "points": 6.0},
+        ],
+    },
+    {
+        "name": "attack modifier",
+        "who": [{"role": "A"}],
+        "combine": "each",
+        "leave_out": "bonus_or_goal",
+        "bands": [{"from_value": 6.5, "points": 0.5}, {"from_value": 7.0, "points": 1.0}],
+    },
+    {
+        "name": "midfield sum",
+        "who": [{"role": "C"}],
+        "combine": "sum",
+        "bands": [{"from_value": 24.0, "points": 1.0}, {"from_value": 26.0, "points": 2.0}],
+    },
+]

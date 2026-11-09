@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 
 from fantadamus.contracts.types import Role
-from fantadamus.contracts.xy.league import LineupRules, formation_lines
+from fantadamus.contracts.xy.league import FormulaRule, LineupRules, formation_lines
 from fantadamus.engine.constants import (
     CAMEO_FLAT,
     CAMEO_GOAL_VOTE,
@@ -31,6 +31,7 @@ from fantadamus.engine.constants import (
     THRESHOLDS_SHOWN,
     VOTE_NOISE,
 )
+from fantadamus.engine.formula import Mark, formula_points
 from fantadamus.engine.keepers import KeeperInputs, KeeperValue
 from fantadamus.engine.lineup import Arrangement
 from fantadamus.engine.outfield import (
@@ -78,6 +79,7 @@ class Outfielder:
     """What the rare events are worth in a start, on average."""
     defends: bool = False
     """Whether the league scores his role's clean sheets or goals conceded."""
+    role: Role = "A"
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +123,7 @@ def outfield_player(
             penalties_missed=penalty_misses(minutes=prior.minutes, share=inputs.penalty_share),
         ),
         defends=inputs.opponent_xg is not None and bool(scoring.clean_sheet or scoring.goal_conceded),
+        role=inputs.role,
     )
 
 
@@ -149,9 +152,8 @@ def outfield_points(
 ) -> float:
     """A starter's score: his vote plus noise, lifted by each goal, and his events. `conceded` is his team's
     goals against, where the league scores them for his role."""
-    vote = player.lowered_vote + noise + GOAL_VOTE_LIFT * (open_goals + penalties)
     return (
-        vote
+        _outfield_vote(player, noise, open_goals + penalties)
         + player.rare
         + event_points(
             player.scoring,
@@ -167,12 +169,20 @@ def outfield_points(
 
 def keeper_points(keeper: Keeper, noise: float, conceded: int) -> float:
     """A starter's score: his skill less what each goal conceded costs his vote, plus noise and his events."""
-    vote = keeper.skill - KEEPER_BETA * conceded + noise
     return (
-        vote
+        _keeper_vote(keeper, noise, conceded)
         + keeper.rare
         + event_points(keeper.scoring, clean_sheets=0.0 if conceded else 1.0, conceded=conceded)
     )
+
+
+def _outfield_vote(player: Outfielder, noise: float, scored: int) -> float:
+    """His pure vote: his rating without bonuses or maluses, lifted by each goal he scores."""
+    return player.lowered_vote + noise + GOAL_VOTE_LIFT * scored
+
+
+def _keeper_vote(keeper: Keeper, noise: float, conceded: int) -> float:
+    return keeper.skill - KEEPER_BETA * conceded + noise
 
 
 def _poisson(limit: float, draw: Callable[[], float]) -> int:
@@ -193,10 +203,33 @@ def _cameo_points(player: Outfielder, open_goals: int, draw: Callable[[], float]
     return CAMEO_RATING if draw() < CAMEO_RATED else None
 
 
+def _cameo_mark(player: Outfielder, score: float) -> Mark:
+    """A cameo's pure vote: a flat one, a rated one, or one with a goal."""
+    if not player.priced_cameo:
+        return Mark(player.role, CAMEO_FLAT, False)
+    if score == CAMEO_RATING:
+        return Mark(player.role, CAMEO_RATING, False)
+    return Mark(player.role, CAMEO_GOAL_VOTE, True)
+
+
 def draw_rounds(
     players: Sequence[SimPlayer], matches: Sequence[tuple[float, float]], *, rounds: int, seed: int
 ) -> Iterator[tuple[dict[int, float | None], list[tuple[int, int]]]]:
     """Each round's scores by player ID, and each match's goals."""
+    for scores, goals, _ in draw_marked(players, matches, rounds=rounds, seed=seed, marking=False):
+        yield scores, goals
+
+
+def draw_marked(
+    players: Sequence[SimPlayer],
+    matches: Sequence[tuple[float, float]],
+    *,
+    rounds: int,
+    seed: int,
+    marking: bool,
+) -> Iterator[tuple[dict[int, float | None], list[tuple[int, int]], dict[int, Mark]]]:
+    """Each round's scores and goals, and with `marking` each rated player's mark for the formula rules
+    (mvp-rules C5). Marking draws nothing, so the rounds are the same either way."""
     # reason: a seeded generator makes a lineup repeatable (R4.6); nothing here is a secret
     generator = random.Random(seed)  # noqa: S311
     draw, gauss = generator.random, generator.gauss
@@ -215,7 +248,9 @@ def draw_rounds(
     open_goals = [0] * len(outfield)
     assists = [0] * len(outfield)
     penalty_limits = [math.exp(-player.penalties) for player in outfield]
+    unmarked: dict[int, Mark] = {}
     for _ in range(rounds):
+        marks: dict[int, Mark] = {} if marking else unmarked
         goals = [(_poisson(home, draw), _poisson(away, draw)) for home, away in limits]
         for index, player in enumerate(outfield):
             chance = draw()
@@ -247,9 +282,10 @@ def draw_rounds(
         for index, player in enumerate(outfield):
             if state[index] == _STARTS:
                 penalties = _poisson(penalty_limits[index], draw) if player.penalties else 0
+                noise = gauss(0.0, VOTE_NOISE)
                 scores[player.player_id] = outfield_points(
                     player,
-                    gauss(0.0, VOTE_NOISE),
+                    noise,
                     open_goals[index],
                     penalties,
                     assists[index],
@@ -258,8 +294,16 @@ def draw_rounds(
                     if player.defends and player.side is not None
                     else None,
                 )
+                if marking:
+                    scored = open_goals[index] + penalties
+                    marks[player.player_id] = Mark(
+                        player.role, _outfield_vote(player, noise, scored), scored > 0
+                    )
             elif state[index] == _COMES_ON:
-                scores[player.player_id] = _cameo_points(player, open_goals[index], draw)
+                cameo = _cameo_points(player, open_goals[index], draw)
+                scores[player.player_id] = cameo
+                if marking and cameo is not None:
+                    marks[player.player_id] = _cameo_mark(player, cameo)
             else:
                 scores[player.player_id] = None
         for unit, total in keeper_units:
@@ -272,10 +316,15 @@ def draw_rounds(
             for keeper in unit:
                 if keeper is starter and keeper.side is not None:
                     conceded = goals[keeper.side[0]][1 - keeper.side[1]]
-                    scores[keeper.player_id] = keeper_points(keeper, gauss(0.0, KEEPER_VOTE_NOISE), conceded)
+                    noise = gauss(0.0, KEEPER_VOTE_NOISE)
+                    scores[keeper.player_id] = keeper_points(keeper, noise, conceded)
+                    if marking:
+                        marks[keeper.player_id] = Mark(
+                            "P", _keeper_vote(keeper, noise, conceded), conceded > 0
+                        )
                 else:
                     scores[keeper.player_id] = None
-        yield scores, goals
+        yield scores, goals, marks
 
 
 @dataclass(frozen=True)
@@ -397,9 +446,16 @@ class Simulated(BaseModel):
     """Eight rounds out of ten fall from `low` to `high`; `high` is the ceiling."""
     fantasy_goals: float
     thresholds: list[Reached]
+    rules: dict[str, float] = {}
+    """What each formula rule added on average (mvp-rules R3.2)."""
 
 
-def summarize(formation: str, totals: Sequence[float], thresholds: Sequence[float] | None) -> Simulated:
+def summarize(
+    formation: str,
+    totals: Sequence[float],
+    thresholds: Sequence[float] | None,
+    rules: Mapping[str, float] | None = None,
+) -> Simulated:
     ordered = sorted(totals)
     count = len(ordered)
     tenth = count // 10
@@ -413,6 +469,7 @@ def summarize(formation: str, totals: Sequence[float], thresholds: Sequence[floa
             Reached(points=points, chance=(count - bisect.bisect_left(ordered, points)) / count)
             for points in _shown(thresholds)
         ],
+        rules={name: total / count for name, total in (rules or {}).items()},
     )
 
 
@@ -428,22 +485,58 @@ def recommended(results: Sequence[Simulated], rules: LineupRules) -> Simulated:
     return ranked(results, rules)[0]
 
 
+def _role(player: SimPlayer) -> Role:
+    return "P" if isinstance(player, Keeper) else player.role
+
+
 def simulate(
     players: Sequence[SimPlayer],
     matches: Sequence[tuple[float, float]],
     arrangements: Sequence[Arrangement],
     rules: LineupRules,
     *,
+    formula_rules: Sequence[FormulaRule] = (),
     rounds: int = SIMULATIONS,
     seed: int = SIMULATION_SEED,
 ) -> list[Simulated]:
-    """Each arrangement over the same simulated rounds."""
+    """Each arrangement over the same simulated rounds, with the league's formula rules worked out after
+    substitutions on who was fielded (mvp-rules R2.2). The captain is the next task's."""
+    units = [(rule, rule.who) for rule in formula_rules if isinstance(rule.who, list)]
+    counted = [rule for rule, _ in units]
+    counts = [
+        {player.player_id for player in players if _role(player) in {unit.role for unit in who}}
+        for _, who in units
+    ]
     plans = [plan(arrangement, rules) for arrangement in arrangements]
+    # Who each rule counts in each arrangement when every starter has a rating, as most rounds go.
+    usual = [[tuple(filter(members.__contains__, lineup.starters)) for members in counts] for lineup in plans]
     totals: list[list[float]] = [[] for _ in plans]
-    for scores, _ in draw_rounds(players, matches, rounds=rounds, seed=seed):
-        for lineup, kept in zip(plans, totals, strict=True):
-            kept.append(field(scores, lineup)[0])
+    worth = [[0.0] * len(counted) for _ in plans]
+    for scores, _, marks in draw_marked(players, matches, rounds=rounds, seed=seed, marking=bool(counted)):
+        unrated = {player for player, score in scores.items() if score is None} if counted else set()
+        # Formations often field the same players in a rule's roles: each set is worked out once a round.
+        known: list[dict[tuple[int, ...], float]] = [{} for _ in counted]
+        for lineup, kept, gained, everyone in zip(plans, totals, worth, usual, strict=True):
+            total, moves = field(scores, lineup)
+            if counted:
+                counting = everyone
+                if not unrated.isdisjoint(lineup.starters):
+                    fielded = [player for player in lineup.starters if player not in unrated]
+                    fielded += [player for _, player in moves]
+                    counting = [tuple(filter(members.__contains__, fielded)) for members in counts]
+                for which, (rule, who) in enumerate(zip(counted, counting, strict=True)):
+                    points = known[which].get(who)
+                    if points is None:
+                        points = known[which][who] = formula_points(rule, [marks[player] for player in who])
+                    gained[which] += points
+                    total += points
+            kept.append(total)
     return [
-        summarize(arrangement.formation, kept, rules.thresholds)
-        for arrangement, kept in zip(arrangements, totals, strict=True)
+        summarize(
+            arrangement.formation,
+            kept,
+            rules.thresholds,
+            {rule.name: total for rule, total in zip(counted, gained, strict=True)},
+        )
+        for arrangement, kept, gained in zip(arrangements, totals, worth, strict=True)
     ]

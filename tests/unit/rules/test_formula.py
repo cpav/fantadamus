@@ -33,6 +33,24 @@ def test_more_than_the_base_counts_the_best() -> None:
     assert formula_points(rule, _marks("D", 7.0, 7.0, 5.0)) == 6.0
 
 
+def test_the_best_are_the_highest_votes_whatever_their_order() -> None:
+    three_best = FormulaRule(
+        name="three best", who=[Unit(role="D", best=3)], combine="average", bands=GAZZETTA
+    )
+    assert formula_points(three_best, _marks("D", 5.0, 7.0, 7.0, 7.0)) == 6.0
+    two = FormulaRule(name="two", who=[Unit(role="D")], combine="average", base=2, bands=GAZZETTA)
+    assert formula_points(two, _marks("D", 5.0, 7.0, 7.0)) == 6.0
+
+
+def test_a_scorer_counts_unless_the_rule_leaves_him_out() -> None:
+    rule = FormulaRule(
+        name="sum", who=[Unit(role="A")], combine="sum", bands=[Band(from_value=13.0, points=1.0)]
+    )
+    forwards = _marks("A", 7.0, 6.5, scored=(7.0,))
+    assert formula_points(rule, forwards) == 1.0  # 13.5
+    assert formula_points(rule.model_copy(update={"leave_out": "bonus_or_goal"}), forwards) == 0.0  # 6.5
+
+
 def test_no_stand_in_averages_those_present() -> None:
     rule = FormulaRule(name="defence", who=[Unit(role="D")], combine="average", base=4, bands=GAZZETTA)
     assert formula_points(rule, _marks("D", 6.5, 6.5)) == 3.0
