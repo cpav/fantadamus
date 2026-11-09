@@ -13,9 +13,15 @@ from __future__ import annotations
 
 import dataclasses
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import get_args
 
+from fantadamus.contracts.types import Role
+from fantadamus.contracts.xy.league import EventName, LeagueRules
 from fantadamus.domains.season.silver import PlayerSeasonRow
+from fantadamus.engine.formula import Mark, formula_points
+from fantadamus.engine.simulate import Move, Plan, fantasy_goals, field
 
 HALF = 0.5
 ROUNDING = 0.005
@@ -200,3 +206,128 @@ def _own_goals(fantasy: float | None, rating: float, margin: float) -> int | Non
     missing = rating - fantasy
     own = round(missing / -OWN_GOAL)
     return own if own >= 0 and abs(missing + OWN_GOAL * own) <= margin else None
+
+
+@dataclass(frozen=True)
+class RealScore:
+    """What a lineup really scored, or None where a player's unknown round could change it (design C3)."""
+
+    total: float | None
+    fantasy_goals: int | None
+    points: dict[int, float | None]
+    """Each fielded player's real points, and None for a starter without a rating."""
+    moves: list[Move]
+    rules: dict[str, float]
+    """What each formula rule really gave."""
+    unknown: list[int]
+    """Whoever's unknown round makes the score unknown."""
+    not_counted: list[str]
+    """The league's events the reads can't count for someone fielded, in the table's order."""
+
+
+def real_score(
+    rounds: Mapping[int, Round | Unknown],
+    lineup: Plan,
+    rules: LeagueRules,
+    *,
+    conceded: Mapping[int, int | None] | None = None,
+    captain: int | None = None,
+    vice: int | None = None,
+) -> RealScore:
+    """The lineup's real score as the league scores it: each player's rating and events at the table's
+    values, the league's substitutions, its formula rules and captain on the real votes, and its thresholds.
+    `conceded` is each outfield player's team's goals against in the round, for a league that scores them."""
+    unknown = [player for player in lineup.starters if not isinstance(rounds.get(player), Round)]
+    if unknown:
+        return RealScore(None, None, {}, [], {}, unknown, [])
+    bench = list(dict.fromkeys(player for options in lineup.options.values() for player in options))
+    scored = {
+        player: _points(found, lineup.role[player], rules, (conceded or {}).get(player))
+        for player in (*lineup.starters, *bench)
+        if isinstance(found := rounds.get(player), Round)
+    }
+    scores = {
+        player: scored[player][0] if player in scored else None for player in (*lineup.starters, *bench)
+    }
+    total, moves = field(scores, lineup)
+    unsure = [player for player in bench if player not in scored]
+    if unsure:
+        _, could_be = field({**scores, **dict.fromkeys(unsure, 0.0)}, lineup)
+        if could_be != moves:
+            return RealScore(None, None, {}, [], {}, [new for _, new in could_be if new in unsure], [])
+    fielded = [player for player in lineup.starters if scores[player] is not None]
+    fielded += [new for _, new in moves]
+    marks = {  # every fielded player has a round with a rating
+        player: _mark(found.rating, found.events, lineup.role[player])
+        for player in fielded
+        if isinstance(found := rounds[player], Round) and found.rating is not None
+    }
+    worth = {}
+    for rule in rules.formula_rules:
+        if rule.who == "captain":
+            wearing = next((marks[player] for player in (captain, vice) if player in marks), None)
+            worth[rule.name] = formula_points(rule, (), captain=wearing)
+        else:
+            worth[rule.name] = formula_points(rule, [marks[player] for player in fielded])
+    total += math.fsum(worth.values())
+    missing = {event for player in fielded for event in scored[player][1]}
+    thresholds = rules.lineup.thresholds if rules.lineup is not None else None
+    return RealScore(
+        total=total,
+        fantasy_goals=fantasy_goals(total, thresholds),
+        points={player: scores[player] for player in (*lineup.starters, *(new for _, new in moves))},
+        moves=moves,
+        rules=worth,
+        unknown=[],
+        not_counted=[event for event in get_args(EventName) if event in missing],
+    )
+
+
+def _points(
+    found: Round, role: Role, rules: LeagueRules, team_conceded: int | None
+) -> tuple[float | None, set[str]]:
+    """A player's real points, None without a rating, and the league's events the reads couldn't count."""
+    if found.rating is None:
+        return None, set()
+    values: dict[str, float] = {row.event: row.points for row in rules.events if role in row.roles}
+    events, missing = found.events, set()
+    points = found.rating + math.fsum(
+        values.get(event, 0.0) * count
+        for event, count in (
+            ("goal", events.open_goals),
+            ("penalty_scored", events.penalties_scored),
+            ("assist", events.assists),
+            ("yellow_card", events.yellows),
+            ("penalty_missed", events.penalties_missed),
+        )
+    )
+    for event, maybe in (
+        ("red_card", events.reds),
+        ("own_goal", events.own_goals),
+        ("penalty_saved", events.penalties_saved),
+    ):
+        if values.get(event):
+            if maybe is None:
+                missing.add(event)
+            else:
+                points += values[event] * maybe
+    against = events.conceded if role == "P" else team_conceded
+    for event in ("goal_conceded", "clean_sheet"):
+        if values.get(event):
+            if against is None:
+                missing.add(event)
+            else:
+                points += values[event] * (against if event == "goal_conceded" else float(against == 0))
+    if values.get("decisive_goal") and events.open_goals + events.penalties_scored:
+        missing.add("decisive_goal")
+    if values.get("set_piece_assist") and events.assists:
+        missing.add("set_piece_assist")
+    return points, missing
+
+
+def _mark(rating: float, events: Events, role: Role) -> Mark:
+    """What a formula rule reads of a fielded player: his real rating, and whether he scored, conceded or
+    saved a penalty."""
+    scored = events.open_goals + events.penalties_scored > 0
+    kept = role == "P" and ((events.conceded or 0) > 0 or (events.penalties_saved or 0) > 0)
+    return Mark(role, rating, scored or kept)

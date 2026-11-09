@@ -38,12 +38,14 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
       `::test_at2_a_fantasy_average_that_disagrees_otherwise_names_no_own_goal`;
       **P1** `tests/property/review/test_round.py::test_p1_the_rating_is_found`, `::test_p1_late_in_the_season_never_a_wrong_rating`, **P2** `::test_p2_a_round_is_never_invented`_
 
-- [ ] 3. The real score
+- [x] 3. The real score
   - Branch: `feat/rv-3-score` · Depends on: 2 · ADRs: none
-  - [ ] 3.1 A lineup's real score as the league scores it: the table, the substitutions on real ratings, the formula rules and the captain on
+  - [x] 3.1 A lineup's real score as the league scores it: the table, the substitutions on real ratings, the formula rules and the captain on
     real votes, the thresholds, and who makes it unknown.
     - _Requirements: R2.2, R2.3_
-    - _Test: **AT-3** `tests/acceptance/review/test_score.py::test_at3_a_real_score_by_hand`, `::test_at3_an_unknown_player`_
+    - _Test: **AT-3** `tests/acceptance/review/test_score.py::test_at3_a_real_score_by_hand`, `::test_at3_an_unknown_player`,
+      `::test_at3_formula_rules_and_the_captain_on_real_votes`, `::test_at3_a_defenders_clean_sheet_from_his_teams_goals`,
+      `::test_at3_what_the_reads_cant_say_is_named`, `::test_at3_penalties_cards_and_saves`, `::test_at3_a_keeper_who_conceded_is_left_out`_
 
 - [ ] 4. What the user fielded, and the advice
   - Branch: `feat/rv-4-fielded` · Depends on: 3 · ADRs: none
