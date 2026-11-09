@@ -65,6 +65,9 @@ class Decision(BaseModel):
     """With an override: who the advice would have fielded."""
     rules_worth: dict[str, float] | None = None
     """What each of the league's formula rules added on average in this lineup (mvp-rules R3.2)."""
+    captain: int | None = None
+    """Where the league has a captain: who was told to wear the armband, and his vice (mvp-rules R3.3)."""
+    vice: int | None = None
 
 
 class DecisionLog:

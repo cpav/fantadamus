@@ -131,11 +131,13 @@ arrangement keeps a running total per rule, which gives what each is worth on av
 ### C6. The captain (`engine/formula.py`, `mcp/tools/lineup.py`; R3.3)
 
 The captain's points depend on who is captain, not on who else plays, so they don't need a pass per candidate. During the rounds, the
-loop keeps each of the top five starters' band points by key. At the end, each arrangement takes its best candidate as captain and the
-next as vice, with the vice's points on the rounds the captain has no rating, and adds that array to its totals before summarising.
-That's about 50,000 lookups, and it needs no second pass over the rounds.
+loop keeps each of the top five starters' band points by key, None where he has no rating. At the end, each arrangement takes the
+captain and vice who bring the most together, the vice's points counting on the rounds the captain has no rating, and adds that array
+to its totals before summarising. That's about 50,000 lookups and twenty pairs, and it needs no second pass over the rounds. A tie
+goes to the higher key.
 
-`best_lineup` gains `captain`, which names a player and shows the cost as any override does. The answer names the captain and the vice.
+`best_lineup` gains `captain`, which names a player and shows the cost as any override does: he starts, and keeps the best vice for
+him. The answer names the captain and the vice. A league has one captain rule, so a second is refused.
 
 ### C7. The answer and the log (`mcp/tools/lineup.py`, `lake/decision_log.py`; R3.1, R3.2, R3.4, R3.5)
 
@@ -171,6 +173,7 @@ That's about 50,000 lookups, and it needs no second pass over the rounds.
 | A unit with nobody and no stand-in vote | The rule gives no points that round |
 | The captain and the vice both without a rating | The rule's stand-in vote applies; without one, no points |
 | A named captain who isn't in the squad | Refused with the reason, like any override |
+| A captain named in a league without one | Refused: there's no captain to name |
 
 ## Correctness properties
 

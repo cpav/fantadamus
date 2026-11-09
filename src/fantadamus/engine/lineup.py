@@ -47,6 +47,8 @@ class Arrangement(BaseModel):
     """In the order substitutes are taken: each role by key, and by key across roles."""
     left_off: tuple[Candidate, ...]
     """Those a smaller bench has no place for."""
+    captain: int | None = None
+    """The captain the user named; without one, the simulation picks the captain and the vice."""
 
 
 def _rank(player: Candidate) -> tuple[bool, float, int]:

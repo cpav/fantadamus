@@ -22,6 +22,7 @@ from fantadamus.engine.constants import (
     CAMEO_GOAL_VOTE,
     CAMEO_RATED,
     CAMEO_RATING,
+    CAPTAIN_CANDIDATES,
     GOAL_VOTE_LIFT,
     KEEPER_BETA,
     KEEPER_VOTE_NOISE,
@@ -31,7 +32,7 @@ from fantadamus.engine.constants import (
     THRESHOLDS_SHOWN,
     VOTE_NOISE,
 )
-from fantadamus.engine.formula import Mark, formula_points
+from fantadamus.engine.formula import Mark, choose_captain, formula_points
 from fantadamus.engine.keepers import KeeperInputs, KeeperValue
 from fantadamus.engine.lineup import Arrangement
 from fantadamus.engine.outfield import (
@@ -448,6 +449,8 @@ class Simulated(BaseModel):
     thresholds: list[Reached]
     rules: dict[str, float] = {}
     """What each formula rule added on average (mvp-rules R3.2)."""
+    captain: int | None = None
+    vice: int | None = None
 
 
 def summarize(
@@ -455,6 +458,7 @@ def summarize(
     totals: Sequence[float],
     thresholds: Sequence[float] | None,
     rules: Mapping[str, float] | None = None,
+    captaincy: tuple[int, int | None] | None = None,
 ) -> Simulated:
     ordered = sorted(totals)
     count = len(ordered)
@@ -470,6 +474,8 @@ def summarize(
             for points in _shown(thresholds)
         ],
         rules={name: total / count for name, total in (rules or {}).items()},
+        captain=captaincy[0] if captaincy else None,
+        vice=captaincy[1] if captaincy else None,
     )
 
 
@@ -500,7 +506,14 @@ def simulate(
     seed: int = SIMULATION_SEED,
 ) -> list[Simulated]:
     """Each arrangement over the same simulated rounds, with the league's formula rules worked out after
-    substitutions on who was fielded (mvp-rules R2.2). The captain is the next task's."""
+    substitutions on who was fielded (mvp-rules R2.2), and its captain and vice chosen at the end from what
+    each candidate brought (C6)."""
+    captain_rule = next((rule for rule in formula_rules if rule.who == "captain"), None)
+    pools = [_captain_pool(arrangement) for arrangement in arrangements]
+    # Each candidate's points as captain by round, None without a rating: no pass per candidate.
+    as_captain: dict[int, list[float | None]] = (
+        {player: [] for pool in pools for player in pool} if captain_rule is not None else {}
+    )
     units = [(rule, rule.who) for rule in formula_rules if isinstance(rule.who, list)]
     counted = [rule for rule, _ in units]
     counts = [
@@ -512,7 +525,12 @@ def simulate(
     usual = [[tuple(filter(members.__contains__, lineup.starters)) for members in counts] for lineup in plans]
     totals: list[list[float]] = [[] for _ in plans]
     worth = [[0.0] * len(counted) for _ in plans]
-    for scores, _, marks in draw_marked(players, matches, rounds=rounds, seed=seed, marking=bool(counted)):
+    marking = bool(counted) or captain_rule is not None
+    for scores, _, marks in draw_marked(players, matches, rounds=rounds, seed=seed, marking=marking):
+        if captain_rule is not None:
+            for player, kept_points in as_captain.items():
+                mark = marks.get(player)
+                kept_points.append(None if mark is None else formula_points(captain_rule, (), captain=mark))
         unrated = {player for player, score in scores.items() if score is None} if counted else set()
         # Formations often field the same players in a rule's roles: each set is worked out once a round.
         known: list[dict[tuple[int, ...], float]] = [{} for _ in counted]
@@ -531,12 +549,28 @@ def simulate(
                     gained[which] += points
                     total += points
             kept.append(total)
-    return [
-        summarize(
-            arrangement.formation,
-            kept,
-            rules.thresholds,
-            {rule.name: total for rule, total in zip(counted, gained, strict=True)},
-        )
-        for arrangement, kept, gained in zip(arrangements, totals, worth, strict=True)
-    ]
+    results = []
+    for arrangement, kept, gained, pool in zip(arrangements, totals, worth, pools, strict=True):
+        rules_total = {rule.name: total for rule, total in zip(counted, gained, strict=True)}
+        captaincy = None
+        if captain_rule is not None:
+            chosen = choose_captain(
+                pool,
+                as_captain,
+                fallback=formula_points(captain_rule, (), captain=None),
+                named=arrangement.captain,
+            )
+            kept = [total + points for total, points in zip(kept, chosen.points, strict=True)]
+            rules_total[captain_rule.name] = math.fsum(chosen.points)
+            captaincy = (chosen.captain, chosen.vice)
+        results.append(summarize(arrangement.formation, kept, rules.thresholds, rules_total, captaincy))
+    return results
+
+
+def _captain_pool(arrangement: Arrangement) -> list[int]:
+    """The starters a captain and vice come from, best key first, and a named captain wherever he ranks."""
+    best = sorted(arrangement.starters, key=lambda player: player.key, reverse=True)[:CAPTAIN_CANDIDATES]
+    pool = [player.player_id for player in best]
+    if arrangement.captain is not None and arrangement.captain not in pool:
+        pool.append(arrangement.captain)
+    return pool

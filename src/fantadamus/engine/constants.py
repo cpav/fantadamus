@@ -78,6 +78,9 @@ LEAGUE_GOALS_PER_MATCH = 1.3  # each team's goals per match, before the table ha
 # The simulation (mvp-lineup C7, method §A7)
 SIMULATIONS = 10_000  # rounds simulated for a lineup
 SIMULATION_SEED = 2026  # any fixed number: the same facts give the same lineup (mvp-lineup R4.6)
+CAPTAIN_CANDIDATES = (
+    5  # a lineup's captain and vice come from its starters with the highest keys (mvp-rules C6)
+)
 VOTE_NOISE = 0.6  # the spread of an outfield starter's vote around what's expected
 KEEPER_VOTE_NOISE = 0.75  # and of a keeper's
 GOAL_VOTE_LIFT = (

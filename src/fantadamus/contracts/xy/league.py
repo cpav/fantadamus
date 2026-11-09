@@ -251,7 +251,7 @@ class FormulaRule(Part):
 class LeagueRules(Contract):
     """A league's rules: one table of events, and what a lineup needs. An event left out isn't scored."""
 
-    __version__ = "2.1.0"
+    __version__ = "2.1.1"
 
     events: list[EventRow] = Field(
         min_length=1,
@@ -293,6 +293,9 @@ class LeagueRules(Contract):
     @model_validator(mode="after")
     def _one_row_per_event_and_role(self) -> Self:
         once_each((rule.name for rule in self.formula_rules), "{name} is listed twice")
+        captains = [rule.name for rule in self.formula_rules if rule.who == "captain"]
+        if len(captains) > 1:
+            raise ValueError(f"a league has one captain: {' and '.join(captains)} both name him")
         seen: set[tuple[str, str]] = set()
         for row in self.events:
             for role in row.roles:

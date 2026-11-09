@@ -86,6 +86,7 @@ Round 11 · locks Fri 6 Nov 20:45 at Venezia–Udinese · updated 12 minutes ago
 3-4-3 · expected about 73 points (66 to 80 in eight rounds out of ten)
 Chance of reaching 66: 79% · 72: 55% · 78: 29%
 Includes your league's defence modifier, worth about +1.2 points on average
+Captain Rossi, vice Marino: the armband is worth about +0.8 points on average
 
 Keeper    Ferrari (Napoli v Lazio)        starts 99% official · 6.3 · 34% clean sheet
 Defence   Esposito (Inter v Como)         starts 92% agree (4) · 6.6
@@ -121,8 +122,7 @@ Since your last lineup (Wednesday): Bruno 85% → 75% (Gazzetta now has a ballot
 
 Before the lock: no player of yours is in Venezia–Udinese, so this lineup is final unless news breaks.
 
-Worth knowing: Genoa v Milan has no over/under yet, so its goals rest on the 1X2 alone. Your league's captain isn't
-in this score.
+Worth knowing: Genoa v Milan has no over/under yet, so its goals rest on the 1X2 alone.
 
 Round 10's forecasts: chances of starting scored 0.130 over 520 players, against 0.240 for always guessing the average.
 Lower is better.
