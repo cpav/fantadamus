@@ -1,7 +1,7 @@
 # Slice report: `mvp-rules`
 
-2026-11-09 · Phase 2, the first slice before going online · **For the owner's sign-off** (task 6.4): merging this report's pull
-request records it
+2026-11-09 · Phase 2, the first slice before going online · **Signed off by the owner on 2026-11-09** (task 6.4): "check report,
+let's close all the open prs and see the next steps"
 
 A league's rules are now data, read by one engine. Player figures, names and the answers' numbers for a real squad aren't
 reproduced here: they stay in private notes.
@@ -48,8 +48,19 @@ The machine was busy on the day: the same answer without rules took 1.4 s two da
 
 ### AT-14: a real rulebook
 
-*To be filled in by the owner's check (task 6.2): a rulebook pasted into a Claude app, what Claude read back, and whether it
-matched, without the league's details.*
+The owner pasted their own league's rulebook into a Claude app, with the new agent prompt (task 6.2). Claude saved it and read
+back every event with its points and roles, the lineup settings, and "left out: nothing". The saved rules are identical to the
+ones stored before, set by hand.
+
+- **Where the rulebook was silent, Claude said so.** It didn't say who a goal conceded and a clean sheet apply to, so Claude
+  limited them to keepers, as the owner's league profile does, and said so in the read-back. The prompt allows that: a
+  profile is the user's own word.
+- **It explained a rule rather than restating it:** a penalty scored counts in place of the goal bonus, so it's worth +3, not
+  +6.
+- **It saved no captain or modifier,** since the rulebook has none, and offered to add one.
+
+Not yet seen in a Claude app: a rulebook with modifiers or a captain. A made-up league with both gave a sensible lineup from
+Claude Code (above), and AT-5 to AT-11 cover them.
 
 ## Numbers
 
@@ -102,7 +113,7 @@ Every survivor was read, and none changes a result:
 | AT-11 | An impossible rule refused with its reason; a rule can't carry code | Passed |
 | AT-12 | A captain and three modifiers in under 3 seconds and 15 KB | Passed on the invented squad; see above for a real one |
 | AT-13 | The blank profile, the ready-made entries and the prompt's budget | Passed |
-| AT-14 | Manual: a real rulebook becomes the right rules, read back correctly | *The owner's check* |
+| AT-14 | Manual: a real rulebook becomes the right rules, read back correctly | Passed, on the owner's own league |
 
 ## Cost
 
@@ -120,11 +131,13 @@ plan.
   the prompt tells Claude never to guess a value.
 - **Formula rules count in the full lineup only.** "X or Y?" and an outlook say their numbers leave them out.
 - **Rules that need the opponent's team** stay left out by name until slice 7.
+- **No rulebook with modifiers or a captain has yet gone through a Claude app.** The first league that has them should be
+  read back with care.
 - **Players must paste the new agent prompt and restart Claude Desktop.** A running server keeps its old code until then.
 
 ## Decisions for the owner
 
-1. **Sign off this slice?** Recommendation: yes, once AT-14 is done.
+1. **Sign off this slice?** Signed off on 2026-11-09, after AT-14.
 2. **The speed fallback?** Recommendation: not now. Add it only if a real league's answer goes over 3 seconds.
 3. **What comes next?** Recalibration is next in `product.md`, but it changes the numbers, so it waits until a real round has
    been answered on this slice's numbers: round 12. Recommendation: start the lineup review in the meantime, since it

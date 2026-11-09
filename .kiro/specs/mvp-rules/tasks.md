@@ -94,17 +94,17 @@ Status: **Approved by the owner, 2026-11-07** · From the approved [requirements
     - _Requirements: R5.3, R4.5_
     - _Test: `tests/unit/test_repo_hygiene.py::test_league_rules_guide_covers_the_vocabulary`_
 
-- [ ] 6. A real check and this slice's sign-off
+- [x] 6. A real check and this slice's sign-off
   - Branch: `docs/ru-6-gate` · Depends on: 5 · ADRs: none
   - [x] 6.1 Real data from Claude Code, with temporary logs: the owner's league gets today's numbers apart from the four events, and a made-up league with a defence modifier and a captain gets a sensible lineup. Bugs found get their own failing tests and fixes. Results stay out of the repository.
     - _Requirements: R1.6, R3.1, R5.1_
     - _Test: what each answer used, and its time and size, in the report without players' figures_
-  - [ ] 6.2 **Owner:** paste a real rulebook, your friend's if you can, into a Claude app, and check what it read back.
+  - [x] 6.2 **Owner:** paste a real rulebook, your friend's if you can, into a Claude app, and check what it read back.
     - _Requirements: AT-14_
     - _Test: recorded in the report, without the league's details_
   - [x] 6.3 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the acceptance tests.
     - _Requirements: R5.1, R5.2; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 6.4 **Owner:** sign off this slice → the next slice in `product.md` may start, after a real round has been answered on these numbers.
+  - [x] 6.4 **Owner:** sign off this slice → the next slice in `product.md` may start, after a real round has been answered on these numbers.
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the report_

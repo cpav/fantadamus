@@ -130,7 +130,7 @@ one thing: making Fantadamus easy to reach and install. The slices after `mvp-li
 
 | Order | Slice | Needs |
 |---|---|---|
-| 1 | Custom league rules (`mvp-rules`): a league's rules as data read by one engine, instead of a feature per rule: a table of events by role, and formula rules, with the defence modifier and the captain as two entries; a player's Claude translates the rulebook | Nothing new |
+| 1 | Custom league rules (`mvp-rules`): a league's rules as data read by one engine, instead of a feature per rule: a table of events by role, and formula rules, with the defence modifier and the captain as two entries; a player's Claude translates the rulebook (signed off 2026-11-09) | Nothing new |
 | 2 | Recalibration of the *(start)* constants, and the market's chances beside ours | Calibration reports |
 | 3 | The review of a user's lineup after a round: what they chose, what the advice was, what each decision cost, and whether overrides paid off | Nothing new |
 | 4 | Match cards, numbers: one card per fixture, from the facts already collected | Nothing new |
