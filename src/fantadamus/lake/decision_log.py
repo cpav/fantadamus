@@ -63,6 +63,11 @@ class Decision(BaseModel):
     """What the user's own choice cost against the advice, in expected points (mvp-lineup R3.5)."""
     advised_starters: list[int] | None = None
     """With an override: who the advice would have fielded."""
+    advised_formation: str | None = None
+    """With an override, since mvp-review: the rest of the advice, so a review can compare with it."""
+    advised_bench: list[int] | None = None
+    advised_captain: int | None = None
+    advised_vice: int | None = None
     rules_worth: dict[str, float] | None = None
     """What each of the league's formula rules added on average in this lineup (mvp-rules R3.2)."""
     captain: int | None = None
