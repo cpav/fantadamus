@@ -1,6 +1,6 @@
 # Design Document: `mvp-review` (Phase 2, fifth slice)
 
-Status: **Draft for the owner's approval**, 2026-11-09 · From the approved [requirements](requirements.md)
+Status: **Approved by the owner, 2026-11-09** · From the approved [requirements](requirements.md)
 
 ## Overview
 
@@ -179,6 +179,8 @@ inside the lineup's budget.
 
 ## Open points for the owner
 
+Approved with the design on 2026-11-09.
+
 1. **Round 11 can be reviewed only in part.** Its reads were stored before the three new columns, so red cards, saved
-   penalties and own goals can't be counted for it, and late ratings can't use FM. Recommendation: build on round 11's reads, and
+   penalties and own goals can't be counted for it, and late ratings can't use FM. Recommendation, approved: build on round 11's reads, and
    take AT-8 on round 12, the first round read with all the columns.
