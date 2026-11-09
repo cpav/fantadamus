@@ -66,6 +66,10 @@ pytest_add_cli_args_test_selection = [
     "tests/acceptance/rules/test_captain.py::test_at7_the_table_by_hand",
     "tests/acceptance/rules/test_captain.py::test_at7_the_vice_covers",
     "tests/acceptance/rules/test_captain.py::test_at7_the_best_pair_by_hand",
+    "tests/acceptance/rules/test_events.py::test_at2_the_four_by_hand",
+    "tests/acceptance/rules/test_events.py::test_at3_a_defenders_clean_sheet",
+    "tests/acceptance/rules/test_events.py::test_at3_a_goal_per_role_still_works",
+    "tests/acceptance/rules/test_events.py::test_at4_share_events_by_hand",
     "tests/property/xy",
 ]
 pytest_add_cli_args = [
