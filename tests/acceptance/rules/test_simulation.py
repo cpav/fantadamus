@@ -11,7 +11,7 @@ from typing import Any
 import pytest
 from scripts.checks._common import run_command
 
-from tests.lineup_data import THREE_RULES
+from tests.lineup_data import BUDGET_RULES
 from tests.lineup_harness import Round, a_round
 from tests.xy_harness import NOW, classic_with
 
@@ -112,11 +112,11 @@ async def test_at9_an_overrides_cost_includes_the_rules(tmp_path: Path) -> None:
 
 
 async def test_at12_a_squad_with_rules_stays_in_budget(tmp_path: Path) -> None:
-    """Three modifiers, in a process of its own for the time: see `tests/lineup_speed.py`."""
+    """A captain and three modifiers, in a process of its own for the time: see `tests/lineup_speed.py`."""
     result = run_command([sys.executable, "-m", "tests.lineup_speed", "--rules"])
     assert result.returncode == 0, result.stderr
     assert float(result.stdout) < 3.0
     async with a_round(tmp_path) as here:
-        await _with(here, *THREE_RULES)
+        await _with(here, *BUDGET_RULES)
         answer = await here.ask()
     assert len(json.dumps(answer).encode()) < 15_000

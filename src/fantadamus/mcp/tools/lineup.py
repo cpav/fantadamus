@@ -191,6 +191,10 @@ class Lineup(BaseModel):
     """Every allowed formation that can be fielded, best first, as advised (R6.1)."""
     rules_worth: list[RuleWorth] = []
     """What each of the league's formula rules adds on average in this lineup."""
+    captain: str | None = None
+    """Where the league has a captain: the one who brings the most, or the user's (mvp-rules R3.3)."""
+    vice: str | None = None
+    """Whose rating counts when the captain has none."""
     calls: list[Call]
     override: Override | None = None
     last_round: str | None = None
@@ -657,9 +661,10 @@ class _Asked:
     start: Sequence[str] = ()
     leave_out: Sequence[str] = ()
     formation: str | None = None
+    captain: str | None = None
 
     def __bool__(self) -> bool:
-        return bool(self.start or self.leave_out or self.formation)
+        return bool(self.start or self.leave_out or self.formation or self.captain)
 
 
 def lineup_for(
@@ -671,6 +676,7 @@ def lineup_for(
     start: Sequence[str] = (),
     leave_out: Sequence[str] = (),
     formation: str | None = None,
+    captain: str | None = None,
     rounds: int = SIMULATIONS,
 ) -> LineupResult:
     """The lineup, after the collector has read the pages of what was missing or stale. A replay of an earlier
@@ -683,9 +689,10 @@ def lineup_for(
             setup=setup_step(),
         )
     rules = stored.rules.lineup
-    unpriced = [rule.name for rule in stored.rules.formula_rules if rule.who == "captain"]
-    if rules is not None and unpriced:  # named as left out until it's priced (mvp-rules task 4)
-        rules = rules.model_copy(update={"other_rules": [*rules.other_rules, *unpriced]})
+    if captain is not None and not any(rule.who == "captain" for rule in stored.rules.formula_rules):
+        return LineupResult(
+            status="refused", message="This league's rules have no captain, so there's none to name."
+        )
     step = lineup_setup_step(stored.rules)
     if step is not None or rules is None:
         step = step or lineup_setup_step(stored.rules.model_copy(update={"lineup": LineupRules()}))
@@ -731,7 +738,7 @@ def lineup_for(
         round,
         first_kickoff,
         noted(gathered.better),
-        _Asked(start, leave_out, formation),
+        _Asked(start, leave_out, formation, captain),
         log=as_of is None,
         rounds=rounds,
     )
@@ -813,19 +820,25 @@ def _fielding(
             status="squad",
             message="This squad can't field any formation the league allows. " + " ".join(left_out),
         )
-    named = _named((*asked.start, *asked.leave_out), [part.facts.player for part in priced])
+    captain = [asked.captain] if asked.captain else []
+    named = _named((*asked.start, *asked.leave_out, *captain), [part.facts.player for part in priced])
     if isinstance(named, LineupResult):
         return named
     chosen: dict[str, Arrangement] = {}
     if asked:
         problems: list[str] = []
-        start_ids = {named[name] for name in asked.start}
+        captain_id = named[asked.captain] if asked.captain else None
+        start_ids = {named[name] for name in asked.start} | (
+            {captain_id} if captain_id is not None else set()
+        )
         leave_ids = {named[name] for name in asked.leave_out}
         for shape in [asked.formation] if asked.formation else (rules.formations or ()):
             try:
-                chosen[shape] = arrange(candidates, shape, rules, start_ids, leave_ids)
+                arranged = arrange(candidates, shape, rules, start_ids, leave_ids)
             except CannotFieldError as problem:
                 problems.append(f"{problem}.")
+            else:  # a captain the user names starts, and wears the armband
+                chosen[shape] = arranged.model_copy(update={"captain": captain_id})
         if not chosen:
             return LineupResult(status="refused", message=problems[0])
     return _Fielding(advised, chosen, left_out)
@@ -842,11 +855,13 @@ def _bench_places(advisor: Advisor, arranged: Arrangement, by_id: Mapping[int, _
     return bench
 
 
-def _message(best: Simulated, override: Override | None) -> str:
+def _message(best: Simulated, override: Override | None, captain: str | None, vice: str | None) -> str:
     thresholds = ", ".join(f"{mark.points:g}: {mark.chance:.0%}" for mark in best.thresholds[:3])
     message = f"{best.formation}, expected about {best.mean:.0f} points" + (
         f"; chance of reaching {thresholds}." if thresholds else "."
     )
+    if captain is not None:
+        message += f" Captain {captain}" + (f", vice {vice}." if vice else ".")
     if override is not None:
         message += (
             f" Against the advice ({override.advised_formation}, about {override.advised_expected:.0f}), "
@@ -904,7 +919,12 @@ def _answer(
     sources = _sources(priced)
     lines = _source_lines(sources, advisor, when)
     times = [line.captured_at for line in lines]
-    message = _message(best, override)
+
+    def name_of(player_id: int | None) -> str | None:
+        return by_id[player_id].facts.player.name if player_id is not None else None
+
+    captain, vice = name_of(best.captain), name_of(best.vice)
+    message = _message(best, override, captain, vice)
     moved = [] if asked else _moved(advisor, team, round, when, best, priced)
     options: dict[int, Option] = {player_id: part.value for player_id, part in by_id.items()}
     formation_choice = None if asked else formation_call(results, arrangements)
@@ -936,6 +956,8 @@ def _answer(
         left_off=[player.name for player in arranged.left_off],
         formations=[_rounded(result) for result in results],
         rules_worth=[RuleWorth(name=name, average=points) for name, points in rounded.rules.items()],
+        captain=captain,
+        vice=vice,
         calls=calls,
         override=override,
         last_round=last_round(advisor),
@@ -972,6 +994,8 @@ def _answer(
                 bench=[player.player_id for player in arranged.bench],
                 override_cost=override.cost if override else None,
                 rules_worth=rounded.rules or None,
+                captain=best.captain,
+                vice=best.vice,
                 advised_starters=[player.player_id for player in arrangements[advised.formation].starters]
                 if override
                 else None,
@@ -992,15 +1016,17 @@ def register(server: MCPServer, advisor: Advisor, squads: SquadStore, *, rounds:
         "stored: ask the user, then call set_squad); a refresh plan (facts missing or stale: read the listed "
         "pages, submit with the named tools, then call again); or the lineup, with every allowed formation, "
         "who's doubtful, warnings about anything basic and what could improve it. Without a team it's the "
-        "user's own squad. To price the user's own choice, pass players to start or leave_out of the eleven, "
-        "or a formation: it returns that lineup with what it costs against the advice. as_of replays an "
-        "earlier question."
+        "user's own squad. Where the league has a captain, it names the captain and the vice who bring the "
+        "most. To price the user's own choice, pass players to start or leave_out of the eleven, a "
+        "formation, or a captain (who then starts): it returns that lineup with what it costs against the "
+        "advice. as_of replays an earlier question."
     )
     def best_lineup(
         team: str = MINE,
         start: list[str] | None = None,
         leave_out: list[str] | None = None,
         formation: str | None = None,
+        captain: str | None = None,
         as_of: AwareDatetime | None = None,
     ) -> LineupResult:
         return lineup_for(
@@ -1011,5 +1037,6 @@ def register(server: MCPServer, advisor: Advisor, squads: SquadStore, *, rounds:
             start=start or (),
             leave_out=leave_out or (),
             formation=formation,
+            captain=captain,
             rounds=rounds,
         )

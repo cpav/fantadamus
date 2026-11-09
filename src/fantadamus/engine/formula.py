@@ -9,7 +9,7 @@ from __future__ import annotations
 import bisect
 import math
 import operator
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import NamedTuple
 
 from fantadamus.contracts.types import Role
@@ -65,3 +65,45 @@ def formula_points(rule: FormulaRule, fielded: Sequence[Mark], captain: Mark | N
         return 0.0
     total = math.fsum(votes)
     return band_points(rule.bands, total if rule.combine == "sum" else total / len(votes))
+
+
+class Captaincy(NamedTuple):
+    captain: int
+    vice: int | None
+    points: list[float]
+    """What the captain's rule gives each round: his points, or else his vice's, or else the stand-in's."""
+
+
+def choose_captain(
+    pool: Sequence[int],
+    points: Mapping[int, Sequence[float | None]],
+    *,
+    fallback: float,
+    named: int | None = None,
+) -> Captaincy:
+    """The captain and the vice who bring the most over the rounds (R3.3). `points` holds each candidate's
+    points as captain by round, None where he has no rating; `fallback` is what the rule gives when neither
+    has one. `pool` goes best first, which settles a tie. A `named` captain gets the best vice for him."""
+    candidates = [named] if named is not None else list(pool)
+    nobody: list[float | None] = [None] * len(points[candidates[0]])
+    best_total = -math.inf
+    captain, vice = candidates[0], None  # alone in the pool, he has no vice
+    for candidate in candidates:
+        own = points[candidate]
+        rated = math.fsum(value for value in own if value is not None)
+        missing = [index for index, value in enumerate(own) if value is None]
+        for other in (player for player in pool if player != candidate):
+            cover = points[other]
+            total = rated + math.fsum(_or(cover[index], fallback) for index in missing)
+            if total > best_total:
+                best_total, captain, vice = total, candidate, other
+    cover = points[vice] if vice is not None else nobody
+    return Captaincy(
+        captain,
+        vice,
+        [_or(value, _or(covered, fallback)) for value, covered in zip(points[captain], cover, strict=True)],
+    )
+
+
+def _or(value: float | None, otherwise: float) -> float:
+    return otherwise if value is None else value

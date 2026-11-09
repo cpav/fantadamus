@@ -125,6 +125,13 @@ def test_at11_two_rules_with_one_name_are_refused() -> None:
         LeagueRules.model_validate(CLASSIC.model_dump() | {"formula_rules": twice})
 
 
+def test_at11_a_league_has_one_captain() -> None:
+    captain = {"who": "captain", "combine": "each", "bands": [{"from_value": 6.0, "points": 1.0}]}
+    two = [captain | {"name": "captain"}, captain | {"name": "vice captain"}]
+    with pytest.raises(ValidationError, match="one captain"):
+        LeagueRules.model_validate(CLASSIC.model_dump() | {"formula_rules": two})
+
+
 def test_at11_a_league_keeps_its_rules() -> None:
     rules = LeagueRules.model_validate(CLASSIC.model_dump() | {"formula_rules": [GAZZETTA.model_dump()]})
     assert rules.formula_rules == [GAZZETTA]

@@ -69,12 +69,16 @@ Status: **Approved by the owner, 2026-11-07** · From the approved [requirements
     - _Requirements: R5.1, R5.2_
     - _Test: **AT-12** `tests/acceptance/rules/test_simulation.py::test_at12_a_squad_with_rules_stays_in_budget`_
 
-- [ ] 4. The captain
+- [x] 4. The captain
   - Branch: `feat/ru-4-captain` · Depends on: 3 · ADRs: none
-  - [ ] 4.1 The recommended captain and vice from the rounds, a named captain with its cost, the vice when the captain has no rating, and the stand-in.
+  - [x] 4.1 The recommended captain and vice from the rounds, a named captain with its cost, the vice when the captain has no rating, and the stand-in.
     - _Requirements: R3.3_
-    - _Test: **AT-7** `tests/acceptance/rules/test_captain.py::test_at7_the_table_by_hand`, `::test_at7_the_vice_covers`, `::test_at7_the_recommended_captain_is_the_best`,
-      `::test_at7_naming_another_gives_its_cost`; **P7** `tests/property/rules/test_captain.py::test_p7_a_captains_points_stay_in_the_bands`_
+    - _Test: **AT-7** `tests/acceptance/rules/test_captain.py::test_at7_the_table_by_hand`, `::test_at7_the_vice_covers`, `::test_at7_the_best_pair_by_hand`, `::test_at7_the_recommended_captain_is_the_best`,
+      `::test_at7_naming_another_gives_its_cost`; **P7** `tests/property/rules/test_captain.py::test_p7_a_captains_points_stay_in_the_bands`;
+      `tests/unit/rules/test_simulation.py::test_the_captain_and_his_vice`, `::test_without_a_rating_for_either_the_stand_in_counts`,
+      `::test_a_named_captain_from_outside_the_best_five`;
+      `tests/acceptance/rules/test_formula.py::test_at11_a_league_has_one_captain`;
+      `tests/integration/rules/test_interim.py::test_a_priced_captain_isnt_named_as_left_out`_
 
 - [ ] 5. The translator
   - Branch: `feat/ru-5-translator` · Depends on: 3, 4 · ADRs: none

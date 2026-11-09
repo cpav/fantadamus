@@ -78,3 +78,16 @@ THREE_RULES: list[dict[str, Any]] = [
         "bands": [{"from_value": 24.0, "points": 1.0}, {"from_value": 26.0, "points": 2.0}],
     },
 ]
+
+# A captain by half points: -2.5 below 4, nothing from 6 to 6.49, +2.5 from 8.5 (mvp-rules AT-7).
+CAPTAIN_RULE: dict[str, Any] = {
+    "name": "captain",
+    "who": "captain",
+    "combine": "each",
+    "bands": [
+        {"from_value": 0.0, "points": -2.5},
+        *({"from_value": 4.0 + step / 2, "points": -2.0 + step / 2} for step in range(10)),
+    ],
+}
+BUDGET_RULES = [*THREE_RULES, CAPTAIN_RULE]
+"""A captain and three modifiers: the budget's league (mvp-rules R5.1)."""
