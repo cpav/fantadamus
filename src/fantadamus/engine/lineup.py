@@ -49,6 +49,8 @@ class Arrangement(BaseModel):
     """Those a smaller bench has no place for."""
     captain: int | None = None
     """The captain the user named; without one, the simulation picks the captain and the vice."""
+    vice: int | None = None
+    """His vice, when named with him; without one, the simulation picks the best vice for him."""
 
 
 def _rank(player: Candidate) -> tuple[bool, float, int]:

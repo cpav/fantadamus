@@ -59,17 +59,22 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
     - _Test: `tests/unit/review/test_advice.py::test_the_last_before_the_lock`, `::test_a_replay_when_none_was_asked`,
       `::test_an_override_shows_the_advice_it_was_priced_against`; `tests/integration/review/test_advice_logged.py::test_an_override_logs_the_advice`_
 
-- [ ] 5. Each decision and what it cost
+- [x] 5. Each decision and what it cost
   - Branch: `feat/rv-5-decisions` · Depends on: 4 · ADRs: none
-  - [ ] 5.1 The decisions listed and paired; each priced on its own, and the whole fielded lineup, over one shared simulation at the lock's
+  - [x] 5.1 The decisions listed and paired; each priced on its own, and the whole fielded lineup, over one shared simulation at the lock's
     facts.
     - _Requirements: R3.1, R3.2_
     - _Test: **AT-4** `tests/acceptance/review/test_decisions.py::test_at4_each_decision_by_hand`; **P3**
-      `tests/property/review/test_decisions.py::test_p3_the_advice_followed`, **P4** `::test_p4_the_order_doesnt_matter`_
-  - [ ] 5.2 Each real result beside its cost; following the advice shows the real score against the expected one and its range; a replayed
+      `tests/property/review/test_decisions.py::test_p3_the_advice_followed`, **P4** `::test_p4_the_order_doesnt_matter`;
+      `tests/unit/review/test_choices_on_the_engine.py::test_following_the_advice_on_the_engine`, `::test_a_swap_and_a_captain_on_the_engine`, `::test_the_vice_covers_in_the_real_score`;
+      `tests/unit/rules/test_simulation.py::test_a_named_vice`_
+  - [x] 5.2 Each real result beside its cost; following the advice shows the real score against the expected one and its range; a replayed
     advice says so.
     - _Requirements: R3.3, R3.4, R3.5_
-    - _Test: **AT-4** `::test_at4_judged_by_the_cost`, **AT-5** `::test_at5_following_the_advice`, `::test_at5_replayed_when_none_was_asked`_
+    - _Test: **AT-4** `::test_at4_judged_by_the_cost`, `::test_at4_a_bench_order_that_never_came_into_play`, `::test_at4_a_player_whose_round_isnt_known`,
+      `::test_at4_pairs_go_best_first`, `::test_at4_a_bench_choice_on_the_eleven_fielded`, `::test_at4_a_swap_that_takes_off_the_captain`,
+      `::test_at4_the_choices_made_on_the_advice_give_the_eleven_fielded`, `::test_at4_a_bench_without_a_role`;
+      **AT-5** `::test_at5_following_the_advice`, `::test_at5_replayed_when_none_was_asked`_
 
 - [ ] 6. The record
   - Branch: `feat/rv-6-record` · Depends on: 5 · ADRs: none

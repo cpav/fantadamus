@@ -92,3 +92,13 @@ def test_a_named_captain_from_outside_the_best_five() -> None:
     named = ARRANGEMENTS[0].model_copy(update={"captain": last})
     chosen = simulate(_players(), [], [named], RULES, formula_rules=[CAPTAIN], rounds=50)[0]
     assert (chosen.captain, chosen.rules) == (last, {"captain": 1.0})
+
+
+def test_a_named_vice() -> None:
+    """Named with his captain, the vice is his, even where the simulation would pick another."""
+    named = ARRANGEMENTS[0].model_copy(update={"captain": NEVER_PLAYS, "vice": 22})
+    chosen = simulate(_players(), [], [named], RULES, formula_rules=[CAPTAIN], rounds=50)[0]
+    assert (chosen.captain, chosen.vice, chosen.rules) == (NEVER_PLAYS, 22, {"captain": 1.0})
+    alone = ARRANGEMENTS[0].model_copy(update={"captain": NEVER_PLAYS})
+    picked = simulate(_players(), [], [alone], RULES, formula_rules=[CAPTAIN], rounds=50)[0]
+    assert picked.vice != 22  # without a name, the simulation picks the vice, from the best five
