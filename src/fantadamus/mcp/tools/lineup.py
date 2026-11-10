@@ -704,7 +704,35 @@ def lineup_for(
         return _gather_squad(advisor, wanted, facts, known_players(facts.players, when), when)
 
     done = advisor.after_collecting(as_of, ask, lambda found: [item.fact for item in found.plan.items])
-    gathered, when, tried = done.result, done.when, done.tried
+    asked = _Asked(start, leave_out, formation, captain)
+    return _from_gathered(
+        advisor,
+        stored,
+        rules,
+        squad,
+        done.result,
+        done.when,
+        done.tried,
+        asked,
+        log=as_of is None,
+        rounds=rounds,
+    )
+
+
+def _from_gathered(
+    advisor: Advisor,
+    stored: StoredRules,
+    rules: LineupRules,
+    squad: StoredSquad,
+    gathered: Gathered,
+    when: dt.datetime,
+    tried: Mapping[str, str],
+    asked: _Asked,
+    *,
+    log: bool,
+    rounds: int,
+) -> LineupResult:
+    """The answer from the squad's facts: what to read first if they don't say enough."""
 
     def noted(items: Sequence[RefreshItem]) -> list[RefreshItem]:
         return [
@@ -728,8 +756,8 @@ def lineup_for(
         round,
         first_kickoff,
         noted(gathered.better),
-        _Asked(start, leave_out, formation, captain),
-        log=as_of is None,
+        asked,
+        log=log,
         rounds=rounds,
     )
 
@@ -745,17 +773,33 @@ class SquadAt:
     round: int
     first_kickoff: dt.datetime
     content_hashes: list[str]
+    gathered: Gathered
+    when: dt.datetime
+
+
+def replayed_lineup(
+    advisor: Advisor, stored: StoredRules, squad: StoredSquad, at: SquadAt, *, rounds: int = SIMULATIONS
+) -> LineupResult:
+    """The lineup `best_lineup` would have given on the facts of `at`, a squad priced by `squad_at` with no
+    other players, without gathering them again or logging it (mvp-review C5)."""
+    rules = stored.rules.lineup
+    if rules is None:
+        return LineupResult(status="setup", message="No lineup rules are stored.")
+    asked = _Asked((), (), None, None)
+    return _from_gathered(
+        advisor, stored, rules, squad, at.gathered, at.when, {}, asked, log=False, rounds=rounds
+    )
 
 
 def squad_at(
     advisor: Advisor, stored: StoredRules, squad: StoredSquad, as_of: dt.datetime, *, also: Sequence[int] = ()
 ) -> SquadAt | None:
-    """The squad, and `also` those players, priced on the facts stored by `as_of`, without collecting; None
-    where they don't say enough."""
+    """The squad, and `also` those players, priced on the facts stored by `as_of` however old, without
+    collecting; None where they don't say enough."""
     wanted = list(dict.fromkeys([*(player.player_id for player in squad.players), *also]))
 
     def ask(when: dt.datetime, facts: Facts, _tried: Mapping[str, str] | None) -> Gathered:
-        return _gather_squad(advisor, wanted, facts, known_players(facts.players, when), when)
+        return _gather_squad(advisor, wanted, facts, known_players(facts.players, when), when, any_age=True)
 
     done = advisor.after_collecting(as_of, ask, lambda found: [item.fact for item in found.plan.items])
     gathered = done.result
@@ -770,6 +814,8 @@ def squad_at(
         round=gathered.round,
         first_kickoff=gathered.first_kickoff,
         content_hashes=sorted({source.content_sha256 for source in _sources(priced)}),
+        gathered=gathered,
+        when=done.when,
     )
 
 
@@ -816,10 +862,15 @@ def _squad_players(known: Sequence[KnownPlayer], wanted: Sequence[int]) -> list[
 
 
 def _gather_squad(
-    advisor: Advisor, wanted: Sequence[int], facts: Facts, known: list[KnownPlayer], when: dt.datetime
+    advisor: Advisor,
+    wanted: Sequence[int],
+    facts: Facts,
+    known: list[KnownPlayer],
+    when: dt.datetime,
+    any_age: bool = False,
 ) -> Gathered:
     players = _squad_players(known, wanted)
-    gathered = advisor.gather(players, when, facts=facts, known=known)
+    gathered = advisor.gather(players, when, facts=facts, known=known, any_age=any_age)
     if not players:  # nothing else would ask for the page that says who they are
         gathered.plan.need(advisor.refresh_item("player_season", "stale", "the squad's season figures"))
     return gathered

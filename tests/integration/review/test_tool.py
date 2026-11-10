@@ -3,16 +3,28 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from fantadamus.domains.availability.silver import OUTLET_VIEWS
+from fantadamus.domains.facts import read_silver
 from fantadamus.web.fetch import Response
 from tests.collect_harness import STATS_ROUTE
-from tests.lineup_harness import AFTER_THE_ROUND, SQUAD, Round, a_round, finished, stats_after_rated
+from tests.collect_pages import FcoMatch
+from tests.lineup_harness import (
+    AFTER_THE_ROUND,
+    MATCHES,
+    SQUAD,
+    Round,
+    a_round,
+    finished,
+    stats_after_rated,
+)
 from tests.roles_data import stats_row
-from tests.xy_harness import classic_with
+from tests.xy_harness import WORDS, classic_with
 
 pytestmark = pytest.mark.anyio
 
@@ -130,7 +142,7 @@ async def test_after_the_squad_changed(tmp_path: Path) -> None:
     assert result["review"]["choices"] == []
 
 
-async def test_a_player_nobody_knew_when_the_advice_was_given(tmp_path: Path) -> None:
+async def test_a_player_nobody_knew_before_the_lock(tmp_path: Path) -> None:
     """A newcomer on the statistics page after the round, fielded: his choice can't be priced, so the review
     says why instead of answering."""
     async with a_round(tmp_path) as here:
@@ -164,3 +176,32 @@ async def test_what_it_cant_review(tmp_path: Path) -> None:
     assert later.structured_content is not None
     assert later.structured_content["status"] == "not_ready"
     assert "round 30" in later.structured_content["message"]
+
+
+async def test_news_after_the_advice_is_priced(tmp_path: Path) -> None:
+    """Choices are priced at the lock, on the newest facts stored before it, however old by then: here a read
+    two hours before the lock, after the advice, puts Alfa's starters in doubt."""
+    late = dt.datetime(2026, 10, 31, 12, 0, tzinfo=dt.UTC)
+    async with a_round(tmp_path) as here:
+        advised = (await here.ask())["lineup"]
+        assert any(player["club"] == "Alfa" for player in advised["starters"])
+        doubts = {f"Alfa {word}": (40, 40, 40, 40) for word in WORDS[:11]}
+        here.round_page(FcoMatch("Alfa", "Beta", percents=doubts), MATCHES[1])
+        here.clock.now = late
+        collector = here.calibrator.collector
+        assert collector is not None
+        here.collect_log.append(collector.collect(facts=["probable_lineups"]))
+        finished(here)
+        result = await review(here, as_advised=True)
+        news = {
+            row.content_sha256 for row in read_silver(here.store, OUTLET_VIEWS) if row.captured_at == late
+        }
+    assert result["status"] == "review", result
+    assert result["review"]["advice_expected"] < advised["expected"]  # the bench covers most of the doubt
+    logged = [
+        json.loads(line)
+        for log in (tmp_path / "lake" / "reviews").glob("*")
+        for line in log.read_text(encoding="utf-8").splitlines()
+    ]
+    assert news
+    assert news <= set(logged[-1]["content_hashes"])
