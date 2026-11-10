@@ -70,8 +70,9 @@ reads the statistics and penalty-takers pages of the same site under ADR-0006.
 - **The likely eleven.** The official eleven once it's stored. Before that, the eleven likeliest starters by chance of starting,
   with one keeper, the likeliest. Each comes with his role, his chance of starting and its confidence (`of_outlets`).
 - **Disputed places.** Each ballottaggio an outlet gives, and each player the outlets disagree on (`disputed`). A place lists its
-  contenders, each with his chance of starting, and names the outlets whose view differs from the consensus by the spread that
-  marks a player disputed. Contenders in the same ballottaggio are one place, not several.
+  contenders, each with his chance of starting. For a disputed contender it names the outlets on the smaller side of the
+  consensus, and none in an even split, so "Sky has him out" reads plainly (refined in task 3). Contenders in the same
+  ballottaggio are one place, not several.
 - **Out.** Each player at least one outlet lists as unavailable, with how many outlets do.
 - **The official lineups:** used and said once stored. Until then, the card says they're due about an hour before kickoff.
 

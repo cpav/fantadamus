@@ -84,6 +84,7 @@ pytest_add_cli_args_test_selection = [
     "tests/unit/cards",
     "tests/property/cards",
     "tests/acceptance/cards/test_numbers.py",  # pure: the match in numbers, by hand
+    "tests/acceptance/cards/test_lineups.py",  # pure: the lineups, on invented outlets
     "tests/property/xy",
 ]
 pytest_add_cli_args = [
