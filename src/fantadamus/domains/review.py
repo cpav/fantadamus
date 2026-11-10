@@ -14,16 +14,18 @@ from __future__ import annotations
 import dataclasses
 import datetime as dt
 import math
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import get_args
+from typing import Literal, get_args
 
 from fantadamus.contracts.types import Role
-from fantadamus.contracts.xy.league import EventName, LeagueRules
+from fantadamus.contracts.xy.league import EventName, LeagueRules, LineupRules
 from fantadamus.core.names import name_key
 from fantadamus.domains.season.silver import PlayerSeasonRow
+from fantadamus.engine.constants import COIN_FLIP
 from fantadamus.engine.formula import Mark, formula_points
-from fantadamus.engine.simulate import Move, Plan, fantasy_goals, field
+from fantadamus.engine.lineup import ROLES, Arrangement, Candidate
+from fantadamus.engine.simulate import Move, Plan, Simulated, fantasy_goals, field
 from fantadamus.lake.decision_log import Decision
 
 HALF = 0.5
@@ -337,6 +339,18 @@ def _mark(rating: float, events: Events, role: Role) -> Mark:
 
 
 @dataclass(frozen=True)
+class Picked:
+    """A lineup by player ID: what was advised, what was fielded, or the advice with one choice applied."""
+
+    formation: str
+    starters: tuple[int, ...]
+    bench: tuple[int, ...]
+    """In the order the substitutes are asked."""
+    captain: int | None
+    vice: int | None
+
+
+@dataclass(frozen=True)
 class Advice:
     """The lineup Fantadamus advised for a round (design C5)."""
 
@@ -348,6 +362,9 @@ class Advice:
     as_of: dt.datetime
     replayed: bool = False
     """Replayed at the lock, because the user asked for no lineup before it."""
+
+    def picked(self) -> Picked:
+        return Picked(self.formation, tuple(self.starters), tuple(self.bench), self.captain, self.vice)
 
 
 def last_advice(
@@ -409,3 +426,234 @@ def advice_for(
         return told
     replayed = replay()
     return dataclasses.replace(replayed, replayed=True) if replayed is not None else None
+
+
+ChoiceKind = Literal["player", "formation", "bench", "captain"]
+
+
+@dataclass(frozen=True)
+class Choice:
+    """One way the fielded lineup differs from the advice, with what it was expected to cost at the lock and
+    what it really did (design C6)."""
+
+    kind: ChoiceKind
+    fielded: tuple[int, ...]
+    """Who the user picked: the player, the players, the first substitute, or the captain and vice."""
+    advised: tuple[int, ...]
+    """Whom that replaced; for the captain, the best pair for the eleven fielded."""
+    expected_cost: float = 0.0
+    """Expected points given up: positive costs, negative gains."""
+    real_gain: float | None = None
+    """What it really gave this round; None where a round isn't known."""
+    unknown: tuple[int, ...] = ()
+    """Whose unknown round hides the real result."""
+    mattered: bool | None = None
+    """The bench only: whether a substitute really came on for that role."""
+    judged: Literal["cost", "even", "gain"] = "even"
+
+
+@dataclass(frozen=True)
+class Reviewed:
+    """A round's review: the advice and the fielded lineup, expected and real, and each choice between
+    them."""
+
+    advice: Simulated
+    fielded: Simulated
+    advice_real: RealScore
+    fielded_real: RealScore
+    choices: list[Choice]
+    total_cost: float
+    total_gain: float | None
+    position: Literal["below", "inside", "above"] | None
+    """The fielded lineup's real score against its range of eight rounds out of ten."""
+    replayed: bool = False
+
+
+def formation_of(roles: Mapping[int, Role], eleven: Iterable[int]) -> str:
+    """Defenders, midfielders and forwards, as `3-4-3`."""
+    players = list(eleven)
+    return "-".join(str(sum(roles[player] == role for player in players)) for role in ("D", "C", "A"))
+
+
+def applied(lineup: Picked, choice: Choice, roles: Mapping[int, Role]) -> Picked:
+    """`lineup` with only that choice made: a swap puts each fielded player in the advised one's place, and
+    him in the fielded one's place on the bench; a captain or vice taken off the eleven goes."""
+    if choice.kind == "captain":
+        return dataclasses.replace(lineup, captain=choice.fielded[0], vice=(*choice.fielded, None)[1])
+    if choice.kind == "bench":
+        mine, theirs = choice.fielded[0], choice.advised[0]
+        swap = {mine: theirs, theirs: mine} if mine in lineup.bench else {theirs: mine}
+        return dataclasses.replace(lineup, bench=tuple(swap.get(player, player) for player in lineup.bench))
+    into = dict(zip(choice.advised, choice.fielded, strict=True))
+    back = {new: old for old, new in into.items()}
+    starters = tuple(into.get(player, player) for player in lineup.starters)
+    captain = lineup.captain if lineup.captain in starters else None
+    return Picked(
+        formation=formation_of(roles, starters),
+        starters=starters,
+        bench=tuple(back.get(player, player) for player in lineup.bench),
+        captain=captain,
+        vice=lineup.vice if captain is not None and lineup.vice in starters else None,
+    )
+
+
+def review_choices(
+    advice: Picked,
+    fielded: Picked,
+    squad: Sequence[Candidate],
+    rules: LineupRules,
+    *,
+    price: Callable[[Sequence[Arrangement]], Sequence[Simulated]],
+    score: Callable[[Arrangement, int | None, int | None], RealScore],
+    replayed: bool = False,
+) -> Reviewed:
+    """Each way the fielded lineup differs from the advice, priced over one simulation at the lock's facts,
+    with what it really did (design C6). `price` simulates arrangements; `score` gives one's real score with a
+    captain and vice."""
+    by_id = {player.player_id: player for player in squad}
+    roles = {player.player_id: player.role for player in squad}
+    swaps = _swaps(advice, fielded, by_id)
+    swapped = advice
+    for choice in swaps:
+        swapped = applied(swapped, choice, roles)
+    benches = [
+        Choice("bench", (mine,), (theirs,))
+        for role in ROLES
+        if (mine := _first(fielded.bench, role, by_id)) is not None
+        and (theirs := _first(swapped.bench, role, by_id)) is not None
+        and mine != theirs
+    ]
+    pair = tuple(player for player in (fielded.captain, fielded.vice) if player is not None)
+    captain = fielded.captain is not None and (fielded.captain, fielded.vice) != (
+        swapped.captain,
+        swapped.vice,
+    )
+    undone = [applied(fielded, Choice("bench", choice.advised, choice.fielded), roles) for choice in benches]
+    best_for_fielded = dataclasses.replace(fielded, captain=None, vice=None)
+    lineups = [
+        advice,
+        fielded,
+        best_for_fielded,
+        *(applied(advice, choice, roles) for choice in swaps),
+        *undone,
+    ]
+    priced = price([_arranged(lineup, by_id) for lineup in lineups])
+    reals = [
+        score(_arranged(lineup, by_id), found.captain, found.vice)
+        for lineup, found in zip(lineups, priced, strict=True)
+    ]
+    advice_sim, fielded_sim, best_sim = priced[:3]
+    advice_real, fielded_real, best_real = reals[:3]
+    reviewed = [
+        _judged(choice, advice_sim.mean - found.mean, real, advice_real, None)
+        for choice, found, real in zip(swaps, priced[3:], reals[3:], strict=False)
+    ]
+    for choice, found, real in zip(benches, priced[3 + len(swaps) :], reals[3 + len(swaps) :], strict=True):
+        role = roles[choice.fielded[0]]
+        mattered = (
+            any(roles[out] == role for out, _ in fielded_real.moves)
+            if fielded_real.total is not None
+            else None
+        )
+        reviewed.append(_judged(choice, found.mean - fielded_sim.mean, fielded_real, real, mattered))
+    if captain:
+        best = tuple(player for player in (best_sim.captain, best_sim.vice) if player is not None)
+        choice = Choice("captain", pair, best)
+        reviewed.append(_judged(choice, best_sim.mean - fielded_sim.mean, fielded_real, best_real, None))
+    return Reviewed(
+        advice=advice_sim,
+        fielded=fielded_sim,
+        advice_real=advice_real,
+        fielded_real=fielded_real,
+        choices=reviewed,
+        total_cost=advice_sim.mean - fielded_sim.mean,
+        total_gain=_gain(fielded_real, advice_real),
+        position=_position(fielded_real.total, fielded_sim),
+        replayed=replayed,
+    )
+
+
+def _swaps(advice: Picked, fielded: Picked, by_id: Mapping[int, Candidate]) -> list[Choice]:
+    """The players in others' places, each role's paired best key first, then the formation: those left
+    over."""
+
+    def best_first(player: int) -> tuple[float, int]:
+        return -by_id[player].key, player
+
+    swaps: list[Choice] = []
+    left_out: list[int] = []
+    brought_in: list[int] = []
+    for role in ROLES:
+        out = sorted(
+            (
+                player
+                for player in advice.starters
+                if by_id[player].role == role and player not in fielded.starters
+            ),
+            key=best_first,
+        )
+        into = sorted(
+            (
+                player
+                for player in fielded.starters
+                if by_id[player].role == role and player not in advice.starters
+            ),
+            key=best_first,
+        )
+        swaps += [Choice("player", (new,), (old,)) for old, new in zip(out, into, strict=False)]
+        left_out += out[len(into) :]
+        brought_in += into[len(out) :]
+    if left_out:
+        swaps.append(Choice("formation", tuple(brought_in), tuple(left_out)))
+    return swaps
+
+
+def _first(bench: Sequence[int], role: Role, by_id: Mapping[int, Candidate]) -> int | None:
+    """The first substitute of a role: the first of his role on the bench."""
+    return next((player for player in bench if by_id[player].role == role), None)
+
+
+def _arranged(lineup: Picked, by_id: Mapping[int, Candidate]) -> Arrangement:
+    """The lineup as the engine takes it: starters by role and key, so their order doesn't matter, the bench
+    in the order given, and a captain and vice only if they start."""
+    rank = {role: index for index, role in enumerate(ROLES)}
+    starters = sorted(
+        (by_id[player] for player in lineup.starters), key=lambda c: (rank[c.role], -c.key, c.player_id)
+    )
+    used = {*lineup.starters, *lineup.bench}
+    captain = lineup.captain if lineup.captain in lineup.starters else None
+    return Arrangement(
+        formation=lineup.formation,
+        starters=tuple(starters),
+        bench=tuple(by_id[player] for player in lineup.bench),
+        left_off=tuple(player for player in by_id.values() if player.player_id not in used),
+        captain=captain,
+        vice=lineup.vice if captain is not None and lineup.vice in lineup.starters else None,
+    )
+
+
+def _gain(made: RealScore, instead: RealScore) -> float | None:
+    if made.total is None or instead.total is None:
+        return None
+    return made.total - instead.total
+
+
+def _judged(
+    choice: Choice, cost: float, made: RealScore, instead: RealScore, mattered: bool | None
+) -> Choice:
+    """The choice with its expected cost, its real result, and the judgement, which goes by the cost."""
+    gain = _gain(made, instead)
+    return dataclasses.replace(
+        choice,
+        expected_cost=cost,
+        real_gain=gain,
+        unknown=() if gain is not None else tuple(made.unknown or instead.unknown),
+        mattered=mattered,
+        judged="cost" if cost > COIN_FLIP else "gain" if cost < -COIN_FLIP else "even",
+    )
+
+
+def _position(total: float | None, expected: Simulated) -> Literal["below", "inside", "above"] | None:
+    if total is None:
+        return None
+    return "below" if total < expected.low else "above" if total > expected.high else "inside"

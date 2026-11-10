@@ -559,6 +559,7 @@ def simulate(
                 as_captain,
                 fallback=formula_points(captain_rule, (), captain=None),
                 named=arrangement.captain,
+                named_vice=arrangement.vice,
             )
             kept = [total + points for total, points in zip(kept, chosen.points, strict=True)]
             rules_total[captain_rule.name] = math.fsum(chosen.points)
@@ -568,9 +569,11 @@ def simulate(
 
 
 def _captain_pool(arrangement: Arrangement) -> list[int]:
-    """The starters a captain and vice come from, best key first, and a named captain wherever he ranks."""
+    """The starters a captain and vice come from, best key first, and a named captain and vice wherever they
+    rank."""
     best = sorted(arrangement.starters, key=lambda player: player.key, reverse=True)[:CAPTAIN_CANDIDATES]
     pool = [player.player_id for player in best]
-    if arrangement.captain is not None and arrangement.captain not in pool:
-        pool.append(arrangement.captain)
+    for named in (arrangement.captain, arrangement.vice):
+        if named is not None and named not in pool:
+            pool.append(named)
     return pool

@@ -77,22 +77,33 @@ it doesn't allow, too many players, a bench longer than the league's) is refused
 The advice is the last lineup answer logged for that user and team before the round's lock, read from the decision log. If there
 is none, the review replays `best_lineup` at the lock (its `as_of`, which doesn't log) and marks the advice as replayed.
 
-### C6. Each decision and what it cost (`domains/review.py`, `mcp/tools/review.py`; R3.1 to R3.3)
+### C6. Each decision and what it cost (`domains/review.py`, `engine/`; R3.1 to R3.3)
 
-`decisions(advice, fielded, real)` lists the differences, in this order:
+`review_choices(advice, fielded, …)` lists the differences, in this order:
 
-- **a player in another's place:** the fielded-only and advised-only players of each role, paired best key first;
+- **a player in another's place:** each role's advised-only and fielded-only starters, paired best key first;
 - **the formation,** when the lines differ: the players left over once each role is paired;
-- **the bench order,** only for a role whose first substitute really came on, when the user's order put someone else first;
-- **the captain or the vice,** when they differ.
+- **the bench,** for each role whose first substitute differs from the one the advice's bench order gives for the eleven the user
+  fielded (the advice's bench with the swaps above made). It's marked by whether a substitute really came on for that role, since an
+  order that never came into play cost nothing that round;
+- **the captain and the vice,** when they differ from the advice's pair as it stands after the swaps.
 
-**Expected cost.** Each decision is priced on its own: the advice, and the advice with only that decision applied, over the same
-simulated rounds at the lock's facts (`simulate` on arrangements built from the lists, with the league's formula rules). So is the
-fielded lineup as a whole, against the advice, which gives the total. All arrangements share one simulation, so a review costs
-one simulation of a few arrangements. It never uses a fact stored after the lock.
+**Expected cost.** A swap of players or of formation is priced on its own: the advice, and the advice with only that choice made,
+over the same simulated rounds at the lock's facts. Where it takes the advice's captain or vice off the eleven, the simulation picks
+the best pair for that eleven. A bench order and a captain only exist within an eleven, so they're priced on the eleven the user
+fielded: the user's first substitute against the advice's for that role, and the user's captain and vice against the best pair for
+it. The fielded lineup as a whole, against the advice, gives the total. All of these are arrangements of one simulation. It never
+uses a fact stored after the lock. Made in that order (swaps, then the bench, then the captain), the choices give the eleven the user
+fielded, its formation, its pair and each role's first substitute.
 
-**Real result.** The same pairs, scored by C3: the advice with only that decision applied, less the advice. A decision whose
-players can't be scored says so.
+**The engine names a vice.** `Arrangement` gains `vice` beside `captain`, so the advice and the fielded lineup are priced with the
+pairs that were really chosen.
+
+**Real result.** The same pairs, scored by C3, with the captain and vice each arrangement was priced with. A decision whose
+players can't be scored says who.
+
+**Judged by the cost.** A decision whose expected cost is under the coin-flip margin (0.15 points) is even; above it, a cost; below
+minus it, a gain. The real result is shown beside it as one round's outcome.
 
 The decisions' parts needn't add up to the total, because substitutions and modifiers link players. The total is given too, and
 the answer says so when the parts don't add up.

@@ -80,10 +80,12 @@ def choose_captain(
     *,
     fallback: float,
     named: int | None = None,
+    named_vice: int | None = None,
 ) -> Captaincy:
     """The captain and the vice who bring the most over the rounds (R3.3). `points` holds each candidate's
     points as captain by round, None where he has no rating; `fallback` is what the rule gives when neither
-    has one. `pool` goes best first, which settles a tie. A `named` captain gets the best vice for him."""
+    has one. `pool` goes best first, which settles a tie. A `named` captain gets the best vice for him, or the
+    `named_vice` with him."""
     candidates = [named] if named is not None else list(pool)
     nobody: list[float | None] = [None] * len(points[candidates[0]])
     best_total = -math.inf
@@ -92,7 +94,8 @@ def choose_captain(
         own = points[candidate]
         rated = math.fsum(value for value in own if value is not None)
         missing = [index for index, value in enumerate(own) if value is None]
-        for other in (player for player in pool if player != candidate):
+        vices = [named_vice] if named is not None and named_vice is not None else pool
+        for other in (player for player in vices if player != candidate):
             cover = points[other]
             total = rated + math.fsum(_or(cover[index], fallback) for index in missing)
             if total > best_total:

@@ -8,17 +8,17 @@ from __future__ import annotations
 
 import datetime as dt
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from fantadamus.contracts.types import Role, UtcDatetime
+from fantadamus.contracts.types import UtcDatetime
 from fantadamus.contracts.xy.league import LineupRules
 from fantadamus.core.files import temporary_beside
 from fantadamus.core.names import name_key
 from fantadamus.domains.players.resolve import KnownPlayer, resolve
-from fantadamus.domains.review import Advice
+from fantadamus.domains.review import Advice, Picked, formation_of
 from fantadamus.league.rules import DEFAULT_ROOT, user_file
 from fantadamus.league.squads import StoredSquad
 
@@ -36,6 +36,9 @@ class FieldedLineup(BaseModel):
     vice: int | None = None
     as_advised: bool = False
     saved_at: UtcDatetime
+
+    def picked(self) -> Picked:
+        return Picked(self.formation, tuple(self.starters), tuple(self.bench), self.captain, self.vice)
 
 
 class Refused(BaseModel):
@@ -140,7 +143,7 @@ def fielded_lineup(
     return FieldedLineup(
         round=round,
         team=squad.team,
-        formation=_formation(roles, eleven),
+        formation=formation_of(roles, eleven),
         starters=eleven,
         bench=kept,
         captain=wearing,
@@ -161,14 +164,9 @@ def _cant_field(squad: StoredSquad, rules: LineupRules, eleven: list[int], bench
     keepers = sum(roles[player] == "P" for player in eleven)
     if keepers != 1:
         return f"an eleven needs one keeper: got {keepers}"
-    formation = _formation(roles, eleven)
+    formation = formation_of(roles, eleven)
     if rules.formations is not None and formation not in rules.formations:
         return f"{formation} isn't a formation this league allows: {', '.join(rules.formations)}"
     if rules.bench_size is not None and len(bench) > rules.bench_size:
         return f"a bench of {len(bench)} places, and this league's has {rules.bench_size}"
     return None
-
-
-def _formation(roles: Mapping[int, Role], eleven: list[int]) -> str:
-    """Defenders, midfielders and forwards, as `3-4-3`."""
-    return "-".join(str(sum(roles[player] == role for player in eleven)) for role in ("D", "C", "A"))
