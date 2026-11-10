@@ -10,8 +10,8 @@ and the Terminal app (in Applications → Utilities). Windows isn't supported ye
 
 **What it does:** for the next round, the full lineup for your squad under your league's rules: the eleven, the
 bench in order and the formation, with the expected score and the chance of reaching each goal threshold. It also
-answers "X or Y?" between two players of the same role, and gives one player's outlook ("Will he start? Is he worth
-it?").
+answers "X or Y?" between two players of the same role, gives one player's outlook ("Will he start? Is he worth
+it?"), and after a round reviews the lineup you fielded.
 
 ## 1. Install uv
 
@@ -188,6 +188,19 @@ run, and when the page last worked. To switch it off:
 ```bash
 launchctl bootout gui/$(id -u)/com.github.cpav.fantadamus.collect
 ```
+
+## After a round: your review
+
+About 12 hours after a round's last match, ask:
+
+> How did my round 11 go?
+
+Claude asks what you fielded (the eleven, the bench in order, the captain and vice) or whether you followed the advice,
+and your total from your league's app. Fantadamus works out your real score from the statistics page the way your
+league scores it, and puts your app's total beside it. Then each choice you made against the advice: what it was
+expected to cost when you made it, and what it really did. A choice is judged by the first, because one round is
+mostly luck. Over the season it keeps a record of whether your overrides pay off, and says when it's too early to
+tell. What you fielded and your reviews stay on your Mac.
 
 ## How it checks itself
 

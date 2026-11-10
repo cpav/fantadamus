@@ -20,12 +20,13 @@ from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
+from fantadamus.lake.review_log import ReviewLog
 from fantadamus.league.rules import CLASSIC, RulesStore
 from fantadamus.league.squads import SquadStore
 from fantadamus.mcp.advisor import Advisor, load_reading_list
 from fantadamus.mcp.calibrate import Calibrator
 from fantadamus.mcp.server import AdvisorServer
-from fantadamus.mcp.tools import compare, league, outlook, squad, submit
+from fantadamus.mcp.tools import compare, league, outlook, review, squad, submit
 from fantadamus.mcp.tools import lineup as lineup_tool
 from fantadamus.web.collector import Collector
 
@@ -102,6 +103,9 @@ async def tools(
     outlook.register(server, advisor)
     squad.register(server, advisor, squads)
     lineup_tool.register(server, advisor, squads, rounds=lineup_rounds)
+    review.register(
+        server, advisor, squads, calibrator, ReviewLog(store.root / "reviews"), rounds=lineup_rounds
+    )
     async with Client(server) as client:
         yield client
 

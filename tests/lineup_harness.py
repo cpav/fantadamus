@@ -214,3 +214,48 @@ def stats_after() -> str:
     changed["Beta_Nove"] |= {"goals": 3}
     changed["Alfa_Uno"] |= {"goals_conceded": 10}
     return stats_page(rows(**changed))
+
+
+def stats_after_rated(
+    ratings: dict[str, float] | None = None,
+    goals: dict[str, int] | None = None,
+    conceded: dict[str, int] | None = None,
+    newcomers: Sequence[dict[str, Any]] = (),
+) -> str:
+    """The statistics page after the round, as a review reads it: each listed starter has one rated game more,
+    a 6.5 unless `ratings` says otherwise (as `{"Alfa_Nove": 7.5}`), with his averages and fantasy average
+    moved to agree; `goals` adds goals, `conceded` goals against each club's keeper, and `newcomers` are rows
+    the page lists for the first time."""
+    ratings, goals, conceded = ratings or {}, goals or {}, conceded or {}
+    changed: dict[str, dict[str, Any]] = {}
+    for club in CLUBS:
+        for word in WORDS[:11]:
+            name = f"{club}_{word}"
+            base = stats_row(club, LINES[word][0], LINES[word][1], player_id(club, word))
+            rating = ratings.get(name, 6.5)
+            scored = goals.get(name, 0)
+            against = conceded.get(club, 0) if word == "Uno" else 0
+            rated = base["rated_appearances"] + 1
+            changed[name] = {
+                "rated_appearances": rated,
+                "appearances": rated,
+                "average_rating": round((base["average_rating"] * (rated - 1) + rating) / rated, 2),
+                "fantasy_average": round(
+                    (base["fantasy_average"] * (rated - 1) + rating + 3 * scored - against) / rated, 2
+                ),
+                "goals": base["goals"] + scored,
+                "goals_conceded": base["goals_conceded"] + against,
+            }
+    return stats_page([*rows(**changed), *newcomers])
+
+
+AFTER_THE_ROUND = dt.datetime(2026, 11, 1, 5, 0, tzinfo=dt.UTC)
+"""Twelve hours after round 10's last kickoff."""
+
+
+def finished(here: Round, page: str | None = None) -> None:
+    """Round 10 played: the round page moves on to the next round, the statistics page has one more game
+    (`page`, or every listed starter rated 6.5), and the clock is past the round."""
+    here.routes[f"{here.base}{ROUND_ROUTE}"] = Response(200, HTML, the_next_round().encode())
+    here.routes[f"{here.base}{STATS_ROUTE}"] = Response(200, HTML, (page or stats_after_rated()).encode())
+    here.clock.now = AFTER_THE_ROUND

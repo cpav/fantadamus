@@ -118,15 +118,38 @@ class Calibrator:
     def _statistics_ready(self, frame: RoundFrame, now: dt.datetime) -> bool:
         """Whether scoring can go ahead: a read of the statistics page after the round, read now if need be,
         or no chance of one, because the next round has begun."""
+        if self._read_after(frame, now):
+            return True
+        return frame.next_kickoff is not None and now >= frame.next_kickoff
+
+    def _read_after(self, frame: RoundFrame, now: dt.datetime) -> bool:
+        """Whether a read of the statistics page after the round is stored, reading it now if need be."""
         if self._has_a_read_after(frame, now):
             return True
         if self.collector is not None and self.collector.reads("player_season"):
             if may_read("player_season", self.collect_log, now):
                 report = self.collector.collect(facts=["player_season"])
                 self._logged(report)
-            if self._has_a_read_after(frame, self.clock()):
-                return True
-        return frame.next_kickoff is not None and now >= frame.next_kickoff
+            return self._has_a_read_after(frame, self.clock())
+        return False
+
+    def bracketing_reads(
+        self, frame: RoundFrame, now: dt.datetime, *, read: bool = True
+    ) -> tuple[Mapping[int, PlayerSeasonRow] | None, Mapping[int, PlayerSeasonRow] | None]:
+        """Each player's row in the statistics read before the round and in the read after it, as stored by
+        `now`; with `read`, the page is read now if no read after the round is stored (mvp-review C8). A
+        replay of an earlier time doesn't read."""
+        if read:
+            self._read_after(frame, now)
+            now = self.clock()
+        rows = read_silver(self.lake, SEASON_STATS, frame.first_kickoff - FACTS_WINDOW, now)
+        changed, same = changed_reads(rows)
+        before, after = statistics_reads(changed, frame, worked=[*same, *self._worked(now)])
+
+        def at(when: dt.datetime | None) -> Mapping[int, PlayerSeasonRow] | None:
+            return None if when is None else {row.player_id: row for row in rows if row.captured_at == when}
+
+        return at(before), at(after)
 
     def _read_finished_page(self, round: int, now: dt.datetime, *, wait: bool = True) -> bool:
         """Whether the round's page gave who started: it's asked again later if not (R7.2)."""

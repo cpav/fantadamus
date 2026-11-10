@@ -212,6 +212,44 @@ Defence:  1. Fontana  2. Caruso
 Keeper:   Moretti covers Ferrari exactly: same club, so one of the two always plays.
 ```
 
+## 7. The review
+
+Built in `mvp-review`, after a round: what the user fielded against the advice, each choice judged by what it was
+expected to cost when it was made, and what it really did. A forecast's job ends at the deadline; the review looks
+back at it and keeps judgement and luck apart.
+
+```text
+Round 11 · your review
+
+You scored 71.5 (3 fantasy goals), inside the forecast: about 73, from 66 to 80 in eight rounds out of ten.
+Your league's app says 72.5, a point apart: a substitution the app made differently, an own goal or a late
+correction would explain it.
+
+Your choices, judged by what they were expected to cost:
+  Caruso for Fontana in defence: expected to cost 0.3; this round it gained 1.5.
+  Rossi as captain, not De Luca: expected to cost 0.1, a coin flip; this round it cost 2.
+  Lombardi first on the bench in attack: no substitute came on, so it cost nothing.
+In all: expected to cost 0.4; this round your choices lost 0.5. The advice would have scored 72.
+
+Your record over 4 rounds: 6 overrides, expected to cost 1.2, a real gain of 2.5. A run of luck could give
+anything within 4.1 either way, so it's still mostly luck.
+
+Not counted: Moretti, two matches between the statistics reads; decisive goals, which the reads don't show.
+```
+
+- **The real score** is the league's own: each player's rating and events from the statistics page read before and
+  after the round, the league's substitutions, formula rules, captain and thresholds.
+- **Each choice** is judged by its expected cost, with the same labels as a forecast; what it really did sits beside
+  it as one round's outcome, never in its place. A bench order counts only where a substitute came on.
+- **The parts needn't add up** to the whole, because substitutions and modifiers link players; the whole is given
+  too.
+- **Following the advice** gives no choices: the real score against the expected one and its range.
+- **No advice asked:** the advice is replayed from the facts stored before the lock, and the review says so.
+- **The record** says how much it can tell: too early before three rounds, mostly luck while the gain is within its
+  margin, then whether the overrides paid off or cost.
+- **The user's app total**, when given, sits beside the real score, with the likely causes when they differ by more
+  than half a point. What the reads couldn't count is named, by player or by kind of event.
+
 ## Later, in their own specs
 
 - **Live, during the match:** "Inter 1–0, 34': your projected score 73 → 76; Rossi scored." The data is already
