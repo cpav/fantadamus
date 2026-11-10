@@ -71,15 +71,21 @@ def skill(keeper: KeeperInputs) -> float:
     return prior + rated / (rated + KEEPER_SKILL_WEIGHT) * (own - prior)
 
 
+def clean_sheet(opponent_xg: float) -> float:
+    """The chance a side concedes nothing: Poisson at the other side's expected goals. A keeper's, and the
+    match card's for his team, so the two agree (mvp-cards C2)."""
+    return math.exp(-opponent_xg)
+
+
 def value(keeper: KeeperInputs, scoring: Scoring) -> KeeperValue:
     """Every step of the model for one keeper (R3.1 to R3.4)."""
     shrunk = skill(keeper)
     conceded = keeper.opponent_xg
     vote = shrunk - KEEPER_BETA * conceded
-    clean_sheet = math.exp(-conceded)
+    clean_sheet_chance = clean_sheet(conceded)
     start = (
         vote
-        + event_points(scoring, clean_sheets=clean_sheet, conceded=conceded)
+        + event_points(scoring, clean_sheets=clean_sheet_chance, conceded=conceded)
         + rare_points(scoring, "P", penalties_saved=PENALTIES_SAVED)
     )
     return KeeperValue(
@@ -90,7 +96,7 @@ def value(keeper: KeeperInputs, scoring: Scoring) -> KeeperValue:
         e_cameo=0.0,
         skill=shrunk,
         expected_vote=vote,
-        p_clean_sheet=clean_sheet,
+        p_clean_sheet=clean_sheet_chance,
         expected_conceded=conceded,
         key=key(keeper.p_start, start, 0.0, 0.0),
         no_cover=no_cover(keeper.p_start, start, 0.0, 0.0),
