@@ -9,19 +9,24 @@ never used in a number (R2.4).
 from __future__ import annotations
 
 import datetime as dt
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 
 from pydantic import BaseModel
 
 from fantadamus.contracts.types import Role
+from fantadamus.contracts.xy.league import LeagueRules
 from fantadamus.domains.availability.consensus import Availability
 from fantadamus.domains.odds.gold import TeamXg
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
-from fantadamus.domains.season.silver import TeamSeasonRow
+from fantadamus.domains.season.gold import PenaltyOrder
+from fantadamus.domains.season.silver import PlayerSeasonRow, TeamSeasonRow
 from fantadamus.domains.sources import Confidence, of_outlets
 from fantadamus.engine import odds
-from fantadamus.engine.keepers import clean_sheet
+from fantadamus.engine.constants import ROTATION_P_START, SCORERS, USUAL_SHARE
+from fantadamus.engine.keepers import KeeperValue, clean_sheet
+from fantadamus.engine.outfield import OutfieldValue
+from fantadamus.league.rules import CLASSIC
 
 OFFICIAL_DUE = dt.timedelta(hours=1)
 """The official lineups come out about an hour before kickoff (R3.4)."""
@@ -247,3 +252,165 @@ def _dissent(present: Availability) -> list[str]:
     if len(above) == len(below):
         return []
     return sorted(above if len(above) < len(below) else below)
+
+
+@dataclass(frozen=True)
+class Valued:
+    """A listed player with his value, as `player_outlook` works it out, and his season figures."""
+
+    listed: Listed
+    value: OutfieldValue | KeeperValue
+    form: PlayerSeasonRow
+
+
+class CardPlayer(BaseModel):
+    player_id: int
+    name: str
+    club: str
+    role: Role
+    p_start: float
+    confidence: Confidence
+    p_scores: float | None = None
+    """An outfield player's chance of scoring in the match, if he starts and from a cameo together."""
+    p_scores_if_starts: float | None = None
+    goal_share: float | None = None
+    """His share of his side's expected goals."""
+    p_clean_sheet: float | None = None
+    expected_conceded: float | None = None
+    """A keeper's."""
+    key: float
+    """What he's worth this round, under the scoring table: the ordering key (method §A3)."""
+
+
+class Scorer(BaseModel):
+    player_id: int
+    name: str
+    club: str
+    role: Role
+    p_scores: float
+
+
+class Taker(BaseModel):
+    name: str
+    """As his club-mates know him, or as the page writes him when none answers to it."""
+    player_id: int | None
+    penalties_scored: int | None
+    penalties_taken: int | None
+
+
+class RotationRisk(BaseModel):
+    player_id: int
+    name: str
+    club: str
+    role: Role
+    p_start: float
+    rated: int
+    """His rated games this season, against his club's matches played."""
+    played: int
+    disputed: bool
+
+
+def scoring_rules(stored: LeagueRules | None) -> tuple[LeagueRules, bool]:
+    """The rules a card's points follow, and whether they're Classic's because none are stored (R4.6)."""
+    return (stored, False) if stored is not None else (CLASSIC, True)
+
+
+def card_player(part: Valued) -> CardPlayer:
+    """What the match means for one player (C4), from the value the other answers give him."""
+    value, player = part.value, part.listed.player
+    found = CardPlayer(
+        player_id=player.player_id,
+        name=player.name,
+        club=player.club,
+        role=part.listed.role,
+        p_start=part.listed.present.p_start,
+        confidence=of_outlets(part.listed.present),
+        key=value.key,
+    )
+    if isinstance(value, KeeperValue):
+        return found.model_copy(
+            update={"p_clean_sheet": value.p_clean_sheet, "expected_conceded": value.expected_conceded}
+        )
+    return found.model_copy(
+        update={
+            "p_scores": scoring_chance(value),
+            "p_scores_if_starts": value.p_scores,
+            "goal_share": value.goal_share,
+        }
+    )
+
+
+def scoring_chance(value: OutfieldValue) -> float:
+    """His chance of scoring in the match: if he starts, and from a cameo with a rating."""
+    return value.p_start * value.p_scores + value.p_cameo * value.p_scores_cameo
+
+
+def likeliest_scorers(parts: Sequence[Valued]) -> list[Scorer]:
+    """The match's best chances of scoring, either club's, a likely cameo included."""
+    found = [
+        Scorer(
+            player_id=part.listed.player.player_id,
+            name=part.listed.player.name,
+            club=part.listed.player.club,
+            role=part.listed.role,
+            p_scores=scoring_chance(part.value),
+        )
+        for part in parts
+        if isinstance(part.value, OutfieldValue)
+    ]
+    return sorted(found, key=lambda scorer: (-scorer.p_scores, scorer.name))[:SCORERS]
+
+
+def takers(order: PenaltyOrder | None, club: str, parts: Sequence[Valued]) -> list[Taker]:
+    """The club's penalty takers in order, each found among his club-mates as `penalty_share` finds him,
+    with his penalties scored and taken this season."""
+    if order is None:
+        return []
+    mates = {part.listed.player.player_id: part for part in parts if part.listed.player.club == club}
+    found = []
+    for name in order.takers:
+        player = resolve(name, [part.listed.player for part in mates.values()]).player
+        form = mates[player.player_id].form if player is not None else None
+        found.append(
+            Taker(
+                name=player.name if player is not None else name,
+                player_id=player.player_id if player is not None else None,
+                penalties_scored=form.penalties_scored if form is not None else None,
+                penalties_taken=form.penalties_taken if form is not None else None,
+            )
+        )
+    return found
+
+
+def rotation_risks(parts: Sequence[Valued], played: Mapping[str, int]) -> list[RotationRisk]:
+    """Players who usually start for their club, whose chance this round is low or whose place is disputed.
+    One an outlet lists as out is out, not a rotation risk."""
+    found = []
+    for part in parts:
+        present, player = part.listed.present, part.listed.player
+        matches = played.get(player.club, 0)
+        usual = matches > 0 and part.form.rated_appearances >= USUAL_SHARE * matches
+        out = any(view.status == "unavailable" for view in present.outlets)
+        if usual and not out and (present.p_start < ROTATION_P_START or present.disputed):
+            found.append(
+                RotationRisk(
+                    player_id=player.player_id,
+                    name=player.name,
+                    club=player.club,
+                    role=part.listed.role,
+                    p_start=present.p_start,
+                    rated=part.form.rated_appearances,
+                    played=matches,
+                    disputed=present.disputed,
+                )
+            )
+    return sorted(found, key=lambda risk: (ROLES.index(risk.role), risk.p_start, risk.name))
+
+
+def your_players(parts: Sequence[Valued], squad: Collection[int]) -> list[CardPlayer]:
+    """The user's players in the match, in role order and likeliest first."""
+    mine = [part for part in parts if part.listed.player.player_id in squad]
+    return [
+        card_player(part)
+        for part in sorted(mine, key=lambda part: (ROLES.index(part.listed.role), *_likeliest(part.listed)))
+    ]

@@ -104,3 +104,8 @@ FRESH_FOR_HOURS = {
 }
 FRESH_NEAR_MATCH_HOURS = {"probable_lineups": 3, "match_odds": 6}
 NEAR_MATCH_HOURS = 24
+
+# The match card (mvp-cards R4.4, design C4), (start)
+USUAL_SHARE = 0.7  # rated in at least this share of his club's matches: he usually starts
+ROTATION_P_START = 0.6  # a usual starter below this chance of starting is a rotation risk
+SCORERS = 5  # the likeliest scorers a card names
