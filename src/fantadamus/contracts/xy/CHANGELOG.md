@@ -106,3 +106,9 @@ Headings are `## <Contract> <version> (<date>)`.
 
 - Adds an optional `lineup`: what a lineup needs beyond bonuses and maluses, any of it still unset (mvp-lineup R2).
   Rules stored before it stay valid, and "X or Y?" doesn't need it. A widening change, so a minor version.
+
+## TeamSeasonPayload 1.1.0 (2026-11-10)
+
+- Adds optional `wins`, `draws`, `losses` and `form` per club: the table's record, which must add up to the matches
+  played, and its last five results, oldest first, which must fit the record (mvp-cards R2.4). Tables stored before
+  stay valid. A widening change, so a minor version.

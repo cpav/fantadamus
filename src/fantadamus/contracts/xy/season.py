@@ -104,17 +104,60 @@ class SeasonStatsPayload(Contract):
         return self
 
 
+FORM = 5
+"""How many of a club's last results the table shows."""
+Result = Literal["W", "D", "L"]
+
+
 class TeamRow(Part):
     club: Name
     played: int = Field(ge=0, le=ROUNDS, description="Matches played")
     goals_for: int = Field(ge=0)
     goals_against: int = Field(ge=0)
+    wins: int | None = Field(
+        default=None, ge=0, le=ROUNDS, description="Matches won, when the table gives them"
+    )
+    draws: int | None = Field(default=None, ge=0, le=ROUNDS, description="Matches drawn")
+    losses: int | None = Field(default=None, ge=0, le=ROUNDS, description="Matches lost")
+    form: list[Result] | None = Field(
+        default=None,
+        max_length=FORM,
+        description="The last results, oldest first, each W, D or L, when the table gives them",
+    )
+
+    @model_validator(mode="after")
+    def _record_adds_up(self) -> Self:
+        """A record has all three counts or none, and they add up to the matches played; the form fits both
+        (mvp-cards C1)."""
+        record = (self.wins, self.draws, self.losses)
+        if any(count is not None for count in record):
+            if self.wins is None or self.draws is None or self.losses is None:
+                raise ValueError("wins, draws and losses go together")
+            if self.wins + self.draws + self.losses != self.played:
+                raise ValueError(
+                    f"{self.wins} wins, {self.draws} draws and {self.losses} losses aren't "
+                    f"{self.played} matches"
+                )
+        if self.form is not None:
+            if len(self.form) > self.played:
+                raise ValueError(f"{len(self.form)} results from {self.played} matches")
+            if self.wins is not None and self.draws is not None and self.losses is not None:
+                counts: tuple[tuple[Result, int], ...] = (
+                    ("W", self.wins),
+                    ("D", self.draws),
+                    ("L", self.losses),
+                )
+                for result, count in counts:
+                    if self.form.count(result) > count:
+                        raise ValueError(f"the form has more {result} than the record")
+        return self
 
 
 class TeamSeasonPayload(Contract):
-    """The Serie A table: matches played and goals for and against, per club."""
+    """The Serie A table: matches played and goals for and against, per club, and where the table gives them
+    its record and last results."""
 
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     teams: list[TeamRow] = Field(min_length=1, max_length=20)
 

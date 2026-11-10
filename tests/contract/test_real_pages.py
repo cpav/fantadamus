@@ -13,6 +13,7 @@ from fantadamus.core.clubs import Clubs
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
 from fantadamus.web.html import parse
 from fantadamus.web.readers.fcit_stats import read_stats
+from fantadamus.web.readers.fcit_table import read_table
 from fantadamus.web.readers.fcit_takers import read_takers
 from fantadamus.web.readers.fco import read_round
 from fantadamus.web.text import page_text, parts
@@ -22,6 +23,7 @@ PAGES = ROOT / "data" / "private" / "pages"
 SAVED = sorted(PAGES.glob("*.html")) if PAGES.is_dir() else []
 STATS = PAGES / "fcit-statistiche.html"
 TAKERS = PAGES / "fcit-rigoristi.html"
+TABLE = PAGES / "fcit-classifica.html"
 ROUNDS = [path for path in SAVED if path.name.startswith("fco-round")]
 CLUBS = Clubs.from_toml((ROOT / "config" / "clubs.toml").read_text(encoding="utf-8"))
 RESOLVED = 0.95
@@ -148,3 +150,20 @@ def test_round_page_names_resolve() -> None:
 def _found(name: str, mates: list[KnownPlayer]) -> KnownPlayer | None:
     """As availability finds the player a row is about."""
     return resolve(name, mates).player or same_surname(name, mates)
+
+
+@pytest.mark.skipif(
+    not TABLE.exists(), reason="no real pages saved under data/private/pages/, which is never committed"
+)
+def test_every_club_on_the_table() -> None:
+    """mvp-cards task 1.1: every club of the real table with its record and its last five results, each a
+    name config/clubs.toml knows. The order of the dots was checked by hand against the season's results:
+    oldest first."""
+    facts = read_table(TABLE.read_text(encoding="utf-8"))
+    assert facts.problems == []
+    assert len(facts.payload.teams) == 20
+    for row in facts.payload.teams:
+        CLUBS.key(row.club)
+        assert row.wins is not None
+        assert row.form is not None
+        assert len(row.form) == min(5, row.played), row.club

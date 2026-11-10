@@ -22,6 +22,9 @@ statistics = "https://www.fantacalcio.it/statistiche-serie-a"
 # Fantacalcio.it's penalty takers, read daily (mvp-lineup R10.3). Set `takers_enabled = false` to switch it off:
 # Claude then reads them through read_page.
 takers = "https://www.fantacalcio.it/rigoristi-serie-a"
+# Fantacalcio.it's table, read daily (mvp-cards C1): each club's record and last five results, which read_page's
+# text can't show. Set `table_enabled = false` to switch it off: Claude then submits the table through read_page.
+table = "https://www.fantacalcio.it/serie-a/classifica"
 
 [facts.fixtures]
 need = "N2"

@@ -99,8 +99,9 @@ def register(
 
     @server.tool(
         description="Submit the Serie A table from Fantacalcio.it's classifica (or Wikipedia's season page): "
-        'each club\'s matches played and goals for and against. Shape: {"teams": [{"club": "Inter", '
-        '"played": 9, "goals_for": 25, "goals_against": 10}, ...]}. ' + PROVENANCE
+        "each club's matches played and goals for and against, and its wins, draws and losses (V, P, S) when "
+        'the page shows them. Shape: {"teams": [{"club": "Inter", "played": 9, "goals_for": 25, '
+        '"goals_against": 10, "wins": 8, "draws": 1, "losses": 0}, ...]}. ' + PROVENANCE
     )
     def submit_team_season(
         payload: TeamSeasonPayload,
