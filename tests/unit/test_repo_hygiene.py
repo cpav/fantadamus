@@ -168,6 +168,34 @@ def test_agent_prompt_covers_the_lineup() -> None:
     assert len(prompt) < PROMPT_BUDGET
 
 
+def test_agent_prompt_covers_the_review() -> None:
+    """mvp-review task 7.2 (R5.5): Claude knows it can review a round and how to say it, and the guide and the
+    method say how a review reads."""
+    prompt = _agent_prompt()
+    for part in (
+        "**How to review a round**",
+        "`review_round`",
+        "`fielded`",
+        "as_advised",
+        "app_total",
+        "not_ready",
+        "never by the result",
+        "the likely causes",
+        "say none was asked before the lock",
+        "too early before three rounds",
+        "what couldn't be counted",
+    ):
+        assert part in prompt, part
+    assert len(prompt) < PROMPT_BUDGET
+    guide = " ".join((ROOT / "docs" / "player-setup.md").read_text(encoding="utf-8").split())
+    assert "## After a round: your review" in guide
+    assert "stay on your Mac" in guide
+    method = " ".join((ROOT / "docs" / "method.md").read_text(encoding="utf-8").split())
+    assert "**Review the user's lineup**" in method
+    formats = (ROOT / "docs" / "answer-formats.md").read_text(encoding="utf-8")
+    assert "## 7. The review" in formats
+
+
 def test_player_guide_covers_the_lineup() -> None:
     """mvp-lineup task 8.3 (R9.2): what it now answers, how to give a squad and rules, and where the profile
     goes."""

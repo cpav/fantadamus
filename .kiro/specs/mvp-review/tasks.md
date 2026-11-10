@@ -84,14 +84,17 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
       `::test_at6_a_real_difference_shows`, `::test_at6_an_unknown_gain_isnt_counted`, `::test_at6_logged_with_its_snapshots`;
       **P5** `tests/property/review/test_record.py::test_p5_append_only`_
 
-- [ ] 7. The answer and the docs
+- [x] 7. The answer and the docs
   - Branch: `feat/rv-7-answer` · Depends on: 6 · ADRs: none
-  - [ ] 7.1 `review_round`: its statuses, the app total beside the real score, one statistics read when none is stored after the round, and
-    format 7 in `docs/answer-formats.md`.
-    - _Requirements: R2.4, R5.1, R5.2, R5.3_
-    - _Test: **AT-7** `tests/acceptance/review/test_answer.py::test_at7_the_review`, `::test_at7_in_budget`;
-      `tests/integration/review/test_tool.py::test_statuses`_
-  - [ ] 7.2 The agent prompt within its budget, the player guide and method §A8.
+  - [x] 7.1 `review_round`: its statuses, the app total beside the real score, one statistics read when none is stored after the round, and
+    format 7 in `docs/answer-formats.md`. Costs are priced on the facts the advice was given on, and a missing advice is replayed as of
+    the round page's last read before the lock (requirements and design amended).
+    - _Requirements: R2.4, R3.2, R3.5, R5.1, R5.2, R5.3_
+    - _Test: **AT-7** `tests/acceptance/review/test_answer.py::test_at7_the_review`, `::test_at7_the_advice_replayed_when_none_was_asked`,
+      `::test_at7_in_budget`; `tests/integration/review/test_tool.py::test_statuses`, `::test_no_statistics_after_the_round`,
+      `::test_a_replay_reads_stores_and_logs_nothing`, `::test_a_defenders_clean_sheet_from_his_clubs_keeper`, `::test_after_the_squad_changed`,
+      `::test_a_player_nobody_knew_when_the_advice_was_given`, `::test_what_it_cant_review`_
+  - [x] 7.2 The agent prompt within its budget, the player guide and method §A8.
     - _Requirements: R5.5_
     - _Test: `tests/unit/test_repo_hygiene.py::test_agent_prompt_covers_the_review`_
 

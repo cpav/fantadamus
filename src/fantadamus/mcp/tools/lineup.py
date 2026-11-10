@@ -734,6 +734,45 @@ def lineup_for(
     )
 
 
+@dataclass(frozen=True)
+class SquadAt:
+    """A squad as the advice saw it at one moment: its candidates with their keys, and what the simulation
+    needs (mvp-review C6)."""
+
+    candidates: list[Candidate]
+    players: list[SimPlayer]
+    matches: list[tuple[float, float]]
+    round: int
+    first_kickoff: dt.datetime
+    content_hashes: list[str]
+
+
+def squad_at(
+    advisor: Advisor, stored: StoredRules, squad: StoredSquad, as_of: dt.datetime, *, also: Sequence[int] = ()
+) -> SquadAt | None:
+    """The squad, and `also` those players, priced on the facts stored by `as_of`, without collecting; None
+    where they don't say enough."""
+    wanted = list(dict.fromkeys([*(player.player_id for player in squad.players), *also]))
+
+    def ask(when: dt.datetime, facts: Facts, _tried: Mapping[str, str] | None) -> Gathered:
+        return _gather_squad(advisor, wanted, facts, known_players(facts.players, when), when)
+
+    done = advisor.after_collecting(as_of, ask, lambda found: [item.fact for item in found.plan.items])
+    gathered = done.result
+    if gathered.round is None or gathered.first_kickoff is None:
+        return None
+    priced = _priced(gathered, stored, done.when)
+    players, matches = _simulated(priced)
+    return SquadAt(
+        candidates=[_candidate(part) for part in priced],
+        players=players,
+        matches=matches,
+        round=gathered.round,
+        first_kickoff=gathered.first_kickoff,
+        content_hashes=sorted({source.content_sha256 for source in _sources(priced)}),
+    )
+
+
 def _named(names: Sequence[str], players: Sequence[KnownPlayer]) -> dict[str, int] | LineupResult:
     """Each name's player ID within the squad, or what to do about the ones that don't find one."""
     found: dict[str, int] = {}
