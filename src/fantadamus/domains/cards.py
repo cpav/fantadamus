@@ -8,14 +8,24 @@ never used in a number (R2.4).
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import datetime as dt
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 
 from pydantic import BaseModel
 
+from fantadamus.contracts.types import Role
+from fantadamus.domains.availability.consensus import Availability
 from fantadamus.domains.odds.gold import TeamXg
+from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
 from fantadamus.domains.season.silver import TeamSeasonRow
+from fantadamus.domains.sources import Confidence, of_outlets
 from fantadamus.engine import odds
 from fantadamus.engine.keepers import clean_sheet
+
+OFFICIAL_DUE = dt.timedelta(hours=1)
+"""The official lineups come out about an hour before kickoff (R3.4)."""
+ROLES: tuple[Role, ...] = ("P", "D", "C", "A")
 
 
 class Season(BaseModel):
@@ -93,3 +103,147 @@ def match_numbers(xg: TeamXg, home: str, away: str, table: Mapping[str, TeamSeas
         p_three_or_more=market.p_over if market is not None else None,
         p_both_score=market.p_btts if market is not None else None,
     )
+
+
+@dataclass(frozen=True)
+class Listed:
+    """One player the outlets list for a match, with how they see him."""
+
+    player: KnownPlayer
+    role: Role
+    present: Availability
+
+
+class Starter(BaseModel):
+    player_id: int
+    name: str
+    role: Role
+    p_start: float
+    confidence: Confidence
+
+
+class Contender(BaseModel):
+    player_id: int
+    name: str
+    p_start: float
+    dissent: list[str] = []
+    """The outlets on the smaller side of the consensus, when the outlets disagree about him."""
+
+
+class Place(BaseModel):
+    """A disputed starting place: a ballottaggio's contenders, or one player the outlets disagree about."""
+
+    role: Role
+    contenders: list[Contender]
+    """Likeliest first."""
+
+
+class Out(BaseModel):
+    player_id: int
+    name: str
+    role: Role
+    outlets: int
+    """How many outlets list him as unavailable: why, and until when, they don't say."""
+
+
+class Lineups(BaseModel):
+    club: str
+    eleven: list[Starter]
+    """In role order, likeliest first."""
+    official: bool
+    official_due: dt.datetime | None
+    """When the official lineups are due, until they're stored."""
+    disputed: list[Place]
+    out: list[Out]
+
+
+def lineups(club: str, players: Sequence[Listed], kickoff: dt.datetime) -> Lineups:
+    """One side's lineups (C3): the official eleven once stored, otherwise the eleven likeliest with one
+    keeper, the likeliest; the disputed places until then; and who's out."""
+    mine = [part for part in players if part.player.club == club]
+    official = any(part.present.official is not None for part in mine)
+    if official:
+        picked = [
+            part for part in mine if part.present.official and part.present.official.status == "starter"
+        ]
+    else:
+        keepers = sorted((part for part in mine if part.role == "P"), key=_likeliest)
+        picked = keepers[:1] + sorted((part for part in mine if part.role != "P"), key=_likeliest)[:10]
+    eleven = sorted(picked, key=lambda part: (ROLES.index(part.role), *_likeliest(part)))
+    return Lineups(
+        club=club,
+        eleven=[
+            Starter(
+                player_id=part.player.player_id,
+                name=part.player.name,
+                role=part.role,
+                p_start=part.present.p_start,
+                confidence=of_outlets(part.present),
+            )
+            for part in eleven
+        ],
+        official=official,
+        official_due=None if official else kickoff - OFFICIAL_DUE,
+        disputed=[] if official else _places(mine),
+        out=[
+            Out(player_id=part.player.player_id, name=part.player.name, role=part.role, outlets=count)
+            for part in sorted(mine, key=lambda part: (ROLES.index(part.role), part.player.name))
+            if (count := sum(view.status == "unavailable" for view in part.present.outlets))
+        ],
+    )
+
+
+def _likeliest(part: Listed) -> tuple[float, str]:
+    return -part.present.p_start, part.player.name
+
+
+def _places(mine: Sequence[Listed]) -> list[Place]:
+    """Each ballottaggio as one place, its contenders joined whichever side named whom, and each other
+    player the outlets disagree about as a place of his own."""
+    by_id = {part.player.player_id: part for part in mine}
+    mates = [part.player for part in mine]
+    group = {player_id: {player_id} for player_id in by_id}
+    for part in mine:
+        for view in part.present.outlets:
+            if view.status != "ballottaggio":
+                continue
+            for name in view.rivals:
+                rival = resolve(name, mates).player or same_surname(name, mates)
+                if rival is not None:  # one of his club's, perhaps himself, which joins nothing
+                    joined = group[part.player.player_id] | group[rival.player_id]
+                    for member in joined:
+                        group[member] = joined
+    places: list[Place] = []
+    seen: set[int] = set()
+    for part in sorted(mine, key=_likeliest):
+        members = group[part.player.player_id]
+        if part.player.player_id in seen or (len(members) == 1 and not part.present.disputed):
+            continue
+        seen |= members
+        contenders = sorted((by_id[member] for member in members), key=_likeliest)
+        places.append(
+            Place(
+                role=contenders[0].role,
+                contenders=[
+                    Contender(
+                        player_id=member.player.player_id,
+                        name=member.player.name,
+                        p_start=member.present.p_start,
+                        dissent=_dissent(member.present),
+                    )
+                    for member in contenders
+                ],
+            )
+        )
+    return sorted(places, key=lambda place: ROLES.index(place.role))
+
+
+def _dissent(present: Availability) -> list[str]:
+    """The outlets on the smaller side of the consensus, when the outlets disagree; none in an even split."""
+    if not present.disputed:
+        return []
+    above = [view.outlet for view in present.outlets if view.p_start > present.p_start]
+    below = [view.outlet for view in present.outlets if view.p_start < present.p_start]
+    if len(above) == len(below):
+        return []
+    return sorted(above if len(above) < len(below) else below)

@@ -40,14 +40,14 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
       `::test_at2_without_odds`; **AT-3** `::test_at3_the_season_so_far`; **P1** `tests/property/cards/test_numbers.py::test_p1_chances_add_up`,
       **P3** `::test_p3_the_record_moves_no_number`_
 
-- [ ] 3. The lineups
+- [x] 3. The lineups
   - Branch: `feat/cd-3-lineups` · Depends on: 2 · ADRs: none
-  - [ ] 3.1 Each side's likely eleven with its confidence, the disputed places with their contenders and the outlets that differ, who's out,
+  - [x] 3.1 Each side's likely eleven with its confidence, the disputed places with their contenders and the outlets that differ, who's out,
     and the official lineups once stored.
     - _Requirements: R3.1 to R3.4_
     - _Test: **AT-4** `tests/acceptance/cards/test_lineups.py::test_at4_a_likely_eleven`, `::test_at4_a_ballottaggio_is_one_place`,
       `::test_at4_an_outlet_that_disagrees`, `::test_at4_the_unavailable`, `::test_at4_the_official_lineups`; **P2**
-      `tests/property/cards/test_lineups.py::test_p2_eleven_and_one_keeper`_
+      `tests/property/cards/test_lineups.py::test_p2_eleven_and_one_keeper`, `::test_p2_the_official_eleven`_
 
 - [ ] 4. What it means for the players
   - Branch: `feat/cd-4-players` · Depends on: 3 · ADRs: none
