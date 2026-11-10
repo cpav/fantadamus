@@ -149,7 +149,7 @@ E = expected vote + clean-sheet bonus × P(clean sheet) − malus per goal × ex
   with its as-of time. After each round, score them (Brier score, reliability by probability bucket) next
   to the market's numbers and the users' overrides, and recalibrate the *(start)* constants.
 - **Review the user's lineup** after each round, on request: each choice made against the advice is judged by its
-  expected cost at the facts the advice was given on, over the same simulated rounds, with its real result beside it as
+  expected cost at the facts known at the lock, over the same simulated rounds, with its real result beside it as
   one round's outcome. Whether overrides pay off is a running total, called luck until the real gain clears about
   two standard errors of its per-round spread.
 

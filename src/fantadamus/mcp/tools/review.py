@@ -29,6 +29,7 @@ from fantadamus.domains.review import (
     Round,
     Unknown,
     advice_for,
+    last_advice,
     logged,
     player_round,
     real_score,
@@ -45,7 +46,7 @@ from fantadamus.league.rules import StoredRules
 from fantadamus.league.squads import MINE, SquadStore, StoredSquad
 from fantadamus.mcp.advisor import ROME, Advisor
 from fantadamus.mcp.calibrate import Calibrator
-from fantadamus.mcp.tools.lineup import lineup_for, squad_at
+from fantadamus.mcp.tools.lineup import SquadAt, replayed_lineup, squad_at
 
 APP_GAP = 0.5
 """A user's own total from their league's app that differs by more than this is worth a word (R2.4)."""
@@ -157,13 +158,23 @@ def review_for(
             message=f"Round {round} finishes about {when:%a %d %b %H:%M}: ask again after.",
         )
     lock = frame.first_kickoff
+    decisions = advisor.log.read()
+    told = last_advice(decisions, user=advisor.user, team=team, round=round, lock=lock)
+    # At the lock, on the newest facts stored before it, and the advice's own players too, in case the squad
+    # has changed since. A replayed advice is worked out from the same facts.
+    also = [*told.starters, *told.bench] if told is not None else []
+    at_lock = squad_at(advisor, stored, squad, lock - _BEFORE_THE_LOCK, also=also)
+    if at_lock is None:
+        return ReviewResult(
+            status="refused", message=f"The facts stored before round {round}'s lock don't say enough."
+        )
     advice = advice_for(
-        advisor.log.read(),
+        decisions,
         user=advisor.user,
         team=team,
         round=round,
         lock=lock,
-        replay=lambda: _replayed(advisor, squads, team, lock, rounds),
+        replay=lambda: _replayed(advisor, stored, squad, at_lock, rounds),
     )
     if advice is None:
         return ReviewResult(
@@ -176,20 +187,14 @@ def review_for(
         return lineup
     if as_of is None and (as_advised or starters):
         fielded.set(advisor.user, lineup)
-    # The advice's own players too, in case the squad has changed since.
-    at_lock = squad_at(advisor, stored, squad, advice.as_of, also=[*advice.starters, *advice.bench])
-    if at_lock is None:
-        return ReviewResult(
-            status="refused", message=f"The facts the advice for round {round} was given on don't say enough."
-        )
     names = {candidate.player_id: candidate.name for candidate in at_lock.candidates}
     missing = sorted({*lineup.starters, *lineup.bench} - names.keys())
     if missing:
         known = _names(squad)
         return ReviewResult(
             status="refused",
-            message="These players weren't known when the advice was given, so their choices can't be "
-            "priced: " + ", ".join(known.get(player, str(player)) for player in missing),
+            message="These players weren't known before the lock, so their choices can't be priced: "
+            + ", ".join(known.get(player, str(player)) for player in missing),
         )
     before, after = calibrator.bracketing_reads(frame, now, read=as_of is None)
     if after is None:
@@ -286,12 +291,11 @@ def register(
 
 
 def _replayed(
-    advisor: Advisor, squads: SquadStore, team: str, lock: dt.datetime, rounds: int
+    advisor: Advisor, stored: StoredRules, squad: StoredSquad, at_lock: SquadAt, rounds: int
 ) -> Advice | None:
-    """The lineup Fantadamus would have advised from the facts stored by the lock, as of their last read: at
-    the lock itself the round's lineups and odds are usually past their freshness targets (R3.5)."""
-    when = _last_read(advisor, lock)
-    result = lineup_for(advisor, squads, team, when, rounds=rounds)
+    """The lineup Fantadamus would have advised at the lock, from the facts stored by then however old: by
+    the lock the round's lineups and odds are usually past their freshness targets (R3.5)."""
+    result = replayed_lineup(advisor, stored, squad, at_lock, rounds=rounds)
     if result.lineup is None:
         return None
     advised = result.lineup
@@ -302,15 +306,8 @@ def _replayed(
         bench=[player.player_id for player in advised.bench],
         captain=ids.get(advised.captain) if advised.captain else None,
         vice=ids.get(advised.vice) if advised.vice else None,
-        as_of=when,
+        as_of=at_lock.when,
     )
-
-
-def _last_read(advisor: Advisor, lock: dt.datetime) -> dt.datetime:
-    """When the round's page was last read before the lock, or just before the lock if it never was."""
-    before = lock - _BEFORE_THE_LOCK
-    reads = advisor.collect_log.worked("round", before) if advisor.collect_log is not None else []
-    return max(reads, default=before)
 
 
 def _fielded(
