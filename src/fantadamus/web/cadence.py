@@ -9,6 +9,7 @@ design C7; R7.1, R7.2).
 | Fixtures | Weekly |
 | Players' season figures | Daily (mvp-roles R1.4) |
 | Penalty takers | Daily (mvp-lineup R10.3) |
+| The table | Daily (mvp-cards C1) |
 
 A match's facts stop being due at its kickoff: there's nothing left to forecast. Each interval counts from the
 collector's last attempt at the page that carries the fact, successful or not: a site that refuses is asked
@@ -36,9 +37,15 @@ SCHEDULED = (
     "match_odds",
     "player_season",
     "penalty_takers",
+    "team_season",
 )
 _HOUR = dt.timedelta(hours=1)
-_ALWAYS = {"fixtures": 7 * 24 * _HOUR, "player_season": 24 * _HOUR, "penalty_takers": 24 * _HOUR}
+_ALWAYS = {
+    "fixtures": 7 * 24 * _HOUR,
+    "player_season": 24 * _HOUR,
+    "penalty_takers": 24 * _HOUR,
+    "team_season": 24 * _HOUR,
+}
 """Due at these intervals whatever the matches."""
 _WINDOW = {
     "probable_lineups": 72 * _HOUR,
@@ -56,6 +63,7 @@ _ON_DEMAND_EVERY: dict[PageKind, dt.timedelta] = {
     "statistics": 24 * _HOUR,
     "finished_round": dt.timedelta(minutes=15),
     "takers": 24 * _HOUR,
+    "table": 24 * _HOUR,
 }
 """The shortest interval of each page's facts in the table."""
 

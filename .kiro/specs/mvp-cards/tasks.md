@@ -18,15 +18,18 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. The table's record and form
+- [x] 1. The table's record and form
   - Branch: `feat/cd-1-table` · Depends on: none · ADRs: ADR-0006
-  - [ ] 1.1 `TeamRow` gains wins, draws, losses and the last five results, optional and checked against the record; Fantadamus reads the
+  - [x] 1.1 `TeamRow` gains wins, draws, losses and the last five results, optional and checked against the record; Fantadamus reads the
     table page daily, with Claude as the fallback; tables stored before stay valid. The order of the form is checked against the recorded
     calendar's results. This spec becomes the current one.
     - _Requirements: R2.4, R6.3_
-    - _Test: `tests/contract/test_fcit_table.py::test_the_record_and_the_form`, `::test_a_page_whose_columns_changed_is_unreadable`;
+    - _Test: `tests/contract/test_fcit_table.py::test_the_record_and_the_form`, `::test_a_club_that_doesnt_add_up_is_named`,
+      `::test_a_page_whose_columns_changed_is_unreadable`; `tests/contract/test_real_pages.py::test_every_club_on_the_table`;
       `tests/unit/cards/test_table.py::test_tables_stored_before_still_read`, `::test_the_record_adds_up`, `::test_the_form_fits_the_record`;
-      `tests/integration/cards/test_table_read.py::test_the_collector_reads_the_table`, `::test_claude_still_submits_it`_
+      `tests/integration/cards/test_table_read.py::test_the_collector_reads_the_table`, `::test_switched_off_the_table_is_claudes`,
+      `::test_the_table_is_due_daily`,
+      `::test_claude_still_submits_it`; `tests/unit/checks/test_task_check.py::test_default_is_the_current_spec`_
 
 - [ ] 2. The match in numbers
   - Branch: `feat/cd-2-numbers` · Depends on: 1 · ADRs: none

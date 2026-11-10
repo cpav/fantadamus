@@ -297,3 +297,77 @@ def stats_page(
         '<th class="sticky-header player-name"></th>'
         f'{head}<th class="tail"></th></tr></thead><tbody>{body}</tbody></table></main></body></html>'
     )
+
+
+TABLE_TITLE = "Calendario, classifica e marcatori di Serie A"
+TABLE_COLUMNS = (
+    ("played", "G"),
+    ("won", "V"),
+    ("drawn", "P"),
+    ("lost", "S"),
+    ("goalsscored", "Gf"),
+    ("goalsconceded", "Gs"),
+    ("form", "Forma"),
+)
+
+
+@dataclass(frozen=True)
+class TableClub:
+    club: str
+    won: int
+    drawn: int
+    lost: int
+    goals_for: int
+    goals_against: int
+    form: str = ""
+    """The last results, oldest first, as letters: the page shows them as dots."""
+
+
+def table_page(
+    clubs: Sequence[TableClub],
+    *,
+    title: str = TABLE_TITLE,
+    columns: Sequence[tuple[str, str]] = TABLE_COLUMNS,
+    reversed_dots: bool = False,
+) -> str:
+    """Fantacalcio.it's table: `table.serie-a-table`, one row per club with its record, goals and form, each
+    result a dot whose letter is in `data-value` and whose place is in `data-count`. `reversed_dots` writes
+    the dots last first, still numbered oldest first."""
+    head = "".join(f'<th class="{key} x3" align="center">{short}</th>' for key, short in columns)
+
+    def dots(form: str) -> str:
+        items = [
+            f'<li class=" status-{result.lower()}"><span class="value" data-value="{result}" '
+            f'data-count="{count}" data-tooltip="{result}"></span></li>'
+            for count, result in enumerate(form)
+        ]
+        return "".join(reversed(items) if reversed_dots else items)
+
+    def cells(row: TableClub) -> dict[str, str]:
+        played = row.won + row.drawn + row.lost
+        return {
+            "played": str(played),
+            "won": str(row.won),
+            "drawn": str(row.drawn),
+            "lost": str(row.lost),
+            "goalsscored": str(row.goals_for),
+            "goalsconceded": str(row.goals_against),
+            "form": f'<ul class="dot-stripe">{dots(row.form)}</ul>',
+        }
+
+    body = "".join(
+        f'<tr data-name="{row.club}"><td class="pos x2">{position}</td><td class="name x6">'
+        f'<a class="team-name team-link main ml-2" href="/serie-a/squadre/{row.club.lower()}">'
+        f" {row.club} </a></td>"
+        + "".join(f'<td class="{key}" align="center">{cells(row)[key]}</td>' for key, _ in columns)
+        + "</tr>"
+        for position, row in enumerate(clubs, start=1)
+    )
+    return (
+        f"<html><head><title>{title}</title></head><body><main>"
+        '<table class="serie-a-table table"><thead><tr><th class="pos main h6" colspan="2">Squadra</th>'
+        f"{head}</tr></thead><tbody>{body}</tbody></table>"
+        '<table class="serie-a-table table"><thead><tr><th>Giocatore</th><th class="played">PV</th></tr>'
+        "</thead>"
+        '<tbody><tr><td>Alfa Nove</td><td class="played">5</td></tr></tbody></table></main></body></html>'
+    )

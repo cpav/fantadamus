@@ -11,6 +11,43 @@
             "title": "Club",
             "type": "string"
           },
+          "draws": {
+            "anyOf": [
+              {
+                "maximum": 38,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Matches drawn",
+            "title": "Draws"
+          },
+          "form": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "W",
+                    "D",
+                    "L"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 5,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The last results, oldest first, each W, D or L, when the table gives them",
+            "title": "Form"
+          },
           "goals_against": {
             "minimum": 0,
             "title": "Goals Against",
@@ -21,12 +58,42 @@
             "title": "Goals For",
             "type": "integer"
           },
+          "losses": {
+            "anyOf": [
+              {
+                "maximum": 38,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Matches lost",
+            "title": "Losses"
+          },
           "played": {
             "description": "Matches played",
             "maximum": 38,
             "minimum": 0,
             "title": "Played",
             "type": "integer"
+          },
+          "wins": {
+            "anyOf": [
+              {
+                "maximum": 38,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Matches won, when the table gives them",
+            "title": "Wins"
           }
         },
         "required": [
@@ -40,7 +107,7 @@
       }
     },
     "additionalProperties": false,
-    "description": "The Serie A table: matches played and goals for and against, per club.",
+    "description": "The Serie A table: matches played and goals for and against, per club, and where the table gives them\nits record and last results.",
     "properties": {
       "teams": {
         "items": {
@@ -58,5 +125,5 @@
     "title": "TeamSeasonPayload",
     "type": "object"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

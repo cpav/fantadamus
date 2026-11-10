@@ -3,7 +3,7 @@
 Status: **the owner's prompt, 2026-10-24**; its tools and deadline wording updated for the `mvp-x-or-y` slice
 on 2026-10-26, after the first real round, its fallbacks on 2026-10-30, its collecting and forecast parts
 for `mvp-collect` on 2026-10-31, every role and one player's outlook for `mvp-roles` on 2026-11-04, and the full
-lineup and the league profile for `mvp-lineup` on 2026-11-05, custom league rules for `mvp-rules` on 2026-11-09, and the review of a round for `mvp-review` on 2026-11-10. Keep it stable so it can be prompt-cached; everything that
+lineup and the league profile for `mvp-lineup` on 2026-11-05, custom league rules for `mvp-rules` on 2026-11-09, the review of a round for `mvp-review` on 2026-11-10, and the table read by Fantadamus for `mvp-cards` the same day. Keep it stable so it can be prompt-cached; everything that
 changes per user or per round arrives through tools. **The MVP adds a collecting section** (below, marked
 *MVP only*), per [ADR-0005](adr/0005-mvp-claude-collects-tools-decide.md); v1 deletes it, and "never browse
 the web" applies again in full. In the MVP it is delivered by the MCP server (as
@@ -54,7 +54,8 @@ This section overrides "Never browse the web" until v1, for collecting data only
 
 - `best_lineup`, `compare_players` and `player_outlook` gather the facts themselves: they read
   Fantacalcio-Online's round page (fixtures, four outlets' chances of starting, official lineups, odds) and
-  Fantacalcio.it's statistics and penalty-takers pages (every player's season figures, each club's takers) before they
+  Fantacalcio.it's statistics, penalty-takers and table pages (every player's season figures, each club's takers, the
+  table) before they
   answer. Only what they couldn't get
   comes back as a refresh plan.
   Use `collect` only when the user asks for fresh news ("refresh the lineups").

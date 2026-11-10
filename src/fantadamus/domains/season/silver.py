@@ -51,6 +51,11 @@ class TeamSeasonRow(SilverRow):
     played: int
     goals_for: int
     goals_against: int
+    wins: int | None = None
+    draws: int | None = None
+    losses: int | None = None
+    form: str | None = None
+    """The last results as letters, oldest first: `WWDLW` (mvp-cards C1)."""
 
 
 class PenaltyTakerRow(SilverRow):
@@ -84,7 +89,12 @@ def _stats_rows(payload: SeasonStatsPayload, clubs: Clubs, source: Source) -> li
 
 def _team_rows(payload: TeamSeasonPayload, clubs: Clubs, source: Source) -> list[TeamSeasonRow]:
     rows = [
-        TeamSeasonRow(**source.model_dump(), **team.model_dump(exclude={"club"}), club=clubs.key(team.club))
+        TeamSeasonRow(
+            **source.model_dump(),
+            **team.model_dump(exclude={"club", "form"}),
+            club=clubs.key(team.club),
+            form="".join(team.form) if team.form is not None else None,
+        )
         for team in payload.teams
     ]
     once_each((row.club for row in rows), "{name} is listed twice")
@@ -139,8 +149,8 @@ TEAM_SEASONS = Domain(
     Table(
         "team_seasons",
         f"CREATE TEMP TABLE team_seasons ({PROVENANCE_COLUMNS}, club VARCHAR, played BIGINT, "
-        "goals_for BIGINT, goals_against BIGINT)",
-        "INSERT INTO team_seasons VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "goals_for BIGINT, goals_against BIGINT, wins BIGINT, draws BIGINT, losses BIGINT, form VARCHAR)",
+        "INSERT INTO team_seasons VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 PENALTY_TAKERS = Domain(
