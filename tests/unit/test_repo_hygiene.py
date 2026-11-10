@@ -276,6 +276,7 @@ def test_mutation_run_stays_fast() -> None:
         "src/fantadamus/engine/*",
         "src/fantadamus/domains/calibration.py",
         "src/fantadamus/domains/review.py",  # mvp-review task 2
+        "src/fantadamus/domains/cards.py",  # mvp-cards task 2
     ]
 
     selected: set[Path] = set()

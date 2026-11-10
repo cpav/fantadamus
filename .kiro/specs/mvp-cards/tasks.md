@@ -31,9 +31,9 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
       `::test_the_table_is_due_daily`,
       `::test_claude_still_submits_it`; `tests/unit/checks/test_task_check.py::test_default_is_the_current_spec`_
 
-- [ ] 2. The match in numbers
+- [x] 2. The match in numbers
   - Branch: `feat/cd-2-numbers` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 The chances from the de-margined odds and their spread, the expected goals and clean sheets, three goals or more and both teams to
+  - [x] 2.1 The chances from the de-margined odds and their spread, the expected goals and clean sheets, three goals or more and both teams to
     score, team form without odds; the season so far, shown and never used. `domains/cards.py` joins the mutation run.
     - _Requirements: R2.1 to R2.4_
     - _Test: **AT-2** `tests/acceptance/cards/test_numbers.py::test_at2_the_numbers_by_hand`, `::test_at2_several_odds_pages`,
