@@ -49,13 +49,14 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
       `::test_at4_an_outlet_that_disagrees`, `::test_at4_the_unavailable`, `::test_at4_the_official_lineups`; **P2**
       `tests/property/cards/test_lineups.py::test_p2_eleven_and_one_keeper`, `::test_p2_the_official_eleven`_
 
-- [ ] 4. What it means for the players
+- [x] 4. What it means for the players
   - Branch: `feat/cd-4-players` · Depends on: 3 · ADRs: none
-  - [ ] 4.1 Each player's chance of scoring and share, the likeliest scorers, the keepers, the takers, the rotation risks and the user's
+  - [x] 4.1 Each player's chance of scoring and share, the likeliest scorers, the keepers, the takers, the rotation risks and the user's
     players first, under the stored rules or Classic's.
     - _Requirements: R4.1 to R4.6_
     - _Test: **AT-5** `tests/acceptance/cards/test_players.py::test_at5_a_scorer_by_hand`, `::test_at5_the_likeliest_scorers`,
-      `::test_at5_a_keeper`, `::test_at5_the_takers`, `::test_at5_a_rotation_risk`, `::test_at5_your_players_first`; **AT-6**
+      `::test_at5_a_keeper`, `::test_at5_the_takers`, `::test_at5_a_rotation_risk`, `::test_at5_rotation_at_its_edges`,
+      `::test_at5_your_players_first`; **AT-6**
       `::test_at6_classic_without_rules`, `::test_at6_a_leagues_own_rules`_
 
 - [ ] 5. The card tool
