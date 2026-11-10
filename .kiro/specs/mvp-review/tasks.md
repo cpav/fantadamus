@@ -110,7 +110,7 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
   - [ ] 8.2 **Owner:** review your real round 12 in a Claude app, and check its real score against your league's app.
     - _Requirements: AT-8 (R2.4, R5.1)_
     - _Test: recorded in the report, without the team's details_
-  - [ ] 8.3 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
+  - [x] 8.3 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
     acceptance tests.
     - _Requirements: R5.2; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
