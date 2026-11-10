@@ -16,6 +16,8 @@ PROMPT_BUDGET = 13_000
 
 MUST_BE_IGNORED = [
     "data/local/league/owner-squads.json",
+    "data/local/league/owner-fielded.json",
+    "data/local/reviews/2026-11.jsonl",
     "private.toml",
     "config.private.toml",
     ".env",
