@@ -1,6 +1,6 @@
 # Design Document: `mvp-cards` (Phase 2, sixth slice)
 
-Status: **Draft for the owner's approval, 2026-11-10** · From the approved [requirements](requirements.md)
+Status: **Approved by the owner, 2026-11-10**, with both recommendations · From the approved [requirements](requirements.md)
 
 ## Overview
 
@@ -217,9 +217,11 @@ of once a week by Claude. A card is one gather of two clubs and no simulation; t
 
 ## Open points for the owner
 
+Approved with the design on 2026-11-10 ("Approve both").
+
 1. **Who reads the table.** The approved requirements have Claude reading it, but `read_page`'s text can't show the form's dots.
    Recommendation: Fantadamus reads the table itself, as it reads the statistics and penalty-takers pages of the same site (C1).
-   That also takes the weekly table off Claude's refresh plans. The alternative is to make `read_page` write each dot as a letter,
+   That also takes the weekly table off Claude's refresh plans. Approved. The alternative is to make `read_page` write each dot as a letter,
    and keep Claude reading it.
 2. **The rotation thresholds.** Recommendation: start at 0.7 (usually starts) and 0.6 (low chance), as *(start)* constants, and
-   recalibrate them with the rest.
+   recalibrate them with the rest. Approved.
