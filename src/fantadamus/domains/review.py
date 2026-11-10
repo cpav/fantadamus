@@ -14,11 +14,14 @@ from __future__ import annotations
 import dataclasses
 import datetime as dt
 import math
+import statistics
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal, get_args
 
-from fantadamus.contracts.types import Role
+from pydantic import BaseModel
+
+from fantadamus.contracts.types import Role, UtcDatetime
 from fantadamus.contracts.xy.league import EventName, LeagueRules, LineupRules
 from fantadamus.core.names import name_key
 from fantadamus.domains.season.silver import PlayerSeasonRow
@@ -657,3 +660,127 @@ def _position(total: float | None, expected: Simulated) -> Literal["below", "ins
     if total is None:
         return None
     return "below" if total < expected.low else "above" if total > expected.high else "inside"
+
+
+class LoggedChoice(BaseModel):
+    kind: ChoiceKind
+    fielded: list[int]
+    advised: list[int]
+    expected_cost: float
+    real_gain: float | None
+    judged: Literal["cost", "even", "gain"]
+    mattered: bool | None = None
+
+
+class LoggedReview(BaseModel):
+    """One review as the review log keeps it, privately (design C7; R4.1)."""
+
+    user: str
+    team: str
+    round: int
+    as_of: UtcDatetime
+    """The lock, whose facts priced it."""
+    logged_at: UtcDatetime
+    replayed: bool
+    advice_expected: float
+    fielded_expected: float
+    advice_real: float | None
+    fielded_real: float | None
+    total_cost: float
+    total_gain: float | None
+    choices: list[LoggedChoice]
+    content_hashes: list[str]
+    """The snapshots it used."""
+
+
+def logged(
+    reviewed: Reviewed,
+    *,
+    user: str,
+    team: str,
+    round: int,
+    as_of: dt.datetime,
+    logged_at: dt.datetime,
+    content_hashes: Sequence[str],
+) -> LoggedReview:
+    return LoggedReview(
+        user=user,
+        team=team,
+        round=round,
+        as_of=as_of,
+        logged_at=logged_at,
+        replayed=reviewed.replayed,
+        advice_expected=reviewed.advice.mean,
+        fielded_expected=reviewed.fielded.mean,
+        advice_real=reviewed.advice_real.total,
+        fielded_real=reviewed.fielded_real.total,
+        total_cost=reviewed.total_cost,
+        total_gain=reviewed.total_gain,
+        choices=[
+            LoggedChoice(
+                kind=choice.kind,
+                fielded=list(choice.fielded),
+                advised=list(choice.advised),
+                expected_cost=choice.expected_cost,
+                real_gain=choice.real_gain,
+                judged=choice.judged,
+                mattered=choice.mattered,
+            )
+            for choice in reviewed.choices
+        ],
+        content_hashes=list(content_hashes),
+    )
+
+
+FEWEST_TO_TELL = 3
+"""*(start)* Rounds with an override and a known gain before the record says anything but "too early"."""
+Verdict = Literal["too early", "mostly luck", "paid off", "cost"]
+
+
+@dataclass(frozen=True)
+class Record:
+    """Whether going against the advice has paid off for a user's team, over the rounds reviewed (R4.2,
+    R4.3)."""
+
+    rounds: int
+    overrides: int
+    """Rounds where the user went against the advice."""
+    expected_cost: float
+    """What those overrides were expected to give up, in all."""
+    real_gain: float
+    """What they really gained, in all, over the rounds where it's known."""
+    counted: int
+    """Overrides whose real gain is known."""
+    margin: float | None
+    """About two standard errors of that total: within it, it's still mostly luck."""
+    verdict: Verdict
+
+
+def record(reviews: Iterable[LoggedReview], *, user: str, team: str) -> Record:
+    """The record for one user's team: the latest review of each round, whatever order they come in."""
+    latest: dict[int, LoggedReview] = {}
+    for review in reviews:
+        if review.user != user or name_key(review.team) != name_key(team):
+            continue
+        seen = latest.get(review.round)
+        if seen is None or (review.logged_at, review.model_dump_json()) > (
+            seen.logged_at,
+            seen.model_dump_json(),
+        ):
+            latest[review.round] = review
+    overrides = [review for review in latest.values() if review.choices]
+    gains = sorted(review.total_gain for review in overrides if review.total_gain is not None)
+    total = math.fsum(gains)
+    margin = 2 * statistics.stdev(gains) * math.sqrt(len(gains)) if len(gains) >= FEWEST_TO_TELL else None
+    verdict: Verdict = "too early"
+    if margin is not None:
+        verdict = "paid off" if total > margin else "cost" if total < -margin else "mostly luck"
+    return Record(
+        rounds=len(latest),
+        overrides=len(overrides),
+        expected_cost=math.fsum(sorted(review.total_cost for review in overrides)),
+        real_gain=total,
+        counted=len(gains),
+        margin=margin,
+        verdict=verdict,
+    )

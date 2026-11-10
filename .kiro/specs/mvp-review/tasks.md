@@ -76,11 +76,12 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
       `::test_at4_the_choices_made_on_the_advice_give_the_eleven_fielded`, `::test_at4_a_bench_without_a_role`;
       **AT-5** `::test_at5_following_the_advice`, `::test_at5_replayed_when_none_was_asked`_
 
-- [ ] 6. The record
+- [x] 6. The record
   - Branch: `feat/rv-6-record` · Depends on: 5 · ADRs: none
-  - [ ] 6.1 Each review appended with its snapshots; the record for each user and team, and how much it can tell yet.
+  - [x] 6.1 Each review appended with its snapshots; the record for each user and team, and how much it can tell yet.
     - _Requirements: R4.1, R4.2, R4.3_
-    - _Test: **AT-6** `tests/acceptance/review/test_record.py::test_at6_over_several_rounds`, `::test_at6_too_early_to_tell`;
+    - _Test: **AT-6** `tests/acceptance/review/test_record.py::test_at6_over_several_rounds`, `::test_at6_too_early_to_tell`,
+      `::test_at6_a_real_difference_shows`, `::test_at6_an_unknown_gain_isnt_counted`, `::test_at6_logged_with_its_snapshots`;
       **P5** `tests/property/review/test_record.py::test_p5_append_only`_
 
 - [ ] 7. The answer and the docs
