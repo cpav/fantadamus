@@ -51,8 +51,8 @@ async def test_at7_the_review(tmp_path: Path) -> None:
 
 async def test_at7_the_advice_replayed_when_none_was_asked(tmp_path: Path) -> None:
     """The collector read the round before the lock, as it does on its schedule, and nobody asked: the
-    advice is replayed as of that read, since at the lock itself the lineups and odds were past their
-    freshness targets."""
+    advice is replayed at the lock from the facts stored by then, though by then the lineups and odds were
+    past their freshness targets."""
     async with a_round(tmp_path) as here:
         collector = here.calibrator.collector
         assert collector is not None
@@ -66,9 +66,10 @@ async def test_at7_the_advice_replayed_when_none_was_asked(tmp_path: Path) -> No
 async def test_at7_in_budget(tmp_path: Path) -> None:
     """In a process of its own for the time, as the lineup's budget is measured: see
     `tests/lineup_speed.py`."""
-    timed = run_command([sys.executable, "-m", "tests.lineup_speed", "--review"])
-    assert timed.returncode == 0, timed.stderr
-    assert float(timed.stdout) < 3.0
+    for replayed in ([], ["--replayed"]):
+        timed = run_command([sys.executable, "-m", "tests.lineup_speed", "--review", *replayed])
+        assert timed.returncode == 0, timed.stderr
+        assert float(timed.stdout) < 3.0, replayed
     async with a_round(tmp_path) as here:
         await here.ask()
         finished(here)

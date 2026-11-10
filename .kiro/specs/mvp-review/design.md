@@ -75,9 +75,10 @@ it doesn't allow, too many players, a bench longer than the league's) is refused
 ### C5. The advice (`mcp/tools/review.py`; R3.4, R3.5)
 
 The advice is the last lineup answer logged for that user and team before the round's lock, read from the decision log. If there
-is none, the review replays `best_lineup` (its `as_of`, which doesn't log) as of the round page's last read before the lock, and
-marks the advice as replayed. Not at the lock itself: by then the lineups and odds are past their freshness targets (three and six
-hours before a match), so a replay there would find nothing to price (amended in task 7, 2026-11-10).
+is none, the review replays `best_lineup` at the lock (its `as_of`, which doesn't log) and marks the advice as replayed. The replay
+and the prices below take the newest facts stored before the lock whatever their age: by the lock the lineups and odds are usually
+past their freshness targets (three and six hours before a match), and those targets decide when to read a page again, not what
+was known (found on round 11's real check, 2026-11-10). The replay works from the same facts as the prices, read once.
 
 ### C6. Each decision and what it cost (`domains/review.py`, `engine/`; R3.1 to R3.3)
 
@@ -91,7 +92,7 @@ hours before a match), so a replay there would find nothing to price (amended in
 - **the captain and the vice,** when they differ from the advice's pair as it stands after the swaps.
 
 **Expected cost.** A swap of players or of formation is priced on its own: the advice, and the advice with only that choice made,
-over the same simulated rounds at the facts the advice was given on (its `as_of`). Where it takes the advice's captain or vice off the eleven, the simulation picks
+over the same simulated rounds at the lock's facts. Where it takes the advice's captain or vice off the eleven, the simulation picks
 the best pair for that eleven. A bench order and a captain only exist within an eleven, so they're priced on the eleven the user
 fielded: the user's first substitute against the advice's for that role, and the user's captain and vice against the best pair for
 it. The fielded lineup as a whole, against the advice, gives the total. All of these are arrangements of one simulation. It never

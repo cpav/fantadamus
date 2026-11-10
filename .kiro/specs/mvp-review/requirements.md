@@ -31,7 +31,7 @@ round already leaves behind, and asks the user only for what they really fielded
 | Fielded lineup | What the user really fielded for a round: the eleven, the bench in order and, where the league has one, the captain and vice |
 | Advice | The last lineup `best_lineup` gave the user for that team before the round's lock, as the decision log holds it |
 | Decision | One difference between the fielded lineup and the advice: a player started in another's place, the formation, the bench order, the captain |
-| Expected cost | What a decision was expected to give up, in points and in the chance of each threshold, over the same simulated rounds at the facts the advice was given on: the price of an override (`mvp-lineup` R3.5) |
+| Expected cost | What a decision was expected to give up, in points and in the chance of each threshold, over the same simulated rounds at the lock's facts: the price of an override (`mvp-lineup` R3.5) |
 | Real score | What a lineup really scored under the league's rules: each player's real rating and events, the league's substitutions, its formula rules and its thresholds |
 | Paid off | An override's real gain against its expected cost, added up over the rounds |
 
@@ -98,8 +98,8 @@ did.
   ("expected to cost 0.4; this round it gained 3").
 - **R3.4** WHERE the user followed the advice THE SYSTEM SHALL say so, and show the real score against the expected one and its
   range: whether it fell inside eight rounds out of ten, below or above.
-- **R3.5** WHERE the user asked for no lineup before the lock THE SYSTEM SHALL replay the advice from the facts stored by the
-  lock, as of their last read before it, and say that it did.
+- **R3.5** WHERE the user asked for no lineup before the lock THE SYSTEM SHALL replay the advice at the lock from the facts stored
+  by then, and say that it did.
 
 ### Requirement 4: Whether overrides pay off
 
@@ -148,10 +148,10 @@ An Analyze-Requirements pass, before design.
   it; the review must refuse rather than split.
 - **A league's app may substitute differently.** Rules on a substitute's rating, a player sent off before getting a rating, or a
   late kickoff can differ from the model's reading. R2.4's cross-check is how a user notices.
-- **Expected cost needs the facts known before the lock.** A fielded lineup is priced on the facts the advice was given on, by
-  `best_lineup`'s replay (its `as_of`), so the facts stored after the lock are never used. At the lock itself the lineups and odds
-  are usually past their freshness targets (three and six hours before a match), so neither the pricing nor a replayed advice uses
-  the lock's own moment: a replay is as of the round page's last read before it (amended in task 7, 2026-11-10).
+- **Expected cost needs the lock's facts.** Pricing a fielded lineup replays `best_lineup` at the lock (its `as_of`), so the facts
+  stored after the lock are never used. By the lock the round's lineups and odds are usually past their freshness targets (three
+  and six hours before a match), which decide when to read a page again, not what was known: a review takes the newest facts
+  stored before the lock whatever their age (found on round 11's real check, 2026-11-10).
 - **The bench as a decision.** A bench order only matters when a substitute came on. R3.1 limits it to those rounds, so a review
   doesn't list orders that changed nothing.
 - **Not every league scores like Classic.** The real score uses the league's table and formula rules, as the forecasts do, so a

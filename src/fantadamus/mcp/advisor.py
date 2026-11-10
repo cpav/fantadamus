@@ -290,10 +290,15 @@ def _fresh[R: SilverRow](
     as_of: dt.datetime,
     kickoff: dt.datetime | None = None,
     confirmed: Mapping[str, dt.datetime] | None = None,
+    *,
+    any_age: bool = False,
 ) -> list[R]:
     """The rows still fresh at `as_of`. A page's newest read counts from when a later read found it unchanged
-    (`confirmed`, by page), since that read stored nothing new (mvp-collect R1.5)."""
+    (`confirmed`, by page), since that read stored nothing new (mvp-collect R1.5). With `any_age`, every row
+    stored by then counts: what was known, rather than whether to read it again (mvp-review C6)."""
     known = [row for row in rows if row.captured_at <= as_of]
+    if any_age:
+        return known
     newest: dict[str, dt.datetime] = {}
     for row in known:
         newest[row.source_url] = max(row.captured_at, newest.get(row.source_url, row.captured_at))
@@ -341,11 +346,14 @@ class _Recent:
     as_of: dt.datetime
     confirmed: Mapping[str, Mapping[str, dt.datetime]]
     found: dict[tuple[str, dt.datetime], list[Any]]
+    any_age: bool = False
 
     def of[R: SilverRow](self, rows: Sequence[R], fact: Fact, table: str, kickoff: dt.datetime) -> list[R]:
         key = (table, kickoff)
         if key not in self.found:
-            self.found[key] = _fresh(rows, fact, self.as_of, kickoff, self.confirmed.get(table))
+            self.found[key] = _fresh(
+                rows, fact, self.as_of, kickoff, self.confirmed.get(table), any_age=self.any_age
+            )
         return self.found[key]
 
 
@@ -588,27 +596,30 @@ class Advisor:
         facts: Facts,
         known: list[KnownPlayer],
         odds_unavailable: bool = False,
+        any_age: bool = False,
     ) -> Gathered:
-        """Each player's facts at `as_of`, and what's missing or stale (mvp-lineup C5)."""
+        """Each player's facts at `as_of`, and what's missing or stale (mvp-lineup C5); with `any_age`, the
+        facts stored by then however old, as a review prices them (mvp-review C6)."""
         confirmed = self.collect_log.confirmed(as_of) if self.collect_log is not None else {}
         plan = _Plan()
         need = plan.need
-        recent = _Recent(as_of, confirmed, {})
+        recent = _Recent(as_of, confirmed, {}, any_age)
+        fresh = functools.partial(_fresh, any_age=any_age)
         seasons = latest_by(facts.players, as_of, key=lambda row: row.player_id)
         forms = {player.player_id: seasons.get(player.player_id) for player in players}
 
-        teams = _fresh(facts.teams, "team_season", as_of)
-        takers = _fresh(
+        teams = fresh(facts.teams, "team_season", as_of)
+        takers = fresh(
             facts.takers, "penalty_takers", as_of, confirmed=confirmed.get(PENALTY_TAKERS.table.name)
         )
-        for rows, fresh, fact, about in (
+        for rows, found, fact, about in (
             (facts.teams, teams, "team_season", "the Serie A table"),
             (facts.takers, takers, "penalty_takers", "the penalty takers"),
         ):
-            if not fresh:  # every answer needs them, whoever the players turn out to be
+            if not found:  # every answer needs them, whoever the players turn out to be
                 why: Why = "stale" if any(row.captured_at <= as_of for row in rows) else "missing"
                 need(self.refresh_item(fact, why, about))
-        fixtures = _fresh(facts.fixtures, "fixtures", as_of, confirmed=confirmed.get(FIXTURES.table.name))
+        fixtures = fresh(facts.fixtures, "fixtures", as_of, confirmed=confirmed.get(FIXTURES.table.name))
         round = next_round(fixtures, as_of)
         if round is None:
             stale = next_round(facts.fixtures, as_of) is not None
@@ -616,7 +627,7 @@ class Advisor:
         sides: list[PlayerFacts] = []
         for player in players:
             form = forms[player.player_id]
-            if form is None or not _fresh(
+            if form is None or not fresh(
                 [form], "player_season", as_of, confirmed=confirmed.get(SEASON_STATS.table.name)
             ):
                 about = f"{player.name}'s season figures"

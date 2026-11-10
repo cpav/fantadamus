@@ -1,8 +1,8 @@
 """Time a lineup with no coverage tracer in the way: `python -m tests.lineup_speed` prints the CPU seconds
 one `best_lineup` takes on a synthetic round, with all its simulated rounds (mvp-lineup R4.6); `--review`, one
-`review_round` once the round has been played and its statistics read (mvp-review R5.2). Inside the test
-suite the tracer slows the simulation about sixfold and other workers compete for the machine, and neither is
-the user's wait."""
+`review_round` once the round has been played and its statistics read, and `--replayed` when no advice was
+asked for (mvp-review R5.2). Inside the test suite the tracer slows the simulation about sixfold and other
+workers compete for the machine, and neither is the user's wait."""
 
 from __future__ import annotations
 
@@ -30,10 +30,17 @@ async def _seconds(with_rules: bool) -> float:
             return time.process_time() - started
 
 
-async def _review_seconds() -> float:
+async def _review_seconds(replayed: bool) -> float:
+    """With the advice asked for, or replayed at the lock because it wasn't (the collector read the round on
+    its own)."""
     with tempfile.TemporaryDirectory() as folder:
         async with a_round(Path(folder), rounds=SIMULATIONS) as here:
-            await here.ask()
+            if replayed:
+                collector = here.calibrator.collector
+                assert collector is not None
+                here.collect_log.append(collector.collect())
+            else:
+                await here.ask()
             finished(here)
             await here.client.call_tool("review_round", {"round": 10, "as_advised": True})  # reads the page
             started = time.process_time()
@@ -42,5 +49,7 @@ async def _review_seconds() -> float:
 
 
 if __name__ == "__main__":
-    review = "--review" in sys.argv
-    print(asyncio.run(_review_seconds() if review else _seconds("--rules" in sys.argv)))
+    if "--review" in sys.argv:
+        print(asyncio.run(_review_seconds("--replayed" in sys.argv)))
+    else:
+        print(asyncio.run(_seconds("--rules" in sys.argv)))

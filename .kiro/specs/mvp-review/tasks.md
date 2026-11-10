@@ -87,23 +87,26 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
 - [x] 7. The answer and the docs
   - Branch: `feat/rv-7-answer` · Depends on: 6 · ADRs: none
   - [x] 7.1 `review_round`: its statuses, the app total beside the real score, one statistics read when none is stored after the round, and
-    format 7 in `docs/answer-formats.md`. Costs are priced on the facts the advice was given on, and a missing advice is replayed as of
-    the round page's last read before the lock (requirements and design amended).
+    format 7 in `docs/answer-formats.md`.
     - _Requirements: R2.4, R3.2, R3.5, R5.1, R5.2, R5.3_
     - _Test: **AT-7** `tests/acceptance/review/test_answer.py::test_at7_the_review`, `::test_at7_the_advice_replayed_when_none_was_asked`,
       `::test_at7_in_budget`; `tests/integration/review/test_tool.py::test_statuses`, `::test_no_statistics_after_the_round`,
       `::test_a_replay_reads_stores_and_logs_nothing`, `::test_a_defenders_clean_sheet_from_his_clubs_keeper`, `::test_after_the_squad_changed`,
-      `::test_a_player_nobody_knew_when_the_advice_was_given`, `::test_what_it_cant_review`_
+      `::test_a_player_nobody_knew_before_the_lock`, `::test_what_it_cant_review`_
   - [x] 7.2 The agent prompt within its budget, the player guide and method §A8.
     - _Requirements: R5.5_
     - _Test: `tests/unit/test_repo_hygiene.py::test_agent_prompt_covers_the_review`_
 
 - [ ] 8. A real check and this slice's sign-off
   - Branch: `docs/rv-8-gate` · Depends on: 7 · ADRs: none
-  - [ ] 8.1 Real data from Claude Code, with temporary logs: round 11 reviewed as far as its reads allow, with what each review used, its time
+  - [x] 8.1 Real data from Claude Code, with temporary logs: round 11 reviewed as far as its reads allow, with what each review used, its time
     and its size. Results stay out of the repository.
     - _Requirements: R2.3, R5.2_
     - _Test: what each review used, and its time and size, in the report without players' figures_
+    - Found and fixed (`fix/rv-8-known-facts`): freshness targets kept the facts stored before the lock from being priced, so a review
+      takes them whatever their age, at the lock as the design first said; and a replayed advice is worked out from the same facts as the
+      prices, read once. _Test: `tests/integration/review/test_tool.py::test_news_after_the_advice_is_priced`;
+      `tests/acceptance/review/test_answer.py::test_at7_in_budget` (now with the replay)_
   - [ ] 8.2 **Owner:** review your real round 12 in a Claude app, and check its real score against your league's app.
     - _Requirements: AT-8 (R2.4, R5.1)_
     - _Test: recorded in the report, without the team's details_
