@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-cards` (Phase 2, sixth slice)
 
-Status: **Draft for the owner's approval, 2026-11-10** · Workflow: requirements-first · Depends on: `mvp-review` (built; its
+Status: **Approved by the owner, 2026-11-10**, with all three recommendations · Workflow: requirements-first · Depends on: `mvp-review` (built; its
 sign-off waits for round 12's AT-8) · Abbreviation: `cd` · Method: [`docs/method.md`](../../../docs/method.md) §A4, §A6, §A8 ·
 Answers: [`docs/answer-formats.md`](../../../docs/answer-formats.md), format 5
 
@@ -36,7 +36,7 @@ lines. Also out: live scores (`product.md`, Further notes), alerts (their own sl
 |---|---|
 | Card | One fixture of the next round, on one screen: the match in numbers, the lineups, and what they mean for the players |
 | Round overview | One line per fixture of the round, team-level only, in kickoff order |
-| Likely eleven | A side's eleven likeliest starters, with the formation the outlets give |
+| Likely eleven | A side's eleven likeliest starters, by role |
 | Disputed place | A starting place where the outlets disagree, or that a page marks as a ballottaggio |
 | Rotation risk | A player who usually starts for his club but whose chance of starting this round is low or disputed |
 | Your players | The players of the user's stored squad who play in the match; a league-mate's team when it's named |
@@ -190,12 +190,13 @@ An Analyze-Requirements pass, before design.
 
 ## Owner decisions
 
-To approve with these requirements. Each has a recommendation.
+- **2026-11-10:** the owner chose to start the match cards while round 12 is awaited.
+- **2026-11-10, these requirements approved,** with the three recommendations below ("Approve all three").
 
-1. **The table's record and form.** Recommendation: keep wins, draws, losses and the last five results. They come from the table
+1. **The table's record and form.** Recommendation, approved: keep wins, draws, losses and the last five results. They come from the table
    page Claude already reads, as optional fields (a minor contract version), and are shown as context only (R2.4). The
    alternative is to leave them out until the new-sources slice.
-2. **The round overview.** Recommendation: yes, team-level only (R5). It's small and fast, and it answers questions across
+2. **The round overview.** Recommendation, approved: yes, team-level only (R5). It's small and fast, and it answers questions across
    fixtures that one card can't. The alternative is cards only.
-3. **Points without league rules.** Recommendation: a card answers anyone at once, with the stored rules or Classic's, saying so
+3. **Points without league rules.** Recommendation, approved: a card answers anyone at once, with the stored rules or Classic's, saying so
    (R4.6). That makes it the easiest entry for a live chat. The alternative is the setup step first, as `compare_players` does.
