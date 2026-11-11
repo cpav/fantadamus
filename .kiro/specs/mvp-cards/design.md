@@ -118,7 +118,9 @@ The steps:
 
 1. **The clubs:** resolved through `Clubs.key`, which knows every accepted spelling. The fixture is the club's match in the next
    round, or the two clubs' match when both are given.
-2. **Kicked off.** A fixture that has kicked off is answered as it stood at its kickoff: a replay at the kickoff, said so (R1.4).
+2. **Past the deadline.** One club's match is always the next round's, whose deadline is still ahead. Two clubs whose match is in
+   the round before it, past its deadline, get the card as it stood at that deadline: a replay of the facts stored by then
+   whatever their age, said so (R1.4, amended in task 5).
 3. **The facts:** gathered through `after_collecting` for every known player of both clubs, as a lineup gathers a squad. Missing
    lineups or odds don't stop a card: it gives the team numbers and says what's missing. The plan's items go in `improve`.
 4. **The numbers:** each player's value from `model_inputs` and `model_value`, the same calls `player_outlook` makes. AT-8 checks
@@ -161,8 +163,9 @@ fixtures, such as which keepers are safest, is answered from its clean sheets.
 - **Budget.** A card prices about 50 to 60 players, every known player of two clubs, against a squad's 25. `tests/lineup_speed.py`
   gains `--card` and `--overview`, and AT-10 holds both under 3 seconds. Should a real round go over, the card gathers only the
   players the outlets list.
-- **Size.** The card lists only the likely elevens, the contenders, the scorers and the user's players, each in a few compact fields,
-  to stay under 15 KB.
+- **Size.** The card lists only the likely elevens, the contenders, the scorers and the user's players. Each named player is in
+  `players` once, and the sides and the user's players refer to him by ID; numbers are rounded to three decimals. The invented
+  round's card is under 10 KB.
 
 ## Error handling
 
@@ -175,7 +178,7 @@ fixtures, such as which keepers are safest, is answered from its clean sheets.
 | No lineups published yet | The team numbers, and the lineups named as missing in `improve` |
 | A player in no read of the statistics page | Left out of the card, and named as missing |
 | The table page can't be read | The refresh plan lists it for Claude, as today; the card shows the table figures it has |
-| A match that has kicked off | The card as it stood at kickoff, said so; nothing logged |
+| Two clubs whose round is past its deadline | The card as it stood at the deadline, said so; nothing logged |
 
 ## Correctness properties
 

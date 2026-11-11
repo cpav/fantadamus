@@ -37,7 +37,7 @@ class Decision(BaseModel):
     """Every published probability of one answer, its verdict if it has one, the rules and the facts it used
     (R14.1; mvp-roles R5.3). Lines logged before there were other kinds are comparisons."""
 
-    kind: Literal["compare", "outlooks", "outlook", "lineup"] = "compare"
+    kind: Literal["compare", "outlooks", "outlook", "lineup", "card"] = "compare"
     as_of: UtcDatetime
     logged_at: UtcDatetime
     user: str

@@ -26,7 +26,7 @@ from fantadamus.league.squads import SquadStore
 from fantadamus.mcp.advisor import Advisor, load_reading_list
 from fantadamus.mcp.calibrate import Calibrator
 from fantadamus.mcp.server import AdvisorServer
-from fantadamus.mcp.tools import compare, league, outlook, review, squad, submit
+from fantadamus.mcp.tools import cards, compare, league, outlook, review, squad, submit
 from fantadamus.mcp.tools import lineup as lineup_tool
 from fantadamus.web.collector import Collector
 
@@ -103,6 +103,7 @@ async def tools(
     outlook.register(server, advisor)
     squad.register(server, advisor, squads)
     lineup_tool.register(server, advisor, squads, rounds=lineup_rounds)
+    cards.register(server, advisor, squads)
     review.register(
         server, advisor, squads, calibrator, ReviewLog(store.root / "reviews"), rounds=lineup_rounds
     )

@@ -22,7 +22,18 @@ from fantadamus.league.rules import RulesStore
 from fantadamus.league.squads import SquadStore
 from fantadamus.mcp.advisor import Advisor, ReadingItem
 from fantadamus.mcp.calibrate import Calibrator
-from fantadamus.mcp.tools import collect, compare, league, lineup, outlook, pages, review, squad, submit
+from fantadamus.mcp.tools import (
+    cards,
+    collect,
+    compare,
+    league,
+    lineup,
+    outlook,
+    pages,
+    review,
+    squad,
+    submit,
+)
 from fantadamus.web.collector import Collector, CollectorConfig
 from fantadamus.web.fetch import Fetcher
 
@@ -140,5 +151,6 @@ def build_advisor(
     outlook.register(server, advisor)
     squad.register(server, advisor, squads)
     lineup.register(server, advisor, squads)
+    cards.register(server, advisor, squads)
     review.register(server, advisor, squads, calibrator, ReviewLog(lake.root.parent / "reviews"))
     return server

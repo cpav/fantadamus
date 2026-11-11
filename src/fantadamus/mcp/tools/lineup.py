@@ -541,9 +541,14 @@ def _warnings(
 
 
 def _sources(priced: Sequence[_Priced]) -> list[Source]:
+    return sources_of([part.facts for part in priced])
+
+
+def sources_of(sides: Sequence[PlayerFacts]) -> list[Source]:
+    """Every fact these players' answer rests on: their seasons, the table, the takers, their match, its
+    lineups and odds (mvp-cards C5 shares it)."""
     sources: list[Source] = []
-    for part in priced:
-        facts = part.facts
+    for facts in sides:
         sources += [facts.form.source, facts.table.source, facts.order.source]
         if facts.match is not None:
             sources.append(facts.match.source)
@@ -556,7 +561,7 @@ def _sources(priced: Sequence[_Priced]) -> list[Source]:
     return sources
 
 
-def _source_lines(sources: Sequence[Source], advisor: Advisor, as_of: dt.datetime) -> list[SourceLine]:
+def source_lines(sources: Sequence[Source], advisor: Advisor, as_of: dt.datetime) -> list[SourceLine]:
     """Each page once, by label, as read most recently."""
     worked = advisor.collect_log.last_worked(as_of) if advisor.collect_log is not None else {}
     newest: dict[str, dt.datetime] = {}
@@ -997,7 +1002,7 @@ def _answer(
     known_ids = {player.player_id for player in known}
     gone = [player.name for player in squad.players if player.player_id not in known_ids]
     sources = _sources(priced)
-    lines = _source_lines(sources, advisor, when)
+    lines = source_lines(sources, advisor, when)
     times = [line.captured_at for line in lines]
 
     def name_of(player_id: int | None) -> str | None:
