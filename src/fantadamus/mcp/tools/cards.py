@@ -137,8 +137,8 @@ class _Found:
     round: int | None
     match: FixtureRow | None
     gathered: Gathered | None
-    past: FixtureRow | None = None
-    """Two clubs' match in a round whose deadline has passed."""
+    past: tuple[FixtureRow, dt.datetime] | None = None
+    """Two clubs' match in a round whose deadline has passed, and that deadline."""
 
 
 def card_for(
@@ -167,13 +167,13 @@ def card_for(
     found, when = done.result, done.when
     names = " and ".join(advisor.clubs.names[key] for key in keys)
     if found.past is not None:
-        lock = _deadline(found.past, advisor, when)
+        match, lock = found.past
         at = lock - _BEFORE_THE_LOCK
         facts = Facts.read(advisor.lake, at)
         known = known_players(facts.players, at)
-        playing = [player for player in known if player.club in (found.past.home, found.past.away)]
+        playing = [player for player in known if player.club in (match.home, match.away)]
         gathered = advisor.gather(playing, at, facts=facts, known=known, any_age=True)
-        return _answer(advisor, squads, team, found.past, gathered, at, past=True, tried={}, log=False)
+        return _answer(advisor, squads, team, match, gathered, at, past=True, tried={}, log=False)
     if found.round is None or found.gathered is None:
         items = found.gathered.plan.items if found.gathered is not None else []
         return CardResult(status="refresh", message=REFRESH, refresh=items)
@@ -302,8 +302,11 @@ def _find(advisor: Advisor, keys: Sequence[str], facts: Facts, when: dt.datetime
     return _Found(round, match, advisor.gather(playing, when, facts=facts, known=known))
 
 
-def _earlier(keys: Sequence[str], fixtures: Sequence[FixtureRow], when: dt.datetime) -> FixtureRow | None:
-    """Two clubs' match in the latest round whose deadline has passed, if they met in it."""
+def _earlier(
+    keys: Sequence[str], fixtures: Sequence[FixtureRow], when: dt.datetime
+) -> tuple[FixtureRow, dt.datetime] | None:
+    """Two clubs' match in the latest round whose deadline has passed, if they met in it, with that
+    deadline."""
     if len(keys) != 2:
         return None
     rows = matches(fixtures, when)
@@ -314,12 +317,8 @@ def _earlier(keys: Sequence[str], fixtures: Sequence[FixtureRow], when: dt.datet
     if not passed:
         return None
     latest = max(passed)
-    return next((row for row in rows if row.round == latest and set(keys) <= {row.home, row.away}), None)
-
-
-def _deadline(match: FixtureRow, advisor: Advisor, when: dt.datetime) -> dt.datetime:
-    rows = Facts.read(advisor.lake, when).fixtures
-    return deadline(rows, match.round, when) or match.kickoff_at
+    met = next((row for row in rows if row.round == latest and set(keys) <= {row.home, row.away}), None)
+    return (met, locks[latest]) if met is not None else None
 
 
 def _answer(

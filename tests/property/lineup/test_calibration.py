@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from hypothesis import given
+from hypothesis import example, given
 from hypothesis import strategies as st
 
 from fantadamus.domains.calibration import brier, last_told, scored_chance
@@ -16,6 +16,7 @@ KICKOFF = dt.datetime(2026, 11, 6, 19, 45, tzinfo=dt.UTC)
 
 
 @given(pairs=_PAIRS)
+@example(pairs=[(0.7, False)] * 3)  # their mean in floats is a hair under 0.7, its bucket's floor
 def test_p9_brier_scores_are_bounded(pairs: list[tuple[float, bool]]) -> None:
     assert 0.0 <= brier(pairs) <= 1.0
     chance = scored_chance("Starting", pairs)

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import bisect
 import datetime as dt
+import math
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -77,12 +78,18 @@ def scored_chance(name: str, pairs: Sequence[Pair]) -> Scored:
                 low=index / _BUCKETS,
                 high=(index + 1) / _BUCKETS,
                 count=len(group),
-                said=sum(chance for chance, _ in group) / len(group),
+                said=_within(math.fsum(chance for chance, _ in group) / len(group), index),
                 happened=sum(happened for _, happened in group) / len(group),
             )
             for index, group in sorted(groups.items())
         ],
     )
+
+
+def _within(mean: float, index: int) -> float:
+    """A bucket's mean chance, kept inside the bucket: every chance in it is, but the mean of three 0.7s comes
+    out a hair under 0.7 in floats."""
+    return min(max(mean, index / _BUCKETS), (index + 1) / _BUCKETS)
 
 
 class Unscored(BaseModel):
