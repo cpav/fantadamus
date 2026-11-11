@@ -55,7 +55,8 @@ counted from its own totals, without waiting for more rounds.
 
 - **R1.1** FOR each scored round THE SYSTEM SHALL keep its calibration set, rebuilt from the stored facts and the official
   sheets as the round's report scores them. That's each player's chance and outcome for each kind of chance, and also, for
-  each player who didn't start, whether he came on and whether he got a rating.
+  each player who didn't start, whether he got a rating. *(Amended 2026-11-11: the statistics page counts rated games only,
+  so a substitute who came on without a rating can't be told from one who didn't come on.)*
 - **R1.2** Calibration sets SHALL stay in git-ignored private storage. Only aggregates reach the repository.
 - **R1.3** A round's set SHALL be rebuilt the same way whenever asked: the same facts give the same set.
 
@@ -72,8 +73,9 @@ counted from its own totals, without waiting for more rounds.
 
 **User Story:** As a player, I want the chance that a substitute comes on and gets a rating to match what happens.
 
-- **R3.1** THE SYSTEM SHALL estimate from the calibration sets how often a player who didn't start came on (`CAMEO_SHARE`),
-  and how often such a cameo got a rating (`CAMEO_RATED`), with their sample sizes.
+- **R3.1** THE SYSTEM SHALL estimate from the calibration sets how often a player who didn't start got a rating: for
+  defenders and midfielders, `CAMEO_SHARE`; for forwards, given that share, `CAMEO_RATED`. Each comes with its sample size.
+  *(Amended 2026-11-11, as R1.1.)*
 
 ### Requirement 4: Rates the season itself measures
 
@@ -95,9 +97,11 @@ counted from its own totals, without waiting for more rounds.
 
 **User Story:** As the owner, I want proof that a change helps before I approve it.
 
-- **R6.1** FOR each proposed change THE SYSTEM SHALL give its held-out check: fitted without a round, or without a set of
-  matches when there's one round, and scored on it. It SHALL give the Brier score and the reliability before and after.
-- **R6.2** A change that doesn't improve its held-out Brier score SHALL NOT be proposed.
+- **R6.1** FOR each proposed change to a fitted value (the starting map and the cameo rates) THE SYSTEM SHALL give its
+  held-out check: fitted without a round, or without a set of matches when there's one round, and scored on it. It SHALL
+  give the Brier score and the reliability before and after. The season's rates (R4.1) are counts, not forecasts: each
+  SHALL carry its count and a 90% interval instead. *(Amended 2026-11-11.)*
+- **R6.2** A fitted change that doesn't improve its held-out Brier score SHALL NOT be proposed.
 
 ### Requirement 7: The market's chances beside ours
 
@@ -172,6 +176,8 @@ An Analyze-Requirements pass, before design.
 
 - **2026-11-11:** the owner chose to start recalibration on the rounds already scored, not waiting for round 12.
 - **2026-11-11, these requirements approved** with the three recommendations below ("perfect, start calibration").
+- **2026-11-11, the design approved** with both of its open points ("Approve, start task 1"): R1.1 and R3.1 now say "got a
+  rating without starting", and R6.1 and R6.2 apply to the fitted values, the season's rates carrying counts and intervals.
 
 1. **Which values now.** Recommendation, approved: the chance of starting (a map on the outlets' consensus, 1,033 players), cameos (538
    players), and the rates the season counts itself. Scoring shares, clean sheets and vote noise wait, with their minimum
