@@ -87,6 +87,8 @@ pytest_add_cli_args_test_selection = [
     "tests/acceptance/cards/test_lineups.py",  # pure: the lineups, on invented outlets
     "tests/acceptance/cards/test_players.py",  # pure: each player's part, on the engine's values
     "tests/property/xy",
+    "tests/unit/recalibrate",
+    "tests/property/recalibrate",
 ]
 pytest_add_cli_args = [
     "--timeout=30",

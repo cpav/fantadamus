@@ -10,6 +10,7 @@ import datetime as dt
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from fantadamus.contracts.types import Role
 from fantadamus.core.clock import Clock
 from fantadamus.domains.availability.consensus import Availability
 from fantadamus.domains.availability.gold import availability
@@ -21,9 +22,12 @@ from fantadamus.domains.availability.silver import (
 from fantadamus.domains.calibration import (
     STARTING,
     THE_REST,
+    CalibrationSet,
     ClubSheet,
+    Outcome,
     RoundFrame,
     RoundReport,
+    SetRow,
     StatsLine,
     Tally,
     add_outcomes,
@@ -166,7 +170,8 @@ class Calibrator:
             self.collect_log.append(report)
 
     def score(self, round: int, now: dt.datetime) -> RoundReport:
-        """Both sets, against what happened, stored (R7.4)."""
+        """Both sets, against what happened, stored (R7.4), with the model set's rows kept first, so that a
+        report is never stored without them (mvp-recalibrate R1.1)."""
         fixtures = read_silver(self.lake, FIXTURES)
         frame = round_frame(fixtures, round, now)
         if frame is None:
@@ -198,14 +203,16 @@ class Calibrator:
                 p_clean_sheet=logged.p_clean_sheet,
             )
         overrides = final_overrides(decisions, round, frame.first_kickoff, MINE)
+        model = self._model_on_everyone(frame, known, sheets, before, after, now)
         report = RoundReport(
             round=round,
             scored_at=now,
             told=told.report(),
-            model=self._model_on_everyone(frame, known, sheets, before, after, now).report(),
+            model=model.report(),
             overrides=len(overrides),
             override_cost=sum(overrides),
         )
+        self.store.keep_set(CalibrationSet(round=round, scored_at=now, rows=model.rows()))
         self.store.set(report)
         return report
 
@@ -332,16 +339,51 @@ def _score_match(
             page = present or chances(player, now)
             if page is not None:
                 tally.add(STARTING, page.p_start, outcome.started)
+                tally.keep(_set_row(match, club, player.player_id, outcome, consensus=page.p_start))
             tally.note(THE_REST, "no facts held before his kickoff")
             continue
         share = penalty_share(player, order, mates, starts)
         inputs = model_inputs(PlayerFacts(player, form, table, order, match, present, xg, [], share), league)
         value = model_value(inputs, scoring_for(CLASSIC, form.role))
+        row = _set_row(
+            match, club, player.player_id, outcome, consensus=present.p_start, role=form.role, value=value
+        )
+        tally.keep(row)
         add_outcomes(
             tally,
             outcome,
-            p_start=value.p_start,
-            p_rating=value.p_rating,
-            p_scores=value.p_scores if isinstance(value, OutfieldValue) else None,
-            p_clean_sheet=value.p_clean_sheet if isinstance(value, KeeperValue) else None,
+            p_start=row.p_start,
+            p_rating=row.p_rating,
+            p_scores=row.p_scores,
+            p_clean_sheet=row.p_clean_sheet,
         )
+
+
+def _set_row(
+    match: FixtureRow,
+    club: str,
+    player_id: int,
+    outcome: Outcome,
+    *,
+    consensus: float,
+    role: Role | None = None,
+    value: OutfieldValue | KeeperValue | None = None,
+) -> SetRow:
+    """His row in the model set. Without a value, only his chance of starting was known: the outlets'."""
+    outfield = value if isinstance(value, OutfieldValue) else None
+    keeper = value if isinstance(value, KeeperValue) else None
+    return SetRow(
+        round=match.round,
+        home=match.home,
+        away=match.away,
+        club=club,
+        player_id=player_id,
+        role=role,
+        consensus=consensus,
+        p_start=value.p_start if value is not None else consensus,
+        p_rating=value.p_rating if value is not None else None,
+        p_scores=outfield.p_scores if outfield is not None else None,
+        p_scores_cameo=outfield.p_scores_cameo if outfield is not None else None,
+        p_clean_sheet=keeper.p_clean_sheet if keeper is not None else None,
+        outcome=outcome,
+    )

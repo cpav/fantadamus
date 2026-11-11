@@ -18,14 +18,15 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. Calibration sets
+- [x] 1. Calibration sets
   - Branch: `feat/rc-1-sets` · Depends on: none · ADRs: none
-  - [ ] 1.1 Each scored round's model set kept player by player, privately, with the raw consensus, each chance and what happened, "rated
+  - [x] 1.1 Each scored round's model set kept player by player, privately, with the raw consensus, each chance and what happened, "rated
     without starting" included; rebuilt the same way on `--again`. This spec becomes the current one.
     - _Requirements: R1.1, R1.2, R1.3_
     - _Test: **AT-1** `tests/acceptance/recalibrate/test_sets.py::test_at1_kept_with_the_report`, `::test_at1_rebuilt_the_same`,
       `::test_at1_the_counts_match_the_report`, `::test_at1_rated_without_starting`; **P4** `tests/property/recalibrate/test_sets.py::test_p4_same_set`;
-      `tests/unit/test_repo_hygiene.py::test_private_data_is_ignored` (the sets' path)_
+      `tests/unit/test_repo_hygiene.py::test_private_paths_ignored` (the sets' path);
+      `tests/unit/recalibrate/test_sets.py`_
 
 - [ ] 2. The starting map
   - Branch: `feat/rc-2-map` · Depends on: 1 · ADRs: none

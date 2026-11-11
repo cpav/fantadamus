@@ -208,6 +208,7 @@ tell. What you fielded and your reviews stay on your Mac.
 
 There's nothing to do here. About 12 hours after a round's last match, at your next question or scheduled run,
 Fantadamus reads who really started and scores the chances it gave. Your next lineup says how that went, in one line.
+It also keeps each player's chances and what happened, on your Mac, as the evidence for recalibrating its numbers.
 To see the whole report:
 
 ```bash
