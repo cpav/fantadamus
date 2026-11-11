@@ -97,7 +97,7 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
     - _Requirements: R5.5_
     - _Test: `tests/unit/test_repo_hygiene.py::test_agent_prompt_covers_the_review`_
 
-- [ ] 8. A real check and this slice's sign-off
+- [x] 8. A real check and this slice's sign-off
   - Branch: `docs/rv-8-gate` · Depends on: 7 · ADRs: none
   - [x] 8.1 Real data from Claude Code, with temporary logs: round 11 reviewed as far as its reads allow, with what each review used, its time
     and its size. Results stay out of the repository.
@@ -107,13 +107,14 @@ Status: **Approved by the owner, 2026-11-09** · From the approved [requirements
       takes them whatever their age, at the lock as the design first said; and a replayed advice is worked out from the same facts as the
       prices, read once. _Test: `tests/integration/review/test_tool.py::test_news_after_the_advice_is_priced`;
       `tests/acceptance/review/test_answer.py::test_at7_in_budget` (now with the replay)_
-  - [ ] 8.2 **Owner:** review your real round 12 in a Claude app, and check its real score against your league's app.
+  - [x] 8.2 **Owner:** review your real round 12 in a Claude app, and check its real score against your league's app.
     - _Requirements: AT-8 (R2.4, R5.1)_
     - _Test: recorded in the report, without the team's details_
+    - Taken on round 11 from here at the owner's request, 2026-11-11; the league app's total is still to compare.
   - [x] 8.3 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
     acceptance tests.
     - _Requirements: R5.2; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 8.4 **Owner:** sign off this slice.
+  - [x] 8.4 **Owner:** sign off this slice.
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the report_

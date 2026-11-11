@@ -86,7 +86,7 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
     - _Test: **AT-10** `tests/acceptance/cards/test_answer.py::test_at10_in_budget`, `::test_at10_from_no_new_page`;
       `tests/unit/test_repo_hygiene.py::test_agent_prompt_covers_the_cards`_
 
-- [ ] 8. A real check and this slice's sign-off
+- [x] 8. A real check and this slice's sign-off
   - Branch: `docs/cd-8-gate` · Depends on: 7 · ADRs: none
   - [x] 8.1 Real data from Claude Code, with a temporary decision log: a real round's cards and overview, with what each used, its time and its
     size. Results stay out of the repository.
@@ -97,14 +97,15 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
       starter under 60%; a card leaves out its players' empty fields, and the past-deadline card reads the facts once less.
       _Test: `tests/acceptance/cards/test_lineups.py::test_at4_only_starting_places`;
       `tests/acceptance/cards/test_players.py::test_at5_a_rotation_risk`_
-  - [ ] 8.2 **Owner:** read the next round's cards in a Claude app before its deadline (round 12's, if the slice is built by then), and
+  - [x] 8.2 **Owner:** read the next round's cards in a Claude app before its deadline (round 12's, if the slice is built by then), and
     check them against the round page.
     - _Requirements: AT-11 (R1 to R5)_
     - _Test: recorded in the report_
+    - Taken on round 11 from here at the owner's request, 2026-11-11: the cards against the stored odds and the real starters.
   - [x] 8.3 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
     acceptance tests.
     - _Requirements: R6.2; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 8.4 **Owner:** sign off this slice.
+  - [x] 8.4 **Owner:** sign off this slice.
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the report_

@@ -122,18 +122,19 @@ carries over: v1 changes how the data arrives (licensed or permitted sources, on
 | 0 | `engineering-foundation`: repository, tooling, CI, test harness, agent hooks | Done, signed off 2026-10-26; its AWS skeleton moved to Phase 3 |
 | 1 | `mvp-x-or-y`: "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method for forwards, `compare_players` | Done, signed off 2026-10-26 |
 | 2 | Slices, one small spec each, until every feature in scope is built: **(a)** `mvp-collect`: Fantadamus collects the round's facts itself, sources compared, forecast-style answers (signed off 2026-11-04); **(b)** `mvp-roles`: "X or Y?" and one player's outlook for keepers, defenders and midfielders, with players' season figures read in bulk (signed off 2026-11-04); **(c)** `mvp-lineup`, the full lineup: the user's squad, the league's full rules, the eleven, the bench order and the formation, simulated to give the expected score and the chance of each threshold (signed off 2026-11-07); **(d)** onward, the slices listed below | A slice that changes the numbers waits until the previous one has answered a real round; any other starts when the previous one is signed off |
-| 3 | Online and easy to install: the remote MCP endpoint, so that a player installs nothing, plus the AWS skeleton, budget alarm and deploy gate moved from Phase 0 | After every slice of Phase 2 |
+| 3 | Online and easy to install: the remote MCP endpoint, so that a player installs nothing, plus the AWS skeleton, budget alarm and deploy gate moved from Phase 0 | After every slice of Phase 2, and a full review with Fable 5.2 |
 | 4 | v1: automated, scheduled pipelines on licensed or permitted sources; more users | After the MVP has been used for real rounds |
 
-**Every feature in scope comes before going online** (the owner's decisions, 2026-11-06 and 2026-11-07). Phase 3 then does
-one thing: making Fantadamus easy to reach and install. The slices after `mvp-lineup`, each its own spec, in this order:
+**Every feature in scope comes before going online** (the owner's decisions, 2026-11-06 and 2026-11-07). Then, **before Phase
+3, a full review of the code, the specs and the docs, run with Fable 5.2** (the owner, 2026-11-11). Phase 3 then does one
+thing: making Fantadamus easy to reach and install. The slices after `mvp-lineup`, each its own spec, in this order:
 
 | Order | Slice | Needs |
 |---|---|---|
 | 1 | Custom league rules (`mvp-rules`): a league's rules as data read by one engine, instead of a feature per rule: a table of events by role, and formula rules, with the defence modifier and the captain as two entries; a player's Claude translates the rulebook (signed off 2026-11-09) | Nothing new |
-| 2 | Recalibration of the *(start)* constants, and the market's chances beside ours | Calibration reports |
-| 3 | The review of a user's lineup after a round (`mvp-review`): what they chose, what the advice was, what each decision cost, and whether overrides paid off; started ahead of recalibration, which waits for a round answered on `mvp-rules`' numbers (the owner, 2026-11-09) | Nothing new |
-| 4 | Match cards, numbers (`mvp-cards`): one card per fixture, from the facts already collected; started while round 12 is awaited (the owner, 2026-11-10) | Nothing new |
+| 2 | Recalibration of the *(start)* constants, and the market's chances beside ours; on the rounds already scored, not waiting for round 12 (the owner, 2026-11-11) | Calibration reports |
+| 3 | The review of a user's lineup after a round (`mvp-review`): what they chose, what the advice was, what each decision cost, and whether overrides paid off; started ahead of recalibration (the owner, 2026-11-09); signed off 2026-11-11 | Nothing new |
+| 4 | Match cards, numbers (`mvp-cards`): one card per fixture, from the facts already collected, and the round at a glance (signed off 2026-11-11) | Nothing new |
 | 5 | New sources, research first, each route approved by the owner: rest days and midweek European fixtures, set-piece takers, injury detail, match context for the cards, anytime-scorer odds, per-match ratings and rater bias | ADRs, then the source registry |
 | 6 | Alerts: "the official lineup changes your call" | A way to reach the user unprompted |
 | 7 | League rules that need the opponent's team: the home factor, draw and superiority bonuses, the rule of 59 | All the league's squads |
