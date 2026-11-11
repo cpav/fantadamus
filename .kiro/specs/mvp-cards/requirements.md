@@ -38,7 +38,7 @@ lines. Also out: live scores (`product.md`, Further notes), alerts (their own sl
 | Round overview | One line per fixture of the round, team-level only, in kickoff order |
 | Likely eleven | A side's eleven likeliest starters, by role |
 | Disputed place | A starting place where the outlets disagree, or that a page marks as a ballottaggio |
-| Rotation risk | A player who usually starts for his club but whose chance of starting this round is low or disputed |
+| Rotation risk | A player who usually starts for his club but whose chance of starting this round is low |
 | Your players | The players of the user's stored squad who play in the match; a league-mate's team when it's named |
 
 ## What the facts already give
@@ -105,7 +105,9 @@ Read on 2026-11-10 from the code and from the recorded pages in `data/private/pa
 
 - **R3.1** THE card SHALL give each side's likely eleven by role. Each player SHALL come with his chance of starting and how sure
   it is: official, agree (how many outlets), disputed, or one source.
-- **R3.2** THE card SHALL name each disputed place: its contenders, each with his chance, and the outlets that disagree.
+- **R3.2** THE card SHALL name each disputed place: its contenders, each with his chance, and the outlets that disagree. A
+  bench player the outlets disagree about holds no starting place, so he isn't one (amended in task 8: on a real round the outlets
+  disagreed about some 20 players a match, most of them on the bench).
 - **R3.3** THE card SHALL name who's out: the players an outlet lists as unavailable, with how many outlets say so.
 - **R3.4** WHEN the official lineups are stored THE SYSTEM SHALL use them and say so. Until then, it SHALL say when they're due.
 
@@ -118,7 +120,8 @@ Read on 2026-11-10 from the code and from the recorded pages in `data/private/pa
 - **R4.2** FOR each side's keeper, THE card SHALL give his chance of a clean sheet and the goals he's expected to concede.
 - **R4.3** THE card SHALL give each side's penalty takers in order, with their penalties scored and taken this season.
 - **R4.4** THE card SHALL name the rotation risks: players who usually start for their club but whose chance of starting this
-  round is low, or whose place is disputed.
+  round is low. One the outlets disagree about while he's still likely to start is named in his disputed place instead (amended
+  in task 8).
 - **R4.5** WHERE the user has a squad stored THE card SHALL put their players in the match first, each with what he's worth this
   round. Given a league-mate's team, it SHALL use that squad instead.
 - **R4.6** Points SHALL follow the user's stored league rules, or Classic's where none are stored, saying so. A card SHALL NOT need
