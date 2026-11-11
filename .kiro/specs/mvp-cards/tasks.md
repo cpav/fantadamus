@@ -59,9 +59,9 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
       `::test_at5_your_players_first`; **AT-6**
       `::test_at6_classic_without_rules`, `::test_at6_a_leagues_own_rules`_
 
-- [ ] 5. The card tool
+- [x] 5. The card tool
   - Branch: `feat/cd-5-card` · Depends on: 4 · ADRs: none
-  - [ ] 5.1 `match_card`: the clubs by any spelling, the club with no match, a match that has kicked off, the facts gathered as other answers
+  - [x] 5.1 `match_card`: the clubs by any spelling, the club with no match, a match whose round is past its deadline, the facts gathered as other answers
     gather them, what's missing, and the log for calibration.
     - _Requirements: R1.1 to R1.5, R6.1_
     - _Test: **AT-1** `tests/acceptance/cards/test_card.py::test_at1_by_two_clubs_and_by_one`, `::test_at1_a_club_with_no_match`,

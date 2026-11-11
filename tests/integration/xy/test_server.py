@@ -43,6 +43,7 @@ async def test_served_tools(tmp_path: Path) -> None:
         "best_lineup",
         "collect",
         "compare_players",
+        "match_card",
         "player_outlook",
         "read_page",
         "review_round",

@@ -81,8 +81,9 @@ Read on 2026-11-10 from the code and from the recorded pages in `data/private/pa
   deadline, and how fresh its facts are.
 - **R1.3** THE SYSTEM SHALL gather the facts as the other read tools do: the collector reads what's missing or stale, a refresh
   plan lists what it couldn't, and the card says what's missing and what it assumed.
-- **R1.4** WHERE the match has kicked off THE SYSTEM SHALL say so, and give the card as it stood at kickoff: a forecast's job
-  ends there.
+- **R1.4** WHERE the match's round has passed its deadline THE SYSTEM SHALL say so, and give the card as it stood at the
+  deadline: a forecast's job ends there, and the collector has moved on to the next round (amended in task 5: "the next round"
+  is the one whose deadline is still ahead, so none of its matches has kicked off).
 - **R1.5** A card MAY be replayed at an earlier `as_of`, as the other read tools are, without collecting or logging.
 
 ### Requirement 2: The match in numbers
@@ -151,7 +152,7 @@ Read on 2026-11-10 from the code and from the recorded pages in `data/private/pa
 
 | Test | What it proves | Requirements |
 |---|---|---|
-| AT-1 | A card asked by two clubs and by one, with its context line; a club with no match in the round; a match that has kicked off | R1 |
+| AT-1 | A card asked by two clubs and by one, with its context line; a club with no match in the round; a match whose round is past its deadline | R1 |
 | AT-2 | The numbers by hand: chances from de-margined odds and the spread between pages, expected goals, clean sheets, three goals or more and both teams to score; without odds, team form, said | R2.1 to R2.3 |
 | AT-3 | The table's figures and the last five results shown, and no number moved by them | R2.4 |
 | AT-4 | The lineups: a likely eleven with its confidence, a ballottaggio, an outlet that disagrees, the unavailable, official lineups once stored | R3 |

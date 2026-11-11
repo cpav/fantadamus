@@ -93,6 +93,7 @@ pytest_add_cli_args = [
     "--ignore=tests/property/lineup/test_squads.py",
     "--ignore=tests/property/xy/test_as_of.py",
     "--ignore=tests/property/xy/test_decision_log.py",
+    "--ignore=tests/property/cards/test_card.py",  # through the tools: P4 and P5 need the whole card
 ]
 
 [tool.pytest.ini_options]
