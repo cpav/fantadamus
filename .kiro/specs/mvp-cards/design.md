@@ -69,10 +69,14 @@ reads the statistics and penalty-takers pages of the same site under ADR-0006.
 
 - **The likely eleven.** The official eleven once it's stored. Before that, the eleven likeliest starters by chance of starting,
   with one keeper, the likeliest. Each comes with his role, his chance of starting and its confidence (`of_outlets`).
-- **Disputed places.** Each ballottaggio an outlet gives, and each player the outlets disagree on (`disputed`). A place lists its
-  contenders, each with his chance of starting. For a disputed contender it names the outlets on the smaller side of the
-  consensus, and none in an even split, so "Sky has him out" reads plainly (refined in task 3). Contenders in the same
-  ballottaggio are one place, not several.
+- **Disputed places.** Starting places only (refined in task 8, from a real round):
+  - each ballottaggio with a likely starter in it is one place, its contenders joined whichever side named whom;
+  - for each role, the likely starters the outlets disagree about (`disputed`) share one place, with as many places as there
+    are of them, set against as many of the next in line: the likeliest of that role outside the eleven.
+
+  A bench player the outlets disagree about, or a ballottaggio between bench players, is no starting place. Each contender
+  comes with his chance of starting; a disputed one names the outlets on the smaller side of the consensus, and none in an even
+  split, so "Sky has him out" reads plainly (refined in task 3).
 - **Out.** Each player at least one outlet lists as unavailable, with how many outlets do.
 - **The official lineups:** used and said once stored. Until then, the card says they're due about an hour before kickoff.
 
@@ -94,7 +98,8 @@ From those:
 - **The likeliest scorers:** the five players of either club with the best chance of scoring in the match. A player who's likely to
   come off the bench counts, so a late striker isn't missed.
 - **The penalty takers:** each club's order, as `penalty_order` gives it, with each taker's penalties scored and taken this season.
-- **Rotation risks:** a player who usually starts, whose chance this round is low or whose place is disputed.
+- **Rotation risks:** a player who usually starts, whose chance this round is low. A disputed starter who's still likely to
+  start is in his disputed place instead (amended in task 8).
   - *Usually starts:* his rated games are at least `USUAL_SHARE` of his club's matches played.
   - *Low:* his chance of starting is under `ROTATION_P_START`.
   - Both are new *(start)* constants: 0.7 and 0.6.

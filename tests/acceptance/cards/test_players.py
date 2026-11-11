@@ -33,6 +33,7 @@ def test_at5_a_scorer_by_hand() -> None:
     assert found.p_scores_if_starts == value.p_scores
     assert found.goal_share == value.goal_share
     assert (found.p_clean_sheet, found.expected_conceded) == (None, None)
+    assert {"p_clean_sheet", "expected_conceded"}.isdisjoint(found.model_dump())
     assert (found.p_start, found.key, found.confidence.label) == (0.8, value.key, "agree")
 
 
@@ -67,6 +68,9 @@ def test_at5_a_keeper() -> None:
     assert found.p_clean_sheet == value.p_clean_sheet
     assert found.expected_conceded == 1.2
     assert (found.p_scores, found.p_scores_if_starts, found.goal_share) == (None, None, None)
+    shown = found.model_dump()  # a card leaves out the fields a keeper doesn't have, to stay within its size
+    assert {"p_scores", "p_scores_if_starts", "goal_share"}.isdisjoint(shown)
+    assert {"p_clean_sheet", "expected_conceded", "key"} <= set(shown)
 
 
 def test_at5_the_takers() -> None:
@@ -93,8 +97,9 @@ def test_at5_the_takers() -> None:
 
 
 def test_at5_a_rotation_risk() -> None:
-    """A usual starter whose chance is low, or whose place is disputed, is a risk; a player who seldom starts
-    isn't, nor one the outlets list as out."""
+    """A usual starter whose chance is low is a risk; one the outlets disagree about while he's still likely
+    to start isn't, since his disputed place says it; nor is a player who seldom starts, or one listed as
+    out."""
     parts = [
         valued(listed("Alfa Due", "D", (45, 45, 45, 45)), rated=8),  # usually starts, now 45%
         valued(listed("Alfa Tre", "D", (90, 90, 90, 50)), rated=7),  # usually starts, disputed
@@ -104,7 +109,7 @@ def test_at5_a_rotation_risk() -> None:
         valued(listed("Beta Due", "D", (40, 40, 40, 40), club="beta"), rated=6),  # 6 of 9: not quite usual
     ]
     found = rotation_risks(parts, PLAYED)
-    assert [(risk.name, risk.disputed) for risk in found] == [("Alfa Due", False), ("Alfa Tre", True)]
+    assert [(risk.name, risk.disputed) for risk in found] == [("Alfa Due", False)]
     assert (found[0].rated, found[0].played) == (8, 9)
 
 
@@ -119,6 +124,13 @@ def test_at5_rotation_at_its_edges() -> None:
     unplayed = valued(listed("Alfa Due", "D", (50, 50, 50, 50)), rated=0)
     assert rotation_risks([unplayed], {"alfa": 0}) == []
     assert rotation_risks([usual], {}) == []
+    several = [
+        valued(listed("Alfa Sei", "C", (40, 40, 40, 40)), rated=9),
+        valued(listed("Alfa Due", "D", (50, 50, 50, 50)), rated=9),
+        valued(listed("Alfa Tre", "D", (30, 30, 30, 30)), rated=9),
+    ]
+    found = rotation_risks(several, {"alfa": 9})  # in role order, the least likely first
+    assert [risk.name for risk in found] == ["Alfa Tre", "Alfa Due", "Alfa Sei"]
 
 
 def test_at5_your_players_first() -> None:
