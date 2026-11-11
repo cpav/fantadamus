@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-recalibrate` (Phase 2, seventh slice)
 
-Status: **Draft for the owner's approval, 2026-11-11** · Workflow: requirements-first · Depends on: `mvp-cards` (signed off
+Status: **Approved by the owner, 2026-11-11**, with all three recommendations · Workflow: requirements-first · Depends on: `mvp-cards` (signed off
 2026-11-11) · Abbreviation: `rc` · Method: [`docs/method.md`](../../../docs/method.md) §A2 to §A8
 
 ## Introduction
@@ -170,12 +170,13 @@ An Analyze-Requirements pass, before design.
 
 ## Owner decisions
 
-To approve with these requirements. Each has a recommendation.
+- **2026-11-11:** the owner chose to start recalibration on the rounds already scored, not waiting for round 12.
+- **2026-11-11, these requirements approved** with the three recommendations below ("perfect, start calibration").
 
-1. **Which values now.** Recommendation: the chance of starting (a map on the outlets' consensus, 1,033 players), cameos (538
+1. **Which values now.** Recommendation, approved: the chance of starting (a map on the outlets' consensus, 1,033 players), cameos (538
    players), and the rates the season counts itself. Scoring shares, clean sheets and vote noise wait, with their minimum
    samples. The alternative is all of them now, on thin evidence.
-2. **The market beside ours.** Recommendation: score the match-level chances from the odds now (R7). The player-level market
+2. **The market beside ours.** Recommendation, approved: score the match-level chances from the odds now (R7). The player-level market
    comes with the new-sources slice's anytime-scorer odds. The alternative is to wait and do both together.
-3. **How a change lands.** Recommendation: the command proposes, the owner approves each change, and it lands as one pull
+3. **How a change lands.** Recommendation, approved: the command proposes, the owner approves each change, and it lands as one pull
    request with a calibration log entry of aggregates. Never automatic.
