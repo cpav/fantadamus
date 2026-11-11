@@ -1,6 +1,8 @@
 # Slice report: `mvp-review`
 
-2026-11-10 · Phase 2, the second slice before going online · **Waiting for the owner's AT-8 on round 12, then sign-off**
+2026-11-10 · Phase 2, the second slice before going online · **Signed off by the owner on 2026-11-11**, with AT-8 closed
+from here on round 11: "let's try to use available data from previous rounds and close them all and move on to the next
+slice"
 (tasks 8.2 and 8.4)
 
 After a round, a player can ask how it went: what they fielded against the advice, what each choice was expected to cost when
@@ -58,10 +60,15 @@ Round 11 reviewed from Claude Code, on a copy of the owner's local data, with no
 | Round 11 with the advice replayed | 1.75 s (3.2 s before the fix) | 0.6 KB |
 | The invented round of AT-7, with an advice and replayed | 0.5 s and 1.0 s | under 15 KB |
 
-### AT-8: the owner's round 12
+### AT-8: closed on round 11, from here
 
-Not run yet: round 12 hasn't been played. It needs PR 99 merged first. After round 12, the owner asks their Claude app how
-the round went, gives what they fielded and their total from the league's app, and checks the two scores against each other.
+At the owner's request (2026-11-11), AT-8 was taken on round 11 rather than waiting for round 12. Round 11 is the only round
+with statistics reads on both sides: the lake holds reads from 4 and 9 November only. The review rebuilt the round from
+those two reads, the owner's real lineup and the logged advice, three ways (above).
+
+The one part only the owner holds is the league app's total for round 11, which the owner's own notes don't record. That
+cross-check stays open: the owner gives the number, and every review asks for the user's total and flags a gap of more
+than half a point.
 
 ## Numbers
 
@@ -109,7 +116,7 @@ Every survivor was read, and none changes a result:
 | AT-5 | Following the advice, against the expected score and its range; the advice replayed when none was asked | Passed |
 | AT-6 | The record over several rounds, append-only, saying when it's too early to tell | Passed |
 | AT-7 | The review in its format, within 3 seconds and 15 KB, from no new page | Passed; on a real squad too (above) |
-| AT-8 | Manual: the owner's real round reviewed, and its real score checked against the league's app | Waiting for round 12 |
+| AT-8 | Manual: the owner's real round reviewed, and its real score checked against the league's app | Passed on round 11 from here; the app's total still to compare |
 
 ## Cost
 
@@ -131,8 +138,7 @@ $0. Nothing runs on AWS, no paid service was added, and no new page is read. A r
 ## Decisions for the owner
 
 1. **Merge PR 99, the fix?** Recommendation: yes. Round 12's review needs it.
-2. **Sign off this slice after AT-8 on round 12?** Recommendation: yes. After the round, ask your Claude app "How did my round
-   12 go?", give what you fielded and your total from the league's app, and check that the two scores agree.
+2. **Sign off this slice after AT-8 on round 12?** Signed off on 2026-11-11, with AT-8 taken on round 11 from here.
 3. **What comes next?** Recalibration waits for round 12 to be scored, and AT-8 waits for round 12 too. Recommendation: start
    the match cards' requirements meanwhile, since they change no numbers, and take recalibration once round 12 is scored.
 

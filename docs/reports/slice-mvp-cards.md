@@ -1,7 +1,8 @@
 # Slice report: `mvp-cards`
 
-2026-11-11 · Phase 2, the third slice before going online · **Waiting for the owner's AT-11 on round 12, then sign-off**
-(tasks 8.2 and 8.4)
+2026-11-11 · Phase 2, the third slice before going online · **Signed off by the owner on 2026-11-11**, with AT-11 closed
+from here on round 11: "let's try to use available data from previous rounds and close them all and move on to the next
+slice"
 
 A player can now ask about a match and get it on one screen: the odds as plain chances, the goals and clean sheets, both
 likely elevens and how sure they are, who's out, the penalty takers, the likeliest scorers and their own players in it,
@@ -52,11 +53,16 @@ copy of the owner's local data, with no collection and a temporary log (task 8.1
 
 The invented round's card takes 0.2 s and its overview 0.07 s (AT-10).
 
-### AT-11: the owner's round 12
+### AT-11: closed on round 11, from here
 
-Not run yet. Round 12 locks on Saturday 21 November, at 15:00 if the calendar holds. After merging PR 110, restart
-Claude Desktop and re-paste the agent prompt; before the deadline, ask your Claude app "Tell me about" a match or two and
-"Where are the goals this round?", and check the cards against the round page.
+At the owner's request (2026-11-11), AT-11 was taken on round 11's ten cards, as they stood at its deadline, checked against
+the round page's stored facts and against what really happened:
+
+- **The chances** of a win, a draw and a loss on every card are within 2.2 points of the round page's de-margined odds. That
+  gap is the odds model's own fit, the same as in every other answer.
+- **The likely elevens** held 191 of the 216 real starters the official sheets name (88%). Four sheets named only ten. The
+  match whose official lineups were stored by the deadline had all 22.
+- **Every real starter's name** on the sheets was matched to a player.
 
 ## Numbers
 
@@ -98,7 +104,7 @@ tools and the collector. Every gap the first runs found got a test, and the only
 | AT-8 | Every player's numbers on a card are `player_outlook`'s | Passed |
 | AT-9 | Logged for the calibration and counted; a replay logs nothing | Passed |
 | AT-10 | Within 3 seconds and 15 KB, from no new page | Passed; on a real round too, after PR 110 |
-| AT-11 | Manual: the owner reads round 12's cards before the deadline | Waiting for round 12 |
+| AT-11 | Manual: the owner reads round 12's cards before the deadline | Passed on round 11 from here: 88% of the real starters, chances within 2.2 points |
 
 ## Cost
 
@@ -126,8 +132,7 @@ Claude, one page a day. A card is one gather of two clubs and no simulation.
 
 1. **Merge PRs 110 and 111, the two fixes?** Recommendation: yes. Round 12's cards need the first, and the second keeps
    `make check` from turning red at random.
-2. **Sign off this slice after AT-11?** Recommendation: yes, after you've read round 12's cards before its deadline on
-   Saturday 21 November. The lineup review's AT-8 follows the same round, after it's played.
+2. **Sign off this slice after AT-11?** Signed off on 2026-11-11, with AT-11 taken on round 11 from here.
 3. **What comes next?** Recalibration waits for round 12 to be scored, about Tuesday 24 November. Recommendation: start the
    new-sources slice's research meanwhile (rest days and European fixtures, set-piece takers, injury detail, context),
    since every source needs its route approved before any code.
