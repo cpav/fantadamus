@@ -96,7 +96,7 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
     check them against the round page.
     - _Requirements: AT-11 (R1 to R5)_
     - _Test: recorded in the report_
-  - [ ] 8.3 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
+  - [x] 8.3 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
     acceptance tests.
     - _Requirements: R6.2; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
