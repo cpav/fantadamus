@@ -22,7 +22,7 @@ from scripts.checks._common import CheckResult, report
 
 ROOT = Path(__file__).resolve().parents[2]
 SPECS = ROOT / ".kiro" / "specs"
-CURRENT_SPEC = "mvp-cards"
+CURRENT_SPEC = "mvp-recalibrate"
 ADR_DIR = ROOT / "docs" / "adr"
 
 _TASK = re.compile(r"^- \[(?P<done>[ xX])\] (?P<id>\d+)\. (?P<title>.*)$")

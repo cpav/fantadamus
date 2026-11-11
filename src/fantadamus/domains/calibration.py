@@ -2,7 +2,8 @@
 
 Pure: this module knows what a score is, what happened to a player, and how a report reads. `mcp/calibrate.py`
 reads the pages and runs the model. A report holds aggregates only, so that it can go in a committed report;
-no player is named in it."""
+no player is named in it. Its calibration set, kept beside it for a later fit, names players by their ids and
+stays private (mvp-recalibrate design C1)."""
 
 from __future__ import annotations
 
@@ -15,7 +16,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from fantadamus.contracts.types import UtcDatetime
+from fantadamus.contracts.types import Role, UtcDatetime
 from fantadamus.core.names import name_key
 from fantadamus.domains.availability.silver import OfficialLineupRow
 from fantadamus.domains.fixtures.gold import matches
@@ -108,6 +109,7 @@ class Tally:
     def __init__(self) -> None:
         self._pairs: dict[str, list[Pair]] = {}
         self._unscored: Counter[str] = Counter()
+        self._rows: list[SetRow] = []
 
     def add(self, name: str, chance: float, outcome: Result) -> None:
         if isinstance(outcome, str):
@@ -117,6 +119,14 @@ class Tally:
 
     def note(self, name: str, reason: str) -> None:
         self._unscored[f"{name}: {reason}"] += 1
+
+    def keep(self, row: SetRow) -> None:
+        """A player's row for the set: it scores nothing on its own."""
+        self._rows.append(row)
+
+    def rows(self) -> list[SetRow]:
+        """By match and player: the set doesn't depend on the order the facts were stored in (R1.3)."""
+        return sorted(self._rows, key=lambda row: (row.home, row.away, row.player_id))
 
     def report(self) -> SetReport:
         return SetReport(
@@ -297,6 +307,39 @@ class Outcome:
     rated: Result
     scored: Result
     clean_sheet: Result
+
+
+class SetRow(BaseModel):
+    """One player in a round's model set: the chances the model gave him, and what happened (mvp-recalibrate
+    design C1). A substitute who got a rating didn't start and was rated; one who came on without a rating
+    can't be told from one who didn't come on, since the statistics page counts rated games only."""
+
+    round: int
+    home: str
+    away: str
+    club: str
+    player_id: int
+    role: Role | None
+    """None when the model couldn't value him before kickoff: then only his chance of starting is known."""
+    consensus: float
+    """The outlets' chance of starting, before any map: a later fit doesn't compound on an earlier one."""
+    p_start: float
+    p_rating: float | None
+    p_scores: float | None
+    """An outfield player's chance of scoring if he starts."""
+    p_scores_cameo: float | None
+    """And if he comes on, for the fit of an attacker's cameo."""
+    p_clean_sheet: float | None
+    """A keeper's chance of a clean sheet if he starts."""
+    outcome: Outcome
+
+
+class CalibrationSet(BaseModel):
+    """A round's model set, player by player, kept privately beside its report (R1.1, R1.2)."""
+
+    round: int
+    scored_at: UtcDatetime
+    rows: list[SetRow]
 
 
 def statistics_reads(
