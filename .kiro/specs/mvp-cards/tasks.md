@@ -88,10 +88,15 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
 
 - [ ] 8. A real check and this slice's sign-off
   - Branch: `docs/cd-8-gate` · Depends on: 7 · ADRs: none
-  - [ ] 8.1 Real data from Claude Code, with a temporary decision log: a real round's cards and overview, with what each used, its time and its
+  - [x] 8.1 Real data from Claude Code, with a temporary decision log: a real round's cards and overview, with what each used, its time and its
     size. Results stay out of the repository.
     - _Requirements: R6.2_
     - _Test: what each card used, and its time and size, in the report without players' figures_
+    - Found and fixed (`fix/cd-8-starting-places`): on the real round the outlets disagreed about some 20 players a match, so
+      cards ran to 17 KB and named a dozen rotation risks. A disputed place is now a starting place, a rotation risk a usual
+      starter under 60%; a card leaves out its players' empty fields, and the past-deadline card reads the facts once less.
+      _Test: `tests/acceptance/cards/test_lineups.py::test_at4_only_starting_places`;
+      `tests/acceptance/cards/test_players.py::test_at5_a_rotation_risk`_
   - [ ] 8.2 **Owner:** read the next round's cards in a Claude app before its deadline (round 12's, if the slice is built by then), and
     check them against the round page.
     - _Requirements: AT-11 (R1 to R5)_

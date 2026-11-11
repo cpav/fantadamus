@@ -12,7 +12,7 @@ import datetime as dt
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 
-from pydantic import BaseModel
+from pydantic import BaseModel, SerializerFunctionWrapHandler, model_serializer
 
 from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.league import LeagueRules
@@ -137,9 +137,12 @@ class Contender(BaseModel):
 
 
 class Place(BaseModel):
-    """A disputed starting place: a ballottaggio's contenders, or one player the outlets disagree about."""
+    """Disputed starting places: a ballottaggio with a likely starter in it, or the likely starters of one
+    role the outlets disagree about, set against the next in line."""
 
     role: Role
+    places: int = 1
+    """How many starting places are in doubt among the contenders."""
     contenders: list[Contender]
     """Likeliest first."""
 
@@ -190,7 +193,7 @@ def lineups(club: str, players: Sequence[Listed], kickoff: dt.datetime) -> Lineu
         ],
         official=official,
         official_due=None if official else kickoff - OFFICIAL_DUE,
-        disputed=[] if official else _places(mine),
+        disputed=[] if official else _places(mine, {part.player.player_id for part in picked}),
         out=[
             Out(player_id=part.player.player_id, name=part.player.name, role=part.role, outlets=count)
             for part in sorted(mine, key=lambda part: (ROLES.index(part.role), part.player.name))
@@ -203,9 +206,12 @@ def _likeliest(part: Listed) -> tuple[float, str]:
     return -part.present.p_start, part.player.name
 
 
-def _places(mine: Sequence[Listed]) -> list[Place]:
-    """Each ballottaggio as one place, its contenders joined whichever side named whom, and each other
-    player the outlets disagree about as a place of his own."""
+def _places(mine: Sequence[Listed], eleven: Collection[int]) -> list[Place]:
+    """The starting places in doubt (C3). Each ballottaggio with a likely starter in it is one place, its
+    contenders joined whichever side named whom, a rival found by surname when the outlet writes him another
+    way. Then, for each role, the likely starters the outlets disagree about share one place each, set against
+    as many of the next in line: the likeliest of the role outside the eleven. A bench player the outlets
+    disagree about is no starting place."""
     by_id = {part.player.player_id: part for part in mine}
     mates = [part.player for part in mine]
     group = {player_id: {player_id} for player_id in by_id}
@@ -223,25 +229,51 @@ def _places(mine: Sequence[Listed]) -> list[Place]:
     seen: set[int] = set()
     for part in sorted(mine, key=_likeliest):
         members = group[part.player.player_id]
-        if part.player.player_id in seen or (len(members) == 1 and not part.present.disputed):
+        if part.player.player_id in seen or len(members) == 1 or not members & set(eleven):
             continue
         seen |= members
-        contenders = sorted((by_id[member] for member in members), key=_likeliest)
-        places.append(
-            Place(
-                role=contenders[0].role,
-                contenders=[
-                    Contender(
-                        player_id=member.player.player_id,
-                        name=member.player.name,
-                        p_start=member.present.p_start,
-                        dissent=_dissent(member.present),
-                    )
-                    for member in contenders
-                ],
-            )
+        places.append(_place([by_id[member] for member in members], len(members & set(eleven))))
+    for role in ROLES:
+        held = [
+            part
+            for part in mine
+            if part.role == role
+            and part.player.player_id in eleven
+            and part.player.player_id not in seen
+            and part.present.disputed
+        ]
+        if not held:
+            continue
+        waiting = sorted(
+            (
+                part
+                for part in mine
+                if part.role == role
+                and part.player.player_id not in eleven
+                and part.player.player_id not in seen
+                and part.present.p_start > 0
+            ),
+            key=_likeliest,
         )
+        places.append(_place([*held, *waiting[: len(held)]], len(held)))
     return sorted(places, key=lambda place: ROLES.index(place.role))
+
+
+def _place(members: Sequence[Listed], places: int) -> Place:
+    contenders = sorted(members, key=_likeliest)
+    return Place(
+        role=contenders[0].role,
+        places=places,
+        contenders=[
+            Contender(
+                player_id=member.player.player_id,
+                name=member.player.name,
+                p_start=member.present.p_start,
+                dissent=_dissent(member.present),
+            )
+            for member in contenders
+        ],
+    )
 
 
 def _dissent(present: Availability) -> list[str]:
@@ -281,6 +313,13 @@ class CardPlayer(BaseModel):
     """A keeper's."""
     key: float
     """What he's worth this round, under the scoring table: the ordering key (method §A3)."""
+
+    @model_serializer(mode="wrap")
+    def _without_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """A keeper has no scoring chances and an outfield player no clean sheet: their fields are left out,
+        so that a card stays within its size (R6.2)."""
+        found: dict[str, object] = handler(self)
+        return {name: value for name, value in found.items() if value is not None}
 
 
 class Scorer(BaseModel):
@@ -384,15 +423,16 @@ def takers(order: PenaltyOrder | None, club: str, parts: Sequence[Valued]) -> li
 
 
 def rotation_risks(parts: Sequence[Valued], played: Mapping[str, int]) -> list[RotationRisk]:
-    """Players who usually start for their club, whose chance this round is low or whose place is disputed.
-    One an outlet lists as out is out, not a rotation risk."""
+    """Players who usually start for their club, whose chance this round is low. One the outlets disagree
+    about while he's still likely to start is in a disputed place instead, and one an outlet lists as out is
+    out."""
     found = []
     for part in parts:
         present, player = part.listed.present, part.listed.player
         matches = played.get(player.club, 0)
         usual = matches > 0 and part.form.rated_appearances >= USUAL_SHARE * matches
         out = any(view.status == "unavailable" for view in present.outlets)
-        if usual and not out and (present.p_start < ROTATION_P_START or present.disputed):
+        if usual and not out and present.p_start < ROTATION_P_START:
             found.append(
                 RotationRisk(
                     player_id=player.player_id,

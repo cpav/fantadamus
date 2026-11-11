@@ -94,6 +94,48 @@ def test_at4_two_places_and_a_rival_written_another_way() -> None:
     ]
 
 
+def test_at4_only_starting_places() -> None:
+    """A disputed place is a starting place: a bench player the outlets disagree about is none, and neither is
+    a ballottaggio between two bench players. A disputed starter is set against the next in line for his
+    role, and two disputed starters of one role share one place, with as many challengers as places."""
+    bench = [
+        *SQUAD[:5],
+        listed("Alfa Cinque", "D", (60, 60, 60, 20)),  # a starter the outlets disagree about
+        *SQUAD[6:12],
+        listed("Alfa Tredici", "A", (10, 50, 5, 30), rivals={"Gazzetta": ["Alfa Quattordici"]}),
+        listed("Alfa Quattordici", "A", (5, 30, 5, 5), rivals={"Gazzetta": ["Alfa Tredici"]}),
+        listed("Alfa Quindici", "D", (5, 45, 5, 5)),  # off the eleven, disputed: no place of his own
+        listed("Alfa Sedici", "D", (20, 30, 20, 20)),  # the next defender in line
+    ]
+    found = lineups("alfa", bench, KICKOFF)
+    assert [(place.role, place.places, [c.name for c in place.contenders]) for place in found.disputed] == [
+        ("D", 1, ["Alfa Cinque", "Alfa Sedici"])
+    ]
+    two = [
+        *SQUAD[:4],
+        listed("Alfa Quattro", "D", (60, 60, 60, 20)),
+        listed("Alfa Cinque", "D", (55, 55, 55, 15)),
+        *SQUAD[6:],
+        listed("Alfa Quindici", "D", (30, 30, 30, 30)),
+        listed("Alfa Sedici", "D", (20, 20, 20, 20)),
+        listed("Alfa Diciassette", "D", (10, 10, 10, 10)),
+    ]
+    place = lineups("alfa", two, KICKOFF).disputed
+    assert [(p.role, p.places, [c.name for c in p.contenders]) for p in place] == [
+        ("D", 2, ["Alfa Quattro", "Alfa Cinque", "Alfa Quindici", "Alfa Sedici"])
+    ]
+    nobody = [
+        *SQUAD[:5],
+        listed("Alfa Cinque", "D", (60, 60, 60, 20)),
+        *SQUAD[6:],
+        listed("Alfa Quindici", "D", (None,) * 4),
+    ]
+    place = lineups(
+        "alfa", nobody, KICKOFF
+    ).disputed  # the only other defender is out everywhere: no one in line
+    assert [[c.name for c in p.contenders] for p in place] == [["Alfa Cinque"]]
+
+
 def test_at4_an_outlet_that_disagrees() -> None:
     """A disputed player is a place of his own, naming the outlets on the smaller side of the consensus; an
     even split names none."""
