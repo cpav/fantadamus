@@ -78,9 +78,9 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
       `::test_the_away_side_and_an_even_match`, `::test_a_fixture_without_numbers`;
       `tests/integration/cards/test_card_tool.py::test_the_overview_before_the_fixtures`, `::test_the_overview_reads_only_its_pages`_
 
-- [ ] 7. The docs and the limits
+- [x] 7. The docs and the limits
   - Branch: `feat/cd-7-docs` · Depends on: 6 · ADRs: none
-  - [ ] 7.1 Format 5 as built and the overview's example; each tool's description with its rendering rules; the prompt's line within its
+  - [x] 7.1 Format 5 as built and the overview's example; each tool's description with its rendering rules; the prompt's line within its
     budget; the player guide; both tools within 3 seconds and 15 KB.
     - _Requirements: R6.2, R6.4, R6.5_
     - _Test: **AT-10** `tests/acceptance/cards/test_answer.py::test_at10_in_budget`, `::test_at10_from_no_new_page`;

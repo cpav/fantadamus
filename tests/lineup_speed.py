@@ -1,8 +1,9 @@
 """Time a lineup with no coverage tracer in the way: `python -m tests.lineup_speed` prints the CPU seconds
 one `best_lineup` takes on a synthetic round, with all its simulated rounds (mvp-lineup R4.6); `--review`, one
 `review_round` once the round has been played and its statistics read, and `--replayed` when no advice was
-asked for (mvp-review R5.2). Inside the test suite the tracer slows the simulation about sixfold and other
-workers compete for the machine, and neither is the user's wait."""
+asked for (mvp-review R5.2); `--card`, one `match_card`, and `--overview`, one `round_overview` (mvp-cards
+R6.2). Inside the test suite the tracer slows the simulation about sixfold and other workers compete for the
+machine, and neither is the user's wait."""
 
 from __future__ import annotations
 
@@ -48,8 +49,22 @@ async def _review_seconds(replayed: bool) -> float:
             return time.process_time() - started
 
 
+async def _card_seconds(tool: str, args: dict[str, str]) -> float:
+    """A match card, or the round overview, once the round's facts are stored (mvp-cards R6.2)."""
+    with tempfile.TemporaryDirectory() as folder:
+        async with a_round(Path(folder), rounds=SIMULATIONS) as here:
+            await here.ask()
+            started = time.process_time()
+            await here.client.call_tool(tool, {**args, "as_of": NOW.isoformat()})
+            return time.process_time() - started
+
+
 if __name__ == "__main__":
     if "--review" in sys.argv:
         print(asyncio.run(_review_seconds("--replayed" in sys.argv)))
+    elif "--card" in sys.argv:
+        print(asyncio.run(_card_seconds("match_card", {"club": "Alfa"})))
+    elif "--overview" in sys.argv:
+        print(asyncio.run(_card_seconds("round_overview", {})))
     else:
         print(asyncio.run(_seconds("--rules" in sys.argv)))

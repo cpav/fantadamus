@@ -239,30 +239,36 @@ def register(server: MCPServer, advisor: Advisor, squads: SquadStore) -> None:
     """Add `match_card` and `round_overview` to `server`."""
 
     @server.tool(
-        description="The next round at a glance: one line per fixture, in kickoff order (Rome time), with "
-        "the favourite and its chance, the draw, both sides' expected goals and clean sheets, and the chance "
-        "of three goals or more where the odds price it. Use it for a question across the round (where "
-        "are the goals, which keepers are safest), then offer match_card for any fixture. It returns "
-        "'overview', or 'refresh' when the round's fixtures aren't known yet; 'improve' lists what could "
-        "make it better. as_of replays an earlier time."
+        description="The next round at a glance, team-level only. In this order: the round and its deadline"
+        " (Rome time); then one line per fixture in kickoff order: the match and its kickoff, "
+        "the favourite and its chance and the draw, both sides' expected goals and clean "
+        "sheets, and three goals or more where the odds price it. Use it for a question across "
+        "the round (where are the goals, which keepers are safest), then offer match_card for "
+        "any fixture. It returns 'overview', or 'refresh' when the round's fixtures aren't "
+        "known yet; 'improve' lists what could make it better. as_of replays an earlier time."
     )
     def round_overview(as_of: AwareDatetime | None = None) -> OverviewResult:
         return overview_for(advisor, as_of=as_of)
 
     @server.tool(
-        description="One fixture of the next round on one screen: name one club, or both. It returns 'card' "
-        "with the context line (the match, its kickoff and the round's deadline in Rome time, when the facts "
-        "were updated); the match in numbers (each side's chance to win and the draw, expected goals, clean "
-        "sheets, three goals or more and both teams to score where the odds price them, the spread between "
-        "odds pages, each side's season so far with its record and last five results, oldest first); each "
-        "side's likely eleven with how sure it is, its disputed places with the outlets that disagree, who's "
-        "out and its penalty takers; each named player's chance of starting and of scoring, his share of his "
-        "side's goals, a keeper's clean sheet, and what he's worth; the likeliest scorers; rotation risks; "
-        "the user's players first; and the sources. Without stored league rules the points are Classic's "
-        "(classic_rules). 'improve' lists what could make it better: read with read_page, submit, ask again. "
-        "Other statuses: 'no_match', 'refused' (an unknown club, or two that don't meet) and 'refresh' "
-        "(the round's fixtures aren't known yet). A match of a round past its deadline comes as it stood "
-        "then (past_deadline). Pass team for a league-mate's squad; as_of replays an earlier time."
+        description="One fixture of the next round on one screen: name one club, or both. In this order: "
+        "the context line (the match, its kickoff and the round's deadline in Rome time, when "
+        "the facts were updated); the user's players in the match first (yours), with what each"
+        " is worth; the match in numbers (each side's chance to win and the draw, expected "
+        "goals, clean sheets, three goals or more and both teams to score where the odds price "
+        "them, how far apart the odds pages are); each side's season so far (goals per match, "
+        "its record and last five results, oldest first: context that should never move a "
+        "number); each side's likely eleven with how sure it is, its disputed places naming the"
+        " outlets that disagree, and who's out, said as 'listed as out by 3 outlets', never "
+        "'injured'; the penalty takers with their record; the likeliest scorers; rotation "
+        "risks. Sources at the bottom. Round chances the way people say them. Without stored "
+        "league rules the points are Classic's (classic_rules): say so. 'improve' lists what "
+        "could make it better: read with read_page, submit, ask again. Other statuses: "
+        "'no_match', 'refused' (an unknown club, or two that don't meet) and 'refresh' (the "
+        "round's fixtures aren't known yet). A match of a round past its deadline comes as it "
+        "stood then (past_deadline): say so. Players are named once in players, and by "
+        "player_id elsewhere. Pass team for a league-mate's squad; as_of replays an earlier "
+        "time."
     )
     def match_card(
         club: str,

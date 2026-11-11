@@ -184,20 +184,52 @@ Sources: Fantacalcio-Online, round 11 probable lineups · Fantacalcio.it, statis
 
 ## 5. The match card
 
-A later slice ("match-up intelligence" in `product.md`): one card per fixture.
+Built in `mvp-cards`: one fixture of the next round on one screen, asked by one club or both. It comes from the same
+facts and the same values as every other answer, so a card and an "X or Y?" never disagree.
 
 ```text
-Inter–Como · Sun 8 Nov 18:00 · updated 12 minutes ago
+Inter v Como · Sun 22 Nov 18:00 · round 12 locks Fri 20 Nov 20:45 · updated 12 minutes ago
 
-Inter 58% · draw 23% · Como 19%. Expected goals: Inter about 1.9, Como about 0.9.
-Clean sheets: Inter 41%, Como 15%.
-Likely lineups: two places disputed. Inter's right wing (Greco 60% v Mancini 40%), Como's striker.
-Out: Inter's Costa (injured). Penalties: Rossi (Inter), Lombardi (Como).
-Rest: Inter played Wednesday in the Champions League; rotation risk for the full-backs.
-Context: Como's new coach takes his first match. That widens Como's lineup uncertainty; it doesn't move the
-numbers.
-Most likely to score: Rossi 45%, Greco 22%.
-Sources: Fantacalcio-Online, round 11 probable lineups · Fantacalcio.it, table
+Your players: Rossi (Inter) 88% to start, worth about 7.4; Greco (Inter) 60%, about 6.6.
+
+Inter 58% · draw 23% · Como 19%. Expected goals: Inter about 1.9, Como about 0.9; 3 goals or more 52%.
+Clean sheets: Inter 41%, Como 15%. Two odds pages, 3 points apart.
+So far: Inter 2.0 scored and 0.9 conceded a match, 7 won, 1 drawn, 1 lost; last five W W D W W.
+        Como 1.5 and 1.1 a match, 5 won, 2 drawn, 2 lost; last five W L D W W.
+
+Inter: four outlets agree on nine places. Disputed: the right wing, Greco 60% v Mancini 40% (Sky has Mancini).
+Out: Costa, listed as out by 3 outlets.
+Como: the striker is disputed, Bianchi 55% v Neri 45%.
+Penalties: Rossi (Inter, 3 scored of 3), Lombardi (Como, 1 of 2).
+Most likely to score: Rossi 45%, Greco 22%, Lombardi 20%.
+Rotation risk: Como's Ferri usually starts, and is 45% this time.
+Official lineups are due about an hour before kickoff.
+
+Sources: Fantacalcio-Online, round 12 · Fantacalcio.it, statistics, table, penalty takers
+```
+
+- **In this order:** the context line, the user's players first, the match in numbers, each side's season so far, the
+  lineups with their disputed places and who's out, the takers, the likeliest scorers, the rotation risks, when the
+  official lineups are due, and the sources at the bottom.
+- **The season so far is context.** The record and the last five results (oldest first) are what happened; the numbers
+  come from the odds, and the form never moves one.
+- **Out means "listed as out by N outlets"**, never "injured": the outlets don't say why, or until when.
+- **Without league rules** the points are Classic's, and the card says so. A viewer in a live chat gets one at once.
+- **Past the deadline,** a match of that round comes as it stood then, said so.
+
+### The round overview
+
+The whole round at a glance, team-level only, in kickoff order. A question across the round ("where are the goals?",
+"which keepers are safest?") is answered from it, then any fixture's card is offered.
+
+```text
+Round 12 · locks Fri 20 Nov 20:45
+
+Fri 20:45  Venezia v Udinese   Udinese 41%, draw 30%    goals 1.0 v 1.2   clean sheets 30% · 37%   3+ 42%
+Sun 18:00  Inter v Como        Inter 58%, draw 23%      goals 1.9 v 0.9   clean sheets 41% · 15%   3+ 52%
+Sun 20:45  Roma v Lazio        Roma 39%, draw 31%       goals 1.3 v 1.1   clean sheets 33% · 27%   3+ 44%
+
+Safest keepers this round: Inter's (41%), Udinese's (37%). Most goals expected: Inter v Como.
 ```
 
 ## 6. The bench order
@@ -252,7 +284,9 @@ Not counted: Moretti, two matches between the statistics reads; decisive goals, 
 
 ## Later, in their own specs
 
-- **Live, during the match:** "Inter 1–0, 34': your projected score 73 → 76; Rossi scored." The data is already
-  kept as timestamped snapshots, so this can be added.
+- **Context, on the match card:** "Como's new coach takes his first match. That widens Como's lineup uncertainty; it
+  doesn't move the numbers." It needs a source for news, with its route approved: the new-sources slice.
+- **Rest days, on the match card:** "Inter played Wednesday in the Champions League; rotation risk for the
+  full-backs." It needs the other competitions' fixtures: the new-sources slice too.
 - **Alerts:** "Official lineup out: Bruno on the bench; your first defender off the bench comes in." This needs
   a way to reach the user unprompted, which today's tools don't have.
