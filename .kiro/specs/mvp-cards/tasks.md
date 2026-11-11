@@ -69,12 +69,14 @@ Status: **Approved by the owner, 2026-11-10** · From the approved [requirements
       **P4** `tests/property/cards/test_card.py::test_p4_as_player_outlook`, **P5** `::test_p5_a_replay_logs_nothing`;
       `tests/integration/cards/test_card_tool.py::test_statuses`, `::test_missing_lineups_still_give_a_card`_
 
-- [ ] 6. The round overview
+- [x] 6. The round overview
   - Branch: `feat/cd-6-overview` · Depends on: 5 · ADRs: none
-  - [ ] 6.1 `round_overview`: one line per fixture in kickoff order, team-level only, enough for a question across fixtures.
+  - [x] 6.1 `round_overview`: one line per fixture in kickoff order, team-level only, enough for a question across fixtures.
     - _Requirements: R5.1, R5.2_
     - _Test: **AT-7** `tests/acceptance/cards/test_overview.py::test_at7_one_line_per_fixture`, `::test_at7_the_safest_keepers`; **P5**
-      `tests/property/cards/test_overview.py::test_p5_in_kickoff_order`_
+      `tests/property/cards/test_overview.py::test_p5_in_kickoff_order`; `tests/unit/cards/test_overview_lines.py::test_a_line_by_hand`,
+      `::test_the_away_side_and_an_even_match`, `::test_a_fixture_without_numbers`;
+      `tests/integration/cards/test_card_tool.py::test_the_overview_before_the_fixtures`, `::test_the_overview_reads_only_its_pages`_
 
 - [ ] 7. The docs and the limits
   - Branch: `feat/cd-7-docs` · Depends on: 6 · ADRs: none

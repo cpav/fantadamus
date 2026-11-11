@@ -20,6 +20,7 @@ from pydantic import AwareDatetime, BaseModel
 from fantadamus.core.clubs import UnknownClubError
 from fantadamus.domains.cards import (
     CardPlayer,
+    FixtureLine,
     Lineups,
     Listed,
     MatchNumbers,
@@ -34,12 +35,14 @@ from fantadamus.domains.cards import (
     lineups,
     match_numbers,
     rotation_risks,
+    round_lines,
     scoring_rules,
     takers,
     your_players,
 )
-from fantadamus.domains.fixtures.gold import deadline, next_round
+from fantadamus.domains.fixtures.gold import deadline, matches, next_round
 from fantadamus.domains.fixtures.silver import FixtureRow
+from fantadamus.domains.odds.gold import TeamXg
 from fantadamus.domains.season.gold import known_players, league_goals_per_match, team_season
 from fantadamus.lake.decision_log import Decision
 from fantadamus.league.rules import StoredRules, left_out, scoring_for
@@ -98,6 +101,23 @@ class Card(BaseModel):
     """No league rules are stored, so the points are Classic's (R4.6)."""
     left_out: list[str]
     sources: list[SourceLine]
+
+
+class RoundOverview(BaseModel):
+    round: int
+    deadline: dt.datetime
+    """In Europe/Rome."""
+    as_of: dt.datetime
+    lines: list[FixtureLine]
+    """One per fixture, in kickoff order, kickoffs in Europe/Rome."""
+
+
+class OverviewResult(BaseModel):
+    status: Literal["overview", "refresh"]
+    message: str
+    overview: RoundOverview | None = None
+    improve: list[RefreshItem] = []
+    refresh: list[RefreshItem] = []
 
 
 class CardResult(BaseModel):
@@ -174,8 +194,60 @@ def card_for(
     )
 
 
+_OVERVIEW_FACTS = frozenset({"fixtures", "match_odds", "team_season"})
+"""What an overview reads: the takers and players' figures are the cards'."""
+
+
+def overview_for(advisor: Advisor, *, as_of: dt.datetime | None = None) -> OverviewResult:
+    """The next round at a glance (C6): each fixture's numbers, team-level only, gathering no player and
+    logging nothing."""
+
+    def ask(
+        when: dt.datetime, facts: Facts, _tried: Mapping[str, str] | None
+    ) -> tuple[Gathered, list[tuple[FixtureRow, TeamXg | None]]]:
+        return advisor.round_xg(when, facts=facts)
+
+    done = advisor.after_collecting(
+        as_of, ask, lambda found: [item.fact for item in found[0].plan.items if item.fact in _OVERVIEW_FACTS]
+    )
+    (gathered, found), when, tried = done.result, done.when, done.tried
+    items = [
+        item.model_copy(update={"collector": tried[item.fact]}) if item.fact in tried else item
+        for item in gathered.plan.items
+        if item.fact in _OVERVIEW_FACTS
+    ]
+    if gathered.round is None:
+        return OverviewResult(status="refresh", message=REFRESH, refresh=items)
+    lines = [
+        line.model_copy(update={"kickoff": line.kickoff.astimezone(ROME)})
+        for line in round_lines(found, advisor.clubs.names)
+    ]
+    lock = gathered.first_kickoff or min(match.kickoff_at for match, _ in found)
+    overview = RoundOverview(round=gathered.round, deadline=lock.astimezone(ROME), as_of=when, lines=lines)
+    said = f"Round {gathered.round}: {len(lines)} matches."
+    if any(not line.from_odds for line in lines):
+        said += " Some have no odds yet: team form gives their numbers, or there are none."
+    return OverviewResult(
+        status="overview",
+        message=said,
+        overview=RoundOverview.model_validate(_rounded(overview.model_dump())),
+        improve=items,
+    )
+
+
 def register(server: MCPServer, advisor: Advisor, squads: SquadStore) -> None:
-    """Add `match_card` to `server`."""
+    """Add `match_card` and `round_overview` to `server`."""
+
+    @server.tool(
+        description="The next round at a glance: one line per fixture, in kickoff order (Rome time), with "
+        "the favourite and its chance, the draw, both sides' expected goals and clean sheets, and the chance "
+        "of three goals or more where the odds price it. Use it for a question across the round (where "
+        "are the goals, which keepers are safest), then offer match_card for any fixture. It returns "
+        "'overview', or 'refresh' when the round's fixtures aren't known yet; 'improve' lists what could "
+        "make it better. as_of replays an earlier time."
+    )
+    def round_overview(as_of: AwareDatetime | None = None) -> OverviewResult:
+        return overview_for(advisor, as_of=as_of)
 
     @server.tool(
         description="One fixture of the next round on one screen: name one club, or both. It returns 'card' "
@@ -209,7 +281,11 @@ def _find(advisor: Advisor, keys: Sequence[str], facts: Facts, when: dt.datetime
         nobody = advisor.gather([], when, facts=facts, known=[])
         return _Found(None, None, nobody, past=_earlier(keys, facts.fixtures, when))
     match = next(
-        (row for row in _latest(facts.fixtures) if row.round == round and set(keys) <= {row.home, row.away}),
+        (
+            row
+            for row in matches(facts.fixtures, when)
+            if row.round == round and set(keys) <= {row.home, row.away}
+        ),
         None,
     )
     if match is None:
@@ -220,19 +296,11 @@ def _find(advisor: Advisor, keys: Sequence[str], facts: Facts, when: dt.datetime
     return _Found(round, match, advisor.gather(playing, when, facts=facts, known=known))
 
 
-def _latest(fixtures: Sequence[FixtureRow]) -> list[FixtureRow]:
-    """Each match's newest row: a moved kickoff counts as read last."""
-    newest: dict[tuple[int, str, str], FixtureRow] = {}
-    for row in sorted(fixtures, key=lambda row: row.captured_at):
-        newest[(row.round, row.home, row.away)] = row
-    return list(newest.values())
-
-
 def _earlier(keys: Sequence[str], fixtures: Sequence[FixtureRow], when: dt.datetime) -> FixtureRow | None:
     """Two clubs' match in the latest round whose deadline has passed, if they met in it."""
     if len(keys) != 2:
         return None
-    rows = _latest(fixtures)
+    rows = matches(fixtures, when)
     locks: dict[int, dt.datetime] = {}
     for row in rows:
         locks[row.round] = min(locks.get(row.round, row.kickoff_at), row.kickoff_at)

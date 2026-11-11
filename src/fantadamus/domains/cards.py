@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.league import LeagueRules
 from fantadamus.domains.availability.consensus import Availability
+from fantadamus.domains.fixtures.silver import FixtureRow
 from fantadamus.domains.odds.gold import TeamXg
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
 from fantadamus.domains.season.gold import PenaltyOrder
@@ -414,3 +415,52 @@ def your_players(parts: Sequence[Valued], squad: Collection[int]) -> list[CardPl
         card_player(part)
         for part in sorted(mine, key=lambda part: (ROLES.index(part.listed.role), *_likeliest(part.listed)))
     ]
+
+
+class FixtureLine(BaseModel):
+    """One fixture of the round overview, team-level only (C6)."""
+
+    home: str
+    away: str
+    kickoff: dt.datetime
+    favourite: str | None = None
+    """The likelier winner; None in an even match, or without numbers."""
+    p_favourite: float | None = None
+    p_draw: float | None = None
+    home_goals: float | None = None
+    away_goals: float | None = None
+    home_clean_sheet: float | None = None
+    away_clean_sheet: float | None = None
+    p_three_or_more: float | None = None
+    from_odds: bool = False
+    """Without odds, team form gives the numbers; without either there are none."""
+
+
+def round_lines(
+    rows: Sequence[tuple[FixtureRow, TeamXg | None]], names: Mapping[str, str]
+) -> list[FixtureLine]:
+    """The round overview's lines, in kickoff order (R5.1), each from the match's team xG as a card has it."""
+    found = []
+    for match, xg in sorted(rows, key=lambda pair: (pair[0].kickoff_at, pair[0].home, pair[0].away)):
+        line = FixtureLine(home=names[match.home], away=names[match.away], kickoff=match.kickoff_at)
+        if xg is not None:
+            numbers = match_numbers(xg, match.home, match.away, {})
+            home, away = numbers.home, numbers.away
+            favourite = (
+                line.home if home.p_win > away.p_win else line.away if away.p_win > home.p_win else None
+            )
+            line = line.model_copy(
+                update={
+                    "favourite": favourite,
+                    "p_favourite": max(home.p_win, away.p_win),
+                    "p_draw": numbers.p_draw,
+                    "home_goals": home.expected_goals,
+                    "away_goals": away.expected_goals,
+                    "home_clean_sheet": home.p_clean_sheet,
+                    "away_clean_sheet": away.p_clean_sheet,
+                    "p_three_or_more": numbers.p_three_or_more,
+                    "from_odds": numbers.from_odds,
+                }
+            )
+        found.append(line)
+    return found

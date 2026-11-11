@@ -10,8 +10,8 @@ from typing import Any
 import pytest
 
 from fantadamus.web.fetch import Response
-from tests.collect_harness import ROUND_ROUTE
-from tests.collect_pages import FcoMatch
+from tests.collect_harness import ROUND_ROUTE, TAKERS_ROUTE
+from tests.collect_pages import FcoMatch, takers_page
 from tests.lineup_harness import MATCHES, a_round
 
 pytestmark = pytest.mark.anyio
@@ -51,3 +51,28 @@ async def test_missing_lineups_still_give_a_card(tmp_path: Path) -> None:
     assert card["numbers"]["home"]["expected_goals"] > 0
     assert all(side["eleven"] == [] for side in card["sides"])
     assert "probable_lineups" in [item["fact"] for item in found["improve"]]
+
+
+async def test_the_overview_before_the_fixtures(tmp_path: Path) -> None:
+    """Without the round's fixtures the overview asks for them, as a card does."""
+    async with a_round(tmp_path) as here:
+        here.routes[f"{here.base}{ROUND_ROUTE}"] = Response(500, {}, b"")
+        result = await here.client.call_tool("round_overview", {})
+    content = result.structured_content
+    assert content is not None
+    assert content["status"] == "refresh"
+    assert "fixtures" in [item["fact"] for item in content["refresh"]]
+
+
+async def test_the_overview_reads_only_its_pages(tmp_path: Path) -> None:
+    """With no penalty takers stored, the overview still doesn't send the collector for them: they're the
+    cards', and a glance at the round doesn't need them."""
+    page = takers_page({club: [f"{club} Nove"] for club in ("Alfa", "Beta", "Gamma", "Delta")})
+    async with a_round(tmp_path, takers=page) as here:
+        result = await here.client.call_tool("round_overview", {})
+        fetched = [url for url, _, _ in here.web.calls]
+    content = result.structured_content
+    assert content is not None
+    assert content["status"] == "overview", content
+    assert not any(url.endswith(TAKERS_ROUTE) for url in fetched)
+    assert "penalty_takers" not in [item["fact"] for item in content["improve"]]

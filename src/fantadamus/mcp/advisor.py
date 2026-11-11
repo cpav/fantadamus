@@ -38,7 +38,7 @@ from fantadamus.domains.availability.silver import (
     OutletViewRow,
 )
 from fantadamus.domains.facts import SilverRow, Source, latest_by, read_silver
-from fantadamus.domains.fixtures.gold import deadline, fixture, next_round
+from fantadamus.domains.fixtures.gold import deadline, fixture, matches, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES, FixtureRow
 from fantadamus.domains.freshness import FACTS_WINDOW, Fact, is_fresh
 from fantadamus.domains.odds.gold import TeamXg, team_xg
@@ -795,6 +795,20 @@ class Advisor:
             need(
                 self._match_item("probable_lineups", "stale" if stale else "missing", match), match.kickoff_at
             )
+        return present, self._match_xg(match, facts, teams, as_of, odds_unavailable, need, recent)
+
+    def _match_xg(
+        self,
+        match: FixtureRow,
+        facts: Facts,
+        teams: Sequence[TeamSeasonRow],
+        as_of: dt.datetime,
+        odds_unavailable: bool,
+        need: Callable[[RefreshItem, dt.datetime], None],
+        recent: _Recent,
+    ) -> TeamXg | None:
+        """The match's team xG from its fresh odds, or team form without them, asking for the odds when
+        they're missing or stale."""
         fresh_odds = recent.of(facts.odds, "match_odds", ODDS.table.name, match.kickoff_at)
         odds = [row for row in fresh_odds if (row.home, row.away) == (match.home, match.away)]
         xg = team_xg(odds, teams, home=match.home, away=match.away, as_of=as_of)
@@ -806,7 +820,23 @@ class Advisor:
             need(self._match_item("match_odds", "stale" if stale else "missing", match), match.kickoff_at)
         elif not odds_unavailable and all(row.p_over is None for row in odds):
             need(self._match_item("match_odds", "partial", match), match.kickoff_at)
-        return present, xg
+        return xg
+
+    def round_xg(
+        self, as_of: dt.datetime, *, facts: Facts
+    ) -> tuple[Gathered, list[tuple[FixtureRow, TeamXg | None]]]:
+        """The next round's matches, each with its team xG as an answer prices it, and what's missing or
+        stale, without gathering a player (mvp-cards C6)."""
+        gathered = self.gather([], as_of, facts=facts, known=[])
+        if gathered.round is None:
+            return gathered, []
+        confirmed = self.collect_log.confirmed(as_of) if self.collect_log is not None else {}
+        recent = _Recent(as_of, confirmed, {})
+        return gathered, [
+            (match, self._match_xg(match, facts, gathered.teams, as_of, False, gathered.plan.need, recent))
+            for match in matches(gathered.fixtures, as_of)
+            if match.round == gathered.round
+        ]
 
     def _answer(
         self,
