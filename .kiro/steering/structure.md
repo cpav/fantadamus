@@ -95,7 +95,7 @@ The repository may contain a `private.example.toml` with placeholder values only
 | ADRs | `docs/adr/NNNN-<kebab-decision>.md`, numbered in order, never renumbered | `0002-iac-cdk-vs-terraform.md` |
 | Requirement IDs | `R<requirement>.<criterion>`, unique within a spec; across specs, `<spec>#R<n>.<m>` | `R3.2`, `data-foundation#R4.1` |
 | Acceptance tests | `AT-<n>` per spec; test function `test_at<n>_<slug>` in `tests/acceptance/` | `test_at4_fake_aws_key_rejected` |
-| Branches | `<type>/<spec-abbrev>-<task-id>-<slug>`; types `feat`, `fix`, `refactor`, `test`, `chore`, `docs`; abbreviations `ef`, `xy`, `mc`, `mr`, `ml`, `ru`, `rv`, `cd` | `chore/ef-1.4-test-harness` |
+| Branches | `<type>/<spec-abbrev>-<task-id>-<slug>`; types `feat`, `fix`, `refactor`, `test`, `chore`, `docs`; abbreviations `ef`, `xy`, `mc`, `mr`, `ml`, `ru`, `rv`, `cd`, `rc` | `chore/ef-1.4-test-harness` |
 | Commits | Conventional Commits; the scope is the spec abbreviation or domain | `feat(availability): add consensus p_start` |
 | AWS resources | Prefix `fantadamus-` (SSM paths `/fantadamus/`). **The prefix is the security boundary**: the deploy role can touch nothing else | `fantadamus-lake-<account>` |
 | AWS tags | `Project=fantadamus`, `Environment`, `Spec`, `ManagedBy` (`terraform/bootstrap` or `terraform/stack`) | |
