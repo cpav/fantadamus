@@ -196,6 +196,25 @@ def test_agent_prompt_covers_the_review() -> None:
     assert "## 7. The review" in formats
 
 
+def test_agent_prompt_covers_the_cards() -> None:
+    """mvp-cards task 7.1 (R6.4, R6.5): Claude knows the two tools and when to call them, within the prompt's
+    budget, the guide says what to ask, and format 5 is the card as built, with the overview beside it."""
+    prompt = _agent_prompt()
+    for part in ("`match_card`", "`round_overview`", "each tool's description says how to show it"):
+        assert part in prompt, part
+    assert len(prompt) < PROMPT_BUDGET
+    guide = " ".join((ROOT / "docs" / "player-setup.md").read_text(encoding="utf-8").split())
+    assert "Tell me about" in guide
+    assert "Where are the goals this round?" in guide
+    formats = (ROOT / "docs" / "answer-formats.md").read_text(encoding="utf-8")
+    card = formats.split("## 5. The match card", 1)[1].split("\n## 6.", 1)[0]
+    for part in ("Built in `mvp-cards`", "The round overview", "listed as out by", "last five results"):
+        assert part in card, part
+    later = formats.split("## Later, in their own specs", 1)[1]
+    assert "Context" in later
+    assert "Rest days" in later
+
+
 def test_player_guide_covers_the_lineup() -> None:
     """mvp-lineup task 8.3 (R9.2): what it now answers, how to give a squad and rules, and where the profile
     goes."""

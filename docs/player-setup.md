@@ -11,7 +11,7 @@ and the Terminal app (in Applications → Utilities). Windows isn't supported ye
 **What it does:** for the next round, the full lineup for your squad under your league's rules: the eleven, the
 bench in order and the formation, with the expected score and the chance of reaching each goal threshold. It also
 answers "X or Y?" between two players of the same role, gives one player's outlook ("Will he start? Is he worth
-it?"), and after a round reviews the lineup you fielded.
+it?"), shows a match on one screen or the whole round at a glance, and after a round reviews the lineup you fielded.
 
 ## 1. Install uv
 
@@ -128,7 +128,9 @@ In a new chat in the Fantadamus project, ask for example:
 - If you'd rather play someone else, say so. Claude says once what that costs, then helps with your choice.
 
 You can also ask "Lautaro or Thuram this round?", "Which formation?", "How do I order my bench?" or "Will Lautaro
-start?".
+start?". For a match, ask "Tell me about Inter–Como": its card gives the odds as plain chances, the goals and clean
+sheets, both likely elevens and how sure they are, who's out, the penalty takers, the likeliest scorers and your
+players in it, first. For the whole round, ask "Where are the goals this round?" or "Which keepers are safest?".
 
 If Claude answers without showing a Fantadamus tool block, say "Use Fantadamus for this".
 
