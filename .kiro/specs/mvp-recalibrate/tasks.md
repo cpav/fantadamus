@@ -1,6 +1,6 @@
 # Implementation Plan: `mvp-recalibrate` (Phase 2, seventh slice)
 
-Status: **Draft for the owner's approval, 2026-11-11** · From the approved [requirements](requirements.md) and the [design](design.md)
+Status: **Approved by the owner, 2026-11-11** · From the approved [requirements](requirements.md) and the [design](design.md)
 
 ## How to read and run these tasks
 

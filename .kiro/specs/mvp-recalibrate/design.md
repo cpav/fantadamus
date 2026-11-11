@@ -1,6 +1,6 @@
 # Design Document: `mvp-recalibrate` (Phase 2, seventh slice)
 
-Status: **Draft for the owner's approval, 2026-11-11** · From the approved [requirements](requirements.md)
+Status: **Approved by the owner, 2026-11-11**, with both open points · From the approved [requirements](requirements.md)
 
 ## Overview
 
@@ -40,8 +40,8 @@ private calibration folder. The report itself is unchanged. `fantadamus calibrat
 way every time.
 
 **What can be seen.** The statistics page counts rated games only, so a substitute who came on without a rating can't be told
-from one who didn't come on. A set therefore records "rated without starting", not "came on". R1.1 and R3.1 are amended to
-say so (open point 1).
+from one who didn't come on. A set therefore records "rated without starting", not "came on". R1.1 and R3.1 say so (open point 1,
+approved).
 
 ### C2. The starting map (`engine/recalibrate.py`, pure; R2.1)
 
@@ -86,7 +86,7 @@ From the latest statistics read and the table, league-wide:
 | `RED_RATE` | red cards over rated games, by role |
 
 Each comes with its count and a 90% interval. These are counts, not predictions. They get no held-out Brier score (C6), and
-the proposal keeps them in a section of their own (open point 2).
+the proposal keeps them in a section of their own (open point 2, approved).
 
 ### C6. Held-out checks and minimum samples (`engine/recalibrate.py`, pure; R5, R6)
 
@@ -191,6 +191,8 @@ $0. No page is read and nothing runs on AWS. A fit runs on a few thousand stored
 8. **A real check and sign-off:** a mutation run and the slice report.
 
 ## Open points for the owner
+
+Both approved on 2026-11-11, and the requirements amended.
 
 1. **"Came on" can't be seen.** The statistics page counts rated games only. Recommendation: amend R1.1 and R3.1 to "rated
    without starting", and estimate `CAMEO_SHARE` from defenders and midfielders and `CAMEO_RATED` from forwards (C4).
