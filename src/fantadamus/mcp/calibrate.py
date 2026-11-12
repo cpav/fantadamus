@@ -30,21 +30,25 @@ from fantadamus.domains.calibration import (
     SetRow,
     StatsLine,
     Tally,
+    add_market,
     add_outcomes,
     club_sheet,
     final_overrides,
     finished_round,
     last_told,
+    match_score,
     outcome_of,
     round_frame,
     statistics_reads,
 )
+from fantadamus.domains.cards import match_numbers
 from fantadamus.domains.facts import latest_by, latest_submissions, read_silver
 from fantadamus.domains.fixtures.gold import deadline, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES, FixtureRow
 from fantadamus.domains.freshness import FACTS_WINDOW
 from fantadamus.domains.odds.gold import team_xg
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
+from fantadamus.domains.review import goals_against
 from fantadamus.domains.season.gold import (
     known_players,
     league_goals_per_match,
@@ -147,13 +151,7 @@ class Calibrator:
             self._read_after(frame, now)
             now = self.clock()
         rows = read_silver(self.lake, SEASON_STATS, frame.first_kickoff - FACTS_WINDOW, now)
-        changed, same = changed_reads(rows)
-        before, after = statistics_reads(changed, frame, worked=[*same, *self._worked(now)])
-
-        def at(when: dt.datetime | None) -> Mapping[int, PlayerSeasonRow] | None:
-            return None if when is None else {row.player_id: row for row in rows if row.captured_at == when}
-
-        return at(before), at(after)
+        return _reads(rows, frame, self._worked(now))
 
     def _read_finished_page(self, round: int, now: dt.datetime, *, wait: bool = True) -> bool:
         """Whether the round's page gave who started: it's asked again later if not (R7.2)."""
@@ -170,8 +168,8 @@ class Calibrator:
             self.collect_log.append(report)
 
     def score(self, round: int, now: dt.datetime) -> RoundReport:
-        """Both sets, against what happened, stored (R7.4), with the model set's rows kept first, so that a
-        report is never stored without them (mvp-recalibrate R1.1)."""
+        """Both sets and the market's, against what happened, stored (R7.4; mvp-recalibrate R7.1), with the
+        model set's rows kept first, so that a report is never stored without them (mvp-recalibrate R1.1)."""
         fixtures = read_silver(self.lake, FIXTURES)
         frame = round_frame(fixtures, round, now)
         if frame is None:
@@ -182,7 +180,8 @@ class Calibrator:
         known = known_players([*read_silver(self.lake, PLAYER_SEASONS, since, now), *stats], now)
         by_id = {player.player_id: player for player in known}
         sheets = self._sheets(frame, known, now)
-        before, after = _statistics(stats, frame, self._worked(now))
+        rows_before, rows_after = _reads(stats, frame, self._worked(now))
+        before, after = _lines(rows_before), _lines(rows_after)
 
         kickoffs = {club: row.kickoff_at for row in frame.matches for club in (row.home, row.away)}
 
@@ -203,12 +202,15 @@ class Calibrator:
                 p_clean_sheet=logged.p_clean_sheet,
             )
         overrides = final_overrides(decisions, round, frame.first_kickoff, MINE)
-        model = self._model_on_everyone(frame, known, sheets, before, after, now)
+        facts = Facts.read(self.lake, frame.last_kickoff)
+        model = self._model_on_everyone(frame, facts, known, sheets, before, after, now)
+        against = goals_against(rows_before, rows_after) if rows_after is not None else {}
         report = RoundReport(
             round=round,
             scored_at=now,
             told=told.report(),
             model=model.report(),
+            market=_market(frame, facts, sheets, against).report(),
             overrides=len(overrides),
             override_cost=sum(overrides),
         )
@@ -234,6 +236,7 @@ class Calibrator:
     def _model_on_everyone(
         self,
         frame: RoundFrame,
+        facts: Facts,
         known: list[KnownPlayer],
         sheets: Mapping[str, ClubSheet],
         before: Mapping[int, StatsLine] | None,
@@ -244,7 +247,6 @@ class Calibrator:
         lineups stay out: this scores the forecast, not the answer. Chances don't depend on a league's
         bonuses, so Classic's do. Starting needs no model: with nothing held then, it's the page's own
         percentages (design C10)."""
-        facts = Facts.read(self.lake, frame.last_kickoff)
         listed = read_silver(self.lake, OUTLET_VIEWS, frame.first_kickoff - FACTS_WINDOW, now)
         tally = Tally()
         for match in frame.matches:
@@ -265,25 +267,44 @@ def changed_reads(rows: Sequence[PlayerSeasonRow]) -> tuple[list[dt.datetime], l
     return changed, same
 
 
-def _statistics(
+def _reads(
     rows: Sequence[PlayerSeasonRow], frame: RoundFrame, worked: Sequence[dt.datetime]
-) -> tuple[Mapping[int, StatsLine] | None, Mapping[int, StatsLine] | None]:
-    """His figures in the read before the round and in the read after it."""
-
-    def read_at(when: dt.datetime | None) -> Mapping[int, StatsLine] | None:
-        if when is None:
-            return None
-        return {
-            row.player_id: StatsLine(
-                rated_appearances=row.rated_appearances, goals=row.goals, goals_conceded=row.goals_conceded
-            )
-            for row in rows
-            if row.captured_at == when
-        }
-
+) -> tuple[Mapping[int, PlayerSeasonRow] | None, Mapping[int, PlayerSeasonRow] | None]:
+    """Each player's row in the read before the round and in the read after it."""
     changed, same = changed_reads(rows)
     before, after = statistics_reads(changed, frame, worked=[*same, *worked])
-    return read_at(before), read_at(after)
+
+    def at(when: dt.datetime | None) -> Mapping[int, PlayerSeasonRow] | None:
+        return None if when is None else {row.player_id: row for row in rows if row.captured_at == when}
+
+    return at(before), at(after)
+
+
+def _lines(read: Mapping[int, PlayerSeasonRow] | None) -> Mapping[int, StatsLine] | None:
+    """His figures in a read, as far as scoring needs them."""
+    if read is None:
+        return None
+    return {
+        player_id: StatsLine(
+            rated_appearances=row.rated_appearances, goals=row.goals, goals_conceded=row.goals_conceded
+        )
+        for player_id, row in read.items()
+    }
+
+
+def _market(
+    frame: RoundFrame, facts: Facts, sheets: Mapping[str, ClubSheet], against: Mapping[str, int | None]
+) -> Tally:
+    """Each match's chances as its card shows them, from the odds held before its kickoff, against its score
+    from the keepers' rows (mvp-recalibrate C7). A match without either club's sheet wasn't played."""
+    tally = Tally()
+    for match in frame.matches:
+        as_of = match.kickoff_at - dt.timedelta(microseconds=1)
+        xg = team_xg(facts.odds, facts.teams, home=match.home, away=match.away, as_of=as_of)
+        numbers = match_numbers(xg, match.home, match.away, {}) if xg is not None else None
+        played = match.home in sheets and match.away in sheets
+        add_market(tally, numbers, match_score(match.home, match.away, against, played=played))
+    return tally
 
 
 def _score_match(

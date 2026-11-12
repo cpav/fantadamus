@@ -93,6 +93,7 @@ pytest_add_cli_args_test_selection = [
     "tests/acceptance/recalibrate/test_map.py",  # pure: the map, by hand
     "tests/acceptance/recalibrate/test_rates.py",  # pure: the rates, by hand
     "tests/acceptance/recalibrate/test_checks.py",  # pure: the checks, by hand
+    "tests/acceptance/recalibrate/test_market.py",  # pure: the market, by hand
 ]
 pytest_add_cli_args = [
     "--timeout=30",
