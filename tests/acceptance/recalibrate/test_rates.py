@@ -8,7 +8,8 @@ import math
 import pytest
 
 from fantadamus.contracts.types import Role
-from fantadamus.domains.calibration import Outcome, SetRow, cameo_rates, season_rates
+from fantadamus.domains.calibration import Outcome, SetRow
+from fantadamus.domains.recalibration import cameo_rates, season_rates
 from fantadamus.domains.season.silver import PlayerSeasonRow
 from fantadamus.engine.recalibrate import Rate
 from tests.cards_data import source, table_row
@@ -42,6 +43,7 @@ def _row(
     p_start: float = 0.3,
     p_rating: float | None = 0.65,
     p_scores_cameo: float | None = None,
+    priced: bool | None = None,
 ) -> SetRow:
     return SetRow(
         round=10,
@@ -56,21 +58,26 @@ def _row(
         p_scores=None,
         p_scores_cameo=p_scores_cameo,
         p_clean_sheet=None,
+        priced_cameo=role == "A" if priced is None else priced,
         outcome=Outcome(started=started, rated=rated, scored=False, clean_sheet=False),
     )
 
 
 def test_at3_cameos_by_hand() -> None:
-    """CAMEO_SHARE from the defenders and midfielders who didn't start and could have come on: how often they
-    got a rating. CAMEO_RATED from the forwards, given that share: a forward's cameo is rated if he scores, or
-    this often if not, so 9 of 60 at a share of 0.3 and a 10% chance of a goal is (0.15 / 0.3 - 0.1) / 0.9."""
+    """CAMEO_SHARE from the defenders and midfielders with a flat cameo who didn't start and could have come
+    on: how often they got a rating. CAMEO_RATED from those whose cameo is priced, forwards and attacking
+    midfielders, given that share: such a cameo is rated if he scores, or this often if not, so 9 of 60 at a
+    share of 0.3 and a 10% chance of a goal is (0.15 / 0.3 - 0.1) / 0.9."""
     rows = [
         *(_row(index, "D" if index % 2 else "C", rated=index < 3) for index in range(10)),
         _row(20, "D", rated=True, started=True, p_start=0.9, p_rating=0.95),  # he started
         _row(21, "C", rated=False, p_start=0.0, p_rating=0.0),  # out: no chance of a cameo
         _row(22, "D", rated=NO_SHEET),  # what happened isn't known
         _row(23, "P", rated=True),  # a keeper's cameo isn't the model's
-        *(_row(100 + index, "A", rated=index < 9, p_scores_cameo=0.1) for index in range(60)),
+        *(
+            _row(100 + index, "C" if index == 59 else "A", rated=index < 9, p_scores_cameo=0.1, priced=True)
+            for index in range(60)  # one an attacking midfielder: a priced cameo, like a forward's
+        ),
         _row(200, "A", rated=True),  # no cameo chance of scoring priced: nothing held before kickoff
     ]
     fitted = cameo_rates(rows)
@@ -91,7 +98,7 @@ def test_at3_cameos_without_evidence() -> None:
     benched = [_row(1, "D", rated=True), _row(2, "C", rated=False)]
     no_forward = cameo_rates(benched)
     assert [rate.name for rate in no_forward.rates] == ["CAMEO_SHARE"]
-    assert no_forward.missing == ["CAMEO_RATED: no forward who didn't start and could have come on"]
+    assert no_forward.missing == ["CAMEO_RATED: no attacker who didn't start and could have come on"]
     scorers = cameo_rates([*benched, _row(3, "A", rated=True, p_scores_cameo=1.0)])  # every cameo scores
     assert [rate.name for rate in scorers.rates] == ["CAMEO_SHARE"]
     assert scorers.missing == ["CAMEO_RATED: the evidence can't tell"]
