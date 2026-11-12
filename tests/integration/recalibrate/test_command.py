@@ -12,7 +12,8 @@ from fantadamus.cli import __main__ as cli
 from fantadamus.web.fetch import Response
 from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE
 from tests.collect_pages import FcoMatch, fco_round_page
-from tests.lineup_harness import MATCHES, a_round, stats_after, the_next_round
+from tests.lineup_harness import MATCHES, READ, a_round, stats_after, the_next_round
+from tests.xy_harness import NOW
 
 pytestmark = pytest.mark.anyio
 
@@ -42,8 +43,8 @@ async def test_recalibrate_on_invented_rounds(
     assert "  evidence: 56 players whose start is known (its minimum: 300)" in lines
     kept = here.scores.proposal()
     assert kept is not None
-    assert kept.read_at is not None
-    assert kept.read_at >= AFTER - dt.timedelta(hours=12)  # the read after the round, the latest
+    assert kept.table_at == READ  # the harness's table
+    assert kept.read_at == NOW  # the read that goes with it, not the one after the round
     assert kept.season[0].name == "PENALTY_RATE"
     assert "PENALTY_CONVERSION: no penalty taken" in kept.not_counted  # the invented players took none
     assert kept.season[0].rate is not None

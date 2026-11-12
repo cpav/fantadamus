@@ -64,6 +64,8 @@ class Rate(BaseModel):
     value: float
     count: int
     """What it's counted over: players, games or matches."""
+    events: int
+    """How many of them it counts happening."""
     low: float
     high: float
 
@@ -75,7 +77,7 @@ def counted(name: str, events: int, count: int) -> Rate:
     middle = (share + spread / 2) / (1 + spread)
     half = _Z * math.sqrt(share * (1 - share) / count + spread / (4 * count)) / (1 + spread)
     low, high = min(max(middle - half, 0.0), share), max(min(middle + half, 1.0), share)
-    return Rate(name=name, value=share, count=count, low=low, high=high)
+    return Rate(name=name, value=share, count=count, events=events, low=low, high=high)
 
 
 def cameo_share(rated: Sequence[bool]) -> Rate | None:
@@ -87,7 +89,8 @@ def cameo_share(rated: Sequence[bool]) -> Rate | None:
 def cameo_rated(forwards: Sequence[tuple[float, bool]], share: float) -> Rate | None:
     """`CAMEO_RATED` (C4), from forwards who didn't start and could have come on: each one's chance of
     scoring if he did, and whether he got a rating. He comes on `share` of the time, and his cameo is rated if
-    he scores or, if not, `CAMEO_RATED` of the time: solved from how often they got one, with its interval."""
+    he scores or, if not, `CAMEO_RATED` of the time: solved from how often they got one, with its interval.
+    None when that's outside 0 to 1: the share and their goals can't explain how often they got one."""
     if not forwards or share <= 0:
         return None
     scoring = math.fsum(chance for chance, _ in forwards) / len(forwards)
@@ -98,6 +101,8 @@ def cameo_rated(forwards: Sequence[tuple[float, bool]], share: float) -> Rate | 
     def solved(rate: float) -> float:
         return min(max((rate / share - scoring) / (1 - scoring), 0.0), 1.0)
 
+    if not 0 <= (seen.value / share - scoring) / (1 - scoring) <= 1:
+        return None
     return seen.model_copy(
         update={"value": solved(seen.value), "low": solved(seen.low), "high": solved(seen.high)}
     )

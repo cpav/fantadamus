@@ -15,8 +15,8 @@ from pathlib import Path
 from fantadamus.core.clock import utc_now
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.calibration import render
-from fantadamus.domains.facts import latest_by, read_silver
-from fantadamus.domains.recalibration import propose, render_proposal
+from fantadamus.domains.facts import read_silver
+from fantadamus.domains.recalibration import propose, render_proposal, season_read
 from fantadamus.domains.season.silver import SEASON_STATS, TEAM_SEASONS
 from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
@@ -110,8 +110,8 @@ def _calibrate(args: argparse.Namespace) -> int:
 
 
 def _recalibrate(args: argparse.Namespace) -> int:
-    """The proposal, from the stored sets, the latest statistics read and the table. It reads no page and
-    changes no constant: it keeps the proposal beside the sets."""
+    """The proposal, from the stored sets, the latest table and the statistics read that goes with it. It
+    reads no page and changes no constant: it keeps the proposal beside the sets."""
     scores = _scores(args)
     asked = args.rounds or scores.set_rounds()
     sets = {round: kept.rows for round in asked if (kept := scores.calibration_set(round)) is not None}
@@ -120,13 +120,13 @@ def _recalibrate(args: argparse.Namespace) -> int:
         return 1
     now = utc_now()
     lake = LakeStore(Path(args.lake))
-    stats = read_silver(lake, SEASON_STATS, None, now)
-    latest = max((row.captured_at for row in stats), default=None)
-    teams = latest_by(read_silver(lake, TEAM_SEASONS, None, now), now, key=lambda row: row.club)
+    players, teams = season_read(
+        read_silver(lake, SEASON_STATS, None, now), read_silver(lake, TEAM_SEASONS, None, now), as_of=now
+    )
     proposal = propose(
         sets,
-        [row for row in stats if row.captured_at == latest],
-        list(teams.values()),
+        players,
+        teams,
         made_at=now,
         missing=[round for round in asked if round not in sets],
     )

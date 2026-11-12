@@ -107,6 +107,7 @@ def test_at8_the_proposal() -> None:
     proposal = propose(sets, READ, TABLE, made_at=MADE, missing=[9])
     assert (proposal.rounds, proposal.missing_rounds) == ([10, 11], [9])
     assert proposal.read_at == READ[0].captured_at
+    assert proposal.table_at == TABLE[0].captured_at
 
     start, share = proposal.fitted  # no forward: CAMEO_RATED isn't counted, so it isn't fitted
     assert start.name == "START_MAP"
@@ -180,10 +181,13 @@ def test_at8_the_proposal_in_words() -> None:
     ) in lines
     assert "CAMEO_SHARE: not proposed: below its minimum sample: 60 of 200" in lines
     assert (
-        f"  today: 0.500; fitted: {rate.value:.3f}, 90% between {rate.low:.3f} and {rate.high:.3f}" in lines
+        f"  today: 0.500; fitted: {rate.value:.3f} over 60, 90% between {rate.low:.3f} and {rate.high:.3f}"
+        in lines
     )
     assert "  evidence: 60 players who didn't start and could have come on (its minimum: 200)" in lines
     assert "The season's own rates: counts, not forecasts" in lines
+    read = f"{READ[0].captured_at:%Y-%m-%d %H:%M}"
+    assert f"Counted from the statistics read of {read} UTC and the table of {read} UTC." in lines
     assert "PENALTY_RATE: proposed: counted, not forecast: no held-out check" in lines
     assert "Not counted" in lines
     assert "  CAMEO_RATED: no attacker who didn't start and could have come on" in lines
@@ -198,12 +202,16 @@ def test_at8_the_proposal_in_words() -> None:
     penalties = next(value for value in proposal.season if value.name == "PENALTY_RATE").rate
     assert penalties is not None
     assert (
-        f"  today: 0.150; fitted: {40 / 44:.3f}, 90% between {penalties.low:.3f} and {penalties.high:.3f}"
+        f"  today: 0.150; fitted: {40 / 44:.3f} over 44, "
+        f"90% between {penalties.low:.3f} and {penalties.high:.3f}"
     ) in lines
-    assert "  evidence: 44 team matches (its minimum: 30)" in lines
+    assert "  evidence: 40 penalties taken (its minimum: 30)" in lines  # the penalties, over 44 team matches
     assert "  evidence: 400 rated games (its minimum: 300)" in lines  # a red card's rate
     one = render_proposal(propose({11: _round(11)}, [], [], made_at=MADE))
     assert one.splitlines()[0].endswith("on round 11")
+    assert "No statistics read is stored." in one.splitlines()
+    alone = render_proposal(propose({11: _round(11)}, READ, [], made_at=MADE)).splitlines()
+    assert f"Counted from the statistics read of {read} UTC, without a table." in alone
     three = render_proposal(propose({round: _round(round) for round in (9, 10, 11)}, [], [], made_at=MADE))
     assert three.splitlines()[0].endswith("on rounds 9, 10 and 11")
     assert any(
