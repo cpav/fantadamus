@@ -18,6 +18,8 @@ from fantadamus.domains.recalibration import (
 from fantadamus.engine import constants
 from fantadamus.engine.recalibrate import counted
 
+pytestmark = pytest.mark.usefixtures("start_values")  # worked out by hand on the starting values
+
 STARTER = 0.25
 SURE = 0.95
 GOOD = 15 / 220

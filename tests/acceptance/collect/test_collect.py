@@ -21,7 +21,7 @@ from tests.collect_harness import HTML, ROUND_ROUTE, local_site, round_collector
 from tests.collect_pages import FcoMatch, fco_round_page
 from tests.xy_harness import outlet_lineup, page, send, tools
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 READ = dt.datetime(2026, 10, 26, 9, 0, tzinfo=dt.UTC)
 

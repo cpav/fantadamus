@@ -6,11 +6,14 @@ from __future__ import annotations
 import datetime as dt
 import math
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
 from fantadamus.domains.availability.consensus import combine, outlet_view
 from fantadamus.domains.facts import Source
+
+pytestmark = pytest.mark.usefixtures("start_values")  # worked out by hand on the starting values
 
 SOURCE = Source(
     source_url="https://example.org/p",

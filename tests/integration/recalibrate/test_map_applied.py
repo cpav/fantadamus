@@ -16,7 +16,7 @@ from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE
 from tests.collect_pages import FcoMatch, fco_round_page
 from tests.lineup_harness import MATCHES, a_round, player_id, stats_after, the_next_round
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 A_MAP: StartMap = ((0.0, 0.0), (0.9, 0.6), (1.0, 1.0))
 STARTER = (0.9 + 0.9 + 0.95 + 0.9) / 4  # the outlets' default for a listed starter

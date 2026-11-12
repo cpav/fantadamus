@@ -11,6 +11,8 @@ from fantadamus.engine.constants import DEFENDER_SHARE_WEIGHT
 from fantadamus.engine.outfield import OutfieldInputs
 from fantadamus.engine.rank import Scoring
 
+pytestmark = pytest.mark.usefixtures("start_values")  # worked out by hand on the starting values
+
 CLASSIC = Scoring(goal=3, penalty_scored=3, assist=1, yellow=-0.5, clean_sheet=1, goal_conceded=-1)
 
 

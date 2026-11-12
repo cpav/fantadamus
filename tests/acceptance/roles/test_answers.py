@@ -18,7 +18,7 @@ from tests.collect_pages import FcoMatch, fco_round_page, stats_page
 from tests.roles_data import ROLE_PLAYERS, squad_stats
 from tests.xy_harness import NOW, TAKERS, TEAM_TABLE, ask, collect, send, set_classic, tools
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 READ = NOW - dt.timedelta(hours=1)
 

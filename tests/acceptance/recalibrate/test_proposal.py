@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import re
 from pathlib import Path
 
 import pytest
@@ -21,9 +22,11 @@ from fantadamus.domains.recalibration import (
 )
 from fantadamus.domains.season.silver import PlayerSeasonRow
 from fantadamus.engine import constants
-from fantadamus.engine.recalibrate import fit_start_map
+from fantadamus.engine.recalibrate import IDENTITY, fit_start_map
 from fantadamus.lake.calibration_store import CalibrationStore
 from tests.cards_data import source, table_row
+
+pytestmark = pytest.mark.usefixtures("start_values")  # worked out by hand on the starting values
 
 MADE = dt.datetime(2026, 11, 12, 10, 0, tzinfo=dt.UTC)
 
@@ -111,7 +114,7 @@ def test_at8_the_proposal() -> None:
 
     start, share = proposal.fitted  # no forward: CAMEO_RATED isn't counted, so it isn't fitted
     assert start.name == "START_MAP"
-    assert start.old == constants.START_MAP
+    assert start.old == IDENTITY  # today's, here the starting map: the module works on the starting values
     rows = [row for rows in sets.values() for row in rows]
     assert start.new == fit_start_map(start_pairs(rows))
     assert start.check.proposed
@@ -239,7 +242,7 @@ def test_at8_changes_nothing(
         store.keep_set(CalibrationSet(round=round, scored_at=MADE, rows=_round(round)))
     stored = {path.name: _digest(path) for path in store.root.iterdir()}
     constants_file = Path(constants.__file__)
-    before = _digest(constants_file)
+    before, start_map = _digest(constants_file), constants.START_MAP
 
     def no_page(*_: object) -> None:
         raise AssertionError("the proposal reads no page")
@@ -250,7 +253,7 @@ def test_at8_changes_nothing(
     assert printed.startswith("Recalibration proposal")
     assert "on rounds 10 and 11" in printed.splitlines()[0]
     assert _digest(constants_file) == before
-    assert constants.START_MAP == ((0.0, 0.0), (1.0, 1.0))
+    assert start_map == constants.START_MAP
     after = {path.name: _digest(path) for path in store.root.iterdir()}
     assert {name: digest for name, digest in after.items() if name != "proposal.json"} == stored
     kept = store.proposal()
@@ -262,3 +265,28 @@ def test_at8_changes_nothing(
     empty = tmp_path / "empty"
     assert cli.main(["recalibrate", "--lake", str(empty / "lake")]) == 1
     assert "No calibration set is stored" in capsys.readouterr().out
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def test_at8_an_approved_change_and_its_log() -> None:
+    """The values the owner approved are in `engine/constants.py`, the calibration log's newest entry says
+    what changed, from what and on what evidence, as aggregates, and the approved map is still a map."""
+    log = (ROOT / "docs" / "calibration-log.md").read_text(encoding="utf-8")
+    newest = log.split("\n## ")[1]
+    assert newest.startswith("2026-11-12: rounds 10 and 11")
+    rows = {
+        name: (old.strip(), new.strip())
+        for name, old, new in re.findall(r"^\| `([A-Z_]+)` \| ([^|]+) \| ([^|]+) \|", newest, re.MULTILINE)
+    }
+    assert set(rows) == {"START_MAP", "YELLOW_PRIOR"}
+    assert rows["YELLOW_PRIOR"] == ("0.150", f"{constants.YELLOW_PRIOR:.3f}")
+    knots = ", ".join(f"{raw:.3f} to {value:.3f}" for raw, value in constants.START_MAP[1:-1])
+    assert rows["START_MAP"] == ("the identity", knots)
+    raws = [raw for raw, _ in constants.START_MAP]
+    values = [value for _, value in constants.START_MAP]
+    assert (constants.START_MAP[0], constants.START_MAP[-1]) == ((0.0, 0.0), (1.0, 1.0))
+    assert raws == sorted(set(raws))
+    assert values == sorted(values)
+    assert "Not changed" in newest

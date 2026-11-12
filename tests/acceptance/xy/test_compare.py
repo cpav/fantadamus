@@ -12,7 +12,7 @@ from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import LakeStore
 from tests.xy_harness import NOW, ask, collect, error_text, lineup, odds_for, send, set_classic, tools
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 READ = NOW - dt.timedelta(hours=2)
 LATER = NOW - dt.timedelta(hours=1)

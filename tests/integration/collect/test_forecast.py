@@ -13,7 +13,7 @@ from mcp import Client
 from fantadamus.lake.duckdb_store import LakeStore
 from tests.xy_harness import NOW, ask, collect, lineup, odds_for, page, send, set_classic, tools
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 YESTERDAY = NOW - dt.timedelta(hours=25)
 TABLE_PAGE = "https://www.fantacalcio.it/serie-a/classifica"

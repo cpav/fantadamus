@@ -12,6 +12,8 @@ from fantadamus.domains.availability.silver import LineupViewRow, OutletViewRow
 from fantadamus.domains.facts import Source
 from fantadamus.domains.players.resolve import KnownPlayer
 
+pytestmark = pytest.mark.usefixtures("start_values")  # worked out by hand on the starting values
+
 NOVE = KnownPlayer(player_id=9, name="Alfa Nove", club="alfa")
 EARLY = dt.datetime(2026, 10, 30, 9, 0, tzinfo=dt.UTC)
 LATE = EARLY + dt.timedelta(hours=2)

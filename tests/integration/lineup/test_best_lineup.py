@@ -21,7 +21,7 @@ from tests.lineup_harness import MATCHES, SQUAD, a_round, player_id, rows
 from tests.roles_data import stats_row
 from tests.xy_harness import NOW, send, set_classic
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 
 MATE = [

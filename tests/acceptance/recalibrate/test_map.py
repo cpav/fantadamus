@@ -12,6 +12,8 @@ from fantadamus.engine.constants import CAMEO_SHARE, START_MAP, START_MAP_WEIGHT
 from fantadamus.engine.recalibrate import IDENTITY, StartMap, fit_start_map, mapped
 from tests.cards_data import KICKOFF, OUTLETS, listed, source
 
+pytestmark = pytest.mark.usefixtures("start_values")  # worked out by hand on the starting values
+
 
 def _players(raw: float, count: int, started: int) -> list[tuple[float, bool]]:
     return [(raw, index < started) for index in range(count)]
@@ -58,7 +60,7 @@ def test_at2_a_thin_bucket_barely_moves() -> None:
     assert _flat(thin) == pytest.approx([0, 0, 0.45, 9 / 22, 1, 1])
     assert _flat(heavy) == pytest.approx([0, 0, 0.45, 9 / 220, 1, 1])
     assert fit_start_map([]) == IDENTITY  # no evidence, no change
-    assert START_MAP == IDENTITY  # and nothing changes until a fit is approved
+    assert START_MAP != IDENTITY  # approved on 2026-11-12: docs/calibration-log.md has it
 
 
 def test_at2_applied_where_the_chance_is_formed(monkeypatch: pytest.MonkeyPatch) -> None:

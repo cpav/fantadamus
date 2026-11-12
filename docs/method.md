@@ -24,8 +24,9 @@ Report the expected score and the chance of reaching each threshold alongside it
 
 Availability: an official lineup overrides everything. Otherwise use the consensus of the probable-lineup
 sources, and keep their disagreement as uncertainty rather than averaging it away. The consensus goes through
-a calibration map fitted on scored rounds (§A8), the identity until the owner approves one; the outlets'
-disagreement is judged on their own scale, before it.
+a calibration map fitted on scored rounds (§A8) *(calibrated 2026-11-12 on rounds 10 and 11: `START_MAP`, in
+the [calibration log](calibration-log.md))*: the outlets overstated the chances between about 10% and 40%, so a
+25% becomes about 9%. Their disagreement is judged on their own scale, before the map.
 
 ## A3. The ordering rule
 
@@ -85,6 +86,8 @@ P(scores)  = 1 − e^(−E[goals])
   share of them. The first on the club's list has all of them when he plays; each next one has what those ahead
   leave: the product of (1 − p_start) for everyone listed ahead of him. A first taker who is out hands them all on.
   A league's value for a missed penalty counts too, on the same chance: rate × (1 − conversion) × minutes × share.
+- **Yellow cards:** P(yellow) is his yellow cards per appearance, shrunk toward the league's 0.116 per outfield
+  appearance *(calibrated 2026-11-12: `YELLOW_PRIOR`)* with the weight of 10 appearances *(start)*.
 - **Rare events,** as an expected value in E_start, since they're too rare to change the spread: red cards and own
   goals at a rate per rated game for each role *(start)*, and a keeper's saved penalties at the opponents' rate ×
   (1 − conversion) × 0.80 of misses *(start)*.
@@ -152,6 +155,10 @@ E = expected vote + clean-sheet bonus × P(clean sheet) − malus per goal × ex
   to the market's numbers and the users' overrides, and recalibrate the *(start)* constants. The market's
   match chances (the result, three goals or more, both teams scoring, each side's clean sheet) are scored the
   same way, to show how much is the match's own uncertainty.
+- **Changing a value.** `fantadamus recalibrate` proposes values checked where they weren't fitted; one lands only
+  once the owner approves it, logged in the [calibration log](calibration-log.md). A replay of an earlier time, a
+  review's expected costs at the lock among them, works on today's values: the decision log keeps what was told,
+  and the calibration scores the log.
 - **Review the user's lineup** after each round, on request: each choice made against the advice is judged by its
   expected cost at the facts known at the lock, over the same simulated rounds, with its real result beside it as
   one round's outcome. Whether overrides pay off is a running total, called luck until the real gain clears about

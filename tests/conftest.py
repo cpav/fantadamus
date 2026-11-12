@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -71,3 +71,21 @@ def git_repo(tmp_path: Path) -> tuple[Path, Git]:
     git("config", "user.email", "test@example.org")
     git("config", "commit.gpgsign", "false")
     return repo, git
+
+
+@pytest.fixture(scope="module")
+def start_values() -> Iterator[None]:
+    """The values calibrated on 2026-11-12 back at their starting values (see docs/calibration-log.md), for a
+    test module that works its numbers out by hand on those: the chance of starting as the outlets' plain
+    mean, and 0.15 yellow cards per appearance. The calibrated values are checked through the tools in
+    tests/acceptance/recalibrate/test_moves.py, and against the log in test_proposal.py."""
+    from fantadamus.domains import recalibration
+    from fantadamus.domains.availability import consensus
+    from fantadamus.engine import outfield
+    from fantadamus.engine.recalibrate import IDENTITY
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(consensus, "START_MAP", IDENTITY)
+        patch.setattr(recalibration, "START_MAP", IDENTITY)
+        patch.setattr(outfield, "YELLOW_PRIOR", 0.15)
+        yield
