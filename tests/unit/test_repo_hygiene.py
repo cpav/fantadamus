@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import plistlib
+import re
 import tomllib
 from pathlib import Path
 
@@ -323,3 +324,15 @@ def test_mutation_run_stays_fast() -> None:
     assert "HYPOTHESIS_PROFILE=dev" in target
     assert "--group mutation" in target
     assert "mutants/" in (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+
+
+def test_method_marks_each_calibrated_value() -> None:
+    """mvp-recalibrate R10.1: each value in the calibration log is marked calibrated in the method, with the
+    date and the constant's name, in place of its *(start)* mark."""
+    log = (ROOT / "docs" / "calibration-log.md").read_text(encoding="utf-8")
+    method = (ROOT / "docs" / "method.md").read_text(encoding="utf-8")
+    entries = re.findall(r"^## (\d{4}-\d{2}-\d{2}): (.*?)(?=^## |\Z)", log, re.MULTILINE | re.DOTALL)
+    assert entries
+    for date, entry in entries:
+        for name in re.findall(r"^\| `([A-Z_]+)` \|", entry, re.MULTILINE):
+            assert re.search(rf"\*\(calibrated {date}[^)]*`{name}`", method), (date, name)

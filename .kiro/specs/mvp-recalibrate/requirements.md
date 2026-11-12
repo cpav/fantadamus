@@ -176,6 +176,8 @@ An Analyze-Requirements pass, before design.
 
 - **2026-11-11:** the owner chose to start recalibration on the rounds already scored, not waiting for round 12.
 - **2026-11-11, these requirements approved** with the three recommendations below ("perfect, start calibration").
+- **2026-11-12, AT-10:** the owner approved the two values proposed on rounds 10 and 11, the starting map and the
+  yellow-card prior ("Approve both"); `docs/calibration-log.md` has them.
 - **2026-11-11, the design approved** with both of its open points ("Approve, start task 1"): R1.1 and R3.1 now say "got a
   rating without starting", and R6.1 and R6.2 apply to the fitted values, the season's rates carrying counts and intervals.
 

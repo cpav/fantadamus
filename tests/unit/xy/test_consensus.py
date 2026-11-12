@@ -9,6 +9,8 @@ import pytest
 from fantadamus.domains.availability.consensus import OfficialView, Status, combine, outlet_view
 from fantadamus.domains.facts import Source
 
+pytestmark = pytest.mark.usefixtures("start_values")  # worked out by hand on the starting values
+
 SOURCE = Source(
     source_url="https://example.org/a",
     captured_at=dt.datetime(2026, 10, 31, tzinfo=dt.UTC),

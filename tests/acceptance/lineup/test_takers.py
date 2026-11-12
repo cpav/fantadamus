@@ -27,7 +27,7 @@ from tests.collect_pages import FcoMatch, fco_round_page, takers_page
 from tests.lineup_harness import MATCHES, Round, a_round, rows
 from tests.xy_harness import NOW, ask, send
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 LATER = dt.timedelta(hours=49)
 LISTS = {club: [f"{club} Nove", f"{club} Dieci"] for club in ("Alfa", "Beta", "Gamma", "Delta")}

@@ -15,7 +15,7 @@ from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE
 from tests.collect_pages import FcoMatch, fco_name, fco_round_page
 from tests.lineup_harness import Round, a_round, stats_after, the_next_round
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 ROUND_10 = "/probabili-formazioni/10-giornata"
 AFTER = dt.datetime(2026, 11, 1, 5, 0, tzinfo=dt.UTC)  # 12 hours after the round's last kickoff

@@ -84,9 +84,9 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
       `tests/integration/recalibrate/test_command.py::test_recalibrate_on_invented_rounds`;
       `tests/unit/recalibrate/test_proposal.py`; the proposal's path in `test_private_paths_ignored`_
 
-- [ ] 7. The real proposal and the approved change
+- [x] 7. The real proposal and the approved change
   - Branch: `feat/rc-7-applied` · Depends on: 6 · ADRs: none
-  - [ ] 7.1 The proposal on rounds 10 and 11 from Claude Code, on `main`'s code; its aggregates in the pull request.
+  - [x] 7.1 The proposal on rounds 10 and 11 from Claude Code, on `main`'s code; its aggregates in the pull request.
     - _Requirements: R6.1, R6.2, R8.1_
     - _Test: the proposal's aggregates in the task report, without players' figures_
     - Found and fixed (`fix/rc-7-proposal`): the cameo check held out rounds although only round 11 knows who got a
@@ -95,14 +95,16 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
       instead; the penalties per match met their minimum on 200 matches though only 22 penalties were taken, now counted
       in penalties; and each rate now shows its own count. Tests: `test_at6_folds_where_the_evidence_is`,
       `test_at3_one_share_doesnt_fit_both`, `tests/unit/recalibrate/test_proposal.py::test_the_read_that_goes_with_the_table`.
-  - [ ] 7.2 **Owner:** read the proposal, and approve or turn down each value.
+  - [x] 7.2 **Owner:** read the proposal, and approve or turn down each value.
     - _Requirements: AT-10 (R6, R8)_
     - _Test: recorded in the report_
-  - [ ] 7.3 The approved values in `engine/constants.py`, an entry in `docs/calibration-log.md`, `docs/method.md` and the player guide; what the
+    - 2026-11-12: the owner approved both values proposed, `START_MAP` and `YELLOW_PRIOR` ("Approve both").
+  - [x] 7.3 The approved values in `engine/constants.py`, an entry in `docs/calibration-log.md`, `docs/method.md` and the player guide; what the
     change moves on round 11's facts at its lock, in general terms.
     - _Requirements: R8.2, R8.3, R9.1, R10.1, R10.2_
     - _Test: **AT-8** `::test_at8_an_approved_change_and_its_log`; **AT-9** `tests/acceptance/recalibrate/test_moves.py::test_at9_what_it_moves`;
-      `tests/unit/test_repo_hygiene.py::test_method_marks_each_calibrated_value`_
+      `tests/unit/test_repo_hygiene.py::test_method_marks_each_calibrated_value`. The tests that work their numbers out
+      by hand on the starting values say so with the `start_values` fixture (`tests/conftest.py`)_
 
 - [ ] 8. A real check and this slice's sign-off
   - Branch: `docs/rc-8-gate` · Depends on: 7 · ADRs: none

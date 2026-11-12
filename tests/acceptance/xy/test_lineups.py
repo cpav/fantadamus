@@ -17,7 +17,7 @@ from fantadamus.domains.season.silver import PLAYER_SEASONS
 from fantadamus.lake.duckdb_store import LakeStore
 from tests.xy_harness import alfa_team, page, probable, send, tools
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 READ = dt.datetime(2026, 10, 31, 9, 0, tzinfo=dt.UTC)
 OFFICIAL = dt.datetime(2026, 10, 31, 13, 0, tzinfo=dt.UTC)

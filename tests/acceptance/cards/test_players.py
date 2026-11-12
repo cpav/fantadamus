@@ -19,6 +19,8 @@ from fantadamus.engine.outfield import OutfieldValue
 from fantadamus.league.rules import CLASSIC
 from tests.cards_data import listed, source, valued
 
+pytestmark = pytest.mark.usefixtures("start_values")  # worked out by hand on the starting values
+
 PLAYED = {"alfa": 9, "beta": 9}
 
 

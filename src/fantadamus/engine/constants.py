@@ -14,8 +14,22 @@ CAMEO_SHARE = 0.5  # p_cameo = 0.5 * (1 - p_start) for an available player
 DISPUTED_SPREAD = 0.30  # outlets at least this far apart mark him disputed
 CONTESTED_PERCENT = (31, 69)  # two of one role between these, making 100, are in a ballottaggio (the sheets'
 # defaults, 90 and 30 or 95 and 5, also make 100, and would pair every starter with every bench player)
-START_MAP: tuple[tuple[float, float], ...] = ((0.0, 0.0), (1.0, 1.0))  # the outlets' consensus to p_start, by
-# straight lines between these knots: the identity until a fit is approved (mvp-recalibrate R2, design C2)
+START_MAP: tuple[tuple[float, float], ...] = (  # the outlets' consensus to p_start, by straight lines between
+    # these knots (mvp-recalibrate R2, design C2): calibrated 2026-11-12 on rounds 10 and 11, see
+    # docs/calibration-log.md
+    (0.0, 0.0),
+    (0.007, 0.015),
+    (0.169, 0.063),
+    (0.249, 0.085),
+    (0.326, 0.196),
+    (0.44, 0.376),
+    (0.553, 0.594),
+    (0.647, 0.619),
+    (0.747, 0.739),
+    (0.856, 0.827),
+    (0.913, 0.925),
+    (1.0, 1.0),
+)
 START_MAP_WEIGHT = 20  # a bucket's rate of starting shrinks toward its mean consensus with the weight of 20
 MINIMUM_SAMPLE = {  # below these, a value isn't proposed (mvp-recalibrate R5.2, design C6)
     "starting": 300,  # players whose start is known
@@ -74,7 +88,7 @@ RED_RATE = {"P": 0.001, "D": 0.005, "C": 0.003, "A": 0.002}  # red cards per rat
 OWN_GOAL_RATE = {"P": 0.001, "D": 0.005, "C": 0.001, "A": 0.001}  # own goals per rated game, by role
 DECISIVE_GOAL_SHARE = 0.20  # of a team's goals, how many win or draw the match, from the odds model
 SET_PIECE_ASSIST_SHARE = 0.25  # of assists, how many come from set pieces
-YELLOW_PRIOR = 0.15  # yellow cards per appearance, before his own count
+YELLOW_PRIOR = 0.116  # yellow cards per outfield appearance, before his own count: calibrated 2026-11-12
 YELLOW_WEIGHT = 10  # appearances' weight of that prior
 CAMEO_GOAL_VOTE = 6.8  # the vote of a cameo with a goal, before the league's goal value
 CAMEO_RATED = 0.6  # a cameo without a goal gets a rating this often

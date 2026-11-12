@@ -27,7 +27,7 @@ from tests.lineup_harness import MATCHES, Round, a_round, player_id, rows, stats
 from tests.roles_data import stats_row
 from tests.xy_harness import WORDS
 
-pytestmark = pytest.mark.anyio
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("start_values")]  # worked out on the starting values
 
 ROUND_10 = "/probabili-formazioni/10-giornata"
 AFTER = dt.datetime(2026, 11, 1, 5, 0, tzinfo=dt.UTC)  # 12 hours after the round's last kickoff
