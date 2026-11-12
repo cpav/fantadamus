@@ -65,13 +65,14 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
       `tests/property/recalibrate/test_checks.py::test_p3_never_proposed_without_help`; whether a cameo is priced,
       in AT-1 and AT-3_
 
-- [ ] 5. The market's chances beside ours
+- [x] 5. The market's chances beside ours
   - Branch: `feat/rc-5-market` · Depends on: 4 · ADRs: none
-  - [ ] 5.1 Each round's report gains a `market` set: a win, a draw and a loss, three goals or more, both teams to score and each side's
+  - [x] 5.1 Each round's report gains a `market` set: a win, a draw and a loss, three goals or more, both teams to score and each side's
     clean sheet, from the odds before kickoff, against the goals the keepers' rows show; old reports still read.
     - _Requirements: R7.1_
     - _Test: **AT-7** `tests/acceptance/recalibrate/test_market.py::test_at7_the_market_set_by_hand`, `::test_at7_old_reports_still_read`;
-      `tests/integration/recalibrate/test_market_scored.py::test_a_round_scores_the_market`_
+      `tests/integration/recalibrate/test_market_scored.py::test_a_round_scores_the_market`;
+      `tests/unit/recalibrate/test_market.py`_
 
 - [ ] 6. The proposal command
   - Branch: `feat/rc-6-proposal` · Depends on: 5 · ADRs: none

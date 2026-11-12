@@ -29,6 +29,7 @@ from fantadamus.domains.review import (
     Round,
     Unknown,
     advice_for,
+    goals_against,
     last_advice,
     logged,
     player_round,
@@ -385,16 +386,7 @@ def _conceded(
     after: Mapping[int, PlayerSeasonRow],
 ) -> dict[int, int | None]:
     """Each player's team's goals against in the round, from his club's keepers' rows."""
-    by_club: dict[str, int | None] = {}
-    if before is not None:
-        for row in after.values():
-            if row.role != "P":
-                continue
-            then = before.get(row.player_id)
-            if then is None or row.goals_conceded is None or then.goals_conceded is None:
-                by_club[row.club] = None
-            elif by_club.get(row.club, 0) is not None:
-                by_club[row.club] = (by_club.get(row.club) or 0) + row.goals_conceded - then.goals_conceded
+    by_club = goals_against(before, after)
     clubs = {row.player_id: row.club for row in after.values()}
     return {player: by_club.get(clubs.get(player, "")) for player in players}
 

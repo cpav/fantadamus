@@ -149,7 +149,9 @@ E = expected vote + clean-sheet bonus × P(clean sheet) − malus per goal × ex
   then help with their choice.
 - **Audit decisions, not results.** Log every published probability (p_start, P(scores), P(clean sheet))
   with its as-of time. After each round, score them (Brier score, reliability by probability bucket) next
-  to the market's numbers and the users' overrides, and recalibrate the *(start)* constants.
+  to the market's numbers and the users' overrides, and recalibrate the *(start)* constants. The market's
+  match chances (the result, three goals or more, both teams scoring, each side's clean sheet) are scored the
+  same way, to show how much is the match's own uncertainty.
 - **Review the user's lineup** after each round, on request: each choice made against the advice is judged by its
   expected cost at the facts known at the lock, over the same simulated rounds, with its real result beside it as
   one round's outcome. Whether overrides pay off is a running total, called luck until the real gain clears about

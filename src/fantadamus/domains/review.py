@@ -784,3 +784,22 @@ def record(reviews: Iterable[LoggedReview], *, user: str, team: str) -> Record:
         margin=margin,
         verdict=verdict,
     )
+
+
+def goals_against(
+    before: Mapping[int, PlayerSeasonRow] | None, after: Mapping[int, PlayerSeasonRow]
+) -> dict[str, int | None]:
+    """Each club's goals against between two reads, from its keepers' rows; None where one of its keepers
+    isn't in both reads with his goals conceded."""
+    by_club: dict[str, int | None] = {}
+    if before is None:
+        return by_club
+    for row in after.values():
+        if row.role != "P":
+            continue
+        then = before.get(row.player_id)
+        if then is None or row.goals_conceded is None or then.goals_conceded is None:
+            by_club[row.club] = None
+        elif by_club.get(row.club, 0) is not None:
+            by_club[row.club] = (by_club.get(row.club) or 0) + row.goals_conceded - then.goals_conceded
+    return by_club

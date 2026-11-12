@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from fantadamus.contracts.types import Role, UtcDatetime
 from fantadamus.core.names import name_key
 from fantadamus.domains.availability.silver import OfficialLineupRow
+from fantadamus.domains.cards import MatchNumbers
 from fantadamus.domains.fixtures.gold import matches
 from fantadamus.domains.fixtures.silver import FixtureRow
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
@@ -31,6 +32,12 @@ RATING = "Getting a rating"
 SCORING = "Scoring, if he started"
 CLEAN_SHEET = "Clean sheet, if he started"
 THE_REST = "Chances other than starting"
+HOME_WIN = "A home win"
+DRAW = "A draw"
+AWAY_WIN = "An away win"
+SIDE_CLEAN_SHEET = "A side's clean sheet"
+THREE_OR_MORE = "Three goals or more"
+BOTH_SCORE = "Both teams score"
 _BUCKETS = 10
 
 Pair = tuple[float, bool]
@@ -144,6 +151,9 @@ class RoundReport(BaseModel):
     """What users were told: each player's last logged chances before his kickoff."""
     model: SetReport
     """The current model on every listed player, from the facts held before his kickoff."""
+    market: SetReport | None = None
+    """The odds' chances for each match, as the card shows them, against its score (mvp-recalibrate R7.1).
+    None on reports scored before it was."""
     overrides: int = 0
     override_cost: float = 0.0
     """Their costs as stated at the time. Whether they paid off is the review of a user's lineup, not this."""
@@ -175,6 +185,7 @@ def render(report: RoundReport) -> str:
             f"Round {report.round}, scored {report.scored_at:%Y-%m-%d %H:%M} UTC",
             *_set_lines("The model on everyone", report.model),
             *_set_lines("What users were told", report.told),
+            *(_set_lines("The market on every match", report.market) if report.market is not None else []),
             f"Overrides: {report.overrides}, at a stated cost of {report.override_cost:.2f} points",
         ]
     )
@@ -438,3 +449,37 @@ def add_outcomes(
             tally.note(name, outcome.started)
         else:
             tally.add(name, chance, result)
+
+
+def match_score(
+    home: str, away: str, against: Mapping[str, int | None], *, played: bool
+) -> tuple[int, int] | str:
+    """The match's score, from each side's goals against, or why it isn't known (mvp-recalibrate C7)."""
+    if not played:
+        return "no official lineup stored"
+    home_against, away_against = against.get(home), against.get(away)
+    if home_against is None or away_against is None:
+        return "its keepers' goals against aren't known"
+    return away_against, home_against
+
+
+def add_market(tally: Tally, numbers: MatchNumbers | None, score: tuple[int, int] | str) -> None:
+    """One match's chances as the card shows them, from the odds held before its kickoff, against its score
+    (R7.1). Team form standing in for odds isn't the market; the goals count where the odds priced them."""
+    if numbers is None or not numbers.from_odds:
+        tally.note("The match", "no odds held before its kickoff")
+        return
+    if isinstance(score, str):
+        tally.note("The match", score)
+        return
+    home, away = score
+    tally.add(HOME_WIN, numbers.home.p_win, home > away)
+    tally.add(DRAW, numbers.p_draw, home == away)
+    tally.add(AWAY_WIN, numbers.away.p_win, away > home)
+    tally.add(SIDE_CLEAN_SHEET, numbers.home.p_clean_sheet, away == 0)
+    tally.add(SIDE_CLEAN_SHEET, numbers.away.p_clean_sheet, home == 0)
+    if numbers.p_three_or_more is None or numbers.p_both_score is None:
+        tally.note("The goals", "the odds didn't price them")
+        return
+    tally.add(THREE_OR_MORE, numbers.p_three_or_more, home + away >= 3)
+    tally.add(BOTH_SCORE, numbers.p_both_score, home > 0 and away > 0)

@@ -117,15 +117,16 @@ the proposal keeps them in a section of their own (open point 2, approved).
 
 ### C7. The market's chances beside ours (`domains/calibration.py`, `mcp/calibrate.py`; R7)
 
-For each match, from the odds held before its kickoff (`team_xg`):
+For each match, from the odds held before its kickoff (`team_xg`), the chances as its card shows them (`match_numbers`):
 
-- a win, a draw and a loss;
+- a home win, a draw and an away win;
 - three goals or more and both teams to score, where the odds priced them;
 - each side's clean sheet.
 
-The outcomes come from each side's goals against, read from its keepers' rows in the two statistics reads, as the review
-reads them. They go in a third set of the round's report, `market`, beside `told` and `model`. Old reports without it stay
-valid.
+A match priced from team form, with no odds, isn't the market and is named instead. The score comes from each side's goals
+against, read from its keepers' rows in the two statistics reads, as the review reads them (`domains/review.py`'s
+`goals_against`, shared with it); a match without either club's official lineup wasn't played. The chances go in a third
+set of the round's report, `market`, beside `told` and `model`. Old reports without it stay valid.
 
 ### C8. The proposal (`cli/__main__.py`, `engine/recalibrate.py`; R8)
 
