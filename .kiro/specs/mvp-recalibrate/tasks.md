@@ -106,12 +106,15 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
       `tests/unit/test_repo_hygiene.py::test_method_marks_each_calibrated_value`. The tests that work their numbers out
       by hand on the starting values say so with the `start_values` fixture (`tests/conftest.py`)_
 
-- [ ] 8. A real check and this slice's sign-off
+- [x] 8. A real check and this slice's sign-off
   - Branch: `docs/rc-8-gate` · Depends on: 7 · ADRs: none
-  - [ ] 8.1 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
+  - [x] 8.1 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
     acceptance tests.
     - _Requirements: R10.2; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 8.2 **Owner:** sign off this slice.
+    - [`docs/reports/slice-mvp-recalibrate.md`](../../../docs/reports/slice-mvp-recalibrate.md): 4,712 of 4,820 mutants
+      killed (97.8%); this slice's 5 survivors are equivalent.
+  - [x] 8.2 **Owner:** sign off this slice.
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the report_
+    - Signed off on 2026-11-12 ("Sign off").
