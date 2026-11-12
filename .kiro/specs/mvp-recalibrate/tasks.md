@@ -74,13 +74,15 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
       `tests/integration/recalibrate/test_market_scored.py::test_a_round_scores_the_market`;
       `tests/unit/recalibrate/test_market.py`_
 
-- [ ] 6. The proposal command
+- [x] 6. The proposal command
   - Branch: `feat/rc-6-proposal` · Depends on: 5 · ADRs: none
-  - [ ] 6.1 `fantadamus recalibrate`: each value with its old and new value, evidence, count and held-out effect; the season's rates apart;
+  - [x] 6.1 `fantadamus recalibrate`: each value with its old and new value, evidence, count and held-out effect; the season's rates apart;
     what waits; the full proposal kept privately; `engine/constants.py` untouched.
     - _Requirements: R8.1_
-    - _Test: **AT-8** `tests/acceptance/recalibrate/test_proposal.py::test_at8_the_proposal`, `::test_at8_changes_nothing`;
-      `tests/integration/recalibrate/test_command.py::test_recalibrate_on_invented_rounds`_
+    - _Test: **AT-8** `tests/acceptance/recalibrate/test_proposal.py::test_at8_the_proposal`, `::test_at8_the_proposal_in_words`,
+      `::test_at8_changes_nothing`;
+      `tests/integration/recalibrate/test_command.py::test_recalibrate_on_invented_rounds`;
+      `tests/unit/recalibrate/test_proposal.py`; the proposal's path in `test_private_paths_ignored`_
 
 - [ ] 7. The real proposal and the approved change
   - Branch: `feat/rc-7-applied` · Depends on: 6 · ADRs: none

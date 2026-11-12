@@ -68,7 +68,8 @@ make test-fast  # format, lint, unit and property tests with the fast profile
 `set_squad`, `set_league_rules`, `collect`, `read_page` and the submit tools. `uv run fantadamus collect` reads the round page and Fantacalcio.it's
 statistics page now (`--fact` picks one fact's page); `--report` shows the last run. `uv run fantadamus calibrate --round N`
 prints a finished round's report on the forecasts, and keeps its calibration set beside it, player by player, for a
-recalibration; `--again` rebuilds both.
+recalibration; `--again` rebuilds both. `uv run fantadamus recalibrate` proposes new starting values from the
+stored sets, each checked where it wasn't fitted, and changes nothing until the owner approves one.
 
 ## Use it in Claude Desktop
 

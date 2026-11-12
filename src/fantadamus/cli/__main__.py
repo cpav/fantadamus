@@ -3,7 +3,8 @@
 fantadamus serve run the advisor's MCP server on stdio, for Claude Desktop (ADR-0005) fantadamus collect read
 the round page now and store its facts; `--due` only if something is past its cadence (the schedule, C7), and
 score a finished round; `--report` shows the last run (C10) fantadamus calibrate print a finished round's
-report, scoring it if it hasn't been; `--again` recomputes it"""
+report, scoring it if it hasn't been; `--again` recomputes it fantadamus recalibrate propose new starting
+values from the stored calibration sets, changing nothing (mvp-recalibrate C8)"""
 
 from __future__ import annotations
 
@@ -14,6 +15,9 @@ from pathlib import Path
 from fantadamus.core.clock import utc_now
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.calibration import render
+from fantadamus.domains.facts import latest_by, read_silver
+from fantadamus.domains.recalibration import propose, render_proposal
+from fantadamus.domains.season.silver import SEASON_STATS, TEAM_SEASONS
 from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
@@ -78,13 +82,18 @@ def _clubs() -> Clubs:
     return Clubs.from_toml(DEFAULT_CLUBS.read_text(encoding="utf-8"))
 
 
+def _scores(args: argparse.Namespace) -> CalibrationStore:
+    """The calibration folder, next to the lake: data/local/calibration by default."""
+    return CalibrationStore(Path(args.lake).parent / "calibration")
+
+
 def _calibrator(args: argparse.Namespace) -> Calibrator:
     lake_root = Path(args.lake)
     log = CollectLog(lake_root.parent / "collect")
     return Calibrator(
         lake=LakeStore(lake_root),
         log=DecisionLog(lake_root.parent / "decisions"),
-        store=CalibrationStore(lake_root.parent / "calibration"),
+        store=_scores(args),
         clock=utc_now,
         collector=_collector(args, log),
         collect_log=log,
@@ -97,6 +106,32 @@ def _calibrate(args: argparse.Namespace) -> int:
         print(f"Round {args.round} hasn't finished, or the lake doesn't know it.")
         return 1
     print(render(report))
+    return 0
+
+
+def _recalibrate(args: argparse.Namespace) -> int:
+    """The proposal, from the stored sets, the latest statistics read and the table. It reads no page and
+    changes no constant: it keeps the proposal beside the sets."""
+    scores = _scores(args)
+    asked = args.rounds or scores.set_rounds()
+    sets = {round: kept.rows for round in asked if (kept := scores.calibration_set(round)) is not None}
+    if not sets:
+        print("No calibration set is stored: score a round first, with `fantadamus calibrate --round N`.")
+        return 1
+    now = utc_now()
+    lake = LakeStore(Path(args.lake))
+    stats = read_silver(lake, SEASON_STATS, None, now)
+    latest = max((row.captured_at for row in stats), default=None)
+    teams = latest_by(read_silver(lake, TEAM_SEASONS, None, now), now, key=lambda row: row.club)
+    proposal = propose(
+        sets,
+        [row for row in stats if row.captured_at == latest],
+        list(teams.values()),
+        made_at=now,
+        missing=[round for round in asked if round not in sets],
+    )
+    scores.keep_proposal(proposal)
+    print(render_proposal(proposal))
     return 0
 
 
@@ -166,6 +201,13 @@ def _parser() -> argparse.ArgumentParser:
     calibrate.add_argument("--sources", default=str(DEFAULT_SOURCES), help="allowlist (TOML)")
     calibrate.add_argument("--reading-list", default=str(DEFAULT_READING_LIST), help="reading list (TOML)")
     calibrate.set_defaults(handler=_calibrate)
+
+    recalibrate = commands.add_parser(
+        "recalibrate", help="propose new starting values from the scored rounds, changing nothing"
+    )
+    recalibrate.add_argument("--rounds", type=int, nargs="+", help="the rounds (default: every one stored)")
+    recalibrate.add_argument("--lake", default=str(DEFAULT_ROOT), help="lake root directory")
+    recalibrate.set_defaults(handler=_recalibrate)
     return parser
 
 

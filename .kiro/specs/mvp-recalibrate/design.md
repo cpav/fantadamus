@@ -128,15 +128,19 @@ against, read from its keepers' rows in the two statistics reads, as the review 
 `goals_against`, shared with it); a match without either club's official lineup wasn't played. The chances go in a third
 set of the round's report, `market`, beside `told` and `model`. Old reports without it stay valid.
 
-### C8. The proposal (`cli/__main__.py`, `engine/recalibrate.py`; R8)
+### C8. The proposal (`cli/__main__.py`, `domains/recalibration.py`; R8)
 
-`fantadamus recalibrate [--rounds 10 11]` reads the stored sets and the latest statistics read. It prints a proposal:
+`fantadamus recalibrate [--rounds 10 11]` reads the stored sets (every round's by default), the latest statistics read and
+the table. It reads no page. It prints a proposal:
 
-- each value with its old and new value, its evidence and count, and its held-out effect;
-- the season's rates, in their own section;
-- what waits, and why.
+- each fitted value with today's and the fitted one, its evidence and count against its minimum, and each held-out check's
+  Brier score and reliability gap before and after (the gap: how far each bucket's mean chance is from how often it
+  happened, weighted by its players; the buckets themselves are in the kept proposal);
+- the season's rates, in their own section, each with its 90% interval;
+- what couldn't be counted, and why;
+- what waits, with the evidence it needs and how much there is.
 
-It writes the full proposal, privately, beside the sets. It never touches `engine/constants.py`.
+It keeps the full proposal, privately, as `proposal.json` beside the sets. It never touches `engine/constants.py`.
 
 ### C9. An approved change (`engine/constants.py`, `docs/calibration-log.md`, `docs/method.md`; R8.2, R8.3, R9, R10)
 
