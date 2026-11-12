@@ -1,4 +1,4 @@
-"""Recalibrating the method's starting values from scored rounds (mvp-recalibrate design C4 to C6).
+"""Recalibrating the method's starting values from scored rounds (mvp-recalibrate design C4 to C8).
 
 Pure. It picks the evidence from the calibration sets and the season's own figures, counts and fits it with
 `engine/recalibrate.py`, checks each fitted value where it wasn't fitted, and says what waits. Nothing here
@@ -6,14 +6,36 @@ changes a number: the owner approves a proposal first."""
 
 from __future__ import annotations
 
+import datetime as dt
+import math
 from collections.abc import Iterable, Mapping, Sequence
 
 from pydantic import BaseModel
 
+from fantadamus.contracts.types import UtcDatetime
 from fantadamus.domains.calibration import RATING, STARTING, Pair, Scored, SetRow, scored_chance
 from fantadamus.domains.season.silver import PlayerSeasonRow, TeamSeasonRow
-from fantadamus.engine.constants import CAMEO_RATED, CAMEO_SHARE, MINIMUM_SAMPLE, START_MAP
-from fantadamus.engine.recalibrate import Rate, cameo_rated, cameo_share, counted, fit_start_map, mapped
+from fantadamus.engine.constants import (
+    CAMEO_RATED,
+    CAMEO_SHARE,
+    MINIMUM_SAMPLE,
+    PENALTY_CONVERSION,
+    PENALTY_RATE,
+    PENALTY_SAVED_SHARE,
+    RED_RATE,
+    START_MAP,
+    YELLOW_PRIOR,
+)
+from fantadamus.engine.recalibrate import (
+    IDENTITY,
+    Rate,
+    StartMap,
+    cameo_rated,
+    cameo_share,
+    counted,
+    fit_start_map,
+    mapped,
+)
 
 
 class Fitted(BaseModel):
@@ -173,7 +195,8 @@ def _decided(name: str, count: int, minimum: int, folds: list[Fold]) -> Check:
     return Check(name=name, count=count, minimum=minimum, folds=folds, proposed=proposed, why=why)
 
 
-def _started(rows: Iterable[SetRow]) -> list[Pair]:
+def start_pairs(rows: Iterable[SetRow]) -> list[Pair]:
+    """Each player's consensus and whether he started, where that's known: what the starting map fits on."""
     return [(row.consensus, row.outcome.started) for row in rows if isinstance(row.outcome.started, bool)]
 
 
@@ -183,10 +206,10 @@ def check_start_map(
     """The starting map (C2), fitted without each round or half and scored on it against today's map."""
     folds = []
     for label, fitted_on, scored_on in held_out(sets):
-        test = _started(scored_on)
+        test = start_pairs(scored_on)
         if not test:
             continue
-        knots = fit_start_map(_started(fitted_on))
+        knots = fit_start_map(start_pairs(fitted_on))
         folds.append(
             Fold(
                 held_out=label,
@@ -194,7 +217,7 @@ def check_start_map(
                 after=scored_chance(STARTING, [(mapped(raw, knots), started) for raw, started in test]),
             )
         )
-    count = len(_started(row for rows in sets.values() for row in rows))
+    count = len(start_pairs(row for rows in sets.values() for row in rows))
     return _decided("START_MAP", count, minimum, folds)
 
 
@@ -322,3 +345,162 @@ def waiting(rows: Sequence[SetRow]) -> list[Wait]:
             needs="how this slice's proposals hold up on the rounds after them",
         ),
     ]
+
+
+Value = float | StartMap
+"""A constant's value: a rate, or the starting map's knots."""
+_TODAY: dict[str, float] = {
+    "CAMEO_SHARE": CAMEO_SHARE,
+    "CAMEO_RATED": CAMEO_RATED,
+    "PENALTY_RATE": PENALTY_RATE,
+    "PENALTY_CONVERSION": PENALTY_CONVERSION,
+    "PENALTY_SAVED_SHARE": PENALTY_SAVED_SHARE,
+    "YELLOW_PRIOR": YELLOW_PRIOR,
+    **{f'RED_RATE["{role}"]': rate for role, rate in RED_RATE.items()},
+}
+_EVIDENCE = {
+    "START_MAP": "players whose start is known",
+    "CAMEO_SHARE and CAMEO_RATED": "players who didn't start and could have come on",
+    "PENALTY_RATE": "team matches",
+    "PENALTY_CONVERSION": "penalties taken",
+    "PENALTY_SAVED_SHARE": "penalties missed",
+    "YELLOW_PRIOR": "outfield appearances",
+}
+"""What each check counts; a red-card rate counts rated games."""
+
+
+class Proposed(BaseModel):
+    """One value (C8): today's, the fitted one, its count and interval if it's a rate, and its check."""
+
+    name: str
+    old: Value
+    new: Value
+    rate: Rate | None = None
+    check: Check
+
+
+class Proposal(BaseModel):
+    """What `fantadamus recalibrate` proposes (C8). It changes nothing: the owner approves each value."""
+
+    made_at: UtcDatetime
+    rounds: list[int]
+    missing_rounds: list[int]
+    """Rounds asked for without a calibration set stored: fitted on the rest."""
+    read_at: UtcDatetime | None
+    """The statistics read the season's rates were counted from."""
+    fitted: list[Proposed]
+    season: list[Proposed]
+    not_counted: list[str]
+    waits: list[Wait]
+
+
+def propose(
+    sets: Mapping[int, Sequence[SetRow]],
+    players: Sequence[PlayerSeasonRow],
+    teams: Sequence[TeamSeasonRow],
+    *,
+    made_at: dt.datetime,
+    missing: Iterable[int] = (),
+) -> Proposal:
+    """The proposal from the stored sets, one statistics read and the table."""
+    rows = [row for round in sorted(sets) for row in sets[round]]
+    cameos, cameo_check = cameo_rates(rows), check_cameos(sets)
+    season = season_rates(players, teams)
+    checks = {check.name: check for check in season_checks(season)}
+    start = Proposed(
+        name="START_MAP", old=START_MAP, new=fit_start_map(start_pairs(rows)), check=check_start_map(sets)
+    )
+    return Proposal(
+        made_at=made_at,
+        rounds=sorted(sets),
+        missing_rounds=sorted(missing),
+        read_at=max((row.captured_at for row in players), default=None),
+        fitted=[
+            start,
+            *(
+                Proposed(name=rate.name, old=_TODAY[rate.name], new=rate.value, rate=rate, check=cameo_check)
+                for rate in cameos.rates
+            ),
+        ],
+        season=[
+            Proposed(
+                name=rate.name, old=_TODAY[rate.name], new=rate.value, rate=rate, check=checks[rate.name]
+            )
+            for rate in season.rates
+        ],
+        not_counted=[*cameos.missing, *season.missing],
+        waits=waiting(rows),
+    )
+
+
+def reliability_gap(scored: Scored) -> float:
+    """How far each bucket's mean chance is from how often it happened, weighted by its players."""
+    return (
+        math.fsum(bucket.count * abs(bucket.said - bucket.happened) for bucket in scored.buckets)
+        / scored.count
+    )
+
+
+def _rounds(rounds: Sequence[int]) -> str:
+    if len(rounds) == 1:
+        return f"round {rounds[0]}"
+    return "rounds " + ", ".join(str(round) for round in rounds[:-1]) + f" and {rounds[-1]}"
+
+
+def _knots(knots: Value) -> str:
+    if isinstance(knots, float):
+        return f"{knots:.3f}"
+    if knots == IDENTITY:
+        return "the identity"
+    return ", ".join(f"{raw:.0%} to {value:.1%}" for raw, value in knots[1:-1])
+
+
+def _value_lines(value: Proposed) -> list[str]:
+    check = value.check
+    lines = [f"{value.name}: {'proposed' if check.proposed else 'not proposed'}: {check.why}"]
+    if value.rate is None:
+        lines += [f"  today: {_knots(value.old)}", f"  fitted: {_knots(value.new)}"]
+    else:
+        rate = value.rate
+        lines.append(
+            f"  today: {_knots(value.old)}; fitted: {rate.value:.3f}, "
+            f"90% between {rate.low:.3f} and {rate.high:.3f}"
+        )
+    unit = _EVIDENCE.get(check.name, "rated games")
+    lines.append(f"  evidence: {check.count} {unit} (its minimum: {check.minimum})")
+    lines += [
+        f"  held out {fold.held_out}: Brier {fold.before.brier:.3f} to {fold.after.brier:.3f}, "
+        f"reliability gap {reliability_gap(fold.before):.3f} to {reliability_gap(fold.after):.3f}"
+        for fold in check.folds
+    ]
+    return lines
+
+
+def _wait_line(wait: Wait) -> str:
+    line = f"  {', '.join(wait.names)}: {wait.needs}"
+    if wait.minimum is not None:
+        line += f": {wait.have} of the {wait.minimum} it needs"
+    return line
+
+
+def render_proposal(proposal: Proposal) -> str:
+    """The proposal as `fantadamus recalibrate` prints it."""
+    lines = [f"Recalibration proposal, {proposal.made_at:%Y-%m-%d %H:%M} UTC, on {_rounds(proposal.rounds)}"]
+    lines += [
+        f"Round {round} has no calibration set stored: fitted on the rest."
+        for round in proposal.missing_rounds
+    ]
+    lines.append(
+        "Nothing changes until the owner approves a value, as a pull request to engine/constants.py."
+    )
+    lines += [
+        "",
+        "Fitted on the rounds",
+        *(line for value in proposal.fitted for line in _value_lines(value)),
+    ]
+    lines += ["", "The season's own rates: counts, not forecasts"]
+    lines += [line for value in proposal.season for line in _value_lines(value)]
+    if proposal.not_counted:
+        lines += ["", "Not counted", *(f"  {entry}" for entry in proposal.not_counted)]
+    lines += ["", "What waits", *(_wait_line(wait) for wait in proposal.waits)]
+    return "\n".join(lines)

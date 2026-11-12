@@ -19,6 +19,7 @@ MUST_BE_IGNORED = [
     "data/local/league/owner-fielded.json",
     "data/local/reviews/2026-11.jsonl",
     "data/local/calibration/round-11.set.json",  # mvp-recalibrate R1.2
+    "data/local/calibration/proposal.json",  # mvp-recalibrate R8.1
     "private.toml",
     "config.private.toml",
     ".env",
