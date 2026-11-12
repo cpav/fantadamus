@@ -277,11 +277,12 @@ def _place(members: Sequence[Listed], places: int) -> Place:
 
 
 def _dissent(present: Availability) -> list[str]:
-    """The outlets on the smaller side of the consensus, when the outlets disagree; none in an even split."""
+    """The outlets on the smaller side of the consensus, when the outlets disagree; none in an even split. The
+    consensus is on the outlets' own scale, before the calibration map."""
     if not present.disputed:
         return []
-    above = [view.outlet for view in present.outlets if view.p_start > present.p_start]
-    below = [view.outlet for view in present.outlets if view.p_start < present.p_start]
+    above = [view.outlet for view in present.outlets if view.p_start > present.raw_p_start]
+    below = [view.outlet for view in present.outlets if view.p_start < present.raw_p_start]
     if len(above) == len(below):
         return []
     return sorted(above if len(above) < len(below) else below)

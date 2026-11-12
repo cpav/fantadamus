@@ -236,11 +236,12 @@ class _Priced:
 
 def _assumed(facts: PlayerFacts) -> Availability:
     """Without any lineup for his match: how often he's had a rating so far, capped at a listed starter's
-    chance."""
+    chance. It isn't the outlets', so no map applies."""
     played = facts.table.played
     p_start = min(facts.form.rated_appearances / played, P_START_STARTER) if played else P_START_BENCH
     return Availability(
         p_start=p_start,
+        raw_p_start=p_start,
         p_cameo=CAMEO_SHARE * (1 - p_start),
         spread=0.0,
         disputed=False,
