@@ -48,10 +48,13 @@ approved).
 `fit_start_map(rows) -> StartMap` works on (raw consensus, started) pairs:
 
 1. Group them into the ten buckets the report uses.
-2. Make the buckets' rates monotone by pooling adjacent violators (isotonic regression).
-3. Shrink each bucket's rate toward its own mean raw chance, with a prior weight of `START_MAP_WEIGHT` players
+2. Shrink each bucket's rate toward its own mean raw chance, with a prior weight of `START_MAP_WEIGHT` players
    *(start)*: 20. A bucket with five players moves a fifth of the way; one with a hundred, most of it.
-4. The map is the piecewise-linear line through (0, 0), each bucket's (mean raw, shrunk rate), and (1, 1).
+3. Make the shrunk rates monotone by pooling adjacent violators (isotonic regression), each bucket weighing its
+   players plus the prior's 20. Shrinking first keeps the map monotone: shrunk after pooling, a thin bucket can
+   fall below a heavy one before it. Pooling never moves a bucket further from no change than shrinking did.
+4. The map is the piecewise-linear line through (0, 0), each bucket's (mean raw, fitted rate), and (1, 1).
+   *(Order corrected in task 2, 2026-11-12.)*
 
 `START_MAP` in `engine/constants.py` holds the knots. Until a proposal is approved it's the identity, so this slice's code
 changes no number on its own.

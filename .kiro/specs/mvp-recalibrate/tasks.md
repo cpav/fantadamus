@@ -28,17 +28,19 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
       `tests/unit/test_repo_hygiene.py::test_private_paths_ignored` (the sets' path);
       `tests/unit/recalibrate/test_sets.py`_
 
-- [ ] 2. The starting map
+- [x] 2. The starting map
   - Branch: `feat/rc-2-map` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 The fit: buckets, pooled to be monotone, shrunk toward the identity, through (0, 0) and (1, 1). `engine/recalibrate.py` joins the
+  - [x] 2.1 The fit: buckets, shrunk toward the identity, then pooled to be monotone, through (0, 0) and (1, 1). `engine/recalibrate.py` joins the
     mutation run.
     - _Requirements: R2.1_
-    - _Test: **AT-2** `tests/acceptance/recalibrate/test_map.py::test_at2_a_map_by_hand`, `::test_at2_a_thin_bucket_barely_moves`;
+    - _Test: **AT-2** `tests/acceptance/recalibrate/test_map.py::test_at2_a_map_by_hand`, `::test_at2_the_top_bucket`,
+      `::test_at2_a_thin_bucket_barely_moves`;
       **P1** `tests/property/recalibrate/test_map.py::test_p1_monotone_and_anchored`, **P2** `::test_p2_no_evidence_no_change`_
-  - [ ] 2.2 `combine` applies `START_MAP`, the identity until approved, and keeps the raw consensus; an official lineup still settles it.
+  - [x] 2.2 `combine` applies `START_MAP`, the identity until approved, and keeps the raw consensus; an official lineup still settles it.
     - _Requirements: R2.2_
     - _Test: **AT-2** `::test_at2_applied_where_the_chance_is_formed`, `::test_at2_the_official_lineup_still_settles_it`;
-      `tests/integration/recalibrate/test_map_applied.py::test_the_identity_changes_no_answer`_
+      `tests/integration/recalibrate/test_map_applied.py::test_the_identity_changes_no_answer`,
+      `::test_the_set_keeps_the_raw_chance`_
 
 - [ ] 3. Cameos and the season's rates
   - Branch: `feat/rc-3-rates` · Depends on: 2 · ADRs: none

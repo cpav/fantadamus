@@ -339,15 +339,13 @@ def _score_match(
             page = present or chances(player, now)
             if page is not None:
                 tally.add(STARTING, page.p_start, outcome.started)
-                tally.keep(_set_row(match, club, player.player_id, outcome, consensus=page.p_start))
+                tally.keep(_set_row(match, club, player.player_id, outcome, page))
             tally.note(THE_REST, "no facts held before his kickoff")
             continue
         share = penalty_share(player, order, mates, starts)
         inputs = model_inputs(PlayerFacts(player, form, table, order, match, present, xg, [], share), league)
         value = model_value(inputs, scoring_for(CLASSIC, form.role))
-        row = _set_row(
-            match, club, player.player_id, outcome, consensus=present.p_start, role=form.role, value=value
-        )
+        row = _set_row(match, club, player.player_id, outcome, present, role=form.role, value=value)
         tally.keep(row)
         add_outcomes(
             tally,
@@ -364,12 +362,13 @@ def _set_row(
     club: str,
     player_id: int,
     outcome: Outcome,
+    present: Availability,
     *,
-    consensus: float,
     role: Role | None = None,
     value: OutfieldValue | KeeperValue | None = None,
 ) -> SetRow:
-    """His row in the model set. Without a value, only his chance of starting was known: the outlets'."""
+    """His row in the model set, with the outlets' consensus before the map. Without a value, only his chance
+    of starting was known."""
     outfield = value if isinstance(value, OutfieldValue) else None
     keeper = value if isinstance(value, KeeperValue) else None
     return SetRow(
@@ -379,8 +378,8 @@ def _set_row(
         club=club,
         player_id=player_id,
         role=role,
-        consensus=consensus,
-        p_start=value.p_start if value is not None else consensus,
+        consensus=present.raw_p_start,
+        p_start=value.p_start if value is not None else present.p_start,
         p_rating=value.p_rating if value is not None else None,
         p_scores=outfield.p_scores if outfield is not None else None,
         p_scores_cameo=outfield.p_scores_cameo if outfield is not None else None,

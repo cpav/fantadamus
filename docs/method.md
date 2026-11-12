@@ -23,7 +23,9 @@ Report the expected score and the chance of reaching each threshold alongside it
 | No rating | 1 − p_start − p_cameo | nothing: the first bench player in his role with a rating replaces him |
 
 Availability: an official lineup overrides everything. Otherwise use the consensus of the probable-lineup
-sources, and keep their disagreement as uncertainty rather than averaging it away.
+sources, and keep their disagreement as uncertainty rather than averaging it away. The consensus goes through
+a calibration map fitted on scored rounds (§A8), the identity until the owner approves one; the outlets'
+disagreement is judged on their own scale, before it.
 
 ## A3. The ordering rule
 

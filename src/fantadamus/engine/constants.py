@@ -14,6 +14,9 @@ CAMEO_SHARE = 0.5  # p_cameo = 0.5 * (1 - p_start) for an available player
 DISPUTED_SPREAD = 0.30  # outlets at least this far apart mark him disputed
 CONTESTED_PERCENT = (31, 69)  # two of one role between these, making 100, are in a ballottaggio (the sheets'
 # defaults, 90 and 30 or 95 and 5, also make 100, and would pair every starter with every bench player)
+START_MAP: tuple[tuple[float, float], ...] = ((0.0, 0.0), (1.0, 1.0))  # the outlets' consensus to p_start, by
+# straight lines between these knots: the identity until a fit is approved (mvp-recalibrate R2, design C2)
+START_MAP_WEIGHT = 20  # a bucket's rate of starting shrinks toward its mean consensus with the weight of 20
 
 # Many sources, compared (mvp-collect R5.3, design C12)
 ODDS_DISPUTED_SPREAD = 0.10  # odds pages' de-margined 1X2 at least this far apart are disputed
