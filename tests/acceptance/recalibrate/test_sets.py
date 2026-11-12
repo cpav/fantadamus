@@ -108,8 +108,10 @@ async def test_at1_kept_with_the_report(tmp_path: Path) -> None:
     assert starter.p_scores is not None
     assert starter.p_scores_cameo is not None
     assert starter.p_clean_sheet is None
+    assert (starter.priced_cameo, bench.priced_cameo) == (True, False)  # a forward's cameo is priced
     keeper = _row(kept, "Alfa", "Uno")
     assert keeper.role == "P"
+    assert keeper.priced_cameo is False
     assert keeper.p_clean_sheet is not None
     assert keeper.p_scores is None
     assert (starter.outcome.started, starter.outcome.scored) == (True, True)  # Alfa Nove scored
@@ -189,4 +191,5 @@ async def test_at1_starting_from_the_page_alone(tmp_path: Path) -> None:
     assert row.consensus == pytest.approx(STARTER)
     assert row.p_start == row.consensus
     assert (row.role, row.p_rating, row.p_scores, row.p_scores_cameo, row.p_clean_sheet) == (None,) * 5
+    assert row.priced_cameo is None
     assert row.outcome.started is True

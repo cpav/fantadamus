@@ -54,7 +54,7 @@ from fantadamus.domains.season.gold import (
 )
 from fantadamus.domains.season.silver import PLAYER_SEASONS, SEASON_STATS, PlayerSeasonRow
 from fantadamus.engine.keepers import KeeperValue
-from fantadamus.engine.outfield import OutfieldValue
+from fantadamus.engine.outfield import OutfieldValue, priors
 from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import WORKED, CollectLog
 from fantadamus.lake.decision_log import DecisionLog
@@ -345,7 +345,10 @@ def _score_match(
         share = penalty_share(player, order, mates, starts)
         inputs = model_inputs(PlayerFacts(player, form, table, order, match, present, xg, [], share), league)
         value = model_value(inputs, scoring_for(CLASSIC, form.role))
-        row = _set_row(match, club, player.player_id, outcome, present, role=form.role, value=value)
+        priced = form.role != "P" and priors(form.role, form.mantra_role).priced_cameo
+        row = _set_row(
+            match, club, player.player_id, outcome, present, role=form.role, value=value, priced=priced
+        )
         tally.keep(row)
         add_outcomes(
             tally,
@@ -366,6 +369,7 @@ def _set_row(
     *,
     role: Role | None = None,
     value: OutfieldValue | KeeperValue | None = None,
+    priced: bool | None = None,
 ) -> SetRow:
     """His row in the model set, with the outlets' consensus before the map. Without a value, only his chance
     of starting was known."""
@@ -384,5 +388,6 @@ def _set_row(
         p_scores=outfield.p_scores if outfield is not None else None,
         p_scores_cameo=outfield.p_scores_cameo if outfield is not None else None,
         p_clean_sheet=keeper.p_clean_sheet if keeper is not None else None,
+        priced_cameo=priced,
         outcome=outcome,
     )

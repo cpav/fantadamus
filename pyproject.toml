@@ -57,6 +57,7 @@ only_mutate = [
     "src/fantadamus/domains/calibration.py",
     "src/fantadamus/domains/review.py",
     "src/fantadamus/domains/cards.py",
+    "src/fantadamus/domains/recalibration.py",
 ]
 also_copy = ["config", "scripts"]
 pytest_add_cli_args_test_selection = [
@@ -91,6 +92,7 @@ pytest_add_cli_args_test_selection = [
     "tests/property/recalibrate",
     "tests/acceptance/recalibrate/test_map.py",  # pure: the map, by hand
     "tests/acceptance/recalibrate/test_rates.py",  # pure: the rates, by hand
+    "tests/acceptance/recalibrate/test_checks.py",  # pure: the checks, by hand
 ]
 pytest_add_cli_args = [
     "--timeout=30",

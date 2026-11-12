@@ -53,14 +53,17 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
       `tests/property/recalibrate/test_rates.py::test_p5_rates_within_bounds`, `::test_p5_the_cameo_share_within_bounds`,
       `::test_p5_the_cameo_rating_within_bounds`; `tests/unit/recalibrate/test_rates.py`_
 
-- [ ] 4. Held-out checks and minimum samples
+- [x] 4. Held-out checks and minimum samples
   - Branch: `feat/rc-4-checks` · Depends on: 3 · ADRs: none
-  - [ ] 4.1 Leave a round out, or half the matches with one round; the Brier score and reliability before and after; a value below its
+  - [x] 4.1 Leave a round out, or half the matches with one round; the Brier score and reliability before and after; a value below its
     minimum sample, or that doesn't help where it wasn't fitted, isn't proposed; what waits is listed with what it needs.
     - _Requirements: R5.1, R5.2, R6.1, R6.2_
     - _Test: **AT-5** `tests/acceptance/recalibrate/test_checks.py::test_at5_below_its_minimum`, `::test_at5_what_waits`; **AT-6**
-      `::test_at6_held_out_by_round`, `::test_at6_held_out_by_matches`, `::test_at6_no_help_no_proposal`; **P3**
-      `tests/property/recalibrate/test_checks.py::test_p3_never_proposed_without_help`_
+      `::test_at6_held_out_by_round`, `::test_at6_held_out_by_matches`, `::test_at6_no_help_no_proposal`,
+      `::test_at6_a_chance_of_a_rating_rerated_by_hand`, `::test_at6_the_fitted_cameo_rating_is_what_is_checked`,
+      `::test_at6_a_part_with_nothing_to_score_is_skipped`; `tests/unit/recalibrate/test_checks.py`; **P3**
+      `tests/property/recalibrate/test_checks.py::test_p3_never_proposed_without_help`; whether a cameo is priced,
+      in AT-1 and AT-3_
 
 - [ ] 5. The market's chances beside ours
   - Branch: `feat/rc-5-market` · Depends on: 4 · ADRs: none

@@ -17,6 +17,14 @@ CONTESTED_PERCENT = (31, 69)  # two of one role between these, making 100, are i
 START_MAP: tuple[tuple[float, float], ...] = ((0.0, 0.0), (1.0, 1.0))  # the outlets' consensus to p_start, by
 # straight lines between these knots: the identity until a fit is approved (mvp-recalibrate R2, design C2)
 START_MAP_WEIGHT = 20  # a bucket's rate of starting shrinks toward its mean consensus with the weight of 20
+MINIMUM_SAMPLE = {  # below these, a value isn't proposed (mvp-recalibrate R5.2, design C6)
+    "starting": 300,  # players whose start is known
+    "cameos": 200,  # players who didn't start and could have come on
+    "penalties": 30,  # penalties, or team matches for the rate
+    "cards": 300,  # games, for each role
+    "scoring": 500,  # started outfield players whose goals are known
+    "clean_sheets": 100,  # started keepers whose clean sheet is known
+}
 
 # Many sources, compared (mvp-collect R5.3, design C12)
 ODDS_DISPUTED_SPREAD = 0.10  # odds pages' de-margined 1X2 at least this far apart are disputed

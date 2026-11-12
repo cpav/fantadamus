@@ -33,7 +33,8 @@ The fitting is pure and runs on stored evidence only: no page is read.
 - the round, the club, the role and the match;
 - the **raw** consensus of the outlets, before any map;
 - each chance the model gave: starting, a rating, scoring and a clean sheet;
-- what happened: started, rated, scored, and a clean sheet, or the reason it isn't known.
+- what happened: started, rated, scored, and a clean sheet, or the reason it isn't known;
+- whether his cameo is priced as an attacker's, by his first Mantra role, or flat *(added in task 4)*.
 
 `Calibrator.score` stores the model set's rows with the round's report, as `round-<n>.set.json` beside `round-<n>.json` in the
 private calibration folder. The report itself is unchanged. `fantadamus calibrate --round <n> --again` rebuilds both, the same
@@ -65,20 +66,21 @@ changes no number on its own.
 official lineup still replaces both. `combine` also keeps the raw consensus on `Availability` (`raw_p_start`), so that a
 calibration set records it and a later fit doesn't compound on the map.
 
-### C4. Cameo rates (`engine/recalibrate.py`, pure; the rows picked in `domains/calibration.py`; R3)
+### C4. Cameo rates (`engine/recalibrate.py`, pure; the rows picked in `domains/recalibration.py`; R3)
 
 From the rows of players who didn't start, whose rating is known, and to whom the model gave a chance of coming on:
 
-- **`CAMEO_SHARE`**, from the defenders and midfielders: how often they got a rating. In the model, a player who doesn't
+- **`CAMEO_SHARE`**, from the defenders and midfielders whose cameo is flat: how often they got a rating. In the model, a player who doesn't
   start gets a rated cameo `CAMEO_SHARE` of the time whatever his chance of starting, so this doesn't lean on that chance
   being calibrated.
-- **`CAMEO_RATED`**, from the forwards, with that share: a forward's cameo is rated if he scores, or `CAMEO_RATED` of the
-  time if not, so it's solved from how often they got a rating and their mean chance of scoring as a cameo.
+- **`CAMEO_RATED`**, from those whose cameo is priced (forwards and attacking midfielders), with that share: such a cameo
+  is rated if he scores, or `CAMEO_RATED` of the time if not, so it's solved from how often they got a rating and their mean
+  chance of scoring as a cameo.
 
 Each comes with its count and a 90% interval (Wilson's). *(Corrected in task 3, 2026-11-12: the share was the rated cameos
 over the sum of `1 − p_start`, which a miscalibrated chance of starting would bias.)*
 
-### C5. Season rates (`domains/calibration.py`, counted with `engine/recalibrate.py`; R4)
+### C5. Season rates (`domains/recalibration.py`, counted with `engine/recalibrate.py`; R4)
 
 From the latest statistics read and the table, league-wide:
 
@@ -93,13 +95,17 @@ From the latest statistics read and the table, league-wide:
 Each comes with its count and a 90% interval. These are counts, not predictions. They get no held-out Brier score (C6), and
 the proposal keeps them in a section of their own (open point 2, approved).
 
-### C6. Held-out checks and minimum samples (`engine/recalibrate.py`, pure; R5, R6)
+### C6. Held-out checks and minimum samples (`domains/recalibration.py`, pure; R5, R6)
 
-- **Starting:** leave one round out. Fit on the other rounds, then score the held-out round's raw chances, before and after the
-  map, by Brier score and reliability. With two rounds, that's two checks, and the map is proposed only if both improve.
-- **Cameos:** with one round, leave one half of the matches out, alternating by kickoff. The rating chances are scored before
-  and after. With several rounds, leave one round out.
-- **Minimum samples** *(start)*, below which a value isn't proposed:
+- **The folds:** each round held out in turn; with one round, each half of its matches, alternating in the set's order.
+  *(Corrected in task 4: alternating by kickoff needs a kickoff the set doesn't keep, and any split that ignores the
+  outcomes does.)*
+- **Starting:** fit the map without the held-out part, then score that part's raw chances through today's map and through
+  the fitted one, by Brier score and reliability. With two rounds, that's two checks, and the map is proposed only if both
+  improve.
+- **Cameos:** the same folds. Every known chance of a rating in the held-out part is scored as it was and with the fitted
+  rates: a cameo's part of the chance scales with the share and, if it's priced, with `CAMEO_RATED`.
+- **Minimum samples** *(start)*, in `MINIMUM_SAMPLE`, below which a value isn't proposed:
   - starting: 300 players;
   - cameos: 200 non-starters;
   - penalties: 30;

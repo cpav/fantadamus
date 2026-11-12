@@ -22,8 +22,6 @@ from fantadamus.domains.availability.silver import OfficialLineupRow
 from fantadamus.domains.fixtures.gold import matches
 from fantadamus.domains.fixtures.silver import FixtureRow
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
-from fantadamus.domains.season.silver import PlayerSeasonRow, TeamSeasonRow
-from fantadamus.engine.recalibrate import Rate, cameo_rated, cameo_share, counted
 from fantadamus.lake.decision_log import Decision, LoggedPlayer
 
 FINISHED_AFTER = dt.timedelta(hours=12)
@@ -333,6 +331,9 @@ class SetRow(BaseModel):
     """And if he comes on, for the fit of an attacker's cameo."""
     p_clean_sheet: float | None
     """A keeper's chance of a clean sheet if he starts."""
+    priced_cameo: bool | None = None
+    """Whether his cameo is priced as an attacker's, by his first Mantra role, or flat; None without a value
+    (mvp-recalibrate task 4)."""
     outcome: Outcome
 
 
@@ -437,91 +438,3 @@ def add_outcomes(
             tally.note(name, outcome.started)
         else:
             tally.add(name, chance, result)
-
-
-class Fitted(BaseModel):
-    """Rates counted from the evidence, and each one that couldn't be, with why (mvp-recalibrate C4, C5)."""
-
-    rates: list[Rate]
-    missing: list[str]
-
-
-def cameo_rates(rows: Sequence[SetRow]) -> Fitted:
-    """`CAMEO_SHARE` from defenders and midfielders, then `CAMEO_RATED` from forwards with it (C4). Each
-    counts the players who didn't start, whose rating is known, and to whom the model gave a chance of coming
-    on."""
-    benched = [
-        row
-        for row in rows
-        if row.outcome.started is False
-        and isinstance(row.outcome.rated, bool)
-        and row.p_rating is not None
-        and row.p_rating > row.p_start
-    ]
-    share = cameo_share([row.outcome.rated is True for row in benched if row.role in ("D", "C")])
-    if share is None:
-        return Fitted(
-            rates=[],
-            missing=[
-                "CAMEO_SHARE: no defender or midfielder who didn't start and could have come on",
-                "CAMEO_RATED: needs CAMEO_SHARE",
-            ],
-        )
-    forwards = [
-        (row.p_scores_cameo, row.outcome.rated is True)
-        for row in benched
-        if row.role == "A" and row.p_scores_cameo is not None
-    ]
-    rated = cameo_rated(forwards, share.value)
-    if rated is None:
-        reason = (
-            "no forward who didn't start and could have come on"
-            if not forwards
-            else "the evidence can't tell"
-        )
-        return Fitted(rates=[share], missing=[f"CAMEO_RATED: {reason}"])
-    return Fitted(rates=[share, rated], missing=[])
-
-
-def season_rates(players: Sequence[PlayerSeasonRow], teams: Sequence[TeamSeasonRow]) -> Fitted:
-    """The rates the season counts itself, league-wide, from one statistics read and the table (C5): penalties
-    per team match, how many are scored, how many of the missed ones were saved, yellow cards per outfield
-    appearance, and red cards per rated game by role."""
-    rates: list[Rate] = []
-    missing: list[str] = []
-    taken = sum(row.penalties_taken for row in players)
-    scored = sum(row.penalties_scored for row in players)
-    matches = sum(row.played for row in teams)
-    if matches:
-        rates.append(counted("PENALTY_RATE", taken, matches))
-    else:
-        missing.append("PENALTY_RATE: no team matches in the table")
-    if taken:
-        rates.append(counted("PENALTY_CONVERSION", scored, taken))
-    else:
-        missing.append("PENALTY_CONVERSION: no penalty taken")
-    if any(row.penalties_saved is None for row in players):
-        missing.append("PENALTY_SAVED_SHARE: the statistics read doesn't count saved penalties")
-    elif taken > scored:
-        saved = sum(row.penalties_saved or 0 for row in players)
-        rates.append(counted("PENALTY_SAVED_SHARE", saved, taken - scored))
-    else:
-        missing.append("PENALTY_SAVED_SHARE: no penalty missed")
-    outfield = [row for row in players if row.role != "P"]
-    appearances = sum(row.appearances for row in outfield)
-    if appearances:
-        rates.append(counted("YELLOW_PRIOR", sum(row.yellow_cards for row in outfield), appearances))
-    else:
-        missing.append("YELLOW_PRIOR: no outfield appearance")
-    if any(row.red_cards is None for row in players):
-        missing.append("RED_RATE: the statistics read doesn't count red cards")
-        return Fitted(rates=rates, missing=missing)
-    for role in ("P", "D", "C", "A"):
-        mine = [row for row in players if row.role == role]
-        games = sum(row.rated_appearances for row in mine)
-        name = f'RED_RATE["{role}"]'
-        if games:
-            rates.append(counted(name, sum(row.red_cards or 0 for row in mine), games))
-        else:
-            missing.append(f"{name}: no rated game")
-    return Fitted(rates=rates, missing=missing)
