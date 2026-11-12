@@ -1,6 +1,6 @@
 # Slice report: `mvp-recalibrate`
 
-2026-11-12 · Phase 2, the seventh slice · **For the owner's sign-off**
+2026-11-12 · Phase 2, the seventh slice · **Signed off by the owner on 2026-11-12**
 
 Fantadamus now learns from the rounds it has scored. Each round keeps its evidence player by player, a proposal fits the
 starting values on it and checks each one on a round or half-round it wasn't fitted on, and the owner approves what
@@ -122,7 +122,7 @@ seconds; a round's set adds about 200 KB to the private calibration folder.
 
 ## Decisions for the owner
 
-1. **Sign off this slice?** Recommendation: yes. Every acceptance test has passed, AT-10 with the approved values.
+1. **Sign off this slice?** Signed off on 2026-11-12. Every acceptance test has passed, AT-10 with the approved values.
 2. **A share for each kind of cameo?** Recommendation: yes, as the first change of the next recalibration: amend R3.1
    to fit attackers' cameos with their own share in place of `CAMEO_RATED`, and propose both once round 12 is scored,
    about Tuesday 24 November, when the cameos also pass their minimum.
