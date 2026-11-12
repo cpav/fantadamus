@@ -65,18 +65,20 @@ changes no number on its own.
 official lineup still replaces both. `combine` also keeps the raw consensus on `Availability` (`raw_p_start`), so that a
 calibration set records it and a later fit doesn't compound on the map.
 
-### C4. Cameo rates (`engine/recalibrate.py`, pure; R3)
+### C4. Cameo rates (`engine/recalibrate.py`, pure; the rows picked in `domains/calibration.py`; R3)
 
-From the rows of players who didn't start, with their club's sheet stored:
+From the rows of players who didn't start, whose rating is known, and to whom the model gave a chance of coming on:
 
-- **`CAMEO_SHARE`**, from the defenders and midfielders: the rated cameos over the sum of `1 − p_start`, the model's expected
-  count with a share of 1.
-- **`CAMEO_RATED`**, from the forwards, with that share: their rated cameos against what the share and their scoring chances
-  predict.
+- **`CAMEO_SHARE`**, from the defenders and midfielders: how often they got a rating. In the model, a player who doesn't
+  start gets a rated cameo `CAMEO_SHARE` of the time whatever his chance of starting, so this doesn't lean on that chance
+  being calibrated.
+- **`CAMEO_RATED`**, from the forwards, with that share: a forward's cameo is rated if he scores, or `CAMEO_RATED` of the
+  time if not, so it's solved from how often they got a rating and their mean chance of scoring as a cameo.
 
-Each comes with its count and a 90% interval.
+Each comes with its count and a 90% interval (Wilson's). *(Corrected in task 3, 2026-11-12: the share was the rated cameos
+over the sum of `1 − p_start`, which a miscalibrated chance of starting would bias.)*
 
-### C5. Season rates (`engine/recalibrate.py`, pure; R4)
+### C5. Season rates (`domains/calibration.py`, counted with `engine/recalibrate.py`; R4)
 
 From the latest statistics read and the table, league-wide:
 
@@ -84,8 +86,8 @@ From the latest statistics read and the table, league-wide:
 |---|---|
 | `PENALTY_RATE` | penalties taken over team matches played |
 | `PENALTY_CONVERSION` | penalties scored over taken |
-| `PENALTY_SAVED_SHARE` | penalties saved over missed |
-| `YELLOW_PRIOR` | yellow cards over rated games, outfield players |
+| `PENALTY_SAVED_SHARE` | penalties saved over missed (taken − scored) |
+| `YELLOW_PRIOR` | yellow cards over appearances, outfield players, as the model applies it |
 | `RED_RATE` | red cards over rated games, by role |
 
 Each comes with its count and a 90% interval. These are counts, not predictions. They get no held-out Brier score (C6), and

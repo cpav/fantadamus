@@ -42,13 +42,16 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
       `tests/integration/recalibrate/test_map_applied.py::test_the_identity_changes_no_answer`,
       `::test_the_set_keeps_the_raw_chance`_
 
-- [ ] 3. Cameos and the season's rates
+- [x] 3. Cameos and the season's rates
   - Branch: `feat/rc-3-rates` · Depends on: 2 · ADRs: none
-  - [ ] 3.1 `CAMEO_SHARE` from defenders and midfielders and `CAMEO_RATED` from forwards; the penalty, conversion, save and card rates from a
+  - [x] 3.1 `CAMEO_SHARE` from defenders and midfielders and `CAMEO_RATED` from forwards; the penalty, conversion, save and card rates from a
     statistics read and the table; each with its count and interval.
     - _Requirements: R3.1, R4.1_
-    - _Test: **AT-3** `tests/acceptance/recalibrate/test_rates.py::test_at3_cameos_by_hand`; **AT-4** `::test_at4_season_rates_by_hand`,
-      `::test_at4_a_read_without_the_newer_columns`; **P5** `tests/property/recalibrate/test_rates.py::test_p5_rates_within_bounds`_
+    - _Test: **AT-3** `tests/acceptance/recalibrate/test_rates.py::test_at3_cameos_by_hand`, `::test_at3_cameos_without_evidence`;
+      **AT-4** `::test_at4_season_rates_by_hand`, `::test_at4_a_read_without_the_newer_columns`,
+      `::test_at4_a_read_with_little_in_it`; **P5**
+      `tests/property/recalibrate/test_rates.py::test_p5_rates_within_bounds`, `::test_p5_the_cameo_share_within_bounds`,
+      `::test_p5_the_cameo_rating_within_bounds`; `tests/unit/recalibrate/test_rates.py`_
 
 - [ ] 4. Held-out checks and minimum samples
   - Branch: `feat/rc-4-checks` · Depends on: 3 · ADRs: none

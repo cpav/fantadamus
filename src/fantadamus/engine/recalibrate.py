@@ -1,4 +1,4 @@
-"""Recalibrating the starting values from scored rounds (mvp-recalibrate design C2; method §A8).
+"""Recalibrating the starting values from scored rounds (mvp-recalibrate design C2, C4, C5; method §A8).
 
 Pure: a fit works on the pairs a calibration set holds and proposes values. `engine/constants.py` changes only
 when the owner approves them."""
@@ -7,7 +7,10 @@ from __future__ import annotations
 
 import bisect
 import math
+import statistics
 from collections.abc import Sequence
+
+from pydantic import BaseModel
 
 from fantadamus.engine.constants import START_MAP_WEIGHT
 
@@ -16,6 +19,8 @@ StartMap = tuple[tuple[float, float], ...]
 IDENTITY: StartMap = ((0.0, 0.0), (1.0, 1.0))
 _BUCKETS = 10
 """The calibration report's."""
+_Z = statistics.NormalDist().inv_cdf(0.95)
+"""A 90% interval's."""
 
 
 def mapped(chance: float, knots: StartMap) -> float:
@@ -49,3 +54,50 @@ def fit_start_map(pairs: Sequence[tuple[float, bool]], *, weight: float = START_
         blocks.append(block)
     inside = [(raw, rate) for _, rate, raws in blocks for raw in raws if 0.0 < raw < 1.0]
     return (IDENTITY[0], *inside, IDENTITY[-1])
+
+
+class Rate(BaseModel):
+    """A value counted from the evidence, with its sample and a 90% interval (C4, C5)."""
+
+    name: str
+    """The constant's, as `engine/constants.py` writes it."""
+    value: float
+    count: int
+    """What it's counted over: players, games or matches."""
+    low: float
+    high: float
+
+
+def counted(name: str, events: int, count: int) -> Rate:
+    """How often, of `count`, with the Wilson score interval. More events than chances count as all."""
+    share = min(events / count, 1.0)
+    spread = _Z * _Z / count
+    middle = (share + spread / 2) / (1 + spread)
+    half = _Z * math.sqrt(share * (1 - share) / count + spread / (4 * count)) / (1 + spread)
+    low, high = min(max(middle - half, 0.0), share), max(min(middle + half, 1.0), share)
+    return Rate(name=name, value=share, count=count, low=low, high=high)
+
+
+def cameo_share(rated: Sequence[bool]) -> Rate | None:
+    """`CAMEO_SHARE` (C4): how often a defender or midfielder who didn't start, and could have come on, got a
+    rating. The statistics page counts rated games only, so a cameo without one can't be seen."""
+    return counted("CAMEO_SHARE", sum(rated), len(rated)) if rated else None
+
+
+def cameo_rated(forwards: Sequence[tuple[float, bool]], share: float) -> Rate | None:
+    """`CAMEO_RATED` (C4), from forwards who didn't start and could have come on: each one's chance of
+    scoring if he did, and whether he got a rating. He comes on `share` of the time, and his cameo is rated if
+    he scores or, if not, `CAMEO_RATED` of the time: solved from how often they got one, with its interval."""
+    if not forwards or share <= 0:
+        return None
+    scoring = math.fsum(chance for chance, _ in forwards) / len(forwards)
+    if scoring >= 1:
+        return None
+    seen = counted("CAMEO_RATED", sum(rated for _, rated in forwards), len(forwards))
+
+    def solved(rate: float) -> float:
+        return min(max((rate / share - scoring) / (1 - scoring), 0.0), 1.0)
+
+    return seen.model_copy(
+        update={"value": solved(seen.value), "low": solved(seen.low), "high": solved(seen.high)}
+    )
