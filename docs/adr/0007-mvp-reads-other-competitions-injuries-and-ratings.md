@@ -1,6 +1,6 @@
 # ADR-0007: In the MVP, Fantadamus also reads the other competitions' fixtures, the injury and suspension pages and the round ratings
 
-- **Status:** Proposed, 2026-11-12
+- **Status:** Accepted by the owner, 2026-11-12 ("Approve all", with the `mvp-sources` design)
 - **Deciders:** the owner
 - **Amends:** ADR-0006 (Fantadamus fetches the round's facts itself): five more pages, on the same rules
 - **Specs affected:** `mvp-sources`

@@ -1,7 +1,7 @@
 # Design Document: `mvp-sources` (Phase 2, eighth slice)
 
-Status: **Draft for the owner's approval, 2026-11-12** · From the approved [requirements](requirements.md) · Route:
-[ADR-0007](../../../docs/adr/0007-mvp-reads-other-competitions-injuries-and-ratings.md) (proposed with this design)
+Status: **Approved by the owner, 2026-11-12**, with both open points · From the approved [requirements](requirements.md) ·
+Route: [ADR-0007](../../../docs/adr/0007-mvp-reads-other-competitions-injuries-and-ratings.md) (accepted with this design)
 
 ## Overview
 
@@ -190,6 +190,8 @@ $0. Five more pages, read at most daily, one request a second per host; no paid 
 9. **A real check and sign-off:** budgets, docs, a real round, a mutation run and the slice report.
 
 ## Open points for the owner
+
+Both approved on 2026-11-12 ("Approve all").
 
 1. **Injury sentences read by rules.** Recommendation: Fantadamus turns each sentence into a kind, a body part and a
    return window by rules, and keeps no prose; what the rules can't place shows as "detail on the page", with the link.
