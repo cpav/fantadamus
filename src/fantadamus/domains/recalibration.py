@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from fantadamus.contracts.types import UtcDatetime
 from fantadamus.domains.calibration import RATING, STARTING, Pair, Scored, SetRow, scored_chance
+from fantadamus.domains.facts import latest_by
 from fantadamus.domains.season.silver import PlayerSeasonRow, TeamSeasonRow
 from fantadamus.engine.constants import (
     CAMEO_RATED,
@@ -79,13 +80,41 @@ def cameo_rates(rows: Sequence[SetRow]) -> Fitted:
     ]
     rated = cameo_rated(attackers, share.value)
     if rated is None:
-        reason = (
-            "no attacker who didn't start and could have come on"
-            if not attackers
-            else "the evidence can't tell"
-        )
-        return Fitted(rates=[share], missing=[f"CAMEO_RATED: {reason}"])
+        return Fitted(rates=[share], missing=[f"CAMEO_RATED: {_unfitted(attackers, share.value)}"])
     return Fitted(rates=[share, rated], missing=[])
+
+
+def _unfitted(attackers: Sequence[tuple[float, bool]], share: float) -> str:
+    """Why `CAMEO_RATED` can't be fitted: no evidence, evidence that can't tell, or more or fewer ratings than
+    one share allows."""
+    if not attackers:
+        return "no attacker who didn't start and could have come on"
+    rated = sum(happened for _, happened in attackers) / len(attackers)
+    scoring = math.fsum(chance for chance, _ in attackers) / len(attackers)
+    if share <= 0 or scoring >= 1:
+        return "the evidence can't tell"
+    if rated > share:
+        return (
+            "benched attackers got a rating more often than CAMEO_SHARE allows: "
+            "one share doesn't fit both kinds of cameo"
+        )
+    return "benched attackers got a rating less often than their chance of scoring as a cameo allows"
+
+
+SAME_RUN = dt.timedelta(hours=1)
+"""A statistics read this soon after the table's was made in the same collection run."""
+
+
+def season_read(
+    stats: Sequence[PlayerSeasonRow], tables: Sequence[TeamSeasonRow], *, as_of: dt.datetime
+) -> tuple[list[PlayerSeasonRow], list[TeamSeasonRow]]:
+    """The latest table, and the statistics read that goes with it (C5): the one stored last before the
+    table's, or in the same run just after it, so that both count the same matches. A page unchanged since is
+    stored once, so an older read still holds. Without a table, the latest read."""
+    teams = list(latest_by(tables, as_of, key=lambda row: row.club).values())
+    until = min(row.captured_at for row in teams) + SAME_RUN if teams else as_of
+    read = max((row.captured_at for row in stats if row.captured_at <= until), default=None)
+    return [row for row in stats if row.captured_at == read], teams
 
 
 def season_rates(players: Sequence[PlayerSeasonRow], teams: Sequence[TeamSeasonRow]) -> Fitted:
@@ -205,7 +234,8 @@ def check_start_map(
 ) -> Check:
     """The starting map (C2), fitted without each round or half and scored on it against today's map."""
     folds = []
-    for label, fitted_on, scored_on in held_out(sets):
+    known = {round: rows for round, rows in sets.items() if start_pairs(rows)}
+    for label, fitted_on, scored_on in held_out(known):
         test = start_pairs(scored_on)
         if not test:
             continue
@@ -231,17 +261,23 @@ def rerated(row: SetRow, rating: float, share: float, rated: float) -> float:
     return min(max(rating + (rating - row.p_start) * (factor - 1), 0.0), 1.0)
 
 
+def _ratings(rows: Iterable[SetRow]) -> list[tuple[SetRow, float, bool]]:
+    """Each player's chance of a rating and whether he got one, where both are known."""
+    return [
+        (row, row.p_rating, row.outcome.rated)
+        for row in rows
+        if row.p_rating is not None and isinstance(row.outcome.rated, bool)
+    ]
+
+
 def check_cameos(sets: Mapping[int, Sequence[SetRow]], *, minimum: int = MINIMUM_SAMPLE["cameos"]) -> Check:
     """The cameo rates (C4), fitted without each round or half, and every known chance of a rating there
     scored with them against today's."""
     folds = []
-    for label, fitted_on, scored_on in held_out(sets):
+    known = {round: rows for round, rows in sets.items() if _ratings(rows)}
+    for label, fitted_on, scored_on in held_out(known):
         fitted = {rate.name: rate.value for rate in cameo_rates(fitted_on).rates}
-        test = [
-            (row, row.p_rating, row.outcome.rated)
-            for row in scored_on
-            if row.p_rating is not None and isinstance(row.outcome.rated, bool)
-        ]
+        test = _ratings(scored_on)
         if "CAMEO_SHARE" not in fitted or not test:
             continue
         share, rated = fitted["CAMEO_SHARE"], fitted.get("CAMEO_RATED", CAMEO_RATED)
@@ -259,18 +295,20 @@ def check_cameos(sets: Mapping[int, Sequence[SetRow]], *, minimum: int = MINIMUM
 
 
 def season_checks(fitted: Fitted) -> list[Check]:
-    """The season's rates (C5) are counts, not forecasts: no held-out check, only their minimum sample."""
+    """The season's rates (C5) are counts, not forecasts: no held-out check, only their minimum sample. The
+    penalties per match are as sure as the penalties they count, not the matches."""
     checks = []
     for rate in fitted.rates:
         minimum = MINIMUM_SAMPLE["penalties" if rate.name.startswith("PENALTY") else "cards"]
-        enough = rate.count >= minimum
+        sample = rate.events if rate.name == "PENALTY_RATE" else rate.count
+        enough = sample >= minimum
         why = (
             "counted, not forecast: no held-out check"
             if enough
-            else f"below its minimum sample: {rate.count} of {minimum}"
+            else f"below its minimum sample: {sample} of {minimum}"
         )
         checks.append(
-            Check(name=rate.name, count=rate.count, minimum=minimum, folds=[], proposed=enough, why=why)
+            Check(name=rate.name, count=sample, minimum=minimum, folds=[], proposed=enough, why=why)
         )
     return checks
 
@@ -361,7 +399,7 @@ _TODAY: dict[str, float] = {
 _EVIDENCE = {
     "START_MAP": "players whose start is known",
     "CAMEO_SHARE and CAMEO_RATED": "players who didn't start and could have come on",
-    "PENALTY_RATE": "team matches",
+    "PENALTY_RATE": "penalties taken",
     "PENALTY_CONVERSION": "penalties taken",
     "PENALTY_SAVED_SHARE": "penalties missed",
     "YELLOW_PRIOR": "outfield appearances",
@@ -388,6 +426,8 @@ class Proposal(BaseModel):
     """Rounds asked for without a calibration set stored: fitted on the rest."""
     read_at: UtcDatetime | None
     """The statistics read the season's rates were counted from."""
+    table_at: UtcDatetime | None = None
+    """And the table's."""
     fitted: list[Proposed]
     season: list[Proposed]
     not_counted: list[str]
@@ -415,6 +455,7 @@ def propose(
         rounds=sorted(sets),
         missing_rounds=sorted(missing),
         read_at=max((row.captured_at for row in players), default=None),
+        table_at=min((row.captured_at for row in teams), default=None),
         fitted=[
             start,
             *(
@@ -463,7 +504,7 @@ def _value_lines(value: Proposed) -> list[str]:
     else:
         rate = value.rate
         lines.append(
-            f"  today: {_knots(value.old)}; fitted: {rate.value:.3f}, "
+            f"  today: {_knots(value.old)}; fitted: {rate.value:.3f} over {rate.count}, "
             f"90% between {rate.low:.3f} and {rate.high:.3f}"
         )
     unit = _EVIDENCE.get(check.name, "rated games")
@@ -483,6 +524,15 @@ def _wait_line(wait: Wait) -> str:
     return line
 
 
+def _counted_from(proposal: Proposal) -> str:
+    if proposal.read_at is None:
+        return "No statistics read is stored."
+    read = f"Counted from the statistics read of {proposal.read_at:%Y-%m-%d %H:%M} UTC"
+    if proposal.table_at is None:
+        return read + ", without a table."
+    return read + f" and the table of {proposal.table_at:%Y-%m-%d %H:%M} UTC."
+
+
 def render_proposal(proposal: Proposal) -> str:
     """The proposal as `fantadamus recalibrate` prints it."""
     lines = [f"Recalibration proposal, {proposal.made_at:%Y-%m-%d %H:%M} UTC, on {_rounds(proposal.rounds)}"]
@@ -498,7 +548,7 @@ def render_proposal(proposal: Proposal) -> str:
         "Fitted on the rounds",
         *(line for value in proposal.fitted for line in _value_lines(value)),
     ]
-    lines += ["", "The season's own rates: counts, not forecasts"]
+    lines += ["", "The season's own rates: counts, not forecasts", _counted_from(proposal)]
     lines += [line for value in proposal.season for line in _value_lines(value)]
     if proposal.not_counted:
         lines += ["", "Not counted", *(f"  {entry}" for entry in proposal.not_counted)]

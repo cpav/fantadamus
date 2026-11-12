@@ -169,6 +169,12 @@ def test_at5_below_its_minimum() -> None:
         ("PENALTY_CONVERSION", True, "counted, not forecast: no held-out check"),  # exactly enough
     ]
     assert all(check.folds == [] for check in season)
+    sparse = season_checks(
+        Fitted(rates=[counted("PENALTY_RATE", 22, 200)], missing=[])
+    )  # 200 matches, 22 penalties
+    assert [(check.count, check.proposed, check.why) for check in sparse] == [
+        (22, False, "below its minimum sample: 22 of 30")
+    ]
 
 
 FITTED_HERE = {
@@ -273,8 +279,16 @@ def test_at6_a_part_with_nothing_to_score_is_skipped() -> None:
     """A part that can't be fitted or scored isn't a check, and the parts after it still are; with nothing
     to check at all, nothing is proposed."""
     unknown = [_row(10, 0, index, started="no official lineup stored") for index in range(10)]
-    check = check_start_map({10: unknown, 11: _players(11, STARTER, 200, 10)}, minimum=0)
-    assert [fold.held_out for fold in check.folds] == ["round 11"]
+    eleven = [
+        *(_row(11, 0, 500 + index, started="no official lineup stored") for index in range(10)),
+        *(_row(11, 1, index, started=index < 10) for index in range(200)),
+    ]
+    check = check_start_map(
+        {10: unknown, 11: eleven}, minimum=0
+    )  # round 10 knows no start: no fold of its own
+    assert [fold.held_out for fold in check.folds] == [
+        "half 2 of round 11's matches"
+    ]  # half 1 knows none either
 
     defenders = [_benched(0, index, rated=index % 5 == 0) for index in range(40)]
     forwards = [_attacker(0, 100 + index, rated=index % 4 == 0) for index in range(40)]
@@ -285,3 +299,15 @@ def test_at6_a_part_with_nothing_to_score_is_skipped() -> None:
     assert alone.folds == []
     assert alone.why == "nothing to check it on where it wasn't fitted"
     assert not alone.proposed
+
+
+def test_at6_folds_where_the_evidence_is() -> None:
+    """Only round 11 knows who got a rating: the cameo check splits its matches, as with one round, while the
+    starting map, known in both rounds, holds out each round in turn."""
+    cameos = [_benched(index % 4, 5000 + index, rated=index % 5 == 0) for index in range(240)]
+    sets = {10: _players(10, STARTER, 200, 10), 11: [*_players(11, STARTER, 200, 10), *cameos]}
+    assert [fold.held_out for fold in check_cameos(sets).folds] == [
+        "half 1 of round 11's matches",
+        "half 2 of round 11's matches",
+    ]
+    assert [fold.held_out for fold in check_start_map(sets).folds] == ["round 10", "round 11"]

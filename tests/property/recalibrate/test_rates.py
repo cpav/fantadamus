@@ -3,6 +3,8 @@ R4.1)."""
 
 from __future__ import annotations
 
+import math
+
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -36,6 +38,9 @@ def test_p5_the_cameo_share_within_bounds(rated: list[bool]) -> None:
 )
 def test_p5_the_cameo_rating_within_bounds(forwards: list[tuple[float, bool]], share: float) -> None:
     rated = cameo_rated(forwards, share)
-    assert rated is not None
-    assert _bounded(rated)
-    assert rated.count == len(forwards)
+    scoring = math.fsum(chance for chance, _ in forwards) / len(forwards)
+    solved = (sum(happened for _, happened in forwards) / len(forwards) / share - scoring) / (1 - scoring)
+    assert (rated is None) == (not 0 <= solved <= 1)  # a value it can't fit is no value, not a bound
+    if rated is not None:
+        assert _bounded(rated)
+        assert rated.count == len(forwards)

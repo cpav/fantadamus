@@ -89,6 +89,12 @@ Status: **Approved by the owner, 2026-11-11** · From the approved [requirements
   - [ ] 7.1 The proposal on rounds 10 and 11 from Claude Code, on `main`'s code; its aggregates in the pull request.
     - _Requirements: R6.1, R6.2, R8.1_
     - _Test: the proposal's aggregates in the task report, without players' figures_
+    - Found and fixed (`fix/rc-7-proposal`): the cameo check held out rounds although only round 11 knows who got a
+      rating, so it had no fold; the latest statistics read was a round ahead of the table, which inflated the penalties
+      per match; `CAMEO_RATED` pinned at 1 when attackers got a rating more often than one share allows, now named
+      instead; the penalties per match met their minimum on 200 matches though only 22 penalties were taken, now counted
+      in penalties; and each rate now shows its own count. Tests: `test_at6_folds_where_the_evidence_is`,
+      `test_at3_one_share_doesnt_fit_both`, `tests/unit/recalibrate/test_proposal.py::test_the_read_that_goes_with_the_table`.
   - [ ] 7.2 **Owner:** read the proposal, and approve or turn down each value.
     - _Requirements: AT-10 (R6, R8)_
     - _Test: recorded in the report_

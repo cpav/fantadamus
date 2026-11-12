@@ -78,11 +78,15 @@ From the rows of players who didn't start, whose rating is known, and to whom th
   chance of scoring as a cameo.
 
 Each comes with its count and a 90% interval (Wilson's). *(Corrected in task 3, 2026-11-12: the share was the rated cameos
-over the sum of `1 − p_start`, which a miscalibrated chance of starting would bias.)*
+over the sum of `1 − p_start`, which a miscalibrated chance of starting would bias.)* When the attackers' ratings can't be
+explained by the share and their cameo goals with a `CAMEO_RATED` between 0 and 1, it isn't fitted: the proposal says
+which way it misses *(found in task 7 on round 11: attackers got a rating about twice as often as the share allows)*.
 
 ### C5. Season rates (`domains/recalibration.py`, counted with `engine/recalibrate.py`; R4)
 
-From the latest statistics read and the table, league-wide:
+From the latest table and the statistics read that goes with it, league-wide: the one stored last before the table's, or
+in the same collection run just after it, so that both count the same matches *(found in task 7: the latest read was a
+round ahead of the table)*:
 
 | Constant | Count |
 |---|---|
@@ -98,6 +102,8 @@ the proposal keeps them in a section of their own (open point 2, approved).
 ### C6. Held-out checks and minimum samples (`domains/recalibration.py`, pure; R5, R6)
 
 - **The folds:** each round held out in turn; with one round, each half of its matches, alternating in the set's order.
+  Only the rounds with the evidence count: a check whose evidence is in one round splits its matches *(found in task 7:
+  only round 11 knows who got a rating)*.
   *(Corrected in task 4: alternating by kickoff needs a kickoff the set doesn't keep, and any split that ignores the
   outcomes does.)*
 - **Starting:** fit the map without the held-out part, then score that part's raw chances through today's map and through
@@ -108,7 +114,7 @@ the proposal keeps them in a section of their own (open point 2, approved).
 - **Minimum samples** *(start)*, in `MINIMUM_SAMPLE`, below which a value isn't proposed:
   - starting: 300 players;
   - cameos: 200 non-starters;
-  - penalties: 30;
+  - penalties: 30, the penalties themselves for the rate per match, not its matches *(found in task 7)*;
   - cards: 300 rated games a role;
   - scoring shares: 500 started players;
   - clean sheets: 100 keepers.

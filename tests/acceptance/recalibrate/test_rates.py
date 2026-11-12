@@ -102,6 +102,9 @@ def test_at3_cameos_without_evidence() -> None:
     scorers = cameo_rates([*benched, _row(3, "A", rated=True, p_scores_cameo=1.0)])  # every cameo scores
     assert [rate.name for rate in scorers.rates] == ["CAMEO_SHARE"]
     assert scorers.missing == ["CAMEO_RATED: the evidence can't tell"]
+    unrated = [_row(1, "D", rated=False), _row(2, "C", rated=False)]  # a share of none
+    nothing = cameo_rates([*unrated, _row(3, "A", rated=True, p_scores_cameo=0.1)])
+    assert nothing.missing == ["CAMEO_RATED: the evidence can't tell"]
 
 
 def _player(
@@ -203,3 +206,24 @@ def test_at4_a_read_with_little_in_it() -> None:
     ]
     scored = season_rates([_player(1, "P"), _player(2, "A", penalties=(2, 2))], TABLE)
     assert "PENALTY_SAVED_SHARE: no penalty missed" in scored.missing  # every one scored
+
+
+def test_at3_one_share_doesnt_fit_both() -> None:
+    """Benched attackers who got a rating more often than the share allows, or less often than their chance of
+    scoring as a cameo alone would, can't be fitted with CAMEO_RATED: it's named, not pinned at a bound."""
+    flat = [_row(index, "D", rated=index < 2) for index in range(10)]  # a share of 0.2
+    often = [
+        _row(100 + index, "A", rated=index < 6, p_scores_cameo=0.1) for index in range(10)
+    ]  # 0.6 of them
+    fitted = cameo_rates([*flat, *often])
+    assert [rate.name for rate in fitted.rates] == ["CAMEO_SHARE"]
+    assert fitted.missing == [
+        "CAMEO_RATED: benched attackers got a rating more often than CAMEO_SHARE allows: "
+        "one share doesn't fit both kinds of cameo"
+    ]
+    half = [_row(index, "D", rated=index < 5) for index in range(10)]  # a share of 0.5
+    seldom = [_row(100 + index, "A", rated=index < 1, p_scores_cameo=0.8) for index in range(10)]  # 0.1 / 0.5
+    assert cameo_rates([*half, *seldom]).missing == [
+        "CAMEO_RATED: benched attackers got a rating less often than "
+        "their chance of scoring as a cameo allows"
+    ]

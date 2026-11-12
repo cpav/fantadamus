@@ -10,6 +10,8 @@ def test_no_evidence_no_rate() -> None:
     assert cameo_rated([], 0.5) is None
     assert cameo_rated([(0.1, True)], 0.0) is None  # a share of none says nothing about a cameo's rating
     assert cameo_rated([(1.0, True)], 0.5) is None  # every cameo scores: the rest can't be told
+    assert cameo_rated([(0.1, True)] * 6 + [(0.1, False)] * 4, 0.2) is None  # rated more often than the share
+    assert cameo_rated([(0.8, True)] + [(0.8, False)] * 9, 0.5) is None  # less often than their goals alone
 
 
 def test_a_rate_with_nothing_or_everything() -> None:
