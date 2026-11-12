@@ -47,6 +47,19 @@ Read on 2026-11-12, one request per page, from Claude Code; nothing fetched is k
 | The league's rating, without a new page | The two statistics reads around a round, as the review reads them (`mvp-review`) | Each player's rating in the round, exactly, up to about 24 rated games | Already read |
 | Anytime-scorer odds | [The Odds API](https://the-odds-api.com/sports-odds-data/betting-markets.html): `player_goal_scorer_anytime` among its soccer player markets, Serie A included | US bookmakers only; one request per match, one credit per market per region: about 20 of the free plan's 500 credits a round | Approved for v1 (registry D-S6); in the MVP it needs an account and a key in the owner's name |
 
+**Also checked for the other competitions' fixtures, 2026-11-12,** when the owner asked for official sources:
+
+| Source | Usable? | Why |
+|---|---|---|
+| UEFA ([uefa.com](https://www.uefa.com/termsconditions/)) | No | robots.txt allows the fixture pages, but the General Terms (clause 6.2) forbid robots, spiders and scripts that collect content, and its systematic collection into a database, even for personal use. The fixtures load in JavaScript, and no data licence or public API is offered |
+| Lega Serie A (legaseriea.it), which runs the Coppa Italia | No | Its terms forbid extracting content without written consent (registry D-T2, read 2026-10-24) |
+| worldfootball.net | No | Its [robots.txt](https://www.worldfootball.net/robots.txt) turns away user-triggered AI agents across the whole site, and its pages answered "payment required" |
+| football-data.org ([coverage](https://www.football-data.org/coverage)) | Partly | A licensed API whose free tier covers Serie A and the Champions League, not the Europa League, the Conference League or the Coppa Italia; schedules delayed; an account needed; its terms page not found |
+| API-Football | Yes, with an account | Every competition, and injuries, in a licensed free tier of 100 requests a day; approved for v1 (registry D-T1), with an account and key in the owner's name |
+
+A page's robots.txt allowing it isn't permission: the rule approved on 2026-10-24 drops a site whose terms forbid our use,
+as Sky, Goal and Lega Serie A were, and only Fantacalcio.it, which nothing replaces, keeps an accepted risk.
+
 ## Requirements
 
 ### Requirement 1: Routes first
@@ -169,11 +182,11 @@ An Analyze-Requirements pass, before design.
 
 ## Owner decisions
 
-1. **The routes.** Recommendation: Fantadamus reads the new pages itself, under ADR-0006's rules, with Claude as the
-   fallback. They are Wikipedia's European competition pages and Coppa Italia page, Fantacalcio.it's injury, unavailable
-   and suspension pages, and Fantacalcio-Online's round ratings page, recorded in ADR-0007. No new site and no account.
-   The alternative is API-Football's free tier now (every competition's fixtures and injuries in one licensed API), which
-   needs an account and a key in the owner's name and is approved for v1.
+1. **The routes.** **Decided on 2026-11-12: Wikipedia now** ("Wikipedia now"), with API-Football in v1. Fantadamus reads the
+   new pages itself, under ADR-0006's rules, with Claude as the fallback: Wikipedia's European competition pages and
+   Coppa Italia page, Fantacalcio.it's injury, unavailable and suspension pages, and Fantacalcio-Online's round ratings
+   page, recorded in ADR-0007. No new site and no account. The alternative was API-Football's free tier now as well, with
+   an account and a key in the owner's name.
 2. **Context changes no number in this slice.** Recommendation: rest days and injury detail are shown and kept in the
    calibration sets, and a later recalibration can propose an adjustment once the evidence is enough. The alternative is
    a bounded rotation adjustment for European weeks now, as method §A8 allows if it's bounded, logged and shown. But the
