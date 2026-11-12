@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-sources` (Phase 2, eighth slice)
 
-Status: **Draft for the owner's approval, 2026-11-12** · Workflow: requirements-first · Depends on: `mvp-recalibrate`
+Status: **Approved by the owner, 2026-11-12**, with all three decisions · Workflow: requirements-first · Depends on: `mvp-recalibrate`
 (signed off 2026-11-12) · Abbreviation: `so` · Method: [`docs/method.md`](../../../docs/method.md) §A2, §A4, §A8 ·
 Sources: [`docs/source-registry.md`](../../../docs/source-registry.md)
 
@@ -187,10 +187,10 @@ An Analyze-Requirements pass, before design.
    Coppa Italia page, Fantacalcio.it's injury, unavailable and suspension pages, and Fantacalcio-Online's round ratings
    page, recorded in ADR-0007. No new site and no account. The alternative was API-Football's free tier now as well, with
    an account and a key in the owner's name.
-2. **Context changes no number in this slice.** Recommendation: rest days and injury detail are shown and kept in the
+2. **Context changes no number in this slice.** **Approved on 2026-11-12** ("Approve both"). Recommendation: rest days and injury detail are shown and kept in the
    calibration sets, and a later recalibration can propose an adjustment once the evidence is enough. The alternative is
    a bounded rotation adjustment for European weeks now, as method §A8 allows if it's bounded, logged and shown. But the
    outlets already price rotation, and there's no evidence yet that they underprice it.
-3. **Anytime-scorer odds.** Recommendation: the research ADR only in this slice, and a one-round trial with a free Odds API
+3. **Anytime-scorer odds.** **Approved on 2026-11-12** ("Approve both"). Recommendation: the research ADR only in this slice, and a one-round trial with a free Odds API
    key in the owner's name later, if the ADR is approved. The alternative is opening the account now and running the
    trial in this slice.
