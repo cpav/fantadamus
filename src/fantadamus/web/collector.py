@@ -1,6 +1,7 @@
-"""The collector: Fantadamus reads Fantacalcio-Online's round page and Fantacalcio.it's statistics, penalty
-takers and table pages itself and stores their facts (mvp-collect design C6; R1.1, R1.4, R2.4, R2.5, R3.4;
-mvp-roles design C4; mvp-lineup C13; mvp-cards C1).
+"""The collector: Fantadamus reads Fantacalcio-Online's round page, Fantacalcio.it's statistics, penalty
+takers and table pages, and Wikipedia's pages of the other competitions itself and stores their facts
+(mvp-collect design C6; R1.1, R1.4, R2.4, R2.5, R3.4; mvp-roles design C4; mvp-lineup C13; mvp-cards C1;
+mvp-sources C2).
 
 A run fetches each page its facts call for once, politely (C1), with one fetcher for the run, reads it with
 its reader (C3.1), and stores each kind of fact with `facts.submit_many` as `collector`: the fetch time is
@@ -16,9 +17,9 @@ import tomllib
 from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
@@ -31,7 +32,7 @@ from fantadamus.domains.facts import (
     payload_hash,
     submit_many,
 )
-from fantadamus.domains.fixtures.silver import FIXTURES
+from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES
 from fantadamus.domains.freshness import FACTS_WINDOW
 from fantadamus.domains.odds.silver import ODDS
 from fantadamus.domains.season.silver import PENALTY_TAKERS, SEASON_STATS, TEAM_SEASONS
@@ -42,6 +43,7 @@ from fantadamus.web.readers.fcit_stats import StatsFacts, read_stats
 from fantadamus.web.readers.fcit_table import TableFacts, read_table
 from fantadamus.web.readers.fcit_takers import TakersFacts, read_takers
 from fantadamus.web.readers.fco import RoundFacts, read_round
+from fantadamus.web.readers.wiki_fixtures import OtherFixturesFacts, competition_of, read_other_fixtures
 
 DEFAULT_READING_LIST = Path("config/reading_list.toml")
 COLLECTOR = "collector"
@@ -53,24 +55,28 @@ TAKERS_FACTS = ("penalty_takers",)
 """And the penalty-takers page's (mvp-lineup R10.3)."""
 TABLE_FACTS = ("team_season",)
 """And the table's (mvp-cards C1)."""
-FACTS = ROUND_FACTS + STATS_FACTS + TAKERS_FACTS + TABLE_FACTS
-PageKind = Literal["round", "statistics", "finished_round", "takers", "table"]
+OTHER_FIXTURES_FACTS = ("other_fixtures",)
+"""And the other competitions' pages (mvp-sources C2)."""
+REFRESHED = ROUND_FACTS + STATS_FACTS + TAKERS_FACTS + TABLE_FACTS
+"""What a run that names no fact reads: the other competitions' pages keep to their own cadence (ADR-0007)."""
+FACTS = REFRESHED + OTHER_FIXTURES_FACTS
+PageKind = Literal["round", "statistics", "finished_round", "takers", "table", "other_fixtures"]
 PAGE_FACTS: dict[PageKind, tuple[str, ...]] = {
     "round": ROUND_FACTS,
     "finished_round": ROUND_FACTS,
     "statistics": STATS_FACTS,
     "takers": TAKERS_FACTS,
     "table": TABLE_FACTS,
+    "other_fixtures": OTHER_FIXTURES_FACTS,
 }
 
 
 def page_of(fact: str) -> PageKind:
     """The kind of page that carries `fact`."""
-    if fact in STATS_FACTS:
-        return "statistics"
-    if fact in TABLE_FACTS:
-        return "table"
-    return "takers" if fact in TAKERS_FACTS else "round"
+    for page in ("statistics", "takers", "table", "other_fixtures"):
+        if fact in PAGE_FACTS[page]:
+            return page
+    return "round"
 
 
 Outcome = Literal[
@@ -105,13 +111,22 @@ class CollectorConfig(BaseModel):
     """The table; None reads none, and Claude submits it (mvp-cards C1)."""
     table_enabled: bool = True
     other_competitions: list[str] = []
-    """Wikipedia's pages of the other competitions, as raw wikitext (mvp-sources C2, ADR-0007)."""
+    """Wikipedia's pages of the other competitions, as raw wikitext, each naming its competition (mvp-sources
+    C2, ADR-0007)."""
+    other_competitions_enabled: bool = True
     injuries: str | None = None
     """Fantacalcio.it's injured page (mvp-sources C4)."""
     suspensions: str | None = None
     """Fantacalcio.it's suspended-and-diffidati page (mvp-sources C4)."""
     ratings: str | None = None
     """Fantacalcio-Online's round ratings page, with `{round}` for n (mvp-sources C6)."""
+
+    @field_validator("other_competitions")
+    @classmethod
+    def _each_names_its_competition(cls, urls: list[str]) -> list[str]:
+        for url in urls:
+            competition_of(url)
+        return urls
 
 
 def load_collector(path: Path = DEFAULT_READING_LIST) -> CollectorConfig:
@@ -170,6 +185,18 @@ def table_submissions(facts: TableFacts) -> Submissions:
     return {TEAM_SEASONS: [Submission(facts.payload)]}
 
 
+def other_fixtures_submissions(facts: OtherFixturesFacts) -> Submissions:
+    """A competition's page, ready to store (mvp-sources C2)."""
+    return {OTHER_FIXTURES: [Submission(facts.payload)]}
+
+
+class _Read(Protocol):
+    """What a reader gives: the facts it found, and what it left out."""
+
+    @property
+    def problems(self) -> list[str]: ...
+
+
 def to_store(new: Submissions, last: Mapping[str, set[str]]) -> Submissions:
     """The kinds of fact whose payloads differ from the page's last stored read (`last`, content hashes by
     domain source): the rest would store nothing new."""
@@ -207,13 +234,14 @@ class Collector:
             or (fact in STATS_FACTS and self.config.statistics is not None)
             or (fact in TAKERS_FACTS and self.config.takers is not None)
             or (fact in TABLE_FACTS and self.config.table is not None)
+            or (fact in OTHER_FIXTURES_FACTS and bool(self.config.other_competitions))
         )
 
     def collect(self, round: int | None = None, facts: Collection[str] | None = None) -> CollectReport:
         """Read the pages that carry `facts`, by default the round page and, without `round`, the statistics,
         penalty-takers and table pages: round `round`'s page, or the current round's. Store what's new."""
         started = self.clock()
-        wanted = set(facts) if facts is not None else set(ROUND_FACTS if round is not None else FACTS)
+        wanted = set(facts) if facts is not None else set(ROUND_FACTS if round is not None else REFRESHED)
         fetcher = self.fetcher()
         reports = []
         if wanted & set(ROUND_FACTS):
@@ -224,6 +252,8 @@ class Collector:
             reports.append(self._takers_page(fetcher, self.config.takers))
         if wanted & set(TABLE_FACTS) and self.config.table is not None:
             reports.append(self._table_page(fetcher, self.config.table))
+        if wanted & set(OTHER_FIXTURES_FACTS):
+            reports += [self._other_page(fetcher, url) for url in self.config.other_competitions]
         return CollectReport(started_at=started, finished_at=self.clock(), round=round, pages=reports)
 
     def collect_finished(self, round: int) -> CollectReport:
@@ -235,54 +265,54 @@ class Collector:
 
     def _round_page(self, fetcher: Fetcher, round: int | None, *, kind: PageKind = "round") -> PageReport:
         url = self.config.round.format(round=round) if round is not None else self.config.current_round
-        if not self.config.enabled:
-            return PageReport(url=url, page=kind, outcome="switched off", for_claude=list(ROUND_FACTS))
-        fetched = _fetch(fetcher, url, kind, ROUND_FACTS)
-        if isinstance(fetched, PageReport):
-            return fetched
-        try:
-            facts = read_round(fetched.text, round)
-        except UnreadablePageError as error:
-            return _unreadable(fetched, kind, ROUND_FACTS, error)
-        return self._store(fetched, kind, ROUND_FACTS, submissions(facts), facts.problems)
+        return self._page(
+            fetcher, url, kind, self.config.enabled, lambda text: read_round(text, round), submissions
+        )
 
     def _statistics_page(self, fetcher: Fetcher, url: str) -> PageReport:
-        if not self.config.statistics_enabled:
-            return PageReport(
-                url=url, page="statistics", outcome="switched off", for_claude=list(STATS_FACTS)
-            )
-        fetched = _fetch(fetcher, url, "statistics", STATS_FACTS)
-        if isinstance(fetched, PageReport):
-            return fetched
-        try:
-            facts = read_stats(fetched.text)
-        except UnreadablePageError as error:
-            return _unreadable(fetched, "statistics", STATS_FACTS, error)
-        return self._store(fetched, "statistics", STATS_FACTS, season_submissions(facts), facts.problems)
+        enabled = self.config.statistics_enabled
+        return self._page(fetcher, url, "statistics", enabled, read_stats, season_submissions)
 
     def _takers_page(self, fetcher: Fetcher, url: str) -> PageReport:
-        if not self.config.takers_enabled:
-            return PageReport(url=url, page="takers", outcome="switched off", for_claude=list(TAKERS_FACTS))
-        fetched = _fetch(fetcher, url, "takers", TAKERS_FACTS)
-        if isinstance(fetched, PageReport):
-            return fetched
-        try:
-            facts = read_takers(fetched.text)
-        except UnreadablePageError as error:
-            return _unreadable(fetched, "takers", TAKERS_FACTS, error)
-        return self._store(fetched, "takers", TAKERS_FACTS, takers_submissions(facts), facts.problems)
+        enabled = self.config.takers_enabled
+        return self._page(fetcher, url, "takers", enabled, read_takers, takers_submissions)
 
     def _table_page(self, fetcher: Fetcher, url: str) -> PageReport:
-        if not self.config.table_enabled:
-            return PageReport(url=url, page="table", outcome="switched off", for_claude=list(TABLE_FACTS))
-        fetched = _fetch(fetcher, url, "table", TABLE_FACTS)
+        return self._page(fetcher, url, "table", self.config.table_enabled, read_table, table_submissions)
+
+    def _other_page(self, fetcher: Fetcher, url: str) -> PageReport:
+        competition = competition_of(url)
+        return self._page(
+            fetcher,
+            url,
+            "other_fixtures",
+            self.config.other_competitions_enabled,
+            lambda text: read_other_fixtures(text, competition),
+            other_fixtures_submissions,
+        )
+
+    def _page[F: _Read](
+        self,
+        fetcher: Fetcher,
+        url: str,
+        kind: PageKind,
+        enabled: bool,
+        read: Callable[[str], F],
+        ready: Callable[[F], Submissions],
+    ) -> PageReport:
+        """Read one page with its reader and store what's new; switched off, or when the page can't be used,
+        its facts are Claude's."""
+        carried = PAGE_FACTS[kind]
+        if not enabled:
+            return PageReport(url=url, page=kind, outcome="switched off", for_claude=list(carried))
+        fetched = _fetch(fetcher, url, kind, carried)
         if isinstance(fetched, PageReport):
             return fetched
         try:
-            facts = read_table(fetched.text)
+            facts = read(fetched.text)
         except UnreadablePageError as error:
-            return _unreadable(fetched, "table", TABLE_FACTS, error)
-        return self._store(fetched, "table", TABLE_FACTS, table_submissions(facts), facts.problems)
+            return _unreadable(fetched, kind, carried, error)
+        return self._store(fetched, kind, carried, ready(facts), facts.problems)
 
     def _store(
         self, fetched: Page, page: PageKind, carried: tuple[str, ...], new: Submissions, found: list[str]

@@ -126,8 +126,10 @@ FRESH_FOR_HOURS = {
     "team_season": 7 * 24,
     "penalty_takers": 48,  # read daily, so that a change is noticed (mvp-lineup R10.3)
     "fixtures": 7 * 24,
+    "other_fixtures": 7
+    * 24,  # and a day near a match, when a midweek kickoff may have moved (mvp-sources R7.1)
 }
-FRESH_NEAR_MATCH_HOURS = {"probable_lineups": 3, "match_odds": 6}
+FRESH_NEAR_MATCH_HOURS = {"probable_lineups": 3, "match_odds": 6, "other_fixtures": 24}
 NEAR_MATCH_HOURS = 24
 
 # The match card (mvp-cards R4.4, design C4), (start)

@@ -5,17 +5,22 @@ sites spell differently, before a collection or an answer does."""
 
 from __future__ import annotations
 
+import datetime as dt
+import re
 from pathlib import Path
 
 import pytest
 
 from fantadamus.core.clubs import Clubs
+from fantadamus.domains.facts import Source
+from fantadamus.domains.fixtures.silver import OTHER_FIXTURES
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
 from fantadamus.web.html import parse
 from fantadamus.web.readers.fcit_stats import read_stats
 from fantadamus.web.readers.fcit_table import read_table
 from fantadamus.web.readers.fcit_takers import read_takers
 from fantadamus.web.readers.fco import read_round
+from fantadamus.web.readers.wiki_fixtures import competition_of, read_other_fixtures
 from fantadamus.web.text import page_text, parts
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -24,6 +29,20 @@ SAVED = sorted(PAGES.glob("*.html")) if PAGES.is_dir() else []
 STATS = PAGES / "fcit-statistiche.html"
 TAKERS = PAGES / "fcit-rigoristi.html"
 TABLE = PAGES / "fcit-classifica.html"
+WIKI = sorted(PAGES.glob("wiki-*.txt")) if PAGES.is_dir() else []
+"""Wikipedia's pages of the other competitions as raw wikitext, each named for its competition: wiki-cl, wiki-
+el, wiki-ecl and wiki-coppa (mvp-sources task 2)."""
+SOURCE = Source(
+    source_url="https://en.wikipedia.org/",
+    captured_at=dt.datetime(2026, 11, 13, tzinfo=dt.UTC),
+    content_sha256="0" * 64,
+)
+WIKI_TITLES = {
+    "cl": "UEFA_Champions_League",
+    "el": "UEFA_Europa_League",
+    "ecl": "UEFA_Conference_League",
+    "coppa": "Coppa_Italia",
+}
 ROUNDS = [path for path in SAVED if path.name.startswith("fco-round")]
 CLUBS = Clubs.from_toml((ROOT / "config" / "clubs.toml").read_text(encoding="utf-8"))
 RESOLVED = 0.95
@@ -167,3 +186,28 @@ def test_every_club_on_the_table() -> None:
         assert row.wins is not None
         assert row.form is not None
         assert len(row.form) == min(5, row.played), row.club
+
+
+@pytest.mark.skipif(
+    not WIKI, reason="no real pages saved under data/private/pages/, which is never committed"
+)
+def test_the_other_competitions_pages() -> None:
+    """mvp-sources task 2.1: each real Wikipedia page gives its matches, and every Serie A club it names is
+    one config/clubs.toml knows. In a league phase every match is dated and two Italian clubs never meet, so
+    each match with an Italian flag keeps one silver row; on the cup's page, matches still waiting for a draw
+    are left out, and every club in the top tier is a Serie A club."""
+    for path in WIKI:
+        text = path.read_text(encoding="utf-8")
+        title = WIKI_TITLES[path.stem.removeprefix("wiki-")]
+        facts = read_other_fixtures(text, competition_of(f"https://en.wikipedia.org/wiki/2026_{title}"))
+        rows = OTHER_FIXTURES.to_rows(facts.payload, CLUBS, SOURCE)
+        assert rows, path.name
+        if title.startswith("UEFA"):
+            assert facts.problems == [], path.name
+            assert len(facts.payload.matches) == text.count("{{#invoke:Football box"), path.name
+            sides = re.findall(r"^\|\s*team[12]\s*=.*\{\{fbaicon\|ITA\}\}", text, re.M)
+            assert len(rows) == len(sides), path.name
+        else:
+            top = set(re.findall(r"\[\[(?:[^\]|]+\|)?([^\]|]+)\]\] \(1\)", text))
+            for name in top:
+                CLUBS.key(name)

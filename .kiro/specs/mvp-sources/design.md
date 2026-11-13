@@ -38,10 +38,12 @@ A knockout round's Wikipedia page appears after its draw; its title is added to 
 
 ### C2. The other competitions' fixtures (`web/readers/wiki_fixtures.py`, `domains/fixtures/`; R2.1)
 
-- **Reader.** Each match is a `{{#invoke:Football box|main …}}` template. The reader takes `date` from its `{{Start
+- **Reader.** Each match is a `{{#invoke:Football box|main …}}` template, or on the Coppa Italia's page a `{{Football
+  box collapsible …}}` or `{{Football box …}}` *(corrected in task 2)*. The reader takes `date` from its `{{Start
   date|Y|M|D}}`, or from plain text ("8 August 2026") as the Coppa Italia's page writes it, `time` (`HH:MM`, Italian time, as the page's prose says: UEFA's and the cup's times are CET or CEST) and
-  `team1` and `team2` from their links; the score where it's played. A match without a date or a time ("TBD") is left
-  out.
+  `team1` and `team2` from their links. A match without a fixed date (a range of days, "TBD"), a time or both clubs
+  ("Winner of Match 37", two clubs before a draw) is left out, and counted. The score isn't kept: the contract has no
+  use for it *(task 2)*.
 - **Contract.** `OtherFixturesPayload` (1.0.0): the competition and its matches, each with `kickoff_at`, `home`, `away`.
   A Serie A club is resolved through `config/clubs.toml`, which gains the Wikipedia spellings ("Inter Milan"); other
   clubs keep their names.
@@ -128,9 +130,13 @@ averaged) and a one-round trial for the owner to approve. No code.
 
 | Fact | Fresh for | Read |
 |---|---|---|
-| Other competitions | a week; a day in a week with a match | weekly, daily in a match week |
+| Other competitions | a week; a day within 24 hours of the match *(task 2)* | weekly, daily in a match week |
 | Injuries and bans | 24 hours; 12 in the last 48 before a round | daily, twice a day near a round |
 | Ratings | once a round | the morning after it, and when the round is scored |
+
+*Set in task 2:* a match week is one whose coming seven days hold a stored match of the other competitions; within 24
+hours of a Serie A match the answers' freshness tightens to a day, as it does for the lineups and odds, and an answer
+then reads the pages on demand.
 
 A card stays within 3 seconds and 15 KB: a rest-days line for each side, and a reason only for the players it lists as
 out. No paid service, no account (R7.2).

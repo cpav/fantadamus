@@ -1,0 +1,71 @@
+{
+  "contract": "xy.fixtures.OtherFixturesPayload",
+  "schema": {
+    "$defs": {
+      "Fixture": {
+        "additionalProperties": false,
+        "properties": {
+          "away": {
+            "description": "Away club, as the page names it",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Away",
+            "type": "string"
+          },
+          "home": {
+            "description": "Home club, as the page names it",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Home",
+            "type": "string"
+          },
+          "kickoff_at": {
+            "description": "Kickoff with its time zone, e.g. 2026-10-31T15:00:00+01:00",
+            "format": "date-time",
+            "title": "Kickoff At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "home",
+          "away",
+          "kickoff_at"
+        ],
+        "title": "Fixture",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "One competition's matches, as its Wikipedia page lists them: each with its kickoff and both clubs.",
+    "properties": {
+      "competition": {
+        "description": "The competition the page is about",
+        "enum": [
+          "Champions League",
+          "Europa League",
+          "Conference League",
+          "Coppa Italia"
+        ],
+        "title": "Competition",
+        "type": "string"
+      },
+      "matches": {
+        "description": "Its matches with a fixed date, a kickoff and both clubs; a club plays several",
+        "items": {
+          "$ref": "#/$defs/Fixture"
+        },
+        "maxItems": 200,
+        "minItems": 1,
+        "title": "Matches",
+        "type": "array"
+      }
+    },
+    "required": [
+      "competition",
+      "matches"
+    ],
+    "title": "OtherFixturesPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

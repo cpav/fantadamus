@@ -7,7 +7,15 @@ from typing import Literal
 
 from fantadamus.engine.constants import FRESH_FOR_HOURS, FRESH_NEAR_MATCH_HOURS, NEAR_MATCH_HOURS
 
-Fact = Literal["fixtures", "probable_lineups", "match_odds", "player_season", "team_season", "penalty_takers"]
+Fact = Literal[
+    "fixtures",
+    "probable_lineups",
+    "match_odds",
+    "player_season",
+    "team_season",
+    "penalty_takers",
+    "other_fixtures",
+]
 FACTS_WINDOW = dt.timedelta(days=14)
 """How far back an answer reads: twice the longest freshness target, so that movement up to a week back
 still has its facts (mvp-lineup C4)."""

@@ -10,6 +10,7 @@ import pytest
 
 from fantadamus.domains.availability.silver import OUTLET_VIEWS
 from fantadamus.domains.facts import read_silver
+from fantadamus.domains.fixtures.silver import FIXTURES
 from fantadamus.domains.odds.silver import ODDS
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.web.collector import ROUND_FACTS
@@ -65,6 +66,25 @@ def test_switched_off_source(tmp_path: Path) -> None:
     [read] = collector.collect().pages
     assert (read.outcome, read.for_claude) == ("switched off", list(ROUND_FACTS))
     assert web.calls == []
+
+
+def test_round_n_is_the_round_asked_for(tmp_path: Path) -> None:
+    """Round n's page is read as round n, whatever its title names: the round isn't taken from the title, as
+    it is on the current round's page, whose address has no number (found by breaking the code in mvp-sources
+    task 2)."""
+    base = "https://example.org"
+    untitled = fco_round_page(FcoMatch("Alfa", "Beta"), round=None).encode()
+    web = FakeWeb(
+        {
+            f"{base}/robots.txt": Response(404, {}, b""),
+            f"{base}/probabili-formazioni/9-giornata": Response(200, HTML, untitled),
+        }
+    )
+    store = LakeStore(tmp_path / "lake")
+    collector = round_collector(store, base, tmp_path / "robots", transport=web, hosts=["example.org"])
+    [read] = collector.collect(round=9).pages
+    assert read.outcome == "stored"
+    assert {row.round for row in read_silver(store, FIXTURES)} == {9}
 
 
 def test_failures_named(tmp_path: Path) -> None:
