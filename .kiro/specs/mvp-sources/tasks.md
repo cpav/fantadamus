@@ -18,15 +18,18 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. The routes
+- [x] 1. The routes
   - Branch: `docs/so-1-routes` · Depends on: none · ADRs: none
-  - [ ] 1.1 **Owner:** accept ADR-0007.
+  - [x] 1.1 **Owner:** accept ADR-0007.
     - _Requirements: AT-1 (R1.1)_
     - _Test: recorded in the ADR_
-  - [ ] 1.2 The source registry and the reading list record the five pages; this spec becomes the current one.
+    - Accepted on 2026-11-12, with the design ("Approve all").
+  - [x] 1.2 The source registry and the reading list record the five pages; this spec becomes the current one.
     - _Requirements: R1.1, R8.1_
     - _Test: `tests/unit/test_sources_config.py::test_every_collector_page_is_allowed`;
       `tests/unit/checks/test_task_check.py::test_default_is_the_current_spec`_
+    - Found with the fetcher's own robots rules: Wikipedia turns away `/w/`, where the MediaWiki API is, so the pages are
+      read as raw wikitext at `/wiki/{title}?action=raw`; ADR-0007 has a note and the design is corrected.
 
 - [ ] 2. The other competitions' fixtures
   - Branch: `feat/so-2-other-fixtures` · Depends on: 1 · ADRs: ADR-0007

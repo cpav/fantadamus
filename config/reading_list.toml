@@ -25,6 +25,21 @@ takers = "https://www.fantacalcio.it/rigoristi-serie-a"
 # Fantacalcio.it's table, read daily (mvp-cards C1): each club's record and last five results, which read_page's
 # text can't show. Set `table_enabled = false` to switch it off: Claude then submits the table through read_page.
 table = "https://www.fantacalcio.it/serie-a/classifica"
+# The pages mvp-sources adds (ADR-0007), each read by the task that builds its reader, which also adds its switch.
+# The other competitions' fixtures from Wikipedia, as raw wikitext: the MediaWiki API sits under /w/, which
+# Wikipedia's robots.txt turns away, so each page is read at /wiki/{title}?action=raw (allowed). A knockout
+# round's page is added once it exists, after its draw.
+other_competitions = [
+    "https://en.wikipedia.org/wiki/2026%E2%80%9327_UEFA_Champions_League_league_phase?action=raw",
+    "https://en.wikipedia.org/wiki/2026%E2%80%9327_UEFA_Europa_League_league_phase?action=raw",
+    "https://en.wikipedia.org/wiki/2026%E2%80%9327_UEFA_Conference_League_league_phase?action=raw",
+    "https://en.wikipedia.org/wiki/2026%E2%80%9327_Coppa_Italia?action=raw",
+]
+# Fantacalcio.it's injured page and its suspended-and-diffidati page (mvp-sources C4).
+injuries = "https://www.fantacalcio.it/infortunati-serie-a"
+suspensions = "https://www.fantacalcio.it/squalificati-e-diffidati-campionato-serie-a"
+# Fantacalcio-Online's round ratings page: three desks' base ratings, per match (mvp-sources C6).
+ratings = "https://www.fantacalcio-online.com/it/serie-a/2026-2027/voti/{round}-giornata"
 
 [facts.fixtures]
 need = "N2"

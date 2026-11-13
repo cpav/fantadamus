@@ -107,6 +107,36 @@ def test_collector_page_is_allowed() -> None:
     assert page.round.format(round=10).endswith("/10-giornata")
 
 
+def test_every_collector_page_is_allowed() -> None:
+    """mvp-sources task 1 (R1.1; ADR-0007): every page Fantadamus reads itself is on the allowlist, the five
+    new ones included. Wikipedia's pages are read as raw wikitext under /wiki/: its robots.txt turns away
+    /w/, where the MediaWiki API is."""
+    hosts = load_allowed_hosts(ROOT / "config" / "sources.toml")
+    page = load_collector(ROOT / "config" / "reading_list.toml")
+    assert page.injuries == "https://www.fantacalcio.it/infortunati-serie-a"
+    assert page.suspensions == "https://www.fantacalcio.it/squalificati-e-diffidati-campionato-serie-a"
+    assert page.ratings is not None
+    assert page.ratings.format(round=11).endswith("/2026-2027/voti/11-giornata")
+    assert len(page.other_competitions) == 4
+    for url in page.other_competitions:
+        assert url.startswith("https://en.wikipedia.org/wiki/2026%E2%80%9327_")
+        assert url.endswith("?action=raw")
+    addresses = [
+        page.current_round,
+        page.round.format(round=10),
+        page.statistics,
+        page.takers,
+        page.table,
+        page.injuries,
+        page.suspensions,
+        page.ratings.format(round=10),
+        *page.other_competitions,
+    ]
+    for address in addresses:
+        assert address is not None
+        assert host_allowed(address, hosts), address
+
+
 def test_statistics_page_listed_first() -> None:
     """mvp-roles task 2.3 (R7.2): every player's season figures are read from the statistics page first."""
     pages = _reading_list()["player_season"]["pages"]

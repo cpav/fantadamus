@@ -132,7 +132,7 @@ def test_each_spec_has_its_own_tasks() -> None:
 
 def test_default_is_the_current_spec(capsys: pytest.CaptureFixture[str]) -> None:
     assert task_check.main(["1"]) == 0
-    assert capsys.readouterr().out.startswith("PASS task-check: mvp-recalibrate task 1")
+    assert capsys.readouterr().out.startswith("PASS task-check: mvp-sources task 1")
 
 
 def test_main_reports(capsys: pytest.CaptureFixture[str]) -> None:
