@@ -4,6 +4,9 @@
 - **Deciders:** the owner
 - **Amends:** ADR-0006 (Fantadamus fetches the round's facts itself): five more pages, on the same rules
 - **Specs affected:** `mvp-sources`
+- **Note, 2026-11-13:** Wikipedia's robots.txt turns away `/w/`, where the MediaWiki API is, so our fetcher would refuse it.
+  The same raw wikitext is served at `/wiki/{title}?action=raw`, which robots.txt allows; the pages are read there
+  (checked with the fetcher's own rules: all four pages returned their wikitext, every match in a `Football box`).
 
 ## Context
 
@@ -32,7 +35,7 @@ per host, an identifying user agent), and each has a switch that hands it back t
 
 | Page | Route | robots.txt (read 2026-11-12) | Data | Cadence |
 |---|---|---|---|---|
-| Wikipedia's 2026–27 Champions League, Europa League and Conference League league-phase pages, and the 2026–27 Coppa Italia page, read as wikitext through the MediaWiki API | CC BY-SA, with attribution; the API welcomes identified clients | Allowed | Each match as a `Football box` template: its date, its kickoff in Italian time, both clubs and the score; matches to come already listed | Weekly, and daily in a week with a match |
+| Wikipedia's 2026–27 Champions League, Europa League and Conference League league-phase pages, and the 2026–27 Coppa Italia page, read as raw wikitext at `/wiki/{title}?action=raw` (see the note) | CC BY-SA, with attribution | Allowed under `/wiki/`; `/w/`, the API's, is not | Each match as a `Football box` template: its date, its kickoff in Italian time, both clubs and the score; matches to come already listed | Weekly, and daily in a week with a match |
 | Fantacalcio.it's injured page, `/infortunati-serie-a` | The terms risk the owner accepted for the MVP (ADR-0004) | Allowed | In the HTML, by club: each player with a sentence on his injury and his expected return | Daily; twice a day in the last 48 hours before a round |
 | Fantacalcio.it's suspended-and-diffidati page, `/squalificati-e-diffidati-campionato-serie-a` | As above | Allowed | In the HTML, by club: who's banned and for which round, and who's one booking from a ban | As above |
 | Fantacalcio-Online's round ratings page, `/it/serie-a/2026-2027/voti/{n}-giornata` | Personal use with attribution, per its terms | Allowed for everyone; its header warns that Cloudflare may block AI agents at the edge, which the fetcher treats as blocked | In the HTML: each player's base rating from three desks (Fantacalcio.it, Roma, Torino), and when he came on or off | The morning after each round, and when a round is scored |
@@ -54,6 +57,6 @@ guardrail 4). The injury sentences become a kind, a body part and a return windo
 
 - [UEFA's General Terms and Conditions](https://www.uefa.com/termsconditions/), clause 6.2: no automated collection
 - [Fantacalcio-Online's robots.txt](https://www.fantacalcio-online.com/robots.txt): no blocking, by design
-- [2026–27 UEFA Champions League league phase](https://en.wikipedia.org/wiki/2026%E2%80%9327_UEFA_Champions_League_league_phase), its wikitext through the MediaWiki API
+- [2026–27 UEFA Champions League league phase](https://en.wikipedia.org/wiki/2026%E2%80%9327_UEFA_Champions_League_league_phase), its raw wikitext at `/wiki/{title}?action=raw`
 - [2026–27 Coppa Italia](https://en.wikipedia.org/wiki/2026%E2%80%9327_Coppa_Italia): dated matches; later rounds "TBD"
 - `docs/source-registry.md`: the terms read on 2026-10-24, and the checks of 2026-11-12

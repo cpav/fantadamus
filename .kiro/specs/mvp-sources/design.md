@@ -25,11 +25,11 @@ evidence; no number moves (decision 2). A fourth piece, the anytime-scorer odds,
 
 ADR-0007 records the five pages, their robots.txt and terms as read on 2026-11-12, and their cadence. The source
 registry's reading list and "What we read for each need" gain them, and `config/reading_list.toml`'s `[collector]` gains
-an address and a switch for each:
+an address for each; the task that builds a page's reader adds its switch:
 
 | Key | Page | Page kind |
 |---|---|---|
-| `europe` | MediaWiki API, `action=parse&prop=wikitext`, one title per competition | `other_fixtures` |
+| `other_competitions` | Wikipedia's raw wikitext, `/wiki/{title}?action=raw`, one page per competition: robots.txt turns away `/w/`, where the MediaWiki API is *(corrected in task 1)* | `other_fixtures` |
 | `injuries` | `fantacalcio.it/infortunati-serie-a` | `injuries` |
 | `suspensions` | `fantacalcio.it/squalificati-e-diffidati-campionato-serie-a` | `suspensions` |
 | `ratings` | `fantacalcio-online.com/it/serie-a/2026-2027/voti/{round}-giornata` | `ratings` |
@@ -39,7 +39,7 @@ A knockout round's Wikipedia page appears after its draw; its title is added to 
 ### C2. The other competitions' fixtures (`web/readers/wiki_fixtures.py`, `domains/fixtures/`; R2.1)
 
 - **Reader.** Each match is a `{{#invoke:Football box|main …}}` template. The reader takes `date` from its `{{Start
-  date|Y|M|D}}`, `time` (`HH:MM`, Italian time, as the page's prose says: UEFA's and the cup's times are CET or CEST) and
+  date|Y|M|D}}`, or from plain text ("8 August 2026") as the Coppa Italia's page writes it, `time` (`HH:MM`, Italian time, as the page's prose says: UEFA's and the cup's times are CET or CEST) and
   `team1` and `team2` from their links; the score where it's played. A match without a date or a time ("TBD") is left
   out.
 - **Contract.** `OtherFixturesPayload` (1.0.0): the competition and its matches, each with `kickoff_at`, `home`, `away`.

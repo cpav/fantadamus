@@ -104,6 +104,14 @@ class CollectorConfig(BaseModel):
     table: str | None = None
     """The table; None reads none, and Claude submits it (mvp-cards C1)."""
     table_enabled: bool = True
+    other_competitions: list[str] = []
+    """Wikipedia's pages of the other competitions, as raw wikitext (mvp-sources C2, ADR-0007)."""
+    injuries: str | None = None
+    """Fantacalcio.it's injured page (mvp-sources C4)."""
+    suspensions: str | None = None
+    """Fantacalcio.it's suspended-and-diffidati page (mvp-sources C4)."""
+    ratings: str | None = None
+    """Fantacalcio-Online's round ratings page, with `{round}` for n (mvp-sources C6)."""
 
 
 def load_collector(path: Path = DEFAULT_READING_LIST) -> CollectorConfig:
