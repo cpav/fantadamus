@@ -1,8 +1,9 @@
-"""`FixturesPayload`: a round's matches and kickoffs, from Wikipedia's Serie A season page (R2.1)."""
+"""`FixturesPayload`: a round's matches and kickoffs, from Wikipedia's Serie A season page (R2.1); and
+`OtherFixturesPayload`: a competition's matches, from its Wikipedia page (mvp-sources C2)."""
 
 from __future__ import annotations
 
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import Field, model_validator
 
@@ -36,3 +37,20 @@ class FixturesPayload(Contract):
     def _each_club_once(self) -> Self:
         once_each((club for match in self.matches for club in (match.home, match.away)), "{name} plays twice")
         return self
+
+
+Competition = Literal["Champions League", "Europa League", "Conference League", "Coppa Italia"]
+"""The other competitions Serie A clubs play (mvp-sources R2.1)."""
+
+
+class OtherFixturesPayload(Contract):
+    """One competition's matches, as its Wikipedia page lists them: each with its kickoff and both clubs."""
+
+    __version__ = "1.0.0"
+
+    competition: Competition = Field(description="The competition the page is about")
+    matches: list[Fixture] = Field(
+        min_length=1,
+        max_length=200,
+        description="Its matches with a fixed date, a kickoff and both clubs; a club plays several",
+    )

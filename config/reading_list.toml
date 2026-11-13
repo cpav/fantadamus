@@ -26,9 +26,11 @@ takers = "https://www.fantacalcio.it/rigoristi-serie-a"
 # text can't show. Set `table_enabled = false` to switch it off: Claude then submits the table through read_page.
 table = "https://www.fantacalcio.it/serie-a/classifica"
 # The pages mvp-sources adds (ADR-0007), each read by the task that builds its reader, which also adds its switch.
-# The other competitions' fixtures from Wikipedia, as raw wikitext: the MediaWiki API sits under /w/, which
-# Wikipedia's robots.txt turns away, so each page is read at /wiki/{title}?action=raw (allowed). A knockout
-# round's page is added once it exists, after its draw.
+# The other competitions' fixtures from Wikipedia, as raw wikitext, read weekly and daily in a week with one of
+# their matches: the MediaWiki API sits under /w/, which Wikipedia's robots.txt turns away, so each page is read at /wiki/{title}?action=raw (allowed). Each
+# address names its competition. A knockout round's page is added once it exists, after its draw. Set
+# `other_competitions_enabled = false` to switch them off: Claude then reads them through read_page.
+other_competitions_enabled = true
 other_competitions = [
     "https://en.wikipedia.org/wiki/2026%E2%80%9327_UEFA_Champions_League_league_phase?action=raw",
     "https://en.wikipedia.org/wiki/2026%E2%80%9327_UEFA_Europa_League_league_phase?action=raw",
@@ -100,6 +102,19 @@ pages = [
     "https://it.wikipedia.org/wiki/Serie_A_2026-2027",
 ]
 search = ["classifica Serie A site:fantacalcio.it"]
+
+[facts.other_fixtures]
+need = "N2"
+submit_tool = "submit_other_fixtures"
+# The Serie A clubs' matches in the other competitions (mvp-sources C2): Fantadamus reads them itself. No outlet
+# lists them all, so Claude finds each competition's Wikipedia page by search, and reads its rendered page.
+search = [
+    "2026-27 UEFA Champions League league phase site:en.wikipedia.org",
+    "2026-27 UEFA Europa League league phase site:en.wikipedia.org",
+    "2026-27 UEFA Conference League league phase site:en.wikipedia.org",
+    "2026-27 Coppa Italia site:en.wikipedia.org",
+]
+patterns = ["https://en.wikipedia.org/wiki/2026{title}"]
 
 [facts.penalty_takers]
 need = "N9"

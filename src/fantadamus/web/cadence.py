@@ -10,6 +10,7 @@ design C7; R7.1, R7.2).
 | Players' season figures | Daily (mvp-roles R1.4) |
 | Penalty takers | Daily (mvp-lineup R10.3) |
 | The table | Daily (mvp-cards C1) |
+| The other competitions' matches | Weekly; daily when one of them is in the coming week (mvp-sources C9) |
 
 A match's facts stop being due at its kickoff: there's nothing left to forecast. Each interval counts from the
 collector's last attempt at the page that carries the fact, successful or not: a site that refuses is asked
@@ -25,7 +26,7 @@ import datetime as dt
 from fantadamus.domains.availability.silver import OFFICIAL_LINEUPS
 from fantadamus.domains.facts import read_silver
 from fantadamus.domains.fixtures.gold import matches, next_round
-from fantadamus.domains.fixtures.silver import FIXTURES
+from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.web.collector import Collector, CollectReport, PageKind, page_of
@@ -38,6 +39,7 @@ SCHEDULED = (
     "player_season",
     "penalty_takers",
     "team_season",
+    "other_fixtures",
 )
 _HOUR = dt.timedelta(hours=1)
 _ALWAYS = {
@@ -45,8 +47,12 @@ _ALWAYS = {
     "player_season": 24 * _HOUR,
     "penalty_takers": 24 * _HOUR,
     "team_season": 24 * _HOUR,
+    "other_fixtures": 7 * 24 * _HOUR,
 }
 """Due at these intervals whatever the matches."""
+_WEEK = 7 * 24 * _HOUR
+_MATCH_WEEK = {"other_fixtures": 24 * _HOUR}
+"""Due at these intervals instead when one of the fact's own matches is in the coming week."""
 _WINDOW = {
     "probable_lineups": 72 * _HOUR,
     "match_odds": 72 * _HOUR,
@@ -64,6 +70,7 @@ _ON_DEMAND_EVERY: dict[PageKind, dt.timedelta] = {
     "finished_round": dt.timedelta(minutes=15),
     "takers": 24 * _HOUR,
     "table": 24 * _HOUR,
+    "other_fixtures": 24 * _HOUR,
 }
 """The shortest interval of each page's facts in the table."""
 
@@ -77,9 +84,11 @@ def due(
     confirmed: bool = False,
 ) -> bool:
     """Whether `fact`, last read at `last_read` (None: never), is due at `now` for the match kicking off at
-    `kickoff`; `confirmed` means the match's official lineup is already in."""
+    `kickoff`; `confirmed` means the match's official lineup is already in. For the other competitions'
+    matches, `kickoff` is the next of them."""
     if fact in _ALWAYS:
-        every = _ALWAYS[fact]
+        match_week = fact in _MATCH_WEEK and kickoff is not None and now <= kickoff <= now + _WEEK
+        every = _MATCH_WEEK[fact] if match_week else _ALWAYS[fact]
     elif (
         kickoff is None
         or now >= kickoff
@@ -116,10 +125,18 @@ def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]
     confirmed = {
         (row.home, row.away) for row in read_silver(lake, OFFICIAL_LINEUPS) if row.captured_at <= now
     }
+    other = min(
+        (
+            row.kickoff_at
+            for row in read_silver(lake, OTHER_FIXTURES)
+            if row.captured_at <= now <= row.kickoff_at
+        ),
+        default=None,
+    )
     found = []
     for fact in SCHEDULED:
         if fact in _ALWAYS:
-            if due(fact, log.last_attempt(now, page_of(fact)), now, None):
+            if due(fact, log.last_attempt(now, page_of(fact)), now, other if fact in _MATCH_WEEK else None):
                 found.append(fact)
         elif any(
             due(fact, last_read, now, row.kickoff_at, confirmed=(row.home, row.away) in confirmed)

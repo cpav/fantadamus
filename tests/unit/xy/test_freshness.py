@@ -21,6 +21,7 @@ HOUR, DAY = dt.timedelta(hours=1), dt.timedelta(days=1)
         ("team_season", 7 * DAY, 7 * DAY),
         ("penalty_takers", 2 * DAY, 2 * DAY),  # 48 hours from mvp-lineup R10.3
         ("fixtures", 7 * DAY, 7 * DAY),
+        ("other_fixtures", 7 * DAY, DAY),  # mvp-sources R7.1: a day near a match
     ],
 )
 def test_targets_tighten_near_the_match(fact: Fact, early: dt.timedelta, late: dt.timedelta) -> None:

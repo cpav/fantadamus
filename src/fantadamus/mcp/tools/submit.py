@@ -15,7 +15,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import AwareDatetime
 
 from fantadamus.contracts.base import Contract
-from fantadamus.contracts.xy.fixtures import FixturesPayload
+from fantadamus.contracts.xy.fixtures import FixturesPayload, OtherFixturesPayload
 from fantadamus.contracts.xy.lineups import OfficialLineupPayload, OutletLineupPayload, ProbableLineupPayload
 from fantadamus.contracts.xy.odds import MatchOddsPayload
 from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
@@ -24,7 +24,7 @@ from fantadamus.core.clubs import Clubs
 from fantadamus.domains import facts
 from fantadamus.domains.availability.silver import LINEUP_VIEWS, OFFICIAL_LINEUPS, OUTLET_VIEWS
 from fantadamus.domains.facts import Domain, Receipt
-from fantadamus.domains.fixtures.silver import FIXTURES
+from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES
 from fantadamus.domains.odds.silver import ODDS
 from fantadamus.domains.season.silver import PENALTY_TAKERS, PLAYER_SEASONS, TEAM_SEASONS
 from fantadamus.lake.duckdb_store import LakeStore
@@ -84,6 +84,21 @@ def register(
         published_at: AwareDatetime | None = None,
     ) -> Receipt:
         return submit(FIXTURES, payload, source_url, captured_at, published_at)
+
+    @server.tool(
+        description="Submit one competition's matches from its Wikipedia page: the Champions League's, "
+        "Europa League's or Conference League's, or the Coppa Italia's. Give every match with a fixed date, "
+        "a kickoff and both clubs; leave out one still waiting for a draw. Kickoffs are in Italian time: "
+        'give each with its offset. Shape: {"competition": "Champions League", "matches": [{"home": "Inter", '
+        '"away": "Ajax", "kickoff_at": "2026-09-16T21:00:00+02:00"}, ...]}. ' + PROVENANCE
+    )
+    def submit_other_fixtures(
+        payload: OtherFixturesPayload,
+        source_url: str,
+        captured_at: AwareDatetime,
+        published_at: AwareDatetime | None = None,
+    ) -> Receipt:
+        return submit(OTHER_FIXTURES, payload, source_url, captured_at, published_at)
 
     @server.tool(
         description="Submit a player's Serie A season so far from his Fantacalcio.it profile: appearances, "

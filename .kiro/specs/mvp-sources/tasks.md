@@ -31,14 +31,17 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
     - Found with the fetcher's own robots rules: Wikipedia turns away `/w/`, where the MediaWiki API is, so the pages are
       read as raw wikitext at `/wiki/{title}?action=raw`; ADR-0007 has a note and the design is corrected.
 
-- [ ] 2. The other competitions' fixtures
+- [x] 2. The other competitions' fixtures
   - Branch: `feat/so-2-other-fixtures` · Depends on: 1 · ADRs: ADR-0007
-  - [ ] 2.1 The Wikipedia reader on Football box templates, the contract, the silver table, the collector page with its switch and cadence,
+  - [x] 2.1 The Wikipedia reader on Football box templates, the contract, the silver table, the collector page with its switch and cadence,
     and `submit_other_fixtures`.
     - _Requirements: R1.2, R2.1, R7.1_
     - _Test: `tests/unit/sources/test_wiki_fixtures.py`; **P2** `tests/property/sources/test_wiki_fixtures.py::test_p2_a_match_read_back`;
       `tests/contract/test_sources_contracts.py::test_other_fixtures_payload`;
-      `tests/integration/sources/test_other_fixtures_page.py::test_read_stored_and_switched_off`_
+      `tests/integration/sources/test_other_fixtures_page.py::test_read_stored_and_switched_off`,
+      `::test_due_weekly_and_daily_in_a_match_week`; `tests/contract/test_real_pages.py::test_the_other_competitions_pages`_
+    - The cup's matches are `Football box collapsible` templates, and a match waiting for a draw is left out and counted;
+      the design is corrected. The cadence is ADR-0007's: weekly, daily when a match is in the coming week.
 
 - [ ] 3. Rest days
   - Branch: `feat/so-3-rest-days` · Depends on: 2 · ADRs: none

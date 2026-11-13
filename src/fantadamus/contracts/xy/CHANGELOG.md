@@ -112,3 +112,9 @@ Headings are `## <Contract> <version> (<date>)`.
 - Adds optional `wins`, `draws`, `losses` and `form` per club: the table's record, which must add up to the matches
   played, and its last five results, oldest first, which must fit the record (mvp-cards R2.4). Tables stored before
   stay valid. A widening change, so a minor version.
+
+## OtherFixturesPayload 1.0.0 (2026-11-13)
+
+- First version: one competition's matches from its Wikipedia page (the Champions League, Europa League, Conference
+  League or Coppa Italia), each a `Fixture` with its kickoff and both clubs (mvp-sources R2.1). Only the matches with a
+  Serie A club reach silver.
