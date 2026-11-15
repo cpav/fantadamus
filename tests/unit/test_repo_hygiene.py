@@ -214,8 +214,7 @@ def test_agent_prompt_covers_the_cards() -> None:
     for part in ("Built in `mvp-cards`", "The round overview", "listed as out by", "last five results"):
         assert part in card, part
     later = formats.split("## Later, in their own specs", 1)[1]
-    assert "Context" in later
-    assert "Rest days" in later
+    assert "Context" in later  # rest days have left "Later": mvp-sources built them (its task 9.1)
 
 
 def test_player_guide_covers_the_lineup() -> None:
@@ -336,3 +335,30 @@ def test_method_marks_each_calibrated_value() -> None:
     for date, entry in entries:
         for name in re.findall(r"^\| `([A-Z_]+)` \|", entry, re.MULTILINE):
             assert re.search(rf"\*\(calibrated {date}[^)]*`{name}`", method), (date, name)
+
+
+def test_answer_formats_show_rest_days() -> None:
+    """mvp-sources task 9.1 (R2.3, R3.2, R5.2, R8.1): the card and the outlook show rest days, why a player is
+    out and until when, and a rater's claim; rest days leave "Later"; the method and the player guide say
+    where the new facts come from and that they move no number."""
+    formats = (ROOT / "docs" / "answer-formats.md").read_text(encoding="utf-8")
+    card = formats.split("## 5. The match card", 1)[1].split("### The round overview", 1)[0]
+    outlook = formats.split("## 4. One player", 1)[1].split("## 5. The match card", 1)[0]
+    later = formats.split("## Later, in their own specs", 1)[1]
+    for part in (
+        "days' rest",
+        "thigh muscle injury",
+        "back from",
+        "has him starting",
+        "one booking from a ban",
+    ):
+        assert part in card, part
+    for part in ("days' rest", "rates him", "above the other desks"):
+        assert part in outlook, part
+    assert "Rest days" not in later
+    method = " ".join((ROOT / "docs" / "method.md").read_text(encoding="utf-8").split())
+    for part in ("rest days", "injury and ban detail", "the league's rating", "rater's bias"):
+        assert part in method, part
+    guide = " ".join((ROOT / "docs" / "player-setup.md").read_text(encoding="utf-8").split())
+    for part in ("Wikipedia", "injured and suspended pages", "round ratings", "never moves a number"):
+        assert part in guide, part

@@ -2,23 +2,30 @@
 one `best_lineup` takes on a synthetic round, with all its simulated rounds (mvp-lineup R4.6); `--review`, one
 `review_round` once the round has been played and its statistics read, and `--replayed` when no advice was
 asked for (mvp-review R5.2); `--card`, one `match_card`, and `--overview`, one `round_overview` (mvp-cards
-R6.2). Inside the test suite the tracer slows the simulation about sixfold and other workers compete for the
+R6.2); `--sources`, a card and an outlook with every new fact of mvp-sources, a season of ratings
+included (R7.2).
+Inside the test suite the tracer slows the simulation about sixfold and other workers compete for the
 machine, and neither is the user's wait. Each answer is timed three times and the fastest kept, as `timeit`
 does: a busy machine can only slow a run down, so the fastest is the answer's own cost."""
 
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
 import sys
 import tempfile
 import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
+from fantadamus.contracts.xy.ratings import RatingsPayload
+from fantadamus.domains.facts import Submission, submit_many
+from fantadamus.domains.ratings.silver import MATCH_RATINGS
 from fantadamus.engine.constants import SIMULATIONS
 from tests.lineup_data import BUDGET_RULES
 from tests.lineup_harness import a_round, finished
-from tests.xy_harness import NOW, classic_with
+from tests.sources_pages import season_ratings
+from tests.xy_harness import CLUBS, NOW, classic_with
 
 TIMES = 3
 
@@ -67,11 +74,50 @@ async def _card_seconds(tool: str, args: dict[str, str]) -> float:
             return await _fastest(lambda: here.client.call_tool(tool, {**args, "as_of": NOW.isoformat()}))
 
 
+async def _sources_seconds() -> str:
+    """A card and an outlook, the fastest of three each, with rest days, injuries, bans and a season of
+    ratings stored: two reads of each of 38 rounds, about 27,000 rows, as many as a whole season gives."""
+    from tests.acceptance.sources.test_detail import PAGES
+    from tests.property.sources.test_no_number_moves import CHAMPIONS, IN_EUROPE
+
+    with tempfile.TemporaryDirectory() as folder:
+        async with a_round(
+            Path(folder), rounds=SIMULATIONS, unavailable=PAGES, other={CHAMPIONS: IN_EUROPE}
+        ) as here:
+            await here.ask()
+            season = [
+                Submission(RatingsPayload.model_validate(season_ratings(round, read)))
+                for round in range(1, 39)
+                for read in range(2)
+            ]
+            submit_many(  # one rebuild of the table for the whole season, as a test can afford
+                here.store,
+                MATCH_RATINGS,
+                season,
+                source_url="https://example.org/voti",
+                captured_at=NOW - dt.timedelta(days=1),
+                allowed_hosts=("example.org",),
+                clock=lambda: NOW,
+                submitted_by="test",
+                clubs=CLUBS,
+            )
+            as_of = NOW.isoformat()
+            card = await _fastest(
+                lambda: here.client.call_tool("match_card", {"club": "Alfa", "as_of": as_of})
+            )
+            outlook = await _fastest(
+                lambda: here.client.call_tool("player_outlook", {"player": "Alfa Nove", "as_of": as_of})
+            )
+            return f"{card} {outlook}"
+
+
 if __name__ == "__main__":
     if "--review" in sys.argv:
         print(asyncio.run(_review_seconds("--replayed" in sys.argv)))
     elif "--card" in sys.argv:
         print(asyncio.run(_card_seconds("match_card", {"club": "Alfa"})))
+    elif "--sources" in sys.argv:
+        print(asyncio.run(_sources_seconds()))
     elif "--overview" in sys.argv:
         print(asyncio.run(_card_seconds("round_overview", {})))
     else:
