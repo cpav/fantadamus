@@ -65,6 +65,9 @@ class BronzeRecord:
 def _database() -> duckdb.DuckDBPyConnection:
     database = duckdb.connect()
     database.execute("SET GLOBAL TimeZone = 'UTC'")
+    # The lake is small: a query is no slower on one thread, and a thread per core only competes with
+    # everything else on a busy machine (a lineup took 1.44 CPU-seconds on one, 1.51 on eight).
+    database.execute("SET GLOBAL threads = 1")
     return database
 
 

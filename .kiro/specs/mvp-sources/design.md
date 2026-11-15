@@ -168,6 +168,13 @@ The rendering rules go into the tools' descriptions, not the agent prompt (12,91
 The outlook and the card's player show the claim ("Fantacalcio.it rates him 0.3 above the other desks, over 9 matches").
 His expected vote doesn't change (R5.3).
 
+*Set in task 7:*
+
+- **Either way.** A claim is said either way, above or below, to two decimals.
+- **The ratings used.** The season's ratings come from each round's newest read, so a rating a desk corrected is the
+  new one. A player's rows are found by name, or by surname, as the outlets' are.
+- **The interval** of a single match is the match's own value: a claim needs five matches anyway.
+
 ### C8. Anytime-scorer odds, researched (ADR-0008; R6)
 
 ADR-0008 compares:

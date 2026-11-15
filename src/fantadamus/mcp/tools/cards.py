@@ -274,7 +274,8 @@ def register(server: MCPServer, advisor: Advisor, squads: SquadStore) -> None:
         "eleven with how sure it is, its disputed places naming the"
         " outlets that disagree, and who's out, said as 'listed as out by 3 outlets', never "
         "'injured', unless the injured or suspended page gives his reason and return: then say them, "
-        "and any disagreement; one booking from a ban, where marked; the penalty takers with their "
+        "and any disagreement; one booking from a ban, where marked; a rater's claim about a player "
+        "(raters), as context; the penalty takers with their "
         "record; the likeliest scorers; rotation "
         "risks. Sources at the bottom. Round chances the way people say them. Without stored "
         "league rules the points are Classic's (classic_rules): say so. 'improve' lists what "
@@ -373,6 +374,7 @@ def _answer(
     orders = {side.player.club: side.order for side in sides}
     listed = [part.listed for part in valued]
     rested = {club: advisor.rest(club, match.kickoff_at, facts, when) for club in clubs}
+    claims = advisor.claims(sides, gathered.known, facts)
     reported = [
         Reported(side.player, side.form.role, side.news, side.present)
         for side in sides
@@ -417,7 +419,10 @@ def _answer(
         updated=Updated(newest=max(times), oldest=min(times)) if times else None,
         numbers=match_numbers(xg, match.home, match.away, table) if xg is not None else None,
         sides=card_sides,
-        players=[card_player(part) for part in shown],
+        players=[
+            card_player(part).model_copy(update={"raters": claims.get(part.listed.player.player_id)})
+            for part in shown
+        ],
         scorers=likeliest_scorers(valued),
         rotation=rotation_risks(valued, {club: row.played for club, row in table.items()}),
         yours=[player.player_id for player in yours],
