@@ -38,12 +38,13 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
       `::test_the_probable_lineups`, `::test_otherwise_the_newest_facts`; `tests/unit/alerts/test_text.py::test_the_shape`,
       `::test_more_changes_are_counted`; **P5** `tests/property/alerts/test_text.py::test_p5_every_change_named_or_counted`_
 
-- [ ] 2. The check and the alert log
+- [x] 2. The check and the alert log
   - Branch: `feat/al-2-check` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 The alert log, append-only under `data/local/alerts/`.
+  - [x] 2.1 The alert log, append-only under `data/local/alerts/`.
     - _Requirements: R3.2, R4.2_
-    - _Test: `tests/unit/alerts/test_alert_log.py::test_lines_are_appended_and_read_back`, `::test_a_month_per_file`_
-  - [ ] 2.2 The check: something new, the window, the league, the call replayed, the baseline, the changes and the alert, with a fake
+    - _Test: `tests/unit/alerts/test_alert_log.py::test_lines_are_appended_and_read_back`, `::test_a_month_per_file`,
+      `::test_it_lives_under_the_git_ignored_folder`_
+  - [x] 2.2 The check: something new, the window, the league, the call replayed, the baseline, the changes and the alert, with a fake
     notifier; `make_advisor` shared with `serve`.
     - _Requirements: R1.1–R1.3, R2.2, R3.1–R3.3_
     - _Test: **AT-1** `tests/acceptance/alerts/test_alert.py::test_at1_an_official_lineup_benches_a_starter`;
@@ -51,7 +52,13 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
       `::test_at2_without_a_squad`, `::test_at2_without_a_baseline`, `::test_at2_chances_alone`, `::test_at2_nothing_new_stored`,
       `::test_at2_a_squad_saved_after_the_baseline`; **AT-3** `tests/acceptance/alerts/test_once.py::test_at3_not_sent_twice`,
       `::test_at3_a_change_back_is_sent`; **P1** `tests/property/alerts/test_check.py::test_p1_nothing_outside_the_window`;
-      **P3** `::test_p3_one_alert_for_the_same_facts`; **P4** `::test_p4_a_change_back_alerts_again`_
+      **P3** `::test_p3_one_alert_for_the_same_facts`; **P4** `::test_p4_a_change_back_alerts_again`; also
+      `tests/unit/alerts/test_decide.py`, `tests/unit/alerts/test_news.py`, `tests/unit/alerts/test_cause.py::test_a_fact_that_doesnt_explain_the_move_isnt_its_cause`,
+      `tests/acceptance/alerts/test_alert.py::test_at1_a_notification_the_mac_refuses_is_logged`, `::test_at1_no_alert_when_the_facts_dont_give_a_lineup`,
+      `tests/acceptance/alerts/test_nothing_sent.py::test_at2_the_window_edges`, `tests/acceptance/alerts/test_once.py::test_at3_only_this_round_this_user_and_this_team`_
+    - A cause names a fact only if it explains the move: for the player who lost his place, benched, out or less likely to start;
+      for the one who took it, starting or likelier to. Found by the first test run, where a benched forward's cause was "the
+      official lineup starts him".
 
 - [ ] 3. Sending it, the command line and the switch
   - Branch: `feat/al-3-send` · Depends on: 2 · ADRs: none

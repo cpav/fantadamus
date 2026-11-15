@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import re
 import tomllib
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -87,6 +88,37 @@ def load_instructions(path: Path = DEFAULT_PROMPT) -> str:
     return path.read_text(encoding="utf-8").split("\n---\n", 1)[1].strip() + "\n"
 
 
+def make_advisor(
+    lake: LakeStore,
+    *,
+    rules: RulesStore,
+    log: DecisionLog,
+    clubs: Clubs,
+    reading: dict[str, ReadingItem],
+    user: str,
+    clock: Clock,
+    collector: Collector | None = None,
+    collect_log: CollectLog | None = None,
+    before_answering: Callable[[dt.datetime], object] | None = None,
+) -> Advisor:
+    """The advisor `serve` answers with and the alerts' check replays with (mvp-alerts C7): the squads beside
+    the rules, the calibration reports beside the lake."""
+    return Advisor(
+        lake=lake,
+        rules=rules,
+        log=log,
+        clubs=clubs,
+        reading=reading,
+        user=user,
+        clock=clock,
+        collector=collector,
+        collect_log=collect_log,
+        squads=SquadStore(rules.root),
+        scores=CalibrationStore(lake.root.parent / "calibration"),
+        before_answering=before_answering,
+    )
+
+
 def build_advisor(
     lake: LakeStore,
     *,
@@ -123,18 +155,16 @@ def build_advisor(
     league.register(server, rules, user=user, clock=clock)
     collect.register(server, reader, collect_log)
     pages.register(server, pages.PageReader(reading, page_fetcher))
-    squads = SquadStore(rules.root)
-    scores = CalibrationStore(lake.root.parent / "calibration")
     calibrator = Calibrator(
         lake=lake,
         log=log,
-        store=scores,
+        store=CalibrationStore(lake.root.parent / "calibration"),
         clock=clock,
         collector=reader,
         collect_log=collect_log,
     )
-    advisor = Advisor(
-        lake=lake,
+    advisor = make_advisor(
+        lake,
         rules=rules,
         log=log,
         clubs=clubs,
@@ -143,10 +173,9 @@ def build_advisor(
         clock=clock,
         collector=reader,
         collect_log=collect_log,
-        squads=squads,
-        scores=scores,
         before_answering=calibrator.if_due,
     )
+    squads = SquadStore(rules.root)  # the advisor's own, as make_advisor places it
     compare.register(server, advisor)
     outlook.register(server, advisor)
     squad.register(server, advisor, squads)

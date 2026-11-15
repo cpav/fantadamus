@@ -72,3 +72,17 @@ def test_who_each_change_is_about() -> None:
     assert cause(Change("captain", now=11, before=2), BEFORE, AFTER, latest, NAMES) == Cause(
         "official", "the official lineup has Bianchi on the bench"
     )
+
+
+def test_a_fact_that_doesnt_explain_the_move_isnt_its_cause() -> None:
+    """The player who lost his place: starting, or a chance gone up, doesn't explain it; the one who took it:
+    benched, out or a chance gone down doesn't either."""
+    out = Change("out", before=2, role="D")
+    came = Change("in", now=11, role="D")
+    starts = {2: Latest(official="starter", official_at=LATER)}
+    assert cause(out, BEFORE, AFTER, starts, NAMES) is None
+    up = moved(AFTER, chances={**BEFORE.chances, 2: 0.95, 11: 0.5})
+    assert cause(out, BEFORE, up, {}, NAMES) is None
+    assert cause(came, BEFORE, up, {}, NAMES) is None
+    benched = {11: Latest(official="bench", official_at=LATER, out="knock", out_at=LATER)}
+    assert cause(came, BEFORE, AFTER, benched, NAMES) is None
