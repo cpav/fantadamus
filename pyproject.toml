@@ -58,6 +58,7 @@ only_mutate = [
     "src/fantadamus/domains/review.py",
     "src/fantadamus/domains/cards.py",
     "src/fantadamus/domains/recalibration.py",
+    "src/fantadamus/domains/alerts.py",
 ]
 also_copy = ["config", "scripts"]
 pytest_add_cli_args_test_selection = [
@@ -99,6 +100,15 @@ pytest_add_cli_args_test_selection = [
     "tests/acceptance/sources/test_ratings.py::test_at4_from_two_reads_by_hand",  # pure: a rating, by hand
     "tests/acceptance/sources/test_ratings.py::test_at4_from_the_page",
     "tests/acceptance/sources/test_ratings.py::test_at4_counted_as_evidence",
+    "tests/unit/alerts/test_call.py",  # the pure ones: the rest reach the tools or the shell
+    "tests/unit/alerts/test_changes.py",
+    "tests/unit/alerts/test_cause.py",
+    "tests/unit/alerts/test_text.py",
+    "tests/unit/alerts/test_decide.py",
+    "tests/property/alerts/test_changes.py",
+    "tests/property/alerts/test_text.py",
+    "tests/property/alerts/test_check.py::test_p3_one_alert_for_the_same_facts",  # pure; P1 goes through the lake
+    "tests/property/alerts/test_check.py::test_p4_a_change_back_alerts_again",
 ]
 pytest_add_cli_args = [
     "--timeout=30",

@@ -83,7 +83,8 @@ def test_player_guide_setup() -> None:
 
 def test_player_guide_schedule() -> None:
     """mvp-collect task 7.2 (R7.2): the guide has the player install a launchd agent that runs `collect --due`
-    every 15 minutes, with their own paths filled in by the shell, and shows how to switch it off."""
+    every 15 minutes, with their own paths filled in by the shell, and shows how to switch it off; since
+    mvp-alerts task 4.1 (R5.1), with their name, so that alerts are about their squad."""
     guide = (ROOT / "docs" / "player-setup.md").read_text(encoding="utf-8")
     heredoc = guide.split("<<EOF\n", 1)[1].split("\nEOF\n", 1)[0]
     filled = heredoc.replace("$(which uv)", "/Users/you/.local/bin/uv").replace("$HOME", "/Users/you")
@@ -99,6 +100,8 @@ def test_player_guide_schedule() -> None:
         "fantadamus",
         "collect",
         "--due",
+        "--user",
+        "your-name",
     ]
     switch_on = guide.split("launchctl bootstrap", 1)[1].split("\n", 1)[0]
     assert f"{plist['Label']}.plist" in switch_on
@@ -299,6 +302,7 @@ def test_mutation_run_stays_fast() -> None:
         "src/fantadamus/domains/review.py",  # mvp-review task 2
         "src/fantadamus/domains/cards.py",  # mvp-cards task 2
         "src/fantadamus/domains/recalibration.py",  # mvp-recalibrate task 4
+        "src/fantadamus/domains/alerts.py",  # mvp-alerts task 4
     ]
 
     selected: set[Path] = set()
@@ -362,3 +366,30 @@ def test_answer_formats_show_rest_days() -> None:
     guide = " ".join((ROOT / "docs" / "player-setup.md").read_text(encoding="utf-8").split())
     for part in ("Wikipedia", "injured and suspended pages", "round ratings", "never moves a number"):
         assert part in guide, part
+
+
+def test_answer_formats_show_alerts() -> None:
+    """mvp-alerts task 4.1 (R5.1): alerts leave "Later" for a section of their own, in the alert's shape."""
+    formats = (ROOT / "docs" / "answer-formats.md").read_text(encoding="utf-8")
+    alert = formats.split("## 8. An alert", 1)[1].split("## Later, in their own specs", 1)[0]
+    later = formats.split("## Later, in their own specs", 1)[1]
+    for part in ("Official lineup out", "Start Costa instead of Bianchi", "first defender", "240 characters"):
+        assert part in alert, part
+    assert "**Alerts:**" not in later
+    assert "Amazon SNS" in later
+
+
+def test_the_guide_lets_notifications_through() -> None:
+    """mvp-alerts task 4.1 (R5.1): the player guide passes the user to the schedule, sends a sample to let the
+    notifications through, and names the switch; the delivery order marks the slice."""
+    guide = (ROOT / "docs" / "player-setup.md").read_text(encoding="utf-8")
+    for part in (
+        "<string>--user</string>",
+        "fantadamus alerts --test",
+        "Script Editor",
+        "[alerts]",
+        "enabled = false",
+    ):
+        assert part in guide, part
+    product = (ROOT / ".kiro" / "steering" / "product.md").read_text(encoding="utf-8")
+    assert "Alerts (`mvp-alerts`)" in product

@@ -83,17 +83,24 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
 
 - [ ] 4. The docs, a real check and this slice's sign-off
   - Branch: `docs/al-4-gate` · Depends on: 1, 2, 3 · ADRs: none
-  - [ ] 4.1 The docs: answer formats, the player guide's step 8, `product.md`.
+  - [x] 4.1 The docs: answer formats, the player guide's step 8, `product.md`.
     - _Requirements: R5.1_
-    - _Test: **AT-6** `tests/unit/test_repo_hygiene.py::test_answer_formats_show_alerts`, `::test_the_guide_lets_notifications_through`_
+    - _Test: **AT-6** `tests/unit/test_repo_hygiene.py::test_answer_formats_show_alerts`, `::test_the_guide_lets_notifications_through`,
+      `::test_player_guide_schedule` (the schedule passes `--user`)_
   - [ ] 4.2 **Owner:** on the Mac, `fantadamus alerts --test`, and let the notification through; then one from a real scheduled run
     in the last day before a round, or a replayed one.
     - _Requirements: R3.1 (AT-5)_
     - _Test: recorded in the report, without the squad's names_
-  - [ ] 4.3 A mutation run on the new core functions, with survivors read; the slice report: tests, coverage, quality, cost, open risks
+    - From `main` on 2026-11-15: `fantadamus alerts --test` was taken by macOS; round 11's last day, replayed read-only,
+      would have sent 4 alerts. Left to the owner: seeing the notification, installing the schedule, and a real alert
+      in round 12's last day.
+  - [x] 4.3 A mutation run on the new core functions, with survivors read; the slice report: tests, coverage, quality, cost, open risks
     and the acceptance tests.
     - _Requirements: R4.1; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
+    - `domains/alerts.py` joins the mutation set with its pure tests: 403 of 413 mutants killed, after nine tests for the
+      gaps the first run showed (`tests/unit/alerts/test_call.py`, `test_cause.py`, `test_text.py`, `test_decide.py`);
+      the 10 left change nothing.
   - [ ] 4.4 **Owner:** sign off this slice.
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the report_

@@ -37,6 +37,7 @@ def test_a_changed_call_alerts_with_its_cause() -> None:
         Change("bench", now=2, before=11, role="D"),
     ]
     assert decided.alert is not None
+    assert decided.alert.title == "Fantadamus · Round 12"
     assert decided.alert.text == (
         "Start Costa instead of Bianchi: the official lineup has Bianchi on the bench. "
         "Bianchi is now your first defender off the bench."
@@ -48,3 +49,7 @@ def test_the_baseline_is_the_newest_call_seen() -> None:
     assert newest([told, alerted]) is alerted
     assert newest([alerted, None, told]) is alerted
     assert newest([None]) is None
+
+
+def test_a_squad_saved_as_the_call_was_made_keeps_it() -> None:
+    assert _decide(a_call(), BENCHED, saved_at=AT).step == "alert"

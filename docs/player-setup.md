@@ -147,7 +147,8 @@ matches; and Fantacalcio-Online's round ratings the morning after each round. Re
 claim show on the match card and the outlook as context: what they say never moves a number.
 Nothing runs while your Mac sleeps.
 
-Paste this whole block into Terminal. It writes the schedule with your own paths:
+Paste this whole block into Terminal, with `your-name` replaced by the name you gave in step 5 (`owner` if you
+gave none). It writes the schedule with your own paths:
 
 ```bash
 mkdir -p ~/Library/LaunchAgents ~/fantadamus/data/local/collect
@@ -169,6 +170,8 @@ cat > ~/Library/LaunchAgents/com.github.cpav.fantadamus.collect.plist <<EOF
     <string>fantadamus</string>
     <string>collect</string>
     <string>--due</string>
+    <string>--user</string>
+    <string>your-name</string>
   </array>
   <key>StartInterval</key>
   <integer>900</integer>
@@ -193,6 +196,29 @@ run, and when the page last worked. To switch it off:
 ```bash
 launchctl bootout gui/$(id -u)/com.github.cpav.fantadamus.collect
 ```
+
+### Alerts: when the news changes your lineup
+
+In the last 24 hours before a round's deadline, each time the schedule stores a new official lineup, a probable
+lineup or an injury or ban, Fantadamus works your lineup out again. If your eleven, the formation, the captain or a
+role's first bench player has changed from the lineup you last asked for, a notification says what to change and
+why. It needs your squad and league rules saved, as `best_lineup` does.
+
+1. **Your name in the schedule.** The block above passes it with `--user`. If you set the schedule up before
+   alerts, paste the block again with your name, then switch the schedule off and on.
+2. **Let the notifications through.** Run `cd ~/fantadamus && uv run --frozen --no-dev fantadamus alerts --test`.
+   A sample notification appears at the top right of the screen. If it doesn't, open System Settings →
+   Notifications → Script Editor and allow notifications: macOS shows the ones sent with `osascript` under Script
+   Editor's name.
+3. **What was sent:** `uv run --frozen --no-dev fantadamus alerts` lists the last alerts and the calls kept to
+   compare with.
+4. **To turn alerts off**, add this to your private configuration file, `~/.config/fantadamus/private.toml`, and
+   delete it to turn them back on:
+
+   ```toml
+   [alerts]
+   enabled = false
+   ```
 
 ## After a round: your review
 

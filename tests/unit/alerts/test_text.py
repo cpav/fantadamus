@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from fantadamus.domains.alerts import Cause, Change, alert_text
 from tests.alerts_data import NAMES
 
@@ -87,3 +89,59 @@ def test_a_name_too_long_for_any_sentence_is_cut() -> None:
 def test_a_player_whose_name_isnt_known() -> None:
     alert = alert_text(12, [Change("in", now=99)], [None], NAMES)
     assert alert.text == "Start player 99."
+
+
+def test_two_more_changes() -> None:
+    found = [SWAP, BENCH, Change("vice", now=8, before=9)]
+    alert = alert_text(12, found, [OFFICIAL, None, None], NAMES, limit=130)
+    assert alert.text.endswith(" And 2 more changes: ask for your lineup.")
+
+
+def test_a_lone_change_and_the_captain_carry_their_cause() -> None:
+    found = [Change("in", now=11, role="D"), Change("out", before=13), Change("captain", now=9, before=8)]
+    causes = [
+        Cause("official", "the official lineup starts Costa"),
+        Cause("injury", "the injury page has Rizzo out: knock"),
+        Cause("outlets", "the probable lineups give Greco 40% to start, from 80%"),
+    ]
+    assert alert_text(12, found, causes, NAMES, limit=1000).text == (
+        "Start Costa: the official lineup starts Costa. Bench Rizzo: the injury page has Rizzo out: knock. "
+        "Captain Bruno instead of Greco: the probable lineups give Greco 40% to start, from 80%."
+    )
+
+
+def test_the_formation_vice_and_bench_carry_no_cause() -> None:
+    found = [Change("formation", formations=("3-4-3", "4-3-3")), Change("vice", now=8, before=9), BENCH]
+    causes = [Cause("outlets", "a"), Cause("outlets", "b"), Cause("outlets", "c")]
+    assert alert_text(12, found, causes, NAMES, limit=1000).text == (
+        "Play 4-3-3 instead of 3-4-3. Make Greco vice-captain instead of Bruno. "
+        "Fontana is now your first defender off the bench."
+    )
+
+
+def test_the_text_may_fill_its_limit_exactly() -> None:
+    whole = alert_text(12, [SWAP, BENCH], [OFFICIAL, None], NAMES, limit=1000).text
+    assert alert_text(12, [SWAP, BENCH], [OFFICIAL, None], NAMES, limit=len(whole)).text == whole
+    alone = alert_text(12, [SWAP], [None], {11: "X" * 200, 2: "Bianchi"}, limit=1000).text
+    assert alert_text(12, [SWAP], [None], {11: "X" * 200, 2: "Bianchi"}, limit=len(alone)).text == alone
+
+
+def test_a_first_change_cut_still_counts_the_rest() -> None:
+    alert = alert_text(
+        12, [SWAP, BENCH], [None, None], {11: "X" * 300, 2: "Bianchi", 12: "Fontana"}, limit=120
+    )
+    assert len(alert.text) == 120
+    assert alert.text.endswith("… And 1 more change: ask for your lineup.")
+    assert alert.shown == 1
+
+
+def test_a_cause_for_each_change() -> None:
+    with pytest.raises(ValueError, match="zip"):
+        alert_text(12, [SWAP, BENCH], [None], NAMES)
+
+
+def test_a_first_change_without_its_cause_may_fill_the_limit_exactly() -> None:
+    names = {11: "X" * 200, 2: "Bianchi"}
+    action = f"Start {'X' * 200} instead of Bianchi."
+    alert = alert_text(12, [SWAP], [OFFICIAL], names, limit=len(action))
+    assert alert.text == action

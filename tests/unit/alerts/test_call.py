@@ -31,6 +31,7 @@ def test_a_player_whose_role_isnt_known_has_no_bench_place() -> None:
 def test_a_call_from_a_logged_answer() -> None:
     advice = Advice("4-4-2", [1, 2, 3, 4, 11, 5, 6, 7, 13, 8, 9], [10, 12, 14], 9, 8, AT, chances={8: 0.9})
     call = call_of_advice(advice, round=12, roles=ROLES)
+    assert call.round == 12
     assert call.formation == "4-4-2"
     assert 11 in call.starters
     assert dict(call.first_on_bench) == {"P": 10, "D": 12, "A": 14}
