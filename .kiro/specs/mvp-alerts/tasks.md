@@ -60,22 +60,26 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
       for the one who took it, starting or likelier to. Found by the first test run, where a benched forward's cause was "the
       official lineup starts him".
 
-- [ ] 3. Sending it, the command line and the switch
+- [x] 3. Sending it, the command line and the switch
   - Branch: `feat/al-3-send` · Depends on: 2 · ADRs: none
-  - [ ] 3.1 `notify` through `/usr/bin/osascript`, the text as arguments, a timeout, the reason on failure; the suppression proposed
+  - [x] 3.1 `notify` through `/usr/bin/osascript`, the text as arguments, a timeout, the reason on failure; the suppression proposed
     in `docs/quality/suppressions.md` with its approval date blank.
     - _Requirements: R3.1, R4.1_
     - _Test: `tests/unit/alerts/test_notify.py::test_the_text_goes_in_as_arguments`, `::test_a_failure_returns_its_reason`,
-      `::test_a_timeout_returns_its_reason`_
-  - [ ] 3.2 `collect --due --user` runs the check after the run, and its error never fails the run; `fantadamus alerts` and
+      `::test_a_timeout_returns_its_reason`, `::test_the_runner_runs_a_command_and_waits_for_it`_
+    - S-015 recorded with the owner's approval of design decision 1 (2026-11-15, "approve all three").
+  - [x] 3.2 `collect --due --user` runs the check after the run, and its error never fails the run; `fantadamus alerts` and
     `--test`; the switch in the private configuration.
     - _Requirements: R1.1, R3.4_
     - _Test: `tests/integration/alerts/test_command.py::test_the_check_runs_after_a_run_that_stored`, `::test_an_error_in_the_check_isnt_the_runs`,
       `::test_the_log_printed`, `::test_a_sample_sent`; **AT-2** `tests/acceptance/alerts/test_nothing_sent.py::test_at2_the_switch_off`;
-      `tests/unit/alerts/test_switch.py::test_on_without_the_file`, `::test_off_with_the_switch`, `::test_on_when_the_file_cant_be_read`_
-  - [ ] 3.3 The budget: a check on the synthetic round, timed.
+      `tests/unit/alerts/test_switch.py::test_on_without_the_file`, `::test_off_with_the_switch`, `::test_on_when_the_file_cant_be_read`,
+      `::test_on_with_the_switch_on_or_absent`, `::test_on_with_a_switch_that_isnt_true_or_false`;
+      `tests/integration/alerts/test_command.py::test_the_switch_reaches_the_check`, `::test_nothing_due_checks_nothing`_
+  - [x] 3.3 The budget: a check on the synthetic round, timed.
     - _Requirements: R4.1_
     - _Test: **AT-4** `tests/acceptance/alerts/test_budget.py::test_at4_a_check_in_budget`, `::test_at4_no_install_and_no_account`_
+    - 0.73 CPU-seconds for a check with all 10,000 simulated rounds, against 10.
 
 - [ ] 4. The docs, a real check and this slice's sign-off
   - Branch: `docs/al-4-gate` · Depends on: 1, 2, 3 · ADRs: none

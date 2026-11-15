@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from fantadamus.cli.notify import CONFIG_VAR, alerts_enabled
 from fantadamus.engine.constants import ALERT_WINDOW_HOURS
 from fantadamus.web.collector import CollectReport
 from tests.alerts_harness import DEADLINE, IN_WINDOW, Shown, alerts, check, collect_officials, collect_round
@@ -109,3 +110,16 @@ async def test_at2_the_window_edges(tmp_path: Path) -> None:
         assert check(here, report, shown).outcome == "outside the window"
         here.clock.now = opens
         assert check(here, report, shown).outcome == "sent"
+
+
+async def test_at2_the_switch_off(tmp_path: Path) -> None:
+    """`[alerts] enabled = false` in the private configuration: nothing checked, nothing sent."""
+    config = tmp_path / "private.toml"
+    config.write_text("[alerts]\nenabled = false\n", encoding="utf-8")
+    enabled, _ = alerts_enabled({CONFIG_VAR: str(config)})
+    async with a_round(tmp_path) as here:
+        await here.ask()
+        report = collect_officials(here, IN_WINDOW, benched=BENCHED)
+        shown = Shown()
+        checked = check(here, report, shown, enabled=enabled)
+        assert (checked.outcome, shown.sent, alerts(here).read()) == ("off", [], [])

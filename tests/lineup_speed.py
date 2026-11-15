@@ -3,7 +3,7 @@ one `best_lineup` takes on a synthetic round, with all its simulated rounds (mvp
 `review_round` once the round has been played and its statistics read, and `--replayed` when no advice was
 asked for (mvp-review R5.2); `--card`, one `match_card`, and `--overview`, one `round_overview` (mvp-cards
 R6.2); `--sources`, a card and an outlook with every new fact of mvp-sources, a season of ratings
-included (R7.2).
+included (R7.2); `--alert`, the alerts' check after a run that stored an official lineup (mvp-alerts R4.1).
 Inside the test suite the tracer slows the simulation about sixfold and other workers compete for the
 machine, and neither is the user's wait. Each answer is timed three times and the fastest kept, as `timeit`
 does: a busy machine can only slow a run down, so the fastest is the answer's own cost."""
@@ -111,6 +111,29 @@ async def _sources_seconds() -> str:
             return f"{card} {outlook}"
 
 
+async def _alert_seconds() -> float:
+    """The check after a scheduled run that stored an official lineup benching a starter: the first sends,
+    the next find the call unchanged; each replays the lineup in full."""
+    from tests.alerts_harness import (
+        IN_WINDOW,
+        Shown,
+        benchable,
+        check,
+        collect_officials,
+        told_after_officials,
+    )
+
+    with tempfile.TemporaryDirectory() as folder:
+        async with a_round(Path(folder), rounds=SIMULATIONS) as here:
+            benched = benchable(await told_after_officials(here))["name"]
+            report = collect_officials(here, IN_WINDOW, [benched])
+
+            async def run() -> None:
+                check(here, report, Shown(), rounds=SIMULATIONS)
+
+            return await _fastest(run)
+
+
 if __name__ == "__main__":
     if "--review" in sys.argv:
         print(asyncio.run(_review_seconds("--replayed" in sys.argv)))
@@ -118,6 +141,8 @@ if __name__ == "__main__":
         print(asyncio.run(_card_seconds("match_card", {"club": "Alfa"})))
     elif "--sources" in sys.argv:
         print(asyncio.run(_sources_seconds()))
+    elif "--alert" in sys.argv:
+        print(asyncio.run(_alert_seconds()))
     elif "--overview" in sys.argv:
         print(asyncio.run(_card_seconds("round_overview", {})))
     else:

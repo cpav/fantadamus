@@ -20,7 +20,7 @@ from tests.alerts_harness import (
     IN_WINDOW,
     Shown,
     alerts,
-    alfa_starter,
+    benchable,
     check,
     collect_officials,
 )
@@ -76,7 +76,7 @@ async def test_p1_nothing_outside_the_window(tmp_path: Path) -> None:
     on, with the league."""
     async with a_round(tmp_path) as here:
         told = (await here.ask())["lineup"]
-        benched = alfa_starter(told)["name"]
+        benched = benchable(told)["name"]
         report = collect_officials(here, IN_WINDOW, [benched])
 
         @given(st.integers(-EIGHT_DAYS, EIGHT_DAYS), st.booleans(), st.sampled_from(["user-1", "nobody"]))

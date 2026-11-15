@@ -12,7 +12,7 @@ from tests.alerts_harness import (
     IN_WINDOW,
     Shown,
     alerts,
-    alfa_starter,
+    benchable,
     check,
     collect_officials,
     collect_round,
@@ -26,7 +26,7 @@ pytestmark = pytest.mark.anyio
 async def test_at1_an_official_lineup_benches_a_starter(tmp_path: Path) -> None:
     async with a_round(tmp_path) as here:
         told = await told_after_officials(here)
-        benched = alfa_starter(told)
+        benched = benchable(told)
         report = collect_officials(here, IN_WINDOW, benched=[benched["name"]])
         shown = Shown()
         checked = check(here, report, shown)
@@ -55,7 +55,7 @@ async def test_at1_an_official_lineup_benches_a_starter(tmp_path: Path) -> None:
 async def test_at1_a_notification_the_mac_refuses_is_logged(tmp_path: Path) -> None:
     """Logged with its reason, not retried: its call is the baseline all the same."""
     async with a_round(tmp_path) as here:
-        benched = alfa_starter(await told_after_officials(here))["name"]
+        benched = benchable(await told_after_officials(here))["name"]
         report = collect_officials(here, IN_WINDOW, benched=[benched])
         refused = Shown(refuse="not a Mac")
         checked, again = check(here, report, refused), check(here, report, refused)
