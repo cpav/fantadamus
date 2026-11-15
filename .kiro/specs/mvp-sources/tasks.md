@@ -97,9 +97,11 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
 
 - [ ] 8. Anytime-scorer odds, researched
   - Branch: `docs/so-8-scorer-odds` · Depends on: none · ADRs: none
-  - [ ] 8.1 A new ADR, the eighth: the routes compared, with each one's coverage, cost and terms, how the method uses them, and a one-round trial plan.
+  - [x] 8.1 A new ADR, the eighth: the routes compared, with each one's coverage, cost and terms, how the method uses them, and a one-round trial plan.
     - _Requirements: R6.1, R6.2_
     - _Test: the ADR exists with every section_
+    - `docs/adr/0008-anytime-scorer-odds-trial.md`, Proposed: a one-round trial of The Odds API's
+      `player_goal_scorer_anytime`, which lists Serie A but only from US bookmakers.
   - [ ] 8.2 **Owner:** read ADR-0008, and approve or turn down the trial.
     - _Requirements: AT-6 (R6)_
     - _Test: recorded in the ADR_

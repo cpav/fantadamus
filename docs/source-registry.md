@@ -168,6 +168,7 @@ rush (refresh everything for my squad) saves both users time.
   **The Odds API** (use and caching of odds data) and **BetExplorer**.
 - The Odds API on a trial round: which EU bookmakers price Serie A `totals` and `btts`, how many of the
   10 matches get `player_goal_scorer_anytime` from US bookmakers, and the real credit cost per refresh.
+  [ADR-0008](adr/0008-anytime-scorer-odds-trial.md) proposes the scorer part as a one-round trial (2026-11-15).
 - Confirm whether Fantacalcio.it's match voti are public without login (needs a rendered page, D-S2).
 - Identify the rater behind SOS Fanta's voti articles.
 - ~~Read the terms of Goal, livetipsportal, Jamma and Soccerway~~ Done 2026-10-24.
