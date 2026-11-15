@@ -1,4 +1,4 @@
-"""mvp-sources: the new facts' contracts, as a submit tool will receive them (design C2, C4)."""
+"""mvp-sources: the new facts' contracts, as a submit tool will receive them (design C2, C4, C6)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import pytest
 from pydantic import ValidationError
 
 from fantadamus.contracts.xy.fixtures import OtherFixturesPayload
+from fantadamus.contracts.xy.ratings import RatingsPayload
 from fantadamus.contracts.xy.unavailable import InjuriesPayload, SuspensionsPayload
 
 MATCH = {"home": "Alfa", "away": "Ostrava Rovers", "kickoff_at": "2026-09-08T21:00:00+02:00"}
@@ -97,3 +98,39 @@ def test_injuries_and_suspensions_payloads() -> None:
     for wrong, reason in wrong_bans:
         with pytest.raises(ValidationError, match=reason):
             SuspensionsPayload.model_validate({"clubs": [bans | wrong]})
+
+
+RATED: dict[str, Any] = {
+    "club": "Alfa",
+    "name": "UNO A.",
+    "role": "P",
+    "ratings": [{"desk": "Fantacalcio.it", "rating": 6.5}, {"desk": "Roma", "rating": None}],
+}
+
+
+def test_ratings_payload() -> None:
+    """Task 6.1 (R4.2): a round's matches, each player with his club, role and each desk's base rating, None
+    for "s.v."; a desk that hasn't published is left out."""
+    payload = RatingsPayload.model_validate_json(
+        json.dumps({"round": 11, "matches": [{"home": "Alfa", "away": "Beta", "players": [RATED]}]})
+    )
+    assert payload.matches[0].players[0].ratings[1].rating is None
+    assert (payload.matches[0].players[0].came_on, payload.matches[0].players[0].minutes) == (False, None)
+    assert RatingsPayload.__version__ == "1.0.0"
+    wrong: list[tuple[dict[str, Any], str]] = [
+        ({"club": "Gamma"}, "plays in neither"),
+        ({"ratings": [{"desk": "Napoli", "rating": 6.0}]}, "desk"),
+        ({"ratings": [{"desk": "Roma", "rating": 11.0}]}, "less than or equal to 10"),
+        ({"ratings": [{"desk": "Roma", "rating": 6.0}, {"desk": "Roma", "rating": 6.5}]}, "twice"),
+        ({"minutes": 140}, "less than or equal to 130"),
+    ]
+    for change, reason in wrong:
+        with pytest.raises(ValidationError, match=reason):
+            RatingsPayload.model_validate(
+                {"round": 11, "matches": [{"home": "Alfa", "away": "Beta", "players": [RATED | change]}]}
+            )
+    twice = {"home": "Alfa", "away": "Gamma", "players": []}
+    with pytest.raises(ValidationError, match="Alfa plays twice"):
+        RatingsPayload.model_validate(
+            {"round": 11, "matches": [{"home": "Alfa", "away": "Beta", "players": []}, twice]}
+        )

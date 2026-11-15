@@ -43,6 +43,7 @@ def test_serve_runs_the_server_on_stdio(monkeypatch: pytest.MonkeyPatch, tmp_pat
             "submit_penalty_takers",
             "submit_player_season",
             "submit_probable_lineups",
+            "submit_ratings",
             "submit_suspensions",
             "submit_team_season",
         ],

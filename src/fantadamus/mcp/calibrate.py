@@ -25,6 +25,7 @@ from fantadamus.domains.calibration import (
     CalibrationSet,
     ClubSheet,
     Outcome,
+    RatingFrom,
     RoundFrame,
     RoundReport,
     SetRow,
@@ -36,6 +37,7 @@ from fantadamus.domains.calibration import (
     final_overrides,
     finished_round,
     last_told,
+    league_rating,
     match_score,
     outcome_of,
     round_frame,
@@ -48,6 +50,7 @@ from fantadamus.domains.fixtures.silver import FIXTURES, FixtureRow
 from fantadamus.domains.freshness import FACTS_WINDOW
 from fantadamus.domains.odds.gold import team_xg
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
+from fantadamus.domains.ratings.silver import MATCH_RATINGS
 from fantadamus.domains.review import goals_against
 from fantadamus.domains.season.gold import (
     known_players,
@@ -92,6 +95,7 @@ class Calibrator:
             return None
         if not self._read_finished_page(round, now):
             return None
+        self._read_ratings(round)
         return self.score(round, self.clock())
 
     def report(self, round: int, *, again: bool = False) -> RoundReport | None:
@@ -107,6 +111,7 @@ class Calibrator:
             return None
         self._read_finished_page(round, now, wait=False)
         self._statistics_ready(frame, now)
+        self._read_ratings(round)
         return self.score(round, self.clock())
 
     @staticmethod
@@ -163,6 +168,40 @@ class Calibrator:
         self._logged(report)
         return all(page.outcome in WORKED for page in report.pages)
 
+    def _read_ratings(self, round: int) -> None:
+        """The round's ratings page, when it's scored and none of its ratings is stored (mvp-sources C6)."""
+        if self.collector is None or not self.collector.reads("match_ratings"):
+            return
+        if not any(row.round == round for row in read_silver(self.lake, MATCH_RATINGS)):
+            self._logged(self.collector.collect_ratings(round))
+
+    def _ratings(
+        self,
+        round: int,
+        known: Sequence[KnownPlayer],
+        before: Mapping[int, PlayerSeasonRow] | None,
+        after: Mapping[int, PlayerSeasonRow] | None,
+    ) -> dict[int, tuple[float | None, RatingFrom | None]]:
+        """Each player's rating in the round from the league's rater, and where it comes from: the statistics
+        reads around it, else the Fantacalcio.it desk's on the ratings page's newest read (mvp-sources C6)."""
+        rows = [row for row in read_silver(self.lake, MATCH_RATINGS) if row.round == round]
+        newest = max(((row.captured_at, row.content_sha256) for row in rows), default=None)
+        page: dict[int, float] = {}
+        for row in rows:
+            if (
+                (row.captured_at, row.content_sha256) == newest
+                and row.desk == "Fantacalcio.it"
+                and row.rating
+            ):
+                mates = [player for player in known if player.club == row.club]
+                if (found := resolve(row.name, mates).player or same_surname(row.name, mates)) is not None:
+                    page[found.player_id] = row.rating
+        before, after = before or {}, after or {}
+        return {
+            player_id: league_rating(before.get(player_id), after.get(player_id), page=page.get(player_id))
+            for player_id in {*before, *after, *page}
+        }
+
     def _logged(self, report: CollectReport) -> None:
         if self.collect_log is not None:
             self.collect_log.append(report)
@@ -203,7 +242,8 @@ class Calibrator:
             )
         overrides = final_overrides(decisions, round, frame.first_kickoff, MINE)
         facts = Facts.read(self.lake, frame.last_kickoff)
-        model = self._model_on_everyone(frame, facts, known, sheets, before, after, now)
+        ratings = self._ratings(round, known, rows_before, rows_after)
+        model = self._model_on_everyone(frame, facts, known, sheets, before, after, now, ratings)
         against = goals_against(rows_before, rows_after) if rows_after is not None else {}
         report = RoundReport(
             round=round,
@@ -242,6 +282,7 @@ class Calibrator:
         before: Mapping[int, StatsLine] | None,
         after: Mapping[int, StatsLine] | None,
         now: dt.datetime,
+        ratings: Mapping[int, tuple[float | None, RatingFrom | None]],
     ) -> Tally:
         """Every player the page lists, by the current model, on the facts held before his kickoff. Official
         lineups stay out: this scores the forecast, not the answer. Chances don't depend on a league's
@@ -251,7 +292,7 @@ class Calibrator:
         tally = Tally()
         for match in frame.matches:
             on_page = [row for row in listed if (row.home, row.away) == (match.home, match.away)]
-            _score_match(tally, match, facts, on_page, known, sheets, before, after, now)
+            _score_match(tally, match, facts, on_page, known, sheets, before, after, now, ratings)
         return tally
 
 
@@ -317,6 +358,7 @@ def _score_match(
     before: Mapping[int, StatsLine] | None,
     after: Mapping[int, StatsLine] | None,
     now: dt.datetime,
+    ratings: Mapping[int, tuple[float | None, RatingFrom | None]],
 ) -> None:
     as_of = match.kickoff_at - dt.timedelta(microseconds=1)
     forms = latest_by(facts.players, as_of, key=lambda row: row.player_id)
@@ -360,7 +402,8 @@ def _score_match(
             page = present or chances(player, now)
             if page is not None:
                 tally.add(STARTING, page.p_start, outcome.started)
-                tally.keep(_set_row(match, club, player.player_id, outcome, page))
+                rated = ratings.get(player.player_id, (None, None))
+                tally.keep(_set_row(match, club, player.player_id, outcome, page, rated=rated))
             tally.note(THE_REST, "no facts held before his kickoff")
             continue
         share = penalty_share(player, order, mates, starts)
@@ -368,7 +411,15 @@ def _score_match(
         value = model_value(inputs, scoring_for(CLASSIC, form.role))
         priced = form.role != "P" and priors(form.role, form.mantra_role).priced_cameo
         row = _set_row(
-            match, club, player.player_id, outcome, present, role=form.role, value=value, priced=priced
+            match,
+            club,
+            player.player_id,
+            outcome,
+            present,
+            role=form.role,
+            value=value,
+            priced=priced,
+            rated=ratings.get(player.player_id, (None, None)),
         )
         tally.keep(row)
         add_outcomes(
@@ -391,6 +442,7 @@ def _set_row(
     role: Role | None = None,
     value: OutfieldValue | KeeperValue | None = None,
     priced: bool | None = None,
+    rated: tuple[float | None, RatingFrom | None] = (None, None),
 ) -> SetRow:
     """His row in the model set, with the outlets' consensus before the map. Without a value, only his chance
     of starting was known."""
@@ -411,4 +463,6 @@ def _set_row(
         p_clean_sheet=keeper.p_clean_sheet if keeper is not None else None,
         priced_cameo=priced,
         outcome=outcome,
+        rating=rated[0],
+        rating_from=rated[1],
     )

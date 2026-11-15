@@ -229,11 +229,11 @@ def test_at5_what_waits() -> None:
     assert (scoring.have, scoring.minimum) == (3, 500)
     assert scoring.needs == "started outfield players whose goals are known"
     assert (clean.have, clean.minimum) == (1, 100)
-    assert (ratings.have, ratings.minimum) == (None, None)
+    assert (ratings.have, ratings.minimum) == (0, 1500)  # counted since mvp-sources task 6
     assert {wait.names[0]: wait.needs for wait in waiting(rows)} == {
         "ROLE_PRIORS": "started outfield players whose goals are known",
         "KEEPER_SKILL_WEIGHT": "started keepers whose clean sheet is known",
-        "VOTE_BASELINE": "each player's rating and cards in each match, which come with the new sources",
+        "VOTE_BASELINE": "rated players with the league's rating, and cards in each match",
         "P_START_STARTER": "each outlet's own views against who started, which the sets don't keep yet",
         "OWN_GOAL_RATE": "own goals, which the statistics page doesn't count",
         "START_MAP_WEIGHT": "how this slice's proposals hold up on the rounds after them",

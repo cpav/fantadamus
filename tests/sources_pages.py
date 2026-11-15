@@ -186,3 +186,106 @@ def suspended_page(
         for number, (club, (banned, warned)) in enumerate(clubs.items(), start=1)
     )
     return _page(title, cards)
+
+
+DESKS = ("Fantacalcio.it", "Roma", "Torino")
+NOT_PUBLISHED = "\u2013"
+
+
+@dataclass(frozen=True)
+class Rated:
+    """One player's row on the round ratings page: each desk's rating as the page shows it ("6,50", "s.v.", or
+    a dash for a desk that hasn't published), and how he played."""
+
+    surname: str
+    initial: str
+    role: str
+    ratings: tuple[str, str, str] = ("6,00", "6,00", "6,00")
+    came_on: int | None = None
+    """Minutes played after coming on."""
+    off_after: int | None = None
+    unused: bool = False
+
+
+def _rated_row(player: Rated) -> str:
+    if player.unused:
+        mark = '<span class="prb-non-entrato" title="Non è mai entrato in campo">non entrato</span>'
+    elif player.came_on is not None:
+        mark = (
+            f'<span class="prb-segno" title="Entrato dalla panchina — {player.came_on} minuti giocati">'
+            '<span class="fantaicon-t-shirt-in" aria-hidden="true"></span>'
+            '<span class="sr-only">subentrato</span>'
+            f'</span> <span class="prb-minuti" title="minuti giocati">{player.came_on}\'</span>'
+        )
+    elif player.off_after is not None:
+        mark = (
+            f'<span class="prb-segno" title="Sostituito dopo {player.off_after} minuti">'
+            '<span class="fantaicon-t-shirt-out" aria-hidden="true"></span>'
+            '<span class="sr-only">sostituito</span>'
+            "</span>"
+        )
+    else:
+        mark = ""
+    cells = []
+    for desk, shown in zip(DESKS, player.ratings, strict=True):
+        if shown == NOT_PUBLISHED:
+            title, kind = f"{desk} non ha pubblicato i voti di questa giornata", "muta"
+        elif shown == "s.v.":
+            title, kind = f"{desk}: senza voto", "fuori"
+        else:
+            title, kind = f"{desk}: voto senza bonus e malus", "probabile"
+        cells.append(
+            f'<td class="prb-cella prb-cella--{kind}"> <span data-toggle="tooltip" '
+            f'data-original-title="{title}">{shown}</span> </td>'
+        )
+    row = "prb-riga--non-entrato" if player.unused else ""
+    return (
+        f'<tr class="{row}"> <th scope="row" class="prb-tabella__chi"> '
+        f"<span class='role role-{player.role.lower()}'>{player.role}</span> "
+        f'<span class="prb-nome">{player.surname}<small>{player.initial}</small></span> '
+        f'<span class="prb-tabellino"> {mark} </span> </th> {"".join(cells)} </tr>'
+    )
+
+
+def _rated_table(caption: str, players: Sequence[Rated]) -> str:
+    heads = "".join(
+        f'<th scope="col" class="prb-tabella__fonte" title="{desk}">{desk[:3]}</th>' for desk in DESKS
+    )
+    return (
+        f'<table class="prb-tabella"> <caption class="sr-only"> {caption}: voto di ogni redazione </caption> '
+        f'<thead> <tr> <th scope="col" class="prb-tabella__chi">In campo</th> {heads} </tr> </thead> '
+        f"<tbody> {''.join(_rated_row(player) for player in players)} </tbody> </table>"
+    )
+
+
+def ratings_page(round: int, matches: Sequence[tuple[str, str, Sequence[Rated], Sequence[Rated]]]) -> str:
+    """Fantacalcio-Online's round ratings page: a tab per match, its clubs and score in the header, then a
+    section per club with the players who started and those on the bench, each desk's rating in a column."""
+    panes = []
+    for number, (home, away, home_players, away_players) in enumerate(matches):
+        sections = "".join(
+            f'<section class="prb-squadra"> <h2 class="prb-squadra__nome">{club}</h2> '
+            + _rated_table(
+                "Scesi in campo",
+                [player for player in players if player.came_on is None and not player.unused],
+            )
+            + _rated_table(
+                "In panchina", [player for player in players if player.came_on is not None or player.unused]
+            )
+            + "</section>"
+            for club, players in ((home, home_players), (away, away_players))
+        )
+        panes.append(
+            f'<div class="tab-pane" id="lineup-{number}" role="tabpanel"> <header class="prb-incontro"> '
+            f'<div class="prb-incontro__lato"> <a class="prb-incontro__nome" href="#">{home}</a> </div> '
+            '<div class="prb-incontro__centro"> <p class="prb-incontro__punteggio">1<span>:</span>0</p> '
+            '<p class="prb-incontro__stato prb-incontro__stato--chiusa">Terminata</p> '
+            '<p class="prb-incontro__data">08/11/2026 20:45</p> </div> '
+            '<div class="prb-incontro__lato prb-incontro__lato--ospite"> '
+            f'<a class="prb-incontro__nome" href="#">'
+            f'{away}</a> </div> </header> <div class="prb-squadre"> {sections} </div> </div>'
+        )
+    return (
+        f"<html><head><title>Voti Fantacalcio Serie A 2026/2027 - {round}ª Giornata</title></head><body>"
+        f'<div class="tab-content">{"".join(panes)}</div></body></html>'
+    )

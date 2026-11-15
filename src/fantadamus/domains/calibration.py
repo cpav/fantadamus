@@ -13,6 +13,7 @@ import math
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -23,6 +24,8 @@ from fantadamus.domains.cards import MatchNumbers
 from fantadamus.domains.fixtures.gold import matches
 from fantadamus.domains.fixtures.silver import FixtureRow
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
+from fantadamus.domains.review import Read, Round, player_round
+from fantadamus.domains.season.silver import PlayerSeasonRow
 from fantadamus.lake.decision_log import Decision, LoggedPlayer
 
 FINISHED_AFTER = dt.timedelta(hours=12)
@@ -320,6 +323,23 @@ class Outcome:
     clean_sheet: Result
 
 
+RatingFrom = Literal["reads", "page"]
+"""Where a set's rating comes from: the statistics reads around the round, or the ratings page."""
+
+
+def league_rating(
+    before: PlayerSeasonRow | None, after: PlayerSeasonRow | None, *, page: float | None
+) -> tuple[float | None, RatingFrom | None]:
+    """His rating in the round from the league's rater: from the statistics reads around it where they give it
+    exactly (the review's `player_round`), else the Fantacalcio.it desk's on the ratings page (mvp-sources
+    C6)."""
+    if before is not None and after is not None:
+        found = player_round(Read.of(before), Read.of(after))
+        if isinstance(found, Round) and found.rating is not None:
+            return found.rating, "reads"
+    return (page, "page") if page is not None else (None, None)
+
+
 class SetRow(BaseModel):
     """One player in a round's model set: the chances the model gave him, and what happened (mvp-recalibrate
     design C1). A substitute who got a rating didn't start and was rated; one who came on without a rating
@@ -346,6 +366,10 @@ class SetRow(BaseModel):
     """Whether his cameo is priced as an attacker's, by his first Mantra role, or flat; None without a value
     (mvp-recalibrate task 4)."""
     outcome: Outcome
+    rating: float | None = None
+    """His base rating from the league's rater, for the rating constants (mvp-sources R4.1); None without one,
+    as in a set kept before ratings were."""
+    rating_from: RatingFrom | None = None
 
 
 class CalibrationSet(BaseModel):

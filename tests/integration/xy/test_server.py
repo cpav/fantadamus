@@ -59,6 +59,7 @@ async def test_served_tools(tmp_path: Path) -> None:
         "submit_penalty_takers",
         "submit_player_season",
         "submit_probable_lineups",
+        "submit_ratings",
         "submit_suspensions",
         "submit_team_season",
     ]
@@ -116,6 +117,7 @@ async def test_schemas_spell_out_every_field(tmp_path: Path) -> None:
         "submit_other_fixtures": '"competition"',
         "submit_injuries": '"back_from"',
         "submit_suspensions": '"one_booking"',
+        "submit_ratings": '"desk"',
     }
     for name, field in shapes.items():
         assert field in (tools[name].description or ""), name

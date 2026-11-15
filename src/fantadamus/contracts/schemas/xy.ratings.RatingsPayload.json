@@ -1,0 +1,165 @@
+{
+  "contract": "xy.ratings.RatingsPayload",
+  "schema": {
+    "$defs": {
+      "DeskRating": {
+        "additionalProperties": false,
+        "properties": {
+          "desk": {
+            "enum": [
+              "Fantacalcio.it",
+              "Roma",
+              "Torino"
+            ],
+            "title": "Desk",
+            "type": "string"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "maximum": 10,
+                "minimum": 1,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The base rating, without bonuses; None for s.v.",
+            "title": "Rating"
+          }
+        },
+        "required": [
+          "desk",
+          "rating"
+        ],
+        "title": "DeskRating",
+        "type": "object"
+      },
+      "MatchRatings": {
+        "additionalProperties": false,
+        "properties": {
+          "away": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Away",
+            "type": "string"
+          },
+          "home": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Home",
+            "type": "string"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/$defs/PlayerRatings"
+            },
+            "maxItems": 60,
+            "title": "Players",
+            "type": "array"
+          }
+        },
+        "required": [
+          "home",
+          "away",
+          "players"
+        ],
+        "title": "MatchRatings",
+        "type": "object"
+      },
+      "PlayerRatings": {
+        "additionalProperties": false,
+        "properties": {
+          "came_on": {
+            "default": false,
+            "description": "He started on the bench",
+            "title": "Came On",
+            "type": "boolean"
+          },
+          "club": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Club",
+            "type": "string"
+          },
+          "minutes": {
+            "anyOf": [
+              {
+                "maximum": 130,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Minutes played, where the page says: a substitute's, or a starter's taken off",
+            "title": "Minutes"
+          },
+          "name": {
+            "description": "As the page writes him, his initial after his surname",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "ratings": {
+            "description": "Each desk that has published: a desk that hasn't is left out",
+            "items": {
+              "$ref": "#/$defs/DeskRating"
+            },
+            "maxItems": 3,
+            "title": "Ratings",
+            "type": "array"
+          },
+          "role": {
+            "enum": [
+              "P",
+              "D",
+              "C",
+              "A"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "club",
+          "name",
+          "role",
+          "ratings"
+        ],
+        "title": "PlayerRatings",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "A round's players with each desk's base rating.",
+    "properties": {
+      "matches": {
+        "items": {
+          "$ref": "#/$defs/MatchRatings"
+        },
+        "maxItems": 10,
+        "minItems": 1,
+        "title": "Matches",
+        "type": "array"
+      },
+      "round": {
+        "maximum": 38,
+        "minimum": 1,
+        "title": "Round",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "round",
+      "matches"
+    ],
+    "title": "RatingsPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

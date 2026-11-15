@@ -106,6 +106,7 @@ def test_due_reads_only_the_pages_due(tmp_path: Path) -> None:
             "other_fixtures",  # due, but no page of this collector carries it (mvp-sources C9)
             "injuries",
             "suspensions",
+            "match_ratings",  # round 9 has been played: its ratings are due (mvp-sources C9)
         ]
         second = collect_due(day_later, log)
         requests = [path for path, _ in site.requests]

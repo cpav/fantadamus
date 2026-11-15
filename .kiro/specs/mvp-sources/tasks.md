@@ -74,17 +74,18 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
     - P5 compares every number of both cards, every player's outlook and the lineup, with and without the pages, rest days
       included. The design notes what was settled (C5).
 
-- [ ] 6. Per-match ratings
+- [x] 6. Per-match ratings
   - Branch: `feat/so-6-ratings` · Depends on: 1 · ADRs: ADR-0007
-  - [ ] 6.1 The ratings reader for three desks, the contract, the silver table, the collector page with its switch and cadence, and
+  - [x] 6.1 The ratings reader for three desks, the contract, the silver table, the collector page with its switch and cadence, and
     `submit_ratings`.
     - _Requirements: R1.2, R4.2, R7.1_
     - _Test: `tests/unit/sources/test_fco_ratings.py`; `tests/contract/test_sources_contracts.py::test_ratings_payload`;
       `tests/integration/sources/test_ratings_page.py::test_read_stored_and_switched_off`_
-  - [ ] 6.2 The league's rating in each calibration set, from the reads or the page; `fantadamus recalibrate` counts it as evidence.
+  - [x] 6.2 The league's rating in each calibration set, from the reads or the page; `fantadamus recalibrate` counts it as evidence.
     - _Requirements: R4.1, R4.3_
     - _Test: **AT-4** `tests/acceptance/sources/test_ratings.py::test_at4_from_two_reads_by_hand`, `::test_at4_from_the_page`,
-      `::test_at4_counted_as_evidence`_
+      `::test_at4_counted_as_evidence`, `::test_at4_kept_in_the_set`; `tests/contract/test_real_pages.py::test_the_ratings_pages`_
+    - The design notes the real page's layout and the round each read is for (C6).
 
 - [ ] 7. Rater bias
   - Branch: `feat/so-7-raters` · Depends on: 6 · ADRs: none
