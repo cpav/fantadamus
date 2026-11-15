@@ -33,7 +33,7 @@ page change it more often in the last day, so they alert too (decision 1).
 |---|---|
 | The call | The advised eleven, its formation, the captain and vice where the league has them, and the first bench place in each role |
 | Alert window | From `ALERT_WINDOW_HOURS` *(start)*: 24 before the round's deadline, until the deadline |
-| Baseline | The call last compared: the last one alerted, or else the last lineup told to the user in the round |
+| Baseline | The call last compared: the newer of the last one alerted and the last lineup told to the user in the round (design decision 2, for approval) |
 
 ## Requirements
 
