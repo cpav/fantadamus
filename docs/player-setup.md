@@ -141,7 +141,10 @@ ask, even minutes before the deadline. Every 15 minutes it looks at what's due, 
 round page only if something is: lineups twice a day from three days before a match, every 3 hours on the
 last day; odds daily, then every 3 hours; official lineups every 15 minutes in the 75 minutes before
 kickoff. Once a day it also reads Fantacalcio.it's statistics page, with every player's season figures, and its penalty-takers
-page.
+page. It reads the injured and suspended pages daily, twice a day in the two days before a round; Wikipedia's pages
+of the Champions League, Europa League, Conference League and Coppa Italia weekly, daily in a week with one of their
+matches; and Fantacalcio-Online's round ratings the morning after each round. Rest days, injuries, bans and a rater's
+claim show on the match card and the outlook as context: what they say never moves a number.
 Nothing runs while your Mac sleeps.
 
 Paste this whole block into Terminal. It writes the schedule with your own paths:

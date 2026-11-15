@@ -64,6 +64,14 @@ class RestDays(BaseModel):
     """What to say: "Inter: 3 days' rest since the Champions League on Wednesday 28 October; …"."""
 
 
+class RestLine(BaseModel):
+    """What a card says of a side's rest: its line, and whether it's a European week. The outlook has the rest
+    days in full; a card has two sides to fit within its size (mvp-sources C9)."""
+
+    line: str | None
+    european_week: bool
+
+
 @dataclass(frozen=True)
 class Rested:
     days: RestDays

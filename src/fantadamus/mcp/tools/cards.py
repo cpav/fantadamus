@@ -42,7 +42,7 @@ from fantadamus.domains.cards import (
     with_news,
     your_players,
 )
-from fantadamus.domains.context import RestDays
+from fantadamus.domains.context import RestDays, RestLine
 from fantadamus.domains.fixtures.gold import deadline, matches, next_round
 from fantadamus.domains.fixtures.silver import FixtureRow
 from fantadamus.domains.odds.gold import TeamXg
@@ -78,9 +78,9 @@ class CardSide(BaseModel):
     disputed: list[Place]
     out: list[Out]
     takers: list[Taker]
-    rest: RestDays
-    """Its matches before and after this one, in any competition: context that moves no number (mvp-sources
-    R2.3)."""
+    rest: RestLine
+    """Its rest days' line, from its matches before and after this one in any competition: context that moves
+    no number (mvp-sources R2.3, C9)."""
 
 
 class Card(BaseModel):
@@ -470,7 +470,7 @@ def _side(
         disputed=found.disputed,
         out=with_news(found.out, found.club, reported),
         takers=order,
-        rest=rest,
+        rest=RestLine(line=rest.line, european_week=rest.european_week),
     )
 
 

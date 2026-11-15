@@ -147,7 +147,8 @@ E = expected vote + clean-sheet bonus × P(clean sheet) − malus per goal × ex
 
 - **Context** (coach changes, dressing-room rows, rumours, tactical shifts) mostly widens the uncertainty
   on who plays. Any shift in the expected score must be bounded, logged and shown. Midweek European
-  fixtures are the most reliable sign of rotation.
+  fixtures are the most reliable sign of rotation. Since `mvp-sources`, the card and the outlook show each side's
+  rest days and the injury and ban detail the pages give; both are context and move no chance or value.
 - **Overrides.** When a user goes against the advice, show the cost once, in points and in probability, and
   then help with their choice.
 - **Audit decisions, not results.** Log every published probability (p_start, P(scores), P(clean sheet))
@@ -155,6 +156,12 @@ E = expected vote + clean-sheet bonus × P(clean sheet) − malus per goal × ex
   to the market's numbers and the users' overrides, and recalibrate the *(start)* constants. The market's
   match chances (the result, three goals or more, both teams scoring, each side's clean sheet) are scored the
   same way, to show how much is the match's own uncertainty.
+- **Ratings as evidence.** Each round's calibration set keeps the league's rating of each player: from the statistics
+  reads around the round where they give it exactly, else the Fantacalcio.it desk's on the round ratings page. It's
+  the evidence the rating constants wait for (`MINIMUM_SAMPLE["ratings"]` *(start)*: 1,500 rated players).
+- **A rater's bias** against the other two desks, over the matches all three rated, is measured with a 90% interval
+  and shown as a claim from 0.25 of a point over 5 matches *(start)*. It's already inside a player's average rating,
+  so it never moves his expected vote.
 - **Changing a value.** `fantadamus recalibrate` proposes values checked where they weren't fitted; one lands only
   once the owner approves it, logged in the [calibration log](calibration-log.md). A replay of an earlier time, a
   review's expected costs at the lock among them, works on today's values: the decision log keeps what was told,
