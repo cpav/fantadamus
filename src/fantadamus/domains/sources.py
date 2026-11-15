@@ -56,6 +56,8 @@ _PAGES = (
     (r"fantacalcio\.it/rigoristi-serie-a", "Fantacalcio.it, penalty takers"),
     (r"fantacalcio\.it/statistiche-serie-a", "Fantacalcio.it, statistics"),
     (r"fantacalcio\.it/probabili-formazioni-serie-a", "Fantacalcio.it, probable lineups"),
+    (r"fantacalcio\.it/infortunati", "Fantacalcio.it, injuries"),
+    (r"fantacalcio\.it/squalificati", "Fantacalcio.it, bans"),
     (r"/wiki/[^/?]*UEFA_Champions_League", "Wikipedia, Champions League"),
     (r"/wiki/[^/?]*UEFA_Europa_League", "Wikipedia, Europa League"),
     (r"/wiki/[^/?]*UEFA_Conference_League", "Wikipedia, Conference League"),

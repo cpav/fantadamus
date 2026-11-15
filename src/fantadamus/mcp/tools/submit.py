@@ -108,7 +108,8 @@ def register(
         return submit(OTHER_FIXTURES, payload, source_url, captured_at, published_at)
 
     @server.tool(
-        description="Submit each club's injured players from Fantacalcio.it's injured page. For each, read "
+        description="Submit the whole of Fantacalcio.it's injured page at once (only the newest submission "
+        "counts): each club's injured players. For each, read "
         "his sentence into: the kind (muscle, knock, fracture, ligament, surgery, illness, 'national team' "
         "for an injury with his national team, else other), the body part where it says (thigh, calf, knee, "
         "ankle, adductor, hamstring, foot, shoulder, back, other), and when he's back: a window, as "
@@ -126,7 +127,8 @@ def register(
         return submit(INJURIES, payload, source_url, captured_at, published_at)
 
     @server.tool(
-        description="Submit each club's banned players, with the rounds they miss where the page names them, "
+        description="Submit the whole page at once (only the newest submission counts): each club's banned "
+        "players, with the rounds they miss where the page names them, "
         "and those one booking from a ban (diffidati), from Fantacalcio.it's squalificati-e-diffidati page. "
         'Shape: {"clubs": [{"club": "Inter", "banned": [{"name": "Rossi", "rounds": [12]}], "one_booking": '
         '["Bianchi"]}, ...]}. ' + PROVENANCE

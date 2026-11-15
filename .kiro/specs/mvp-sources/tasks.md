@@ -63,13 +63,16 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
       `::test_due_daily_and_twice_a_day_before_a_round`; `tests/contract/test_real_pages.py::test_the_unavailable_pages`_
     - The rules' order and the real pages' results are noted in the design (C4).
 
-- [ ] 5. The detail on the answers
+- [x] 5. The detail on the answers
   - Branch: `feat/so-5-detail` · Depends on: 4 · ADRs: none
-  - [ ] 5.1 The reason and the return on the card's out list, the lineup's concerns and the outlook; one booking from a ban; the
+  - [x] 5.1 The reason and the return on the card's out list, the lineup's concerns and the outlook; one booking from a ban; the
     disagreement; no chance moves.
     - _Requirements: R3.2, R3.3_
     - _Test: **AT-3** `tests/acceptance/sources/test_detail.py::test_at3_detail_on_the_answers`, `::test_at3_one_booking_from_a_ban`,
-      `::test_at3_a_disagreement`; **P5** `tests/property/sources/test_no_number_moves.py::test_p5_context_moves_nothing`_
+      `::test_at3_a_disagreement`; **P5** `tests/property/sources/test_no_number_moves.py::test_p5_context_moves_nothing`;
+      `tests/unit/sources/test_news.py`_
+    - P5 compares every number of both cards, every player's outlook and the lineup, with and without the pages, rest days
+      included. The design notes what was settled (C5).
 
 - [ ] 6. Per-match ratings
   - Branch: `feat/so-6-ratings` · Depends on: 1 · ADRs: ADR-0007

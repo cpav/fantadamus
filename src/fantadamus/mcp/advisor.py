@@ -30,15 +30,18 @@ from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.availability.consensus import Availability, OfficialView, OutletView
 from fantadamus.domains.availability.gold import availability
+from fantadamus.domains.availability.news import News, OutDetail, current, news_of, page_disagreement
 from fantadamus.domains.availability.silver import (
+    INJURIES,
     LINEUP_VIEWS,
     OFFICIAL_LINEUPS,
     OUTLET_VIEWS,
+    SUSPENSIONS,
     LineupViewRow,
     OutletViewRow,
 )
 from fantadamus.domains.context import RestDays, Rested, rest_days
-from fantadamus.domains.facts import SilverRow, Source, latest_by, read_silver
+from fantadamus.domains.facts import Domain, SilverRow, Source, latest_by, read_silver
 from fantadamus.domains.fixtures.gold import deadline, fixture, matches, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES, FixtureRow
 from fantadamus.domains.freshness import FACTS_WINDOW, Fact, is_fresh
@@ -97,6 +100,12 @@ SHARE_SHOWN = 0.1
 _BETTER_TO_HAVE = {"probable_lineups", "match_odds"}
 """What a lineup goes ahead without, on what's known and with a warning (mvp-lineup R5.5). "X or Y?" asks
 first."""
+_CONTEXT: dict[Fact, Domain[Any, Any]] = {
+    "other_fixtures": OTHER_FIXTURES,
+    "injuries": INJURIES,
+    "suspensions": SUSPENSIONS,
+}
+"""What answers show beside the numbers, read before an answer when stale (mvp-sources C9)."""
 _LATEST = dt.datetime.max.replace(tzinfo=dt.UTC)
 REFRESH = (
     "Some facts are missing or stale. For each item read with `read_page`, read its pages best first until "
@@ -217,6 +226,9 @@ class PlayerAnswer(BaseModel):
     movement: Movement | None = None
     rest: RestDays | None = None
     """His club's rest days before the match: context that moves no number (mvp-sources R2.3)."""
+    out: OutDetail | None = None
+    """Why the injured or suspended page has him out, and when he's back (mvp-sources R3.2)."""
+    one_booking_from_a_ban: bool = False
 
 
 class Flip(BaseModel):
@@ -272,6 +284,9 @@ class Facts:
     odds: Sequence[Any]
     other: Sequence[Any] = ()
     """The other competitions' matches (mvp-sources C2)."""
+    injuries: Sequence[Any] = ()
+    suspensions: Sequence[Any] = ()
+    """What the injured and suspended pages list (mvp-sources C4)."""
 
     @classmethod
     def read(cls, lake: LakeStore, as_of: dt.datetime) -> Facts:
@@ -287,6 +302,8 @@ class Facts:
             officials=read_silver(lake, OFFICIAL_LINEUPS, since, as_of),
             odds=read_silver(lake, ODDS, since, as_of),
             other=read_silver(lake, OTHER_FIXTURES, since, as_of),
+            injuries=read_silver(lake, INJURIES, since, as_of),
+            suspensions=read_silver(lake, SUSPENSIONS, since, as_of),
         )
 
 
@@ -342,6 +359,8 @@ class PlayerFacts:
     penalty list says about him (mvp-lineup R10.2, R10.4, R10.5)."""
     penalty_share: float
     """His share of his club's penalties (mvp-lineup R10.1)."""
+    news: News | None = None
+    """What the injured and suspended pages say about him: shown, never priced (mvp-sources R3.3)."""
 
 
 @dataclass(frozen=True)
@@ -453,20 +472,25 @@ class Advisor:
             club, kickoff, matches(facts.fixtures, as_of), list(other.values()), self.clubs.names
         )
 
-    def context_due(self, kickoff: dt.datetime | None) -> list[str]:
-        """The context to read before an answer that shows it (mvp-sources C9): the other competitions'
-        matches when none of their pages' reads is fresh for the match at `kickoff`; without one, the next
-        round's first."""
+    def context_due(
+        self, kickoff: dt.datetime | None, wanted: Collection[Fact] = tuple(_CONTEXT)
+    ) -> list[str]:
+        """The context to read before an answer that shows it (mvp-sources C9): of `wanted`, the facts none of
+        whose reads is fresh for the match at `kickoff`; without one, the next round's first."""
         now = self.clock().astimezone(dt.UTC)
         since = now - FACTS_WINDOW
         if kickoff is None:
             fixtures = read_silver(self.lake, FIXTURES, since, now)
             round = next_round(fixtures, now)
             kickoff = deadline(fixtures, round, now) if round is not None else None
-        rows = read_silver(self.lake, OTHER_FIXTURES, since, now)
         confirmed = self.collect_log.confirmed(now) if self.collect_log is not None else {}
-        fresh = _fresh(rows, "other_fixtures", now, kickoff, confirmed.get(OTHER_FIXTURES.table.name))
-        return [] if fresh else ["other_fixtures"]
+        due: list[str] = []
+        for fact in wanted:
+            domain = _CONTEXT[fact]
+            rows = read_silver(self.lake, domain, since, now)
+            if not _fresh(rows, fact, now, kickoff, confirmed.get(domain.table.name)):
+                due.append(fact)
+        return due
 
     def refresh_item(self, fact: str, why: Why, about: str, **values: str) -> RefreshItem:
         entry = self.reading[fact]
@@ -661,6 +685,11 @@ class Advisor:
                 need(self.refresh_item(fact, why, about))
         fixtures = fresh(facts.fixtures, "fixtures", as_of, confirmed=confirmed.get(FIXTURES.table.name))
         round = next_round(fixtures, as_of)
+        lock = deadline(fixtures, round, as_of) if round is not None else None
+        injured = current(fresh(facts.injuries, "injuries", as_of, lock, confirmed.get(INJURIES.table.name)))
+        banned = current(
+            fresh(facts.suspensions, "suspensions", as_of, lock, confirmed.get(SUSPENSIONS.table.name))
+        )
         if round is None:
             stale = next_round(facts.fixtures, as_of) is not None
             need(self.refresh_item("fixtures", "stale" if stale else "missing", "the next round's fixtures"))
@@ -700,7 +729,8 @@ class Advisor:
                 )
                 notes = self._disagreements(player, match, fixtures, teams, as_of)
                 notes += self._taker_notes(player, order, mates, share, facts.takers, seasons, as_of)
-                sides.append(PlayerFacts(player, form, table, order, match, present, xg, notes, share))
+                news = news_of(player, round, injured, banned, mates) if round is not None else None
+                sides.append(PlayerFacts(player, form, table, order, match, present, xg, notes, share, news))
 
         first_kickoff = deadline(fixtures, round, as_of) if round is not None else None
         return Gathered(sides, round, first_kickoff, fixtures, teams, plan, known)
@@ -1037,6 +1067,11 @@ class Advisor:
                 notes.append("No over/under 2.5 was found: goal chances come from the 1X2 alone.")
         if rested is not None:
             sources += rested.sources
+        news = side.news
+        if news is not None:
+            sources += news.sources
+            if (said := page_disagreement(news, present)) is not None:
+                notes.append(said)
         home = match is not None and match.home == side.player.club
         form = side.form
         if form.role == "P" and form.goals_conceded is None:
@@ -1075,6 +1110,8 @@ class Advisor:
             notes=notes,
             sources=_unique(sources),
             rest=rested.days if rested is not None else None,
+            out=news.out if news is not None else None,
+            one_booking_from_a_ban=news is not None and news.one_booking,
         )
 
 

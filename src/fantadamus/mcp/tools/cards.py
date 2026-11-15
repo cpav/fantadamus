@@ -26,6 +26,7 @@ from fantadamus.domains.cards import (
     MatchNumbers,
     Out,
     Place,
+    Reported,
     RotationRisk,
     Scorer,
     Taker,
@@ -38,6 +39,7 @@ from fantadamus.domains.cards import (
     round_lines,
     scoring_rules,
     takers,
+    with_news,
     your_players,
 )
 from fantadamus.domains.context import RestDays
@@ -271,7 +273,9 @@ def register(server: MCPServer, advisor: Advisor, squads: SquadStore) -> None:
         "competition, and whether one is European within three days; context too); each side's likely "
         "eleven with how sure it is, its disputed places naming the"
         " outlets that disagree, and who's out, said as 'listed as out by 3 outlets', never "
-        "'injured'; the penalty takers with their record; the likeliest scorers; rotation "
+        "'injured', unless the injured or suspended page gives his reason and return: then say them, "
+        "and any disagreement; one booking from a ban, where marked; the penalty takers with their "
+        "record; the likeliest scorers; rotation "
         "risks. Sources at the bottom. Round chances the way people say them. Without stored "
         "league rules the points are Classic's (classic_rules): say so. 'improve' lists what "
         "could make it better: read with read_page, submit, ask again. Other statuses: "
@@ -359,6 +363,7 @@ def _answer(
             listed=Listed(player=side.player, role=side.form.role, present=side.present),
             value=model_value(model_inputs(side, per_match), scoring_for(league, side.form.role)),
             form=side.form,
+            news=side.news,
         )
         for side in sides
         if side.present is not None
@@ -368,12 +373,18 @@ def _answer(
     orders = {side.player.club: side.order for side in sides}
     listed = [part.listed for part in valued]
     rested = {club: advisor.rest(club, match.kickoff_at, facts, when) for club in clubs}
+    reported = [
+        Reported(side.player, side.form.role, side.news, side.present)
+        for side in sides
+        if side.news is not None
+    ]
     card_sides = [
         _side(
             advisor,
             lineups(club, listed, match.kickoff_at),
             takers(orders.get(club), club, valued),
             rested[club].days,
+            reported,
         )
         for club in clubs
     ]
@@ -386,7 +397,11 @@ def _answer(
     ]
     by_id = {part.listed.player.player_id: part for part in valued}
     shown = [by_id[player_id] for player_id in dict.fromkeys(named)]
-    sources = [*sources_of(sides), *(source for club in clubs for source in rested[club].sources)]
+    sources = [
+        *sources_of(sides),
+        *(source for club in clubs for source in rested[club].sources),
+        *(source for part in reported for source in part.news.sources),
+    ]
     lines = source_lines(sources, advisor, when)
     times = [line.captured_at for line in lines]
     round = match.round
@@ -439,14 +454,16 @@ def _answer(
     return CardResult(status="card", message=_message(card, improve), card=rounded, improve=improve)
 
 
-def _side(advisor: Advisor, found: Lineups, order: list[Taker], rest: RestDays) -> CardSide:
+def _side(
+    advisor: Advisor, found: Lineups, order: list[Taker], rest: RestDays, reported: Sequence[Reported]
+) -> CardSide:
     return CardSide(
         club=advisor.clubs.names[found.club],
         eleven=[starter.player_id for starter in found.eleven],
         official=found.official,
         official_due=found.official_due.astimezone(ROME) if found.official_due else None,
         disputed=found.disputed,
-        out=found.out,
+        out=with_news(found.out, found.club, reported),
         takers=order,
         rest=rest,
     )
