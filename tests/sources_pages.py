@@ -5,7 +5,7 @@ to a public repository (design, testing strategy)."""
 from __future__ import annotations
 
 import datetime as dt
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 MONTHS = (
@@ -110,3 +110,79 @@ def wiki_page(boxes: Sequence[str], prose: str = UEFA_PROSE) -> str:
         "<ref>{{cite web |url=https://example.org/ |title=X}}</ref>\n\n"
         f"==Matches==\n{prose}\n===Matchday 1===\n" + "".join(boxes) + "\n==References==\n{{Reflist}}\n"
     )
+
+
+def _club_card(number: int, club: str, columns: str) -> str:
+    return (
+        f'<div id="team-{number}" class="card team-card"><header class="team-info">'
+        f'<figure class="team-badge"><img class="team-badge" alt="Stemma {club}" title="{club}" /></figure>'
+        f'<span class="team-name">{club}</span></header><hr />'
+        f'<div class="row row-responsive">{columns}</div></div>'
+    )
+
+
+def _page(title: str, cards: str) -> str:
+    return (
+        f"<html><head><title>{title}</title></head><body><main>"
+        '<ul class="team-list"><li class="team-item">Alfa</li></ul>'
+        f"{cards}"
+        '<div class="match-pill"><span class="team-home">Alfa</span></div>'
+        "</main></body></html>"
+    )
+
+
+def injured_page(
+    clubs: Mapping[str, Sequence[tuple[str, str]]], *, title: str = "Infortunati Serie A"
+) -> str:
+    """Fantacalcio.it's injured page: a card per club, each player's name and a sentence on his injury."""
+    cards = "".join(
+        _club_card(
+            number,
+            club,
+            '<div class="col"><ul class="unstyled">'
+            + "".join(
+                f'<li> <strong class="item-name">{name}</strong> '
+                f'<div class="item-description"><p>{sentence}&nbsp;</p></div> </li>'
+                for name, sentence in players
+            )
+            + "</ul></div>",
+        )
+        for number, (club, players) in enumerate(clubs.items(), start=1)
+    )
+    return _page(title, cards)
+
+
+def _listed(label: str, heading: str, rows: str) -> str:
+    body = f'<ul class="unstyled">{rows}</ul>' if rows else '<div class="empty-list-message">Nessuno</div>'
+    return f'<div class="col"><header><strong class="label {label}">{heading}</strong></header>{body}</div>'
+
+
+def suspended_page(
+    clubs: Mapping[str, tuple[Sequence[tuple[str, str]], Sequence[str]]],
+    *,
+    title: str = "Squalificati e diffidati Serie A",
+) -> str:
+    """Fantacalcio.it's suspended-and-diffidati page: a card per club, who's banned with a sentence on the
+    round he misses, and who's one booking from a ban; an empty list says "Nessuno"."""
+    cards = "".join(
+        _club_card(
+            number,
+            club,
+            _listed(
+                "label-danger",
+                "Squalificati",
+                "".join(
+                    f'<li> <strong class="item-name">{name}</strong> '
+                    f'<p class="item-description">{why}</p> </li>'
+                    for name, why in banned
+                ),
+            )
+            + _listed(
+                "label-warn",
+                "Diffidati",
+                "".join(f'<li> <strong class="item-name">{name}</strong> </li>' for name in warned),
+            ),
+        )
+        for number, (club, (banned, warned)) in enumerate(clubs.items(), start=1)
+    )
+    return _page(title, cards)

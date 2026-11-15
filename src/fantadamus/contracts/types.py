@@ -15,6 +15,10 @@ def _from_iso(value: object) -> object:
     return dt.datetime.fromisoformat(value) if isinstance(value, str) else value
 
 
+def _date_from_iso(value: object) -> object:
+    return dt.date.fromisoformat(value) if isinstance(value, str) else value
+
+
 def _to_utc(value: dt.datetime) -> dt.datetime:
     return value.astimezone(dt.UTC)
 
@@ -26,6 +30,8 @@ def _readable_url(value: str) -> str:
 
 
 UtcDatetime = Annotated[AwareDatetime, BeforeValidator(_from_iso), AfterValidator(_to_utc)]
+IsoDate = Annotated[dt.date, BeforeValidator(_date_from_iso)]
+"""A calendar date, e.g. 2026-11-21; ISO 8601 text is accepted, as for `UtcDatetime`."""
 SourceUrl = Annotated[
     str, Field(max_length=2083, json_schema_extra={"format": "uri"}), AfterValidator(_readable_url)
 ]

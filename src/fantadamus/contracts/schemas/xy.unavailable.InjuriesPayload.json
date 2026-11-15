@@ -1,0 +1,144 @@
+{
+  "contract": "xy.unavailable.InjuriesPayload",
+  "schema": {
+    "$defs": {
+      "ClubInjuries": {
+        "additionalProperties": false,
+        "properties": {
+          "club": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Club",
+            "type": "string"
+          },
+          "players": {
+            "description": "Its injured players; none is an empty list",
+            "items": {
+              "$ref": "#/$defs/Injury"
+            },
+            "maxItems": 40,
+            "title": "Players",
+            "type": "array"
+          }
+        },
+        "required": [
+          "club",
+          "players"
+        ],
+        "title": "ClubInjuries",
+        "type": "object"
+      },
+      "Injury": {
+        "additionalProperties": false,
+        "properties": {
+          "back_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The earliest return the page gives",
+            "title": "Back From"
+          },
+          "back_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The end of that window: late November is 2026-11-21 to 2026-11-30",
+            "title": "Back Until"
+          },
+          "body_part": {
+            "anyOf": [
+              {
+                "enum": [
+                  "thigh",
+                  "calf",
+                  "knee",
+                  "ankle",
+                  "adductor",
+                  "hamstring",
+                  "foot",
+                  "shoulder",
+                  "back",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Where, when the sentence says",
+            "title": "Body Part"
+          },
+          "kind": {
+            "description": "What's wrong; 'other' when the sentence doesn't say",
+            "enum": [
+              "muscle",
+              "knock",
+              "fracture",
+              "ligament",
+              "surgery",
+              "illness",
+              "national team",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "description": "The player, as the page names him",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "to_be_assessed": {
+            "default": false,
+            "description": "The page says his return is to be assessed",
+            "title": "To Be Assessed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "kind"
+        ],
+        "title": "Injury",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Each club's injured players, from the injured page.",
+    "properties": {
+      "clubs": {
+        "items": {
+          "$ref": "#/$defs/ClubInjuries"
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "title": "Clubs",
+        "type": "array"
+      }
+    },
+    "required": [
+      "clubs"
+    ],
+    "title": "InjuriesPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

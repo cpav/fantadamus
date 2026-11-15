@@ -15,6 +15,8 @@ Fact = Literal[
     "team_season",
     "penalty_takers",
     "other_fixtures",
+    "injuries",
+    "suspensions",
 ]
 FACTS_WINDOW = dt.timedelta(days=14)
 """How far back an answer reads: twice the longest freshness target, so that movement up to a week back

@@ -89,6 +89,23 @@ rest." No number moves (decision 2).
   **submit tools** `submit_injuries` and `submit_suspensions`.
 - Names resolve among the club's players, as the round page's do.
 
+*Set in task 4*, from the real pages read on 2026-11-15, whose sentences were seen but not kept:
+
+- **The kind** is the first that fits, in the order: surgery, fracture, ligament, muscle, knock, illness,
+  national team. "Muscle" also takes *muscolare* ("risentimento muscolare"). "La sosta per le Nazionali", the
+  international break, isn't an injury with the national team.
+- **The body part**: the hamstring and the adductors are named before the thigh.
+- **The return window** needs a word for coming back before it (*rientro*, *recuperabile*, *tornare*, *ipotesi*
+  …), so that "fermo da inizio ottobre" (out since early October) isn't taken for one.
+  - A month before the read's month is next year's.
+  - A stop counted from a date the sentence gives, and already run out by the read, gives no return.
+- **On the real page**, all 20 clubs read without a problem. 55 of 64 sentences got a kind and 62 a return
+  window or "to be assessed"; the real-page check asks for at least 75%.
+- **Names** are kept as the page writes them and resolve when an answer reads them (task 5).
+- **Cadence and freshness.** The pages are read daily, and twice a day in the 48 hours before the round's first
+  kickoff. The answers' freshness is 24 hours, and 12 within 24 hours of the match, the window every other fact
+  uses.
+
 ### C5. Detail on the answers (`domains/cards.py`, `mcp/tools/lineup.py`, the outlook; R3.2, R3.3)
 
 - `Out` gains `reason` and `back` ("thigh muscle injury", "back late November"); a banned player's reason is "banned

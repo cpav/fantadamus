@@ -1,11 +1,14 @@
 """Silver `lineup_views` and `official_lineups`: every listed name with its status, as the outlet wrote it
-(R3.1, R4.1). Names are resolved to players on read, so a name becomes a player once his profile is in."""
+(R3.1, R4.1); and silver `injuries` and `suspensions`, who the injured and suspended pages list and why
+(mvp-sources C4). Names are resolved to players on read, so a name becomes a player once his profile is in."""
 
 from __future__ import annotations
 
+import datetime as dt
 from typing import Literal
 
 from fantadamus.contracts.xy.lineups import OfficialLineupPayload, OutletLineupPayload, ProbableLineupPayload
+from fantadamus.contracts.xy.unavailable import InjuriesPayload, SuspensionsPayload
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.availability.consensus import Listed
 from fantadamus.domains.facts import PROVENANCE_COLUMNS, Domain, RefusedError, SilverRow, Source
@@ -172,3 +175,83 @@ OUTLET_VIEWS = Domain(
         "INSERT INTO outlet_views VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
+
+
+class InjuryRow(SilverRow):
+    club: str
+    name: str
+    kind: str
+    body_part: str | None
+    back_from: dt.date | None
+    back_until: dt.date | None
+    to_be_assessed: bool
+
+
+def _injury_rows(payload: InjuriesPayload, clubs: Clubs, source: Source) -> list[InjuryRow]:
+    return [
+        InjuryRow(**source.model_dump(), club=clubs.key(row.club), **player.model_dump())
+        for row in payload.clubs
+        for player in row.players
+    ]
+
+
+INJURIES = Domain(
+    "injuries",
+    InjuriesPayload,
+    InjuryRow,
+    _injury_rows,
+    Table(
+        "injuries",
+        f"CREATE TEMP TABLE injuries ({PROVENANCE_COLUMNS}, club VARCHAR, name VARCHAR, kind VARCHAR, "
+        "body_part VARCHAR, back_from DATE, back_until DATE, to_be_assessed BOOLEAN)",
+        "INSERT INTO injuries VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ),
+)
+"""`InjuriesPayload`: each club's injured players, with the kind, body part and return the rules found."""
+
+
+class SuspensionRow(SilverRow):
+    club: str
+    name: str
+    status: Literal["banned", "one booking"]
+    round: int | None
+    """A round a banned player misses; None for one booking from a ban, or a ban whose rounds aren't given."""
+
+
+def _rounds(rounds: list[int]) -> list[int | None]:
+    """Each round banned; a ban whose rounds the page doesn't give is one row without a round."""
+    return [*rounds] if rounds else [None]
+
+
+def _suspension_rows(payload: SuspensionsPayload, clubs: Clubs, source: Source) -> list[SuspensionRow]:
+    rows: list[SuspensionRow] = []
+    for row in payload.clubs:
+        club = clubs.key(row.club)
+        for banned in row.banned:
+            rows += [
+                SuspensionRow(
+                    **source.model_dump(), club=club, name=banned.name, status="banned", round=round
+                )
+                for round in _rounds(banned.rounds)
+            ]
+        rows += [
+            SuspensionRow(**source.model_dump(), club=club, name=name, status="one booking", round=None)
+            for name in row.one_booking
+        ]
+    return rows
+
+
+SUSPENSIONS = Domain(
+    "suspensions",
+    SuspensionsPayload,
+    SuspensionRow,
+    _suspension_rows,
+    Table(
+        "suspensions",
+        f"CREATE TEMP TABLE suspensions ({PROVENANCE_COLUMNS}, club VARCHAR, name VARCHAR, status VARCHAR, "
+        "round BIGINT)",
+        "INSERT INTO suspensions VALUES (?, ?, ?, ?, ?, ?, ?)",
+    ),
+)
+"""`SuspensionsPayload`: a row per round each banned player misses, and one for each player a booking from a
+ban."""

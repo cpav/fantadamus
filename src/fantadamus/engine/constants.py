@@ -126,10 +126,19 @@ FRESH_FOR_HOURS = {
     "team_season": 7 * 24,
     "penalty_takers": 48,  # read daily, so that a change is noticed (mvp-lineup R10.3)
     "fixtures": 7 * 24,
-    "other_fixtures": 7
-    * 24,  # and a day near a match, when a midweek kickoff may have moved (mvp-sources R7.1)
+    # The new sources' (mvp-sources R7.1): tighter near a match, when a midweek kickoff may have moved or a
+    # player's return changed
+    "other_fixtures": 7 * 24,
+    "injuries": 24,
+    "suspensions": 24,
 }
-FRESH_NEAR_MATCH_HOURS = {"probable_lineups": 3, "match_odds": 6, "other_fixtures": 24}
+FRESH_NEAR_MATCH_HOURS = {
+    "probable_lineups": 3,
+    "match_odds": 6,
+    "other_fixtures": 24,
+    "injuries": 12,
+    "suspensions": 12,
+}
 NEAR_MATCH_HOURS = 24
 
 # Rest days (mvp-sources C3), (start)

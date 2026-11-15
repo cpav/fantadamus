@@ -1,0 +1,92 @@
+{
+  "contract": "xy.unavailable.SuspensionsPayload",
+  "schema": {
+    "$defs": {
+      "Banned": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "rounds": {
+            "default": [],
+            "description": "The rounds he misses, where the page says; none if it doesn't",
+            "items": {
+              "maximum": 38,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "maxItems": 10,
+            "title": "Rounds",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "Banned",
+        "type": "object"
+      },
+      "ClubBans": {
+        "additionalProperties": false,
+        "properties": {
+          "banned": {
+            "default": [],
+            "description": "Its players banned",
+            "items": {
+              "$ref": "#/$defs/Banned"
+            },
+            "maxItems": 20,
+            "title": "Banned",
+            "type": "array"
+          },
+          "club": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Club",
+            "type": "string"
+          },
+          "one_booking": {
+            "default": [],
+            "description": "Its players one booking from a ban (diffidati)",
+            "items": {
+              "maxLength": 60,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "One Booking",
+            "type": "array"
+          }
+        },
+        "required": [
+          "club"
+        ],
+        "title": "ClubBans",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Each club's banned players and those one booking from a ban, from the suspended-and-diffidati page.",
+    "properties": {
+      "clubs": {
+        "items": {
+          "$ref": "#/$defs/ClubBans"
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "title": "Clubs",
+        "type": "array"
+      }
+    },
+    "required": [
+      "clubs"
+    ],
+    "title": "SuspensionsPayload",
+    "type": "object"
+  },
+  "version": "1.0.0"
+}
