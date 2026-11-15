@@ -108,7 +108,7 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
     - Approved on 2026-11-15 ("approve the trial"). The trial starts once the owner has created The Odds API account
       and put its key in private configuration.
 
-- [ ] 9. A real check and this slice's sign-off
+- [x] 9. A real check and this slice's sign-off
   - Branch: `docs/so-9-gate` · Depends on: 2, 3, 4, 5, 6, 7, 8 · ADRs: none
   - [x] 9.1 The budgets with the new facts, and the docs: answer formats, method §A8, the player guide.
     - _Requirements: R7.2, R8.1_
@@ -121,6 +121,6 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
     acceptance tests.
     - _Requirements: R7.2; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 9.4 **Owner:** sign off this slice.
+  - [x] 9.4 **Owner:** sign off this slice.
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the report_
