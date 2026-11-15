@@ -212,6 +212,7 @@ SETTINGS = {
     "EUROPEAN_WEEK_DAYS",  # what the rest-days line calls a European week (mvp-sources C3)
     "RATER_BIAS_SHOWN",  # when a rater's bias is shown as a claim (mvp-sources C7)
     "RATER_BIAS_MATCHES",
+    "ALERT_CHARACTERS",  # how much of an alert's text is shown (mvp-alerts C3)
 }
 """How the answers are worked out and shown, not estimates: nothing to calibrate."""
 

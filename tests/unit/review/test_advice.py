@@ -90,3 +90,18 @@ def test_a_replay_when_none_was_asked() -> None:
     )
     assert calls == [1]  # not asked when there was advice
     assert advice_for([], user="user-1", team="mine", round=12, lock=LOCK, replay=lambda: None) is None
+
+
+def test_last_advice_keeps_the_chances() -> None:
+    """mvp-alerts task 1.1: each player's chance of starting, from the logged answer, so that an alert can say
+    how it moved; the advice itself compares without it."""
+    players = [
+        {"player_id": 4, "name": "A", "p_start": 0.9, "p_cameo": 0.05, "key": 6.5},
+        {"player_id": 90, "name": "B", "p_start": 0.3, "p_cameo": 0.4, "key": 5.9},
+    ]
+    found = last_advice(
+        [_decision(2, [4, 5, 6], players=players)], user="user-1", team="mine", round=12, lock=LOCK
+    )
+    assert found is not None
+    assert found.chances == {4: 0.9, 90: 0.3}
+    assert found == Advice("3-4-3", [4, 5, 6], [90, 91], 4, 5, LATE.as_of)
