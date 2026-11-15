@@ -87,12 +87,13 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
       `::test_at4_counted_as_evidence`, `::test_at4_kept_in_the_set`; `tests/contract/test_real_pages.py::test_the_ratings_pages`_
     - The design notes the real page's layout and the round each read is for (C6).
 
-- [ ] 7. Rater bias
+- [x] 7. Rater bias
   - Branch: `feat/so-7-raters` · Depends on: 6 · ADRs: none
-  - [ ] 7.1 `desk_bias` with its interval; the claim on the outlook and the card; the expected vote unchanged.
+  - [x] 7.1 `desk_bias` with its interval; the claim on the outlook and the card; the expected vote unchanged.
     - _Requirements: R5.1, R5.2, R5.3_
     - _Test: **AT-5** `tests/acceptance/sources/test_raters.py::test_at5_bias_by_hand`, `::test_at5_a_claim_shown`,
-      `::test_at5_the_expected_vote_unchanged`; **P4** `tests/property/sources/test_raters.py::test_p4_bias_in_its_interval`_
+      `::test_at5_the_expected_vote_unchanged`; **P4** `tests/property/sources/test_raters.py::test_p4_bias_in_its_interval`;
+      `tests/unit/sources/test_raters.py`_
 
 - [ ] 8. Anytime-scorer odds, researched
   - Branch: `docs/so-8-scorer-odds` · Depends on: none · ADRs: none

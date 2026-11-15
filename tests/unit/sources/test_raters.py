@@ -55,13 +55,15 @@ def _row(round: int, desk: str, rating: float, at: dt.datetime) -> MatchRatingRo
 
 
 def test_each_round_s_newest_read() -> None:
-    """A round read twice counts once, from its newest read: a desk that published later is in it."""
+    """A round read twice counts once, from its newest read: a rating the desk corrected is the new one, and a
+    desk that published later is in it."""
     early, late = AT, AT + dt.timedelta(hours=10)
     rows = [
-        _row(1, "Fantacalcio.it", 7.0, early),
-        _row(1, "Fantacalcio.it", 7.0, late),
+        _row(1, "Fantacalcio.it", 6.5, late),
         _row(1, "Roma", 6.0, late),
         _row(1, "Torino", 6.0, late),
+        _row(1, "Fantacalcio.it", 7.0, early),
+        _row(1, "Roma", 5.0, early),
     ]
     [league] = [bias for bias in desk_bias(rows) if bias.desk == "Fantacalcio.it"]
-    assert (league.matches, league.bias) == (1, 1.0)
+    assert (league.matches, league.bias) == (1, 0.5)
