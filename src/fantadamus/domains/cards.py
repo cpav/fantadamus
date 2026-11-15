@@ -17,6 +17,7 @@ from pydantic import BaseModel, SerializerFunctionWrapHandler, model_serializer
 from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.league import LeagueRules
 from fantadamus.domains.availability.consensus import Availability
+from fantadamus.domains.availability.news import News, OutDetail, page_disagreement
 from fantadamus.domains.fixtures.silver import FixtureRow
 from fantadamus.domains.odds.gold import TeamXg
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
@@ -153,6 +154,17 @@ class Out(BaseModel):
     role: Role
     outlets: int
     """How many outlets list him as unavailable: why, and until when, they don't say."""
+    reason: str | None = None
+    back: str | None = None
+    """Why the injured or suspended page has him out, and when he's back (mvp-sources R3.2)."""
+    disagreement: str | None = None
+    """An outlet, or the official lineup, has him starting while a page has him out (R3.3)."""
+
+    @model_serializer(mode="wrap")
+    def _without_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Without the pages' detail where they say nothing of him, so that a card stays within its size."""
+        found: dict[str, object] = handler(self)
+        return {name: value for name, value in found.items() if value is not None}
 
 
 class Lineups(BaseModel):
@@ -200,6 +212,38 @@ def lineups(club: str, players: Sequence[Listed], kickoff: dt.datetime) -> Lineu
             if (count := sum(view.status == "unavailable" for view in part.present.outlets))
         ],
     )
+
+
+@dataclass(frozen=True)
+class Reported:
+    """A player the injured or suspended page names, with how the outlets see him."""
+
+    player: KnownPlayer
+    role: Role
+    news: News
+    present: Availability | None
+
+
+def with_news(out: Sequence[Out], club: str, reported: Sequence[Reported]) -> list[Out]:
+    """Who's out (mvp-sources C5): the outlets' list, each with the pages' reason, return and any
+    disagreement, and the players only the pages have out. Nobody's chance of starting moves (R3.3)."""
+    pages = {
+        part.player.player_id: (part, part.news.out)
+        for part in reported
+        if part.player.club == club and part.news.out is not None
+    }
+
+    def detailed(entry: Out, part: Reported, detail: OutDetail) -> Out:
+        said = page_disagreement(part.news, part.present)
+        return entry.model_copy(update={"reason": detail.reason, "back": detail.back, "disagreement": said})
+
+    found = [detailed(entry, *pages[entry.player_id]) if entry.player_id in pages else entry for entry in out]
+    listed = {entry.player_id for entry in out}
+    for player_id, (part, detail) in pages.items():
+        if player_id not in listed:  # no outlet lists him as unavailable, or he'd be on the outlets' list
+            entry = Out(player_id=player_id, name=part.player.name, role=part.role, outlets=0)
+            found.append(detailed(entry, part, detail))
+    return sorted(found, key=lambda entry: (ROLES.index(entry.role), entry.name))
 
 
 def _likeliest(part: Listed) -> tuple[float, str]:
@@ -295,6 +339,8 @@ class Valued:
     listed: Listed
     value: OutfieldValue | KeeperValue
     form: PlayerSeasonRow
+    news: News | None = None
+    """What the injured and suspended pages say about him (mvp-sources C5)."""
 
 
 class CardPlayer(BaseModel):
@@ -314,6 +360,8 @@ class CardPlayer(BaseModel):
     """A keeper's."""
     key: float
     """What he's worth this round, under the scoring table: the ordering key (method §A3)."""
+    one_booking_from_a_ban: bool | None = None
+    """True when the suspended page lists him among the diffidati (mvp-sources R3.2)."""
 
     @model_serializer(mode="wrap")
     def _without_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
@@ -367,6 +415,7 @@ def card_player(part: Valued) -> CardPlayer:
         p_start=part.listed.present.p_start,
         confidence=of_outlets(part.listed.present),
         key=value.key,
+        one_booking_from_a_ban=True if part.news is not None and part.news.one_booking else None,
     )
     if isinstance(value, KeeperValue):
         return found.model_copy(

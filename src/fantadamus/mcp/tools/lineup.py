@@ -20,6 +20,7 @@ from fantadamus.contracts.types import Role
 from fantadamus.contracts.xy.league import FormulaRule, LineupRules
 from fantadamus.core.names import name_key
 from fantadamus.domains.availability.consensus import Availability
+from fantadamus.domains.availability.news import page_disagreement
 from fantadamus.domains.calibration import summary_line
 from fantadamus.domains.facts import Source
 from fantadamus.domains.fixtures.gold import matches as round_matches
@@ -112,6 +113,11 @@ class Concern(BaseModel):
     status: Literal["out", "doubtful"]
     p_start: float
     covered_by: str | None
+    reason: str | None = None
+    back: str | None = None
+    """Why the injured or suspended page has him out, and when he's back (mvp-sources R3.2)."""
+    disagreement: str | None = None
+    """An outlet, or the official lineup, has him starting while a page has him out (R3.3)."""
 
 
 class Scorer(BaseModel):
@@ -447,6 +453,10 @@ def _concerns(priced: Mapping[int, _Priced], arranged: Arrangement) -> list[Conc
             ),
             None,
         )
+        news = part.facts.news
+        detail = news.out if news is not None else None
+        said = page_disagreement(news, present) if news is not None else None
+        pages = {"reason": detail.reason, "back": detail.back} if detail is not None else {}
         if not part.rating and part.facts.match is not None:
             found.append(
                 Concern(
@@ -454,17 +464,20 @@ def _concerns(priced: Mapping[int, _Priced], arranged: Arrangement) -> list[Conc
                     status="out",
                     p_start=0.0,
                     covered_by=cover if player_id in starters else None,
+                    **pages,
                 )
             )
         elif player_id in starters and (
-            part.value.p_start < DOUBTFUL_BELOW or (present is not None and present.disputed)
-        ):
+            part.value.p_start < DOUBTFUL_BELOW or (present is not None and present.disputed) or said
+        ):  # a page that has him out makes him doubtful, his chance the outlets' alone (mvp-sources R3.3)
             found.append(
                 Concern(
                     name=part.facts.player.name,
                     status="doubtful",
                     p_start=round(part.value.p_start, 3),
                     covered_by=cover,
+                    disagreement=said,
+                    **pages,
                 )
             )
     return found
@@ -709,7 +722,12 @@ def lineup_for(
     def ask(when: dt.datetime, facts: Facts, _tried: Mapping[str, str] | None) -> Gathered:
         return _gather_squad(advisor, wanted, facts, known_players(facts.players, when), when)
 
-    done = advisor.after_collecting(as_of, ask, lambda found: [item.fact for item in found.plan.items])
+    def collect(found: Gathered) -> list[str]:
+        return [item.fact for item in found.plan.items] + advisor.context_due(
+            found.first_kickoff, ("injuries", "suspensions")
+        )
+
+    done = advisor.after_collecting(as_of, ask, collect)
     asked = _Asked(start, leave_out, formation, captain)
     return _from_gathered(
         advisor,
@@ -1107,7 +1125,9 @@ def register(server: MCPServer, advisor: Advisor, squads: SquadStore, *, rounds:
         "the setup step (league settings unset: ask the user, then call set_league_rules); 'squad' (no squad "
         "stored: ask the user, then call set_squad); a refresh plan (facts missing or stale: read the listed "
         "pages, submit with the named tools, then call again); or the lineup, with every allowed formation, "
-        "who's doubtful, warnings about anything basic and what could improve it. Without a team it's the "
+        "who's out or doubtful (with the injured or suspended page's reason and return, and any "
+        "disagreement with the outlets), warnings about anything basic and what could improve it. Without a "
+        "team it's the "
         "user's own squad. Where the league has a captain, it names the captain and the vice who bring the "
         "most. To price the user's own choice, pass players to start or leave_out of the eleven, a "
         "formation, or a captain (who then starts): it returns that lineup with what it costs against the "

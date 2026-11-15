@@ -118,6 +118,20 @@ rest." No number moves (decision 2).
 
 The rendering rules go into the tools' descriptions, not the agent prompt (12,911 of its 13,000 characters).
 
+*Set in task 5:*
+
+- **Where it comes from.** A player's news comes from each club's newest read of each page, while fresh (24 hours, 12
+  near a match). A page that's stale shows nothing, and the card, the outlook and the lineup have the collector read it
+  first.
+- **The out list.** The card's out list adds the players only the pages have out, and its reason, return and
+  disagreement are left out where a page says nothing.
+- **A disagreement.** An outlet "has him starting" as a starter, or at its own chance of 50% or more; the official
+  lineup counts too.
+- **In the lineup**, a starter a page has out while an outlet has him starting becomes "doubtful", with the
+  disagreement; his chance of starting stays the outlets'.
+- **One booking from a ban** is marked on the card and the outlook, as above, not in the lineup.
+- **A name that doesn't resolve** among the club's players isn't shown.
+
 ### C6. Per-match ratings (`web/readers/fco_ratings.py`, `domains/ratings/`; R4)
 
 - **Reader.** By match, each player row: his role, his name, when he came on or off, and three numbers: the

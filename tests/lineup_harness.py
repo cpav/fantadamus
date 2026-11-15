@@ -21,7 +21,16 @@ from fantadamus.league.rules import CLASSIC
 from fantadamus.league.squads import SquadStore
 from fantadamus.mcp.calibrate import Calibrator
 from fantadamus.web.fetch import Response
-from tests.collect_harness import HTML, ROUND_ROUTE, STATS_ROUTE, TAKERS_ROUTE, FakeWeb, round_collector
+from tests.collect_harness import (
+    HTML,
+    INJURIES_ROUTE,
+    ROUND_ROUTE,
+    STATS_ROUTE,
+    SUSPENSIONS_ROUTE,
+    TAKERS_ROUTE,
+    FakeWeb,
+    round_collector,
+)
 from tests.collect_pages import FcoMatch, fco_round_page, stats_page, takers_page
 from tests.lineup_data import FORMATIONS
 from tests.roles_data import stats_row
@@ -137,10 +146,12 @@ async def a_round(
     rounds: int = 500,
     takers: str | None = None,
     other: Mapping[str, str] | None = None,
+    unavailable: tuple[str, str] | None = None,
 ) -> AsyncIterator[Round]:
     """The tools over a lake that holds the table and the takers; the collector reads the pages when asked,
     the takers too once they're stale. With `takers`, it reads them from that page, and the lake has none.
-    With `other`, it reads the other competitions' pages there, by address, each its raw wikitext."""
+    With `other`, it reads the other competitions' pages there, by address, each its raw wikitext; with
+    `unavailable`, the injured and suspended pages."""
     store, clock = LakeStore(tmp_path / "lake"), SetClock(NOW)
     base = "https://example.org"
     routes: dict[str, Response | Exception] = {
@@ -153,6 +164,9 @@ async def a_round(
             for url, text in (other or {}).items()
         },
     }
+    if unavailable is not None:
+        routes[f"{base}{INJURIES_ROUTE}"] = Response(200, HTML, unavailable[0].encode())
+        routes[f"{base}{SUSPENSIONS_ROUTE}"] = Response(200, HTML, unavailable[1].encode())
     web = FakeWeb(routes)
     collector = round_collector(
         store,
@@ -164,6 +178,7 @@ async def a_round(
         statistics=True,
         takers=True,
         other_competitions=list(other or {}),
+        unavailable=unavailable is not None,
     )
     log = CollectLog(tmp_path / "collect")
     async with tools(
