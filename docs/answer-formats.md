@@ -298,9 +298,38 @@ Not counted: Moretti, two matches between the statistics reads; decisive goals, 
 - **The user's app total**, when given, sits beside the real score, with the likely causes when they differ by more
   than half a point. What the reads couldn't count is named, by player or by kind of event.
 
+## 8. An alert
+
+Built in `mvp-alerts`: the one answer nobody asks for. In the last 24 hours before a round's deadline, after the
+scheduled run on the Mac has stored a new official lineup, an outlet's probable lineup or a line of the injured or
+suspended pages, Fantadamus works the user's lineup out again on the facts then. If the call has changed since the
+lineup they last saw, a notification says so.
+
+```text
+Fantadamus · Round 12
+Official lineup out
+Start Costa instead of Bianchi: the official lineup has Bianchi on the bench. Fontana is now your first defender
+off the bench.
+```
+
+- **The call** is the eleven, the formation, the captain and vice where the league has them, and the first bench
+  place in each role. A move further down the bench, or a chance that moved without changing the call, sends nothing.
+- **The action comes first**, then why: of the player who lost his place, then the one who took it, the first fact
+  read since that explains the move. The official lineup first ("has Bianchi on the bench", "leaves him out of the
+  squad"), then the injured or suspended page ("the injury page has Neri out: thigh muscle injury", "Neri is
+  banned"), then the probable lineups ("give Rossi 40% to start, from 75%"). A swap no one player's news explains
+  says it comes "on the newest lineups and odds"; the formation, the vice and the bench carry no cause.
+- **The subtitle** names the strongest news: official lineup out, ban news, injury news, probable lineups moved.
+- **At most 240 characters**, what a Mac shows once the notification is opened; further changes are counted: "And 2
+  more changes: ask for your lineup."
+- **One alert per changed call.** The next check compares with it, so the same change isn't sent twice; a call that
+  changes back is sent as a change. Asking for the lineup after an alert makes that the call compared.
+- **Nothing is guessed:** without a squad and the league's rules, or when the facts don't give a lineup, nothing is
+  sent. A squad or rules saved since the last call make the next one the call compared, silently.
+- **Only on the Mac** for now, through macOS's own notifications; `fantadamus alerts` lists what was sent.
+
 ## Later, in their own specs
 
 - **Context, on the match card:** "Como's new coach takes his first match. That widens Como's lineup uncertainty; it
   doesn't move the numbers." It needs a source for news, with its route approved: the new-sources slice.
-- **Alerts:** "Official lineup out: Bruno on the bench; your first defender off the bench comes in." This needs
-  a way to reach the user unprompted, which today's tools don't have.
+- **Alerts once online:** the same alert through a notification service such as Amazon SNS, with Phase 3.

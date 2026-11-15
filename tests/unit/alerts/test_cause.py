@@ -86,3 +86,8 @@ def test_a_fact_that_doesnt_explain_the_move_isnt_its_cause() -> None:
     assert cause(came, BEFORE, up, {}, NAMES) is None
     benched = {11: Latest(official="bench", official_at=LATER, out="knock", out_at=LATER)}
     assert cause(came, BEFORE, AFTER, benched, NAMES) is None
+
+
+def test_a_fact_read_as_the_call_was_made_isnt_news() -> None:
+    latest = {2: Latest(official="bench", official_at=AT)}
+    assert cause(SWAP, BEFORE, AFTER, latest, NAMES) is None

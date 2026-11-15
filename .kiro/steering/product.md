@@ -136,7 +136,7 @@ thing: making Fantadamus easy to reach and install. The slices after `mvp-lineup
 | 3 | The review of a user's lineup after a round (`mvp-review`): what they chose, what the advice was, what each decision cost, and whether overrides paid off; started ahead of recalibration (the owner, 2026-11-09); signed off 2026-11-11 | Nothing new |
 | 4 | Match cards, numbers (`mvp-cards`): one card per fixture, from the facts already collected, and the round at a glance (signed off 2026-11-11) | Nothing new |
 | 5 | New sources (`mvp-sources`), research first, each route approved by the owner: rest days and midweek European fixtures, injury detail, per-match ratings and rater bias, and research into anytime-scorer odds. Match news for the cards and set-piece takers wait for v1 (the owner, 2026-11-11); signed off 2026-11-15 | ADRs, then the source registry |
-| 6 | Alerts (`mvp-alerts`): "the official lineup changes your call", as a notification on the user's Mac from the scheduled run; once online, a notification service such as Amazon SNS (the owner, 2026-11-11) | A scheduled run on the Mac |
+| 6 | Alerts (`mvp-alerts`): "the official lineup changes your call", as a notification on the user's Mac from the scheduled run; once online, a notification service such as Amazon SNS (the owner, 2026-11-11); built 2026-11-15 | A scheduled run on the Mac |
 
 Trades, auctions and market valuation stay out of scope.
 
