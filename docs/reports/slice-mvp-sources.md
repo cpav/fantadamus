@@ -1,6 +1,6 @@
 # Slice report: `mvp-sources`
 
-2026-11-15 · Phase 2, the eighth slice · **Awaiting the owner's sign-off**
+2026-11-15 · Phase 2, the eighth slice · **Signed off by the owner on 2026-11-15**
 
 Fantadamus now reads three new kinds of fact itself, each from a page the owner approved (ADR-0007), with Claude as the
 fallback: the Serie A clubs' matches in the other competitions, from Wikipedia; why a player is out and until when, and
@@ -128,7 +128,7 @@ ADR-0008's trial would use 10 to 20 of The Odds API's 500 free credits, once the
 
 ## Decisions for the owner
 
-1. **Sign off this slice?** Recommendation: yes. Every acceptance test has passed, and the real check read every new page.
+1. **Sign off this slice?** Signed off on 2026-11-15. Every acceptance test has passed, and the real check read every new page.
 2. **The trial's key.** Create a free account at the-odds-api.com and put its key in the private configuration file
    (`~/.config/fantadamus/private.toml`), when convenient. Only the owner can create it. The trial runs on the next round
    after.

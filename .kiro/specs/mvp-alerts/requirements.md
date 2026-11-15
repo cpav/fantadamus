@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-alerts` (Phase 2, ninth slice)
 
-Status: **Draft, for the owner's approval** · Workflow: requirements-first · Depends on: `mvp-sources` · Abbreviation: `al` ·
+Status: **Approved by the owner, 2026-11-15**, with all three recommendations · Workflow: requirements-first · Depends on: `mvp-sources` · Abbreviation: `al` ·
 Method: [`docs/method.md`](../../../docs/method.md) §A7, §A8 · Answers: [`docs/answer-formats.md`](../../../docs/answer-formats.md)
 
 ## Introduction
@@ -22,7 +22,7 @@ changed, without being asked.
 
 **A round locks at its first kickoff**, while most official lineups come out an hour before their own match, after the
 lock. So an official lineup can change the call only for the round's first matches. The probable lineups and the injury
-page change it more often in the last day; decision 1 asks whether those alert too.
+page change it more often in the last day, so they alert too (decision 1).
 
 **Not in this spec:** notifications once online (Phase 3); alerts about a league-mate's squad; live alerts during a match
 (not planned, `product.md`); trades, auctions and market values.
@@ -99,6 +99,8 @@ page change it more often in the last day; decision 1 asks whether those alert t
   (`mvp-sources`).
 
 ## Decisions for the owner
+
+All three decided by the owner on 2026-11-15, as recommended.
 
 1. **What alerts?** Recommendation: official lineups, **and** the probable lineups and the injury and ban pages inside the
    last 24 hours. An official lineup alone would alert only for the round's first matches, since the rest come out after
