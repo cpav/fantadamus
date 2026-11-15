@@ -200,7 +200,9 @@ hours of a Serie A match the answers' freshness tightens to a day, as it does fo
 then reads the pages on demand.
 
 A card stays within 3 seconds and 15 KB: a rest-days line for each side, and a reason only for the players it lists as
-out. No paid service, no account (R7.2).
+out. No paid service, no account (R7.2). *Checked in task 9:* the card carries each side's rest-days line and its
+European week only (`RestLine`): with the full rest days, the first real card was 15.1 KB; every card of round 12 is
+now 12.6 to 14.9 KB.
 
 ### C10. The docs (R8)
 

@@ -1,6 +1,7 @@
 # ADR-0008: Anytime-scorer odds as a check on the scoring chances, researched, with a one-round trial
 
-- **Status:** Proposed, 2026-11-15: the owner approves or turns down the trial (`mvp-sources` task 8.2)
+- **Status:** Accepted by the owner, 2026-11-15 ("approve the trial", `mvp-sources` task 8.2): the trial, not a route.
+  Its first step waits for the owner's API key: only the owner can create the account
 - **Deciders:** the owner
 - **Specs affected:** `mvp-sources` (research only: no code collects these odds, R6.1)
 
@@ -24,7 +25,7 @@ research. It decides nothing about collection beyond the trial.
 
 ## Decision
 
-**Proposed: a one-round trial of option A**, if the owner approves; no collection code is written before it.
+**A one-round trial of option A**, approved by the owner on 2026-11-15; no collection code is written before it.
 
 The trial, by hand from Claude Code on `main`, for one round:
 

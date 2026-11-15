@@ -289,3 +289,22 @@ def ratings_page(round: int, matches: Sequence[tuple[str, str, Sequence[Rated], 
         f"<html><head><title>Voti Fantacalcio Serie A 2026/2027 - {round}ª Giornata</title></head><body>"
         f'<div class="tab-content">{"".join(panes)}</div></body></html>'
     )
+
+
+def season_ratings(round: int, read: int) -> dict[str, object]:
+    """A round's ratings payload for the four invented clubs, 60 players a match, each rated by the three
+    desks: as many rows as a real round gives, for timing a season (mvp-sources R7.2)."""
+    matches = []
+    for home, away in (("Alfa", "Beta"), ("Gamma", "Delta")):
+        players = [
+            {
+                "club": club,
+                "name": f"GIOCATORE{number} {club[0]}.",
+                "role": "C",
+                "ratings": [{"desk": desk, "rating": 6.0 + (number + read) % 3 / 2} for desk in DESKS],
+            }
+            for club in (home, away)
+            for number in range(30)
+        ]
+        matches.append({"home": home, "away": away, "players": players})
+    return {"round": round, "matches": matches}

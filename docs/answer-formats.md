@@ -166,9 +166,15 @@ Round 11 · Inter–Como, Sun 8 Nov 18:00 · updated 12 minutes ago
 Rossi starts 92%: four outlets agree. Bianchi, his rival, is at 35%.
 45% to score if he starts; worth about 8.1 points; takes the penalties (3 from 3).
 Up from 85% on Wednesday: Sky now has him starting.
+Inter: 3 days' rest since the Champions League on Wednesday 4 November.
+Fantacalcio.it rates him 0.30 above the other desks, over 9 matches.
 Official lineup: about 17:00 Sunday, after your lock; field him.
-Sources: Fantacalcio-Online, round 11 probable lineups
+Sources: Fantacalcio-Online, round 11 probable lineups · Wikipedia, Champions League · Fantacalcio-Online, ratings
 ```
+
+- **Rest days and a rater's claim are context** (`mvp-sources`): said as their lines, never in a number. A player the
+  injured or suspended page has out gets his reason and return ("out: thigh muscle injury, back from late November"),
+  and the line "one booking from a ban" where the page lists him among the diffidati.
 
 For a keeper:
 
@@ -197,23 +203,33 @@ Clean sheets: Inter 41%, Como 15%. Two odds pages, 3 points apart.
 So far: Inter 2.0 scored and 0.9 conceded a match, 7 won, 1 drawn, 1 lost; last five W W D W W.
         Como 1.5 and 1.1 a match, 5 won, 2 drawn, 2 lost; last five W L D W W.
 
+Inter: 3 days' rest since the Champions League on Wednesday 18 November; a European week.
+Como: 7 days' rest since Serie A on Sunday 15 November.
+
 Inter: four outlets agree on nine places. Disputed: the right wing, Greco 60% v Mancini 40% (Sky has Mancini).
-Out: Costa, listed as out by 3 outlets.
+Out: Costa, thigh muscle injury, back from late November (listed as out by 3 outlets).
+     Ferri, banned for round 12. Russo: Sky has him starting; Fantacalcio.it's injury page has him out.
+Greco is one booking from a ban.
 Como: the striker is disputed, Bianchi 55% v Neri 45%.
 Penalties: Rossi (Inter, 3 scored of 3), Lombardi (Como, 1 of 2).
 Most likely to score: Rossi 45%, Greco 22%, Lombardi 20%.
 Rotation risk: Como's Ferri usually starts, and is 45% this time.
 Official lineups are due about an hour before kickoff.
 
-Sources: Fantacalcio-Online, round 12 · Fantacalcio.it, statistics, table, penalty takers
+Sources: Fantacalcio-Online, round 12 · Fantacalcio.it, statistics, table, penalty takers, injuries, bans ·
+Wikipedia, Champions League
 ```
 
-- **In this order:** the context line, the user's players first, the match in numbers, each side's season so far, the
-  lineups with their disputed places and who's out, the takers, the likeliest scorers, the rotation risks, when the
+- **In this order:** the context line, the user's players first, the match in numbers, each side's season so far, each
+  side's rest days, the lineups with their disputed places and who's out, the takers, the likeliest scorers, the rotation risks, when the
   official lineups are due, and the sources at the bottom.
 - **The season so far is context.** The record and the last five results (oldest first) are what happened; the numbers
   come from the odds, and the form never moves one.
-- **Out means "listed as out by N outlets"**, never "injured": the outlets don't say why, or until when.
+- **Out means "listed as out by N outlets"**, never "injured", unless the injured or suspended page says why and until
+  when (`mvp-sources`): then its reason and return come first. A player that page has out while an outlet has him
+  starting is said as a disagreement; his chance of starting stays the outlets'.
+- **Rest days, injuries, bans and a rater's claim are context:** they move no number. A card carries each side's
+  rest-days line only, to stay within its size.
 - **Without league rules** the points are Classic's, and the card says so. A viewer in a live chat gets one at once.
 - **Past the deadline,** a match of that round comes as it stood then, said so.
 
@@ -286,7 +302,5 @@ Not counted: Moretti, two matches between the statistics reads; decisive goals, 
 
 - **Context, on the match card:** "Como's new coach takes his first match. That widens Como's lineup uncertainty; it
   doesn't move the numbers." It needs a source for news, with its route approved: the new-sources slice.
-- **Rest days, on the match card:** "Inter played Wednesday in the Champions League; rotation risk for the
-  full-backs." It needs the other competitions' fixtures: the new-sources slice too.
 - **Alerts:** "Official lineup out: Bruno on the bench; your first defender off the bench comes in." This needs
   a way to reach the user unprompted, which today's tools don't have.

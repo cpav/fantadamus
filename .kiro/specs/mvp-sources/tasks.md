@@ -95,27 +95,29 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
       `::test_at5_the_expected_vote_unchanged`; **P4** `tests/property/sources/test_raters.py::test_p4_bias_in_its_interval`;
       `tests/unit/sources/test_raters.py`_
 
-- [ ] 8. Anytime-scorer odds, researched
+- [x] 8. Anytime-scorer odds, researched
   - Branch: `docs/so-8-scorer-odds` · Depends on: none · ADRs: none
   - [x] 8.1 A new ADR, the eighth: the routes compared, with each one's coverage, cost and terms, how the method uses them, and a one-round trial plan.
     - _Requirements: R6.1, R6.2_
     - _Test: the ADR exists with every section_
     - `docs/adr/0008-anytime-scorer-odds-trial.md`, Proposed: a one-round trial of The Odds API's
       `player_goal_scorer_anytime`, which lists Serie A but only from US bookmakers.
-  - [ ] 8.2 **Owner:** read ADR-0008, and approve or turn down the trial.
+  - [x] 8.2 **Owner:** read ADR-0008, and approve or turn down the trial.
     - _Requirements: AT-6 (R6)_
     - _Test: recorded in the ADR_
+    - Approved on 2026-11-15 ("approve the trial"). The trial starts once the owner has created The Odds API account
+      and put its key in private configuration.
 
 - [ ] 9. A real check and this slice's sign-off
   - Branch: `docs/so-9-gate` · Depends on: 2, 3, 4, 5, 6, 7, 8 · ADRs: none
-  - [ ] 9.1 The budgets with the new facts, and the docs: answer formats, method §A8, the player guide.
+  - [x] 9.1 The budgets with the new facts, and the docs: answer formats, method §A8, the player guide.
     - _Requirements: R7.2, R8.1_
     - _Test: **AT-7** `tests/acceptance/sources/test_budgets.py::test_at7_a_card_and_an_outlook_in_budget`;
       `tests/unit/test_repo_hygiene.py::test_answer_formats_show_rest_days`_
-  - [ ] 9.2 Real data from Claude Code on `main`: the new pages read, a card with rest days and injury detail, a round's ratings kept.
+  - [x] 9.2 Real data from Claude Code on `main`: the new pages read, a card with rest days and injury detail, a round's ratings kept.
     - _Requirements: R1.2, R2.3, R3.2, R4.1 (AT-8)_
     - _Test: what each page gave, its time and size, in the report without players' figures_
-  - [ ] 9.3 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
+  - [x] 9.3 A mutation run on the core modules, with survivors read; the slice report: tests, coverage, quality, cost, open risks and the
     acceptance tests.
     - _Requirements: R7.2; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
