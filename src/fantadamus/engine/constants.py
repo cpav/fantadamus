@@ -142,6 +142,10 @@ FRESH_NEAR_MATCH_HOURS = {
 }
 NEAR_MATCH_HOURS = 24
 
+# The raters' bias (mvp-sources C7, open point 2 approved 2026-11-12), (start)
+RATER_BIAS_SHOWN = 0.25  # a desk's bias, either way, from which a claim is shown
+RATER_BIAS_MATCHES = 5  # over at least this many matches all three desks rated
+
 # Rest days (mvp-sources C3), (start)
 EUROPEAN_WEEK_DAYS = (
     3  # a European match this many days or fewer before or after a Serie A one: a European week

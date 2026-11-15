@@ -362,6 +362,8 @@ class CardPlayer(BaseModel):
     """What he's worth this round, under the scoring table: the ordering key (method §A3)."""
     one_booking_from_a_ban: bool | None = None
     """True when the suspended page lists him among the diffidati (mvp-sources R3.2)."""
+    raters: list[str] | None = None
+    """A desk that rates him well above or below the others: a claim, never in a number (mvp-sources R5.2)."""
 
     @model_serializer(mode="wrap")
     def _without_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:

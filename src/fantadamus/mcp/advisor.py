@@ -48,6 +48,8 @@ from fantadamus.domains.freshness import FACTS_WINDOW, Fact, is_fresh
 from fantadamus.domains.odds.gold import TeamXg, team_xg
 from fantadamus.domains.odds.silver import ODDS
 from fantadamus.domains.players.resolve import KnownPlayer, resolve
+from fantadamus.domains.raters import Bias, claims_for, desk_bias
+from fantadamus.domains.ratings.silver import MATCH_RATINGS
 from fantadamus.domains.season.gold import (
     PenaltyOrder,
     known_players,
@@ -229,6 +231,8 @@ class PlayerAnswer(BaseModel):
     out: OutDetail | None = None
     """Why the injured or suspended page has him out, and when he's back (mvp-sources R3.2)."""
     one_booking_from_a_ban: bool = False
+    raters: list[str] = []
+    """A desk that rates him well above or below the others: a claim, never in a number (mvp-sources R5.2)."""
 
 
 class Flip(BaseModel):
@@ -287,6 +291,8 @@ class Facts:
     injuries: Sequence[Any] = ()
     suspensions: Sequence[Any] = ()
     """What the injured and suspended pages list (mvp-sources C4)."""
+    ratings: Sequence[Any] = ()
+    """The season's ratings from three desks, for their bias (mvp-sources C7)."""
 
     @classmethod
     def read(cls, lake: LakeStore, as_of: dt.datetime) -> Facts:
@@ -304,6 +310,7 @@ class Facts:
             other=read_silver(lake, OTHER_FIXTURES, since, as_of),
             injuries=read_silver(lake, INJURIES, since, as_of),
             suspensions=read_silver(lake, SUSPENSIONS, since, as_of),
+            ratings=read_silver(lake, MATCH_RATINGS, None, as_of),
         )
 
 
@@ -463,6 +470,19 @@ class Advisor:
             self.before_answering(now)
         except Exception:
             _LOG.exception("Couldn't score a finished round; it's tried again later")
+
+    def claims(
+        self, sides: Sequence[PlayerFacts], known: Sequence[KnownPlayer], facts: Facts
+    ) -> dict[int, list[str]]:
+        """Each player's claims about the raters, from the season's ratings (mvp-sources C7)."""
+        clubs = {side.player.club for side in sides}
+        biases: list[Bias] = desk_bias([row for row in facts.ratings if row.club in clubs])
+        found = {}
+        for side in sides:
+            mates = [mate for mate in known if mate.club == side.player.club]
+            if said := claims_for(side.player, biases, mates):
+                found[side.player.player_id] = said
+        return found
 
     def rest(self, club: str, kickoff: dt.datetime, facts: Facts, as_of: dt.datetime) -> Rested:
         """A side's rest days at `as_of` (mvp-sources C3): every Serie A match known then, and each other
@@ -646,7 +666,8 @@ class Advisor:
             for side in sides
             if side.match is not None
         }
-        answer = self._answer(sides, known, round, first_kickoff, as_of, stored, league, rest)
+        claims = self.claims(sides, known, facts)
+        answer = self._answer(sides, known, round, first_kickoff, as_of, stored, league, rest, claims)
         kind = _kind(answer)
         return CompareResult(
             status="answer" if kind == "compare" else kind, message=answer.message, answer=answer
@@ -918,6 +939,7 @@ class Advisor:
         stored: StoredRules,
         league: float,
         rest: Mapping[str, Rested],
+        claims: Mapping[int, list[str]],
     ) -> Answer:
         inputs = [model_inputs(side, league) for side in sides]
         values = [
@@ -925,7 +947,9 @@ class Advisor:
             for part, side in zip(inputs, sides, strict=True)
         ]
         players = [
-            self._player_answer(side, value, round, rest.get(side.player.club))
+            self._player_answer(
+                side, value, round, rest.get(side.player.club), claims.get(side.player.player_id, [])
+            )
             for side, value in zip(sides, values, strict=True)
         ]
         judged = _judged(inputs, scoring_for(stored.rules, sides[0].form.role))
@@ -1034,7 +1058,12 @@ class Advisor:
         )
 
     def _player_answer(
-        self, side: PlayerFacts, value: OutfieldValue | KeeperValue, round: int, rested: Rested | None
+        self,
+        side: PlayerFacts,
+        value: OutfieldValue | KeeperValue,
+        round: int,
+        rested: Rested | None,
+        claims: list[str],
     ) -> PlayerAnswer:
         match, present, xg = side.match, side.present, side.xg
         notes = list(side.disagreements)
@@ -1112,6 +1141,7 @@ class Advisor:
             rest=rested.days if rested is not None else None,
             out=news.out if news is not None else None,
             one_booking_from_a_ban=news is not None and news.one_booking,
+            raters=claims,
         )
 
 

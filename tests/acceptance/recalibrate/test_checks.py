@@ -210,6 +210,8 @@ SETTINGS = {
     "ROTATION_P_START",
     "SCORERS",
     "EUROPEAN_WEEK_DAYS",  # what the rest-days line calls a European week (mvp-sources C3)
+    "RATER_BIAS_SHOWN",  # when a rater's bias is shown as a claim (mvp-sources C7)
+    "RATER_BIAS_MATCHES",
 }
 """How the answers are worked out and shown, not estimates: nothing to calibrate."""
 
