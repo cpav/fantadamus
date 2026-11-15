@@ -21,6 +21,7 @@ from fantadamus.web.readers.fcit_table import read_table
 from fantadamus.web.readers.fcit_takers import read_takers
 from fantadamus.web.readers.fcit_unavailable import read_injuries, read_suspensions
 from fantadamus.web.readers.fco import read_round
+from fantadamus.web.readers.fco_ratings import read_ratings
 from fantadamus.web.readers.wiki_fixtures import competition_of, read_other_fixtures
 from fantadamus.web.text import page_text, parts
 
@@ -32,6 +33,7 @@ TAKERS = PAGES / "fcit-rigoristi.html"
 TABLE = PAGES / "fcit-classifica.html"
 INJURED = PAGES / "fcit-infortunati.html"
 SUSPENDED = PAGES / "fcit-squalificati.html"
+RATINGS = sorted(PAGES.glob("fco-voti-*.html")) if PAGES.is_dir() else []
 WIKI = sorted(PAGES.glob("wiki-*.txt")) if PAGES.is_dir() else []
 """Wikipedia's pages of the other competitions as raw wikitext, each named for its competition: wiki-cl, wiki-
 el, wiki-ecl and wiki-coppa (mvp-sources task 2)."""
@@ -239,3 +241,25 @@ def test_the_unavailable_pages() -> None:
     returns = sum(player.back_from is not None or player.to_be_assessed for player in players)
     assert kinds >= PLACED * len(players), (kinds, len(players))
     assert returns >= PLACED * len(players), (returns, len(players))
+
+
+@pytest.mark.skipif(
+    not RATINGS or not STATS.exists(),
+    reason="no real pages saved under data/private/pages/, which is never committed",
+)
+def test_the_ratings_pages() -> None:
+    """mvp-sources task 6.1: each real round ratings page gives every match of its round, each club one
+    config/clubs.toml knows, and at least `RESOLVED` of its names find a player on the statistics page, as the
+    calibration set's ratings from the page need. On round 11's page, 311 of 312 did."""
+    stats = read_stats(STATS.read_text(encoding="utf-8")).payload.players
+    known = [KnownPlayer(player_id=row.player_id, name=row.name, club=CLUBS.key(row.club)) for row in stats]
+    for path in RATINGS:
+        facts = read_ratings(path.read_text(encoding="utf-8"), None)
+        assert facts.problems == [], path.name
+        assert len(facts.payload.matches) == 10, path.name
+        players = [player for match in facts.payload.matches for player in match.players]
+        found = 0
+        for player in players:
+            mates = [mate for mate in known if mate.club == CLUBS.key(player.club)]
+            found += bool(resolve(player.name, mates).player or same_surname(player.name, mates))
+        assert found >= RESOLVED * len(players), (path.name, found, len(players))

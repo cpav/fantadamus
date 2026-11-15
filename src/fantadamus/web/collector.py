@@ -1,7 +1,7 @@
 """The collector: Fantadamus reads Fantacalcio-Online's round page, Fantacalcio.it's statistics, penalty
-takers, table, injured and suspended pages, and Wikipedia's pages of the other competitions itself and
-stores their facts (mvp-collect design C6; R1.1, R1.4, R2.4, R2.5, R3.4; mvp-roles design C4; mvp-lineup C13;
-mvp-cards C1; mvp-sources C2, C4).
+takers, table, injured and suspended pages, Fantacalcio-Online's round ratings, and Wikipedia's pages of the
+other competitions itself and stores their facts (mvp-collect design C6; R1.1, R1.4, R2.4, R2.5, R3.4;
+mvp-roles design C4; mvp-lineup C13; mvp-cards C1; mvp-sources C2, C4, C6).
 
 A run fetches each page its facts call for once, politely (C1), with one fetcher for the run, reads it with
 its reader (C3.1), and stores each kind of fact with `facts.submit_many` as `collector`: the fetch time is
@@ -25,17 +25,20 @@ from pydantic import BaseModel, field_validator
 from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.availability.silver import INJURIES, OFFICIAL_LINEUPS, OUTLET_VIEWS, SUSPENSIONS
+from fantadamus.domains.calibration import finished_round
 from fantadamus.domains.facts import (
     Domain,
     RefusedError,
     Submission,
     last_read,
     payload_hash,
+    read_silver,
     submit_many,
 )
 from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES
 from fantadamus.domains.freshness import FACTS_WINDOW
 from fantadamus.domains.odds.silver import ODDS
+from fantadamus.domains.ratings.silver import MATCH_RATINGS
 from fantadamus.domains.season.silver import PENALTY_TAKERS, SEASON_STATS, TEAM_SEASONS
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.web.fetch import DisallowedError, Fetcher, FetchError, HostBlockedError, NotAllowedError, Page
@@ -50,6 +53,7 @@ from fantadamus.web.readers.fcit_unavailable import (
     read_suspensions,
 )
 from fantadamus.web.readers.fco import RoundFacts, read_round
+from fantadamus.web.readers.fco_ratings import RatingsFacts, read_ratings
 from fantadamus.web.readers.wiki_fixtures import OtherFixturesFacts, competition_of, read_other_fixtures
 
 DEFAULT_READING_LIST = Path("config/reading_list.toml")
@@ -70,9 +74,19 @@ REFRESHED = ROUND_FACTS + STATS_FACTS + TAKERS_FACTS + TABLE_FACTS
 INJURIES_FACTS = ("injuries",)
 SUSPENSIONS_FACTS = ("suspensions",)
 """And the injured and suspended pages' (mvp-sources C4)."""
-FACTS = REFRESHED + OTHER_FIXTURES_FACTS + INJURIES_FACTS + SUSPENSIONS_FACTS
+RATINGS_FACTS = ("match_ratings",)
+"""And the round ratings page's, the round just played (mvp-sources C6)."""
+FACTS = REFRESHED + OTHER_FIXTURES_FACTS + INJURIES_FACTS + SUSPENSIONS_FACTS + RATINGS_FACTS
 PageKind = Literal[
-    "round", "statistics", "finished_round", "takers", "table", "other_fixtures", "injuries", "suspensions"
+    "round",
+    "statistics",
+    "finished_round",
+    "takers",
+    "table",
+    "other_fixtures",
+    "injuries",
+    "suspensions",
+    "ratings",
 ]
 PAGE_FACTS: dict[PageKind, tuple[str, ...]] = {
     "round": ROUND_FACTS,
@@ -83,12 +97,13 @@ PAGE_FACTS: dict[PageKind, tuple[str, ...]] = {
     "other_fixtures": OTHER_FIXTURES_FACTS,
     "injuries": INJURIES_FACTS,
     "suspensions": SUSPENSIONS_FACTS,
+    "ratings": RATINGS_FACTS,
 }
 
 
 def page_of(fact: str) -> PageKind:
     """The kind of page that carries `fact`."""
-    for page in ("statistics", "takers", "table", "other_fixtures", "injuries", "suspensions"):
+    for page in ("statistics", "takers", "table", "other_fixtures", "injuries", "suspensions", "ratings"):
         if fact in PAGE_FACTS[page]:
             return page
     return "round"
@@ -137,6 +152,7 @@ class CollectorConfig(BaseModel):
     suspensions_enabled: bool = True
     ratings: str | None = None
     """Fantacalcio-Online's round ratings page, with `{round}` for n (mvp-sources C6)."""
+    ratings_enabled: bool = True
 
     @field_validator("other_competitions")
     @classmethod
@@ -217,6 +233,11 @@ def suspensions_submissions(facts: SuspensionsFacts) -> Submissions:
     return {SUSPENSIONS: [Submission(facts.payload)]}
 
 
+def ratings_submissions(facts: RatingsFacts) -> Submissions:
+    """A round's ratings page, ready to store (mvp-sources C6)."""
+    return {MATCH_RATINGS: [Submission(facts.payload)]}
+
+
 class _Read(Protocol):
     """What a reader gives: the facts it found, and what it left out."""
 
@@ -264,6 +285,7 @@ class Collector:
             or (fact in OTHER_FIXTURES_FACTS and bool(self.config.other_competitions))
             or (fact in INJURIES_FACTS and self.config.injuries is not None)
             or (fact in SUSPENSIONS_FACTS and self.config.suspensions is not None)
+            or (fact in RATINGS_FACTS and self.config.ratings is not None)
         )
 
     def collect(self, round: int | None = None, facts: Collection[str] | None = None) -> CollectReport:
@@ -295,6 +317,10 @@ class Collector:
                     injuries_submissions,
                 )
             )
+        if wanted & set(RATINGS_FACTS) and self.config.ratings is not None:
+            played = finished_round(read_silver(self.lake, FIXTURES), self.clock())
+            if played is not None:  # the round just played; none before the first
+                reports.append(self._ratings_page(fetcher, self.config.ratings, played))
         if wanted & set(SUSPENSIONS_FACTS) and self.config.suspensions is not None:
             reports.append(
                 self._page(
@@ -307,6 +333,23 @@ class Collector:
                 )
             )
         return CollectReport(started_at=started, finished_at=self.clock(), round=round, pages=reports)
+
+    def collect_ratings(self, round: int) -> CollectReport:
+        """Round `round`'s ratings page, when the round is scored (mvp-sources C6)."""
+        started = self.clock()
+        address = self.config.ratings
+        pages = [self._ratings_page(self.fetcher(), address, round)] if address is not None else []
+        return CollectReport(started_at=started, finished_at=self.clock(), round=round, pages=pages)
+
+    def _ratings_page(self, fetcher: Fetcher, address: str, round: int) -> PageReport:
+        return self._page(
+            fetcher,
+            address.format(round=round),
+            "ratings",
+            self.config.ratings_enabled,
+            lambda text: read_ratings(text, round),
+            ratings_submissions,
+        )
 
     def collect_finished(self, round: int) -> CollectReport:
         """A finished round's page, for who really started (mvp-lineup R7.2). It's a kind of its own in the

@@ -18,6 +18,7 @@ from fantadamus.contracts.base import Contract
 from fantadamus.contracts.xy.fixtures import FixturesPayload, OtherFixturesPayload
 from fantadamus.contracts.xy.lineups import OfficialLineupPayload, OutletLineupPayload, ProbableLineupPayload
 from fantadamus.contracts.xy.odds import MatchOddsPayload
+from fantadamus.contracts.xy.ratings import RatingsPayload
 from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
 from fantadamus.contracts.xy.unavailable import InjuriesPayload, SuspensionsPayload
 from fantadamus.core.clock import Clock
@@ -33,6 +34,7 @@ from fantadamus.domains.availability.silver import (
 from fantadamus.domains.facts import Domain, Receipt
 from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES
 from fantadamus.domains.odds.silver import ODDS
+from fantadamus.domains.ratings.silver import MATCH_RATINGS
 from fantadamus.domains.season.silver import PENALTY_TAKERS, PLAYER_SEASONS, TEAM_SEASONS
 from fantadamus.lake.duckdb_store import LakeStore
 
@@ -140,6 +142,22 @@ def register(
         published_at: AwareDatetime | None = None,
     ) -> Receipt:
         return submit(SUSPENSIONS, payload, source_url, captured_at, published_at)
+
+    @server.tool(
+        description="Submit a round's ratings from Fantacalcio-Online's round ratings page: for each match, "
+        "each player who played with his club, role, whether he came on, his minutes where the page says, "
+        "and each desk's base rating without bonuses (Fantacalcio.it, Roma, Torino): a number, or null for "
+        '\'s.v.\'; leave out a desk that shows a dash. Shape: {"round": 11, "matches": [{"home": '
+        '"Inter", "away": "Milan", "players": [{"club": "Inter", "name": "ROSSI M.", "role": "D", '
+        '"ratings": [{"desk": "Fantacalcio.it", "rating": 6.5}]}]}]}. ' + PROVENANCE
+    )
+    def submit_ratings(
+        payload: RatingsPayload,
+        source_url: str,
+        captured_at: AwareDatetime,
+        published_at: AwareDatetime | None = None,
+    ) -> Receipt:
+        return submit(MATCH_RATINGS, payload, source_url, captured_at, published_at)
 
     @server.tool(
         description="Submit a player's Serie A season so far from his Fantacalcio.it profile: appearances, "

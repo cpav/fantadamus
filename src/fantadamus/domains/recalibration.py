@@ -371,7 +371,9 @@ def waiting(rows: Sequence[SetRow]) -> list[Wait]:
                 "CAMEO_FLAT",
                 "YELLOW_WEIGHT",
             ],
-            needs="each player's rating and cards in each match, which come with the new sources",
+            needs="rated players with the league's rating, and cards in each match",
+            have=sum(row.rating is not None for row in rows),
+            minimum=MINIMUM_SAMPLE["ratings"],
         ),
         Wait(
             names=["P_START_STARTER", "P_START_BENCH"],

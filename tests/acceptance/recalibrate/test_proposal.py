@@ -222,7 +222,7 @@ def test_at8_the_proposal_in_words() -> None:
         for line in lines
     )
     assert any(
-        line.startswith("  VOTE_BASELINE") and line.endswith("come with the new sources") for line in lines
+        line.startswith("  VOTE_BASELINE") and line.endswith("0 of the 1500 it needs") for line in lines
     )
 
 

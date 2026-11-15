@@ -12,6 +12,7 @@ design C7; R7.1, R7.2).
 | The table | Daily (mvp-cards C1) |
 | The other competitions' matches | Weekly; daily when one of them is in the coming week (mvp-sources C9) |
 | Injuries and bans | Daily; twice a day in the 48 hours before the round's first kickoff (mvp-sources C9) |
+| Round ratings | Once a round, the morning after its last match (mvp-sources C9) |
 
 A match's facts stop being due at its kickoff: there's nothing left to forecast. Each interval counts from the
 collector's last attempt at the page that carries the fact, successful or not: a site that refuses is asked
@@ -25,6 +26,7 @@ from __future__ import annotations
 import datetime as dt
 
 from fantadamus.domains.availability.silver import OFFICIAL_LINEUPS
+from fantadamus.domains.calibration import finished_round
 from fantadamus.domains.facts import read_silver
 from fantadamus.domains.fixtures.gold import matches, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES
@@ -43,6 +45,7 @@ SCHEDULED = (
     "other_fixtures",
     "injuries",
     "suspensions",
+    "match_ratings",
 )
 _HOUR = dt.timedelta(hours=1)
 _ALWAYS = {
@@ -61,6 +64,8 @@ _MATCH_WEEK = {"other_fixtures": 24 * _HOUR}
 _BEFORE_ROUND = 48 * _HOUR
 _NEAR_ROUND = {"injuries": 12 * _HOUR, "suspensions": 12 * _HOUR}
 """Due at these intervals instead in the 48 hours before the round's first kickoff."""
+_MORNING_AFTER = {"match_ratings": 12 * _HOUR}
+"""Due once a round, this long after its last kickoff: the morning after."""
 _WINDOW = {
     "probable_lineups": 72 * _HOUR,
     "match_odds": 72 * _HOUR,
@@ -81,6 +86,7 @@ _ON_DEMAND_EVERY: dict[PageKind, dt.timedelta] = {
     "other_fixtures": 24 * _HOUR,
     "injuries": 12 * _HOUR,
     "suspensions": 12 * _HOUR,
+    "ratings": 12 * _HOUR,
 }
 """The shortest interval of each page's facts in the table."""
 
@@ -95,7 +101,13 @@ def due(
 ) -> bool:
     """Whether `fact`, last read at `last_read` (None: never), is due at `now` for the match kicking off at
     `kickoff`; `confirmed` means the match's official lineup is already in. For the other competitions'
-    matches, `kickoff` is the next of them; for injuries and bans, the next round's first."""
+    matches, `kickoff` is the next of them; for injuries and bans, the next round's first; for the ratings,
+    the last of the round just played."""
+    if fact in _MORNING_AFTER:
+        if kickoff is None:
+            return False
+        morning = kickoff + _MORNING_AFTER[fact]
+        return now >= morning and (last_read is None or last_read < morning)
     if fact in _ALWAYS:
         if fact in _MATCH_WEEK and kickoff is not None and now <= kickoff <= now + _WEEK:
             every = _MATCH_WEEK[fact]
@@ -149,8 +161,13 @@ def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]
     )
     found = []
     first = min((row.kickoff_at for row in upcoming), default=None)
+    played = finished_round(fixtures, now)
+    last = max((row.kickoff_at for row in matches(fixtures, now) if row.round == played), default=None)
     for fact in SCHEDULED:
-        if fact in _ALWAYS:
+        if fact in _MORNING_AFTER:
+            if due(fact, log.last_attempt(now, page_of(fact)), now, last):
+                found.append(fact)
+        elif fact in _ALWAYS:
             kickoff = other if fact in _MATCH_WEEK else first if fact in _NEAR_ROUND else None
             if due(fact, log.last_attempt(now, page_of(fact)), now, kickoff):
                 found.append(fact)

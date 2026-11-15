@@ -129,3 +129,9 @@ Headings are `## <Contract> <version> (<date>)`.
 
 - First version: each club's banned players, with the rounds they miss where the page names them, and those one
   booking from a ban, from Fantacalcio.it's suspended-and-diffidati page (mvp-sources R3.1).
+
+## RatingsPayload 1.0.0 (2026-11-15)
+
+- First version: a round's matches from Fantacalcio-Online's round ratings page, each player who played with his
+  club, role, whether he came on, his minutes where the page says, and each desk's base rating (Fantacalcio.it, Roma,
+  Torino), None for "s.v."; a desk that hasn't published is left out (mvp-sources R4.2).

@@ -24,6 +24,7 @@ from fantadamus.web.fetch import Response
 from tests.collect_harness import (
     HTML,
     INJURIES_ROUTE,
+    RATINGS_ROUTE,
     ROUND_ROUTE,
     STATS_ROUTE,
     SUSPENSIONS_ROUTE,
@@ -147,11 +148,12 @@ async def a_round(
     takers: str | None = None,
     other: Mapping[str, str] | None = None,
     unavailable: tuple[str, str] | None = None,
+    ratings: str | None = None,
 ) -> AsyncIterator[Round]:
     """The tools over a lake that holds the table and the takers; the collector reads the pages when asked,
     the takers too once they're stale. With `takers`, it reads them from that page, and the lake has none.
     With `other`, it reads the other competitions' pages there, by address, each its raw wikitext; with
-    `unavailable`, the injured and suspended pages."""
+    `unavailable`, the injured and suspended pages; with `ratings`, round 10's ratings page."""
     store, clock = LakeStore(tmp_path / "lake"), SetClock(NOW)
     base = "https://example.org"
     routes: dict[str, Response | Exception] = {
@@ -167,6 +169,8 @@ async def a_round(
     if unavailable is not None:
         routes[f"{base}{INJURIES_ROUTE}"] = Response(200, HTML, unavailable[0].encode())
         routes[f"{base}{SUSPENSIONS_ROUTE}"] = Response(200, HTML, unavailable[1].encode())
+    if ratings is not None:
+        routes[f"{base}{RATINGS_ROUTE.format(round=10)}"] = Response(200, HTML, ratings.encode())
     web = FakeWeb(routes)
     collector = round_collector(
         store,
@@ -179,6 +183,7 @@ async def a_round(
         takers=True,
         other_competitions=list(other or {}),
         unavailable=unavailable is not None,
+        ratings=ratings is not None,
     )
     log = CollectLog(tmp_path / "collect")
     async with tools(

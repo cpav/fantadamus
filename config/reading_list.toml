@@ -44,8 +44,11 @@ injuries = "https://www.fantacalcio.it/infortunati-serie-a"
 injuries_enabled = true
 suspensions = "https://www.fantacalcio.it/squalificati-e-diffidati-campionato-serie-a"
 suspensions_enabled = true
-# Fantacalcio-Online's round ratings page: three desks' base ratings, per match (mvp-sources C6).
+# Fantacalcio-Online's round ratings page: three desks' base ratings, per match (mvp-sources C6), read the morning
+# after each round and when a round is scored. Set `ratings_enabled = false` to switch it off: Claude then reads
+# it through read_page.
 ratings = "https://www.fantacalcio-online.com/it/serie-a/2026-2027/voti/{round}-giornata"
+ratings_enabled = true
 
 [facts.fixtures]
 need = "N2"
@@ -133,6 +136,16 @@ submit_tool = "submit_suspensions"
 # Who's banned, for which round, and who's one booking from a ban (mvp-sources C4).
 pages = ["https://www.fantacalcio.it/squalificati-e-diffidati-campionato-serie-a"]
 search = ["squalificati diffidati Serie A site:fantacalcio.it"]
+
+[facts.match_ratings]
+need = "N6"
+submit_tool = "submit_ratings"
+# Each round's base ratings from three desks (mvp-sources C6): Fantadamus reads the page itself.
+search = [
+    "voti fantacalcio giornata Serie A site:fantacalcio-online.com",
+    "voti Serie A giornata redazioni site:fantacalcio-online.com",
+]
+patterns = ["https://www.fantacalcio-online.com/it/serie-a/2026-2027/voti/{round}-giornata"]
 
 [facts.penalty_takers]
 need = "N9"

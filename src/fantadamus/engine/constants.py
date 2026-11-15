@@ -38,6 +38,7 @@ MINIMUM_SAMPLE = {  # below these, a value isn't proposed (mvp-recalibrate R5.2,
     "cards": 300,  # games, for each role
     "scoring": 500,  # started outfield players whose goals are known
     "clean_sheets": 100,  # started keepers whose clean sheet is known
+    "ratings": 1500,  # rated players with the league's rating (mvp-sources C6)
 }
 
 # Many sources, compared (mvp-collect R5.3, design C12)

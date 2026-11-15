@@ -144,6 +144,18 @@ The rendering rules go into the tools' descriptions, not the agent prompt (12,91
 - **As evidence.** `waiting`'s rating group gains `have`, the rows with a rating, against `MINIMUM_SAMPLE["ratings"]`
   *(start)*: 1,500. Fitting the rating constants is a later recalibration's (R4.3).
 
+*Set in task 6*, from round 11's real page, read on 2026-11-15 (10 matches, 312 players, every desk published):
+
+- **Names.** A player's name is kept as the page writes it, his initial after his surname ("DE GEA D."); 311 of 312
+  resolved among the statistics page's players.
+- **Minutes.** The minutes are a substitute's minutes played, or when a starter was taken off.
+- **Unused players.** A player who never came on isn't kept: his row shows only dashes.
+- **Which round.** The page read is the round just played, finished 12 hours after its last kickoff, the same rule
+  as the calibration's. It's due once, that morning, and read again when the calibrator scores the round, if none
+  of its ratings is stored.
+- **The page's rating** in a set comes from the page's newest read, its Fantacalcio.it desk, the name resolved as
+  the outlets' are.
+
 ### C7. Rater bias (`domains/raters.py`, pure; R5)
 
 `desk_bias(rows) -> list[Bias]`, for each player and desk, over the matches all three desks rated:
