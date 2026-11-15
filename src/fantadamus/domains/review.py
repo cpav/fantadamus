@@ -365,9 +365,16 @@ class Advice:
     as_of: dt.datetime
     replayed: bool = False
     """Replayed at the lock, because the user asked for no lineup before it."""
+    chances: dict[int, float] = dataclasses.field(default_factory=dict, compare=False)
+    """Each player's chance of starting in the answer, for an alert's cause (mvp-alerts C4); not part of the
+    advice."""
 
     def picked(self) -> Picked:
         return Picked(self.formation, tuple(self.starters), tuple(self.bench), self.captain, self.vice)
+
+
+def _chances(answer: Decision) -> dict[int, float]:
+    return {player.player_id: player.p_start for player in answer.players}
 
 
 def last_advice(
@@ -397,6 +404,7 @@ def last_advice(
                 answer.captain,
                 answer.vice,
                 answer.as_of,
+                chances=_chances(answer),
             )
         if (
             answer.advised_formation
@@ -410,6 +418,7 @@ def last_advice(
                 answer.advised_captain,
                 answer.advised_vice,
                 answer.as_of,
+                chances=_chances(answer),
             )
     return None
 

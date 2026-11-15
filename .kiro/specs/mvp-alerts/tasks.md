@@ -18,21 +18,21 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. The call, what changed, why, and the text
+- [x] 1. The call, what changed, why, and the text
   - Branch: `feat/al-1-call` · Depends on: none · ADRs: none
-  - [ ] 1.1 A call from a lineup answer and from a logged one; `last_advice` also gives each player's chance of starting. This spec
+  - [x] 1.1 A call from a lineup answer and from a logged one; `last_advice` also gives each player's chance of starting. This spec
     becomes the current one.
     - _Requirements: R2.1_
     - _Test: `tests/unit/alerts/test_call.py::test_a_call_from_a_lineup`, `::test_a_call_from_a_logged_answer`,
       `::test_an_override_is_compared_by_its_advice`, `::test_the_first_on_the_bench_in_each_role`;
       `tests/unit/review/test_advice.py::test_last_advice_keeps_the_chances`_
-  - [ ] 1.2 What changed: the eleven in pairs, the formation, the captain and vice, each role's first bench place; nothing for chances
+  - [x] 1.2 What changed: the eleven in pairs, the formation, the captain and vice, each role's first bench place; nothing for chances
     alone or the bench below its first places.
     - _Requirements: R2.1, R2.3_
     - _Test: `tests/unit/alerts/test_changes.py::test_each_kind_of_change`, `::test_a_new_formation_leaves_lone_changes`,
       `::test_chances_alone_change_nothing`, `::test_lower_on_the_bench_changes_nothing`;
       **P2** `tests/property/alerts/test_changes.py::test_p2_changes_are_empty_exactly_both_ways`_
-  - [ ] 1.3 Why, from the facts read after the call compared, the official lineup first; the text, within `ALERT_CHARACTERS`.
+  - [x] 1.3 Why, from the facts read after the call compared, the official lineup first; the text, within `ALERT_CHARACTERS`.
     - _Requirements: R2.2, R3.1_
     - _Test: `tests/unit/alerts/test_cause.py::test_the_official_lineup_first`, `::test_the_injury_and_ban_pages`,
       `::test_the_probable_lineups`, `::test_otherwise_the_newest_facts`; `tests/unit/alerts/test_text.py::test_the_shape`,

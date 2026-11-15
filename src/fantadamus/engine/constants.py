@@ -146,6 +146,9 @@ NEAR_MATCH_HOURS = 24
 RATER_BIAS_SHOWN = 0.25  # a desk's bias, either way, from which a claim is shown
 RATER_BIAS_MATCHES = 5  # over at least this many matches all three desks rated
 
+# Alerts (mvp-alerts C3), (start)
+ALERT_CHARACTERS = 240  # the most of a notification's text a Mac shows once it's opened
+
 # Rest days (mvp-sources C3), (start)
 EUROPEAN_WEEK_DAYS = (
     3  # a European match this many days or fewer before or after a Serie A one: a European week
