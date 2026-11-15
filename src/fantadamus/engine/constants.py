@@ -146,8 +146,9 @@ NEAR_MATCH_HOURS = 24
 RATER_BIAS_SHOWN = 0.25  # a desk's bias, either way, from which a claim is shown
 RATER_BIAS_MATCHES = 5  # over at least this many matches all three desks rated
 
-# Alerts (mvp-alerts C3), (start)
+# Alerts (mvp-alerts C3, C4), (start)
 ALERT_CHARACTERS = 240  # the most of a notification's text a Mac shows once it's opened
+ALERT_WINDOW_HOURS = 24  # a check runs only this close to a round's deadline
 
 # Rest days (mvp-sources C3), (start)
 EUROPEAN_WEEK_DAYS = (

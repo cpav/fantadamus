@@ -150,17 +150,25 @@ def _name(names: Mapping[int, str], player: int) -> str:
 
 
 def _cause_of(
-    player: int, before: Call, after: Call, latest: Mapping[int, Latest], names: Mapping[int, str]
+    player: int,
+    lost: bool,
+    before: Call,
+    after: Call,
+    latest: Mapping[int, Latest],
+    names: Mapping[int, str],
 ) -> Cause | None:
+    """The first fact read since `before` that explains the move: for a player who `lost` his place, benched,
+    out or less likely to start; for one who took it, starting or likelier to."""
     name, heard = _name(names, player), latest.get(player, Latest())
-    if heard.official is not None and heard.official_at is not None and heard.official_at > before.at:
-        return Cause("official", _OFFICIAL[heard.official].format(name=name))
-    if heard.out is not None and heard.out_at is not None and heard.out_at > before.at:
+    official = heard.official if heard.official_at is not None and heard.official_at > before.at else None
+    if official is not None and (official != "starter") == lost:
+        return Cause("official", _OFFICIAL[official].format(name=name))
+    if lost and heard.out is not None and heard.out_at is not None and heard.out_at > before.at:
         if heard.banned:
             return Cause("ban", f"{name} is banned")
         return Cause("injury", f"the injury page has {name} out: {heard.out}")
     was, now = before.chances.get(player), after.chances.get(player)
-    if was is not None and now is not None and round(was * 100) != round(now * 100):
+    if was is not None and now is not None and round(now * 100) != round(was * 100) and (now < was) == lost:
         return Cause("outlets", f"the probable lineups give {name} {now:.0%} to start, from {was:.0%}")
     return None
 
@@ -169,11 +177,11 @@ def cause(
     change: Change, before: Call, after: Call, latest: Mapping[int, Latest], names: Mapping[int, str]
 ) -> Cause | None:
     """Why it changed, from the facts read after the call compared: of the player who lost his place, then
-    the one who took it, the first with an official lineup, then the injured or suspended page, then the
-    probable lineups. None when none of them says (C2)."""
-    for player in (change.before, change.now):
+    the one who took it, the first that explains the move, an official lineup first, then the injured or
+    suspended page, then the probable lineups. None when none of them says (C2)."""
+    for player, lost in ((change.before, True), (change.now, False)):
         if player is not None:
-            found = _cause_of(player, before, after, latest, names)
+            found = _cause_of(player, lost, before, after, latest, names)
             if found is not None:
                 return found
     return None
@@ -252,3 +260,39 @@ def alert_text(
             text = text[: limit - len(tail) - 1] + "…"
     strongest = next((kind for kind in _STRENGTH if any(why and why.kind == kind for why in causes)), None)
     return Alert(f"Fantadamus · Round {round}", _SUBTITLE[strongest], text + _more(len(full) - shown), shown)
+
+
+Step = Literal["baseline", "unchanged", "alert"]
+
+
+@dataclass(frozen=True)
+class Decided:
+    step: Step
+    found: list[Change]
+    alert: Alert | None = None
+
+
+def newest(calls: Iterable[Call | None]) -> Call | None:
+    """The baseline: the newest of the calls the user last saw, by when their facts were read (C4, decision
+    2)."""
+    return max((call for call in calls if call is not None), key=lambda call: call.at, default=None)
+
+
+def decide(
+    baseline: Call | None,
+    call: Call,
+    *,
+    saved_at: dt.datetime,
+    roles: Mapping[int, Role],
+    latest: Mapping[int, Latest],
+    names: Mapping[int, str],
+) -> Decided:
+    """What to do with the call now: keep it as the baseline, when there's none or the squad or the rules were
+    saved after it; nothing, when it hasn't changed; else alert, with each change's cause (C4)."""
+    if baseline is None or baseline.at < saved_at:
+        return Decided("baseline", [])
+    found = changes(baseline, call, roles)
+    if not found:
+        return Decided("unchanged", [])
+    causes = [cause(change, baseline, call, latest, names) for change in found]
+    return Decided("alert", found, alert_text(call.round, found, causes, names))

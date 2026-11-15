@@ -213,6 +213,7 @@ SETTINGS = {
     "RATER_BIAS_SHOWN",  # when a rater's bias is shown as a claim (mvp-sources C7)
     "RATER_BIAS_MATCHES",
     "ALERT_CHARACTERS",  # how much of an alert's text is shown (mvp-alerts C3)
+    "ALERT_WINDOW_HOURS",  # how close to a deadline a check runs (mvp-alerts C4)
 }
 """How the answers are worked out and shown, not estimates: nothing to calibrate."""
 
