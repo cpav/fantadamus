@@ -1,6 +1,6 @@
 # Design Document: `mvp-alerts` (Phase 2, ninth slice)
 
-Status: **Draft, for the owner's approval** · From the approved [requirements](requirements.md)
+Status: **Approved by the owner, 2026-11-15**, with all three recommendations · From the approved [requirements](requirements.md)
 
 ## Overview
 
@@ -184,6 +184,8 @@ and runs only after a run that stored lineups or news in the last day before a r
 4. The docs (C8), the real check on the owner's Mac, and the slice report.
 
 ## Open points for the owner
+
+All three decided by the owner on 2026-11-15, as recommended.
 
 1. **One suppression.** Calling `osascript` needs ruff's `S603` silenced on that one line (S-015). Recommendation: approve:
    the command is fixed, the path absolute, and the text goes in as arguments, never as code.

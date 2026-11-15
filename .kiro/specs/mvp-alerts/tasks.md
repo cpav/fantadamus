@@ -1,6 +1,6 @@
 # Implementation Plan: `mvp-alerts` (Phase 2, ninth slice)
 
-Status: **Draft, for the owner's approval** · From the approved [requirements](requirements.md) and the [design](design.md)
+Status: **Approved by the owner, 2026-11-15** · From the approved [requirements](requirements.md) and the [design](design.md)
 
 ## How to read and run these tasks
 
