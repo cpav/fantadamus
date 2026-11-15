@@ -12,7 +12,7 @@ from tests.alerts_harness import (
     IN_WINDOW,
     Shown,
     alerts,
-    alfa_starter,
+    benchable,
     check,
     collect_officials,
     told_after_officials,
@@ -26,7 +26,7 @@ QUARTER = dt.timedelta(minutes=15)
 async def test_at3_not_sent_twice(tmp_path: Path) -> None:
     """Checked again on the same facts, then after a run that found the page unchanged: one alert."""
     async with a_round(tmp_path) as here:
-        benched = alfa_starter(await told_after_officials(here))["name"]
+        benched = benchable(await told_after_officials(here))["name"]
         shown = Shown()
         report = collect_officials(here, IN_WINDOW - QUARTER, [benched])
         first, same = check(here, report, shown), check(here, report, shown)
@@ -39,7 +39,7 @@ async def test_at3_a_change_back_is_sent(tmp_path: Path) -> None:
     """The first official lineup benches him, a corrected one starts him: two alerts, the second undoing the
     first."""
     async with a_round(tmp_path) as here:
-        benched = alfa_starter(await told_after_officials(here))["name"]
+        benched = benchable(await told_after_officials(here))["name"]
         shown = Shown()
         first = check(here, collect_officials(here, IN_WINDOW - QUARTER, [benched]), shown)
         back = check(here, collect_officials(here, IN_WINDOW), shown)
@@ -54,7 +54,7 @@ async def test_at3_a_change_back_is_sent(tmp_path: Path) -> None:
 async def test_at3_only_this_round_this_user_and_this_team(tmp_path: Path) -> None:
     """Calls logged for another round, another user or a league-mate's team aren't the baseline."""
     async with a_round(tmp_path) as here:
-        benched = alfa_starter(await told_after_officials(here))["name"]
+        benched = benchable(await told_after_officials(here))["name"]
         report = collect_officials(here, IN_WINDOW, [benched])
         shown = Shown()
         assert check(here, report, shown).outcome == "sent"

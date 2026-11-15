@@ -2,9 +2,11 @@
 
 fantadamus serve run the advisor's MCP server on stdio, for Claude Desktop (ADR-0005) fantadamus collect read
 the round page now and store its facts; `--due` only if something is past its cadence (the schedule, C7), and
-score a finished round; `--report` shows the last run (C10) fantadamus calibrate print a finished round's
-report, scoring it if it hasn't been; `--again` recomputes it fantadamus recalibrate propose new starting
-values from the stored calibration sets, changing nothing (mvp-recalibrate C8)"""
+score a finished round, then check whether what it stored changes the user's call (mvp-alerts C7); `--report`
+shows the last run (C10) fantadamus alerts print the alerts sent and the calls kept; `--test` sends a sample
+fantadamus calibrate print a finished round's report, scoring it if it hasn't been; `--again` recomputes it
+fantadamus recalibrate propose new starting values from the stored calibration sets, changing nothing
+(mvp-recalibrate C8)"""
 
 from __future__ import annotations
 
@@ -12,20 +14,29 @@ import argparse
 from collections.abc import Sequence
 from pathlib import Path
 
+from fantadamus.cli.notify import alerts_enabled, notify
 from fantadamus.core.clock import utc_now
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.calibration import render
 from fantadamus.domains.facts import read_silver
 from fantadamus.domains.recalibration import propose, render_proposal, season_read
 from fantadamus.domains.season.silver import SEASON_STATS, TEAM_SEASONS
+from fantadamus.lake.alert_log import AlertLog
 from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.decision_log import DecisionLog
 from fantadamus.lake.duckdb_store import DEFAULT_ROOT, LakeStore
 from fantadamus.league.rules import RulesStore
 from fantadamus.mcp.advisor import DEFAULT_READING_LIST, load_reading_list
+from fantadamus.mcp.alerts import check_alerts
 from fantadamus.mcp.calibrate import Calibrator
-from fantadamus.mcp.server import DEFAULT_SOURCES, build_advisor, load_allowed_hosts, load_instructions
+from fantadamus.mcp.server import (
+    DEFAULT_SOURCES,
+    build_advisor,
+    load_allowed_hosts,
+    load_instructions,
+    make_advisor,
+)
 from fantadamus.web.cadence import collect_due
 from fantadamus.web.collector import FACTS, Collector, CollectReport, PageReport, load_collector
 from fantadamus.web.fetch import Fetcher
@@ -135,6 +146,56 @@ def _recalibrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _alerts(lake_root: Path) -> AlertLog:
+    """The alert log, next to the lake: data/local/alerts by default."""
+    return AlertLog(lake_root.parent / "alerts")
+
+
+def _check(args: argparse.Namespace, report: CollectReport, log: CollectLog) -> None:
+    """After a scheduled run, whether what it stored changes the user's call; an error here is printed, and
+    never fails the run (mvp-alerts C7)."""
+    enabled, note = alerts_enabled()
+    if note is not None:
+        print(note)
+    lake_root = Path(args.lake)
+    try:
+        advisor = make_advisor(
+            LakeStore(lake_root),
+            rules=RulesStore(lake_root.parent / "league"),
+            log=DecisionLog(lake_root.parent / "decisions"),
+            clubs=_clubs(),
+            reading=load_reading_list(Path(args.reading_list)),
+            user=args.user,
+            clock=utc_now,
+            collect_log=log,
+        )
+        checked = check_alerts(advisor, _alerts(lake_root), report, notify, enabled=enabled)
+    except Exception as error:  # the run's facts are stored whatever happens here
+        print(f"Alerts: the check failed ({type(error).__name__}: {error})")
+        return
+    print(f"Alerts: {checked.message}")
+
+
+def _alert_log(args: argparse.Namespace) -> int:
+    if args.test:
+        reason = notify(
+            "Fantadamus", "Alerts are on", "A change of your lineup's call will reach you like this."
+        )
+        print("Sent: look at the top right of your screen." if reason is None else f"Not shown: {reason}")
+        return 0 if reason is None else 1
+    lines = _alerts(Path(args.lake)).read()[-args.last :]
+    if not lines:
+        print("No alert yet, and no call kept to compare with.")
+    for line in lines:
+        when = f"{line.logged_at:%Y-%m-%d %H:%M} UTC, round {line.round}"
+        if line.kind == "baseline":
+            print(f"{when}: call kept to compare with ({line.reason})")
+        else:
+            shown = "shown" if line.delivered else f"not shown: {line.reason}"
+            print(f"{when}: {line.subtitle}. {line.text} ({shown})")
+    return 0
+
+
 def _collect(args: argparse.Namespace) -> int:
     lake_root = Path(args.lake)
     log = CollectLog(lake_root.parent / "collect")  # next to the lake: data/local/collect by default
@@ -166,6 +227,8 @@ def _collect(args: argparse.Namespace) -> int:
         report = collector.collect(args.round, [args.fact] if args.fact else None)
         log.append(report)
     print("\n".join(_run_lines(report)))
+    if args.due:
+        _check(args, report, log)
     return 0 if all(page.outcome in {"stored", "unchanged", "switched off"} for page in report.pages) else 1
 
 
@@ -192,7 +255,16 @@ def _parser() -> argparse.ArgumentParser:
     collect.add_argument("--lake", default=str(DEFAULT_ROOT), help="lake root directory")
     collect.add_argument("--sources", default=str(DEFAULT_SOURCES), help="allowlist (TOML)")
     collect.add_argument("--reading-list", default=str(DEFAULT_READING_LIST), help="reading list (TOML)")
+    collect.add_argument(
+        "--user", default="owner", help="pseudonymous user ID: whose squad an alert is about"
+    )
     collect.set_defaults(handler=_collect)
+
+    alerts = commands.add_parser("alerts", help="print the alerts sent and the calls kept to compare with")
+    alerts.add_argument("--test", action="store_true", help="send a sample notification")
+    alerts.add_argument("--last", type=int, default=10, help="how many lines to print (default 10)")
+    alerts.add_argument("--lake", default=str(DEFAULT_ROOT), help="lake root directory")
+    alerts.set_defaults(handler=_alert_log)
 
     calibrate = commands.add_parser("calibrate", help="print a finished round's report on the forecasts")
     calibrate.add_argument("--round", type=int, required=True, help="the round")

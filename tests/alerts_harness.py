@@ -38,13 +38,15 @@ class Shown:
 
 
 def officials(benched: Sequence[str] = ()) -> tuple[FcoMatch, FcoMatch]:
-    """Both matches' official lineups: the probable elevens, but for one of Alfa's `benched`, whose place goes
-    to an Alfa forward off the bench who isn't in the squad."""
+    """Both matches' official lineups: the probable elevens, but for one player of the first match `benched`,
+    whose place goes to his club's forward off the bench, who isn't in the squad."""
     assert len(benched) <= 1
-    alfa = [name for name in squad("Alfa")[:11] if name not in benched]
-    marked = (*alfa, *(["Alfa Tredici"] if benched else []), *squad("Beta")[:11])
+    marked: list[str] = []
+    for club in (MATCHES[0].home, MATCHES[0].away):
+        eleven = [name for name in squad(club)[:11] if name not in benched]
+        marked += [*eleven, *([f"{club} Tredici"] if len(eleven) < 11 else [])]
     return (
-        FcoMatch(MATCHES[0].home, MATCHES[0].away, marked=marked),
+        FcoMatch(MATCHES[0].home, MATCHES[0].away, marked=tuple(marked)),
         FcoMatch(MATCHES[1].home, MATCHES[1].away, kickoff=MATCHES[1].kickoff, confirmed=True),
     )
 
@@ -72,7 +74,13 @@ async def told_after_officials(here: Round) -> dict[str, Any]:
 
 
 def check(
-    here: Round, report: CollectReport | None, shown: Shown, *, user: str = "user-1", enabled: bool = True
+    here: Round,
+    report: CollectReport | None,
+    shown: Shown,
+    *,
+    user: str = "user-1",
+    enabled: bool = True,
+    rounds: int = 500,
 ) -> Checked:
     advisor = make_advisor(
         here.store,
@@ -84,13 +92,14 @@ def check(
         clock=here.clock,
         collect_log=here.collect_log,
     )
-    return check_alerts(advisor, alerts(here), report, shown, enabled=enabled, rounds=500)
+    return check_alerts(advisor, alerts(here), report, shown, enabled=enabled, rounds=rounds)
 
 
 def alerts(here: Round) -> AlertLog:
     return AlertLog(Path(here.store.root) / "alerts")
 
 
-def alfa_starter(lineup: dict[str, Any]) -> dict[str, Any]:
-    """An outfield player of Alfa's in the eleven: the one an official lineup benches."""
-    return dict(next(p for p in lineup["starters"] if p["club"] == "Alfa" and p["role"] != "P"))
+def benchable(lineup: dict[str, Any]) -> dict[str, Any]:
+    """An outfield player of the first match in the eleven: the one an official lineup benches."""
+    first = (MATCHES[0].home, MATCHES[0].away)
+    return dict(next(p for p in lineup["starters"] if p["club"] in first and p["role"] != "P"))

@@ -214,6 +214,7 @@ SETTINGS = {
     "RATER_BIAS_MATCHES",
     "ALERT_CHARACTERS",  # how much of an alert's text is shown (mvp-alerts C3)
     "ALERT_WINDOW_HOURS",  # how close to a deadline a check runs (mvp-alerts C4)
+    "ALERT_SECONDS",  # a check's budget (mvp-alerts R4.1)
 }
 """How the answers are worked out and shown, not estimates: nothing to calibrate."""
 

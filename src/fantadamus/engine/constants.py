@@ -149,6 +149,7 @@ RATER_BIAS_MATCHES = 5  # over at least this many matches all three desks rated
 # Alerts (mvp-alerts C3, C4), (start)
 ALERT_CHARACTERS = 240  # the most of a notification's text a Mac shows once it's opened
 ALERT_WINDOW_HOURS = 24  # a check runs only this close to a round's deadline
+ALERT_SECONDS = 10  # the most a check may add to a scheduled run, in CPU seconds
 
 # Rest days (mvp-sources C3), (start)
 EUROPEAN_WEEK_DAYS = (
