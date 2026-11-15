@@ -1,7 +1,7 @@
 """The collector: Fantadamus reads Fantacalcio-Online's round page, Fantacalcio.it's statistics, penalty
-takers and table pages, and Wikipedia's pages of the other competitions itself and stores their facts
-(mvp-collect design C6; R1.1, R1.4, R2.4, R2.5, R3.4; mvp-roles design C4; mvp-lineup C13; mvp-cards C1;
-mvp-sources C2).
+takers, table, injured and suspended pages, and Wikipedia's pages of the other competitions itself and
+stores their facts (mvp-collect design C6; R1.1, R1.4, R2.4, R2.5, R3.4; mvp-roles design C4; mvp-lineup C13;
+mvp-cards C1; mvp-sources C2, C4).
 
 A run fetches each page its facts call for once, politely (C1), with one fetcher for the run, reads it with
 its reader (C3.1), and stores each kind of fact with `facts.submit_many` as `collector`: the fetch time is
@@ -18,12 +18,13 @@ from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, Protocol
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, field_validator
 
 from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
-from fantadamus.domains.availability.silver import OFFICIAL_LINEUPS, OUTLET_VIEWS
+from fantadamus.domains.availability.silver import INJURIES, OFFICIAL_LINEUPS, OUTLET_VIEWS, SUSPENSIONS
 from fantadamus.domains.facts import (
     Domain,
     RefusedError,
@@ -42,10 +43,17 @@ from fantadamus.web.readers import UnreadablePageError
 from fantadamus.web.readers.fcit_stats import StatsFacts, read_stats
 from fantadamus.web.readers.fcit_table import TableFacts, read_table
 from fantadamus.web.readers.fcit_takers import TakersFacts, read_takers
+from fantadamus.web.readers.fcit_unavailable import (
+    InjuriesFacts,
+    SuspensionsFacts,
+    read_injuries,
+    read_suspensions,
+)
 from fantadamus.web.readers.fco import RoundFacts, read_round
 from fantadamus.web.readers.wiki_fixtures import OtherFixturesFacts, competition_of, read_other_fixtures
 
 DEFAULT_READING_LIST = Path("config/reading_list.toml")
+ROME = ZoneInfo("Europe/Rome")
 COLLECTOR = "collector"
 ROUND_FACTS = ("fixtures", "probable_lineups", "official_lineups", "match_odds")
 """The reading list's facts the round page carries: Claude's to read when the page can't be used."""
@@ -59,8 +67,13 @@ OTHER_FIXTURES_FACTS = ("other_fixtures",)
 """And the other competitions' pages (mvp-sources C2)."""
 REFRESHED = ROUND_FACTS + STATS_FACTS + TAKERS_FACTS + TABLE_FACTS
 """What a run that names no fact reads: the other competitions' pages keep to their own cadence (ADR-0007)."""
-FACTS = REFRESHED + OTHER_FIXTURES_FACTS
-PageKind = Literal["round", "statistics", "finished_round", "takers", "table", "other_fixtures"]
+INJURIES_FACTS = ("injuries",)
+SUSPENSIONS_FACTS = ("suspensions",)
+"""And the injured and suspended pages' (mvp-sources C4)."""
+FACTS = REFRESHED + OTHER_FIXTURES_FACTS + INJURIES_FACTS + SUSPENSIONS_FACTS
+PageKind = Literal[
+    "round", "statistics", "finished_round", "takers", "table", "other_fixtures", "injuries", "suspensions"
+]
 PAGE_FACTS: dict[PageKind, tuple[str, ...]] = {
     "round": ROUND_FACTS,
     "finished_round": ROUND_FACTS,
@@ -68,12 +81,14 @@ PAGE_FACTS: dict[PageKind, tuple[str, ...]] = {
     "takers": TAKERS_FACTS,
     "table": TABLE_FACTS,
     "other_fixtures": OTHER_FIXTURES_FACTS,
+    "injuries": INJURIES_FACTS,
+    "suspensions": SUSPENSIONS_FACTS,
 }
 
 
 def page_of(fact: str) -> PageKind:
     """The kind of page that carries `fact`."""
-    for page in ("statistics", "takers", "table", "other_fixtures"):
+    for page in ("statistics", "takers", "table", "other_fixtures", "injuries", "suspensions"):
         if fact in PAGE_FACTS[page]:
             return page
     return "round"
@@ -116,8 +131,10 @@ class CollectorConfig(BaseModel):
     other_competitions_enabled: bool = True
     injuries: str | None = None
     """Fantacalcio.it's injured page (mvp-sources C4)."""
+    injuries_enabled: bool = True
     suspensions: str | None = None
     """Fantacalcio.it's suspended-and-diffidati page (mvp-sources C4)."""
+    suspensions_enabled: bool = True
     ratings: str | None = None
     """Fantacalcio-Online's round ratings page, with `{round}` for n (mvp-sources C6)."""
 
@@ -190,6 +207,16 @@ def other_fixtures_submissions(facts: OtherFixturesFacts) -> Submissions:
     return {OTHER_FIXTURES: [Submission(facts.payload)]}
 
 
+def injuries_submissions(facts: InjuriesFacts) -> Submissions:
+    """The injured page's one read, ready to store (mvp-sources C4)."""
+    return {INJURIES: [Submission(facts.payload)]}
+
+
+def suspensions_submissions(facts: SuspensionsFacts) -> Submissions:
+    """The suspended page's one read, ready to store (mvp-sources C4)."""
+    return {SUSPENSIONS: [Submission(facts.payload)]}
+
+
 class _Read(Protocol):
     """What a reader gives: the facts it found, and what it left out."""
 
@@ -235,6 +262,8 @@ class Collector:
             or (fact in TAKERS_FACTS and self.config.takers is not None)
             or (fact in TABLE_FACTS and self.config.table is not None)
             or (fact in OTHER_FIXTURES_FACTS and bool(self.config.other_competitions))
+            or (fact in INJURIES_FACTS and self.config.injuries is not None)
+            or (fact in SUSPENSIONS_FACTS and self.config.suspensions is not None)
         )
 
     def collect(self, round: int | None = None, facts: Collection[str] | None = None) -> CollectReport:
@@ -254,6 +283,29 @@ class Collector:
             reports.append(self._table_page(fetcher, self.config.table))
         if wanted & set(OTHER_FIXTURES_FACTS):
             reports += [self._other_page(fetcher, url) for url in self.config.other_competitions]
+        if wanted & set(INJURIES_FACTS) and self.config.injuries is not None:
+            today = self.clock().astimezone(ROME).date()
+            reports.append(
+                self._page(
+                    fetcher,
+                    self.config.injuries,
+                    "injuries",
+                    self.config.injuries_enabled,
+                    lambda text: read_injuries(text, today),
+                    injuries_submissions,
+                )
+            )
+        if wanted & set(SUSPENSIONS_FACTS) and self.config.suspensions is not None:
+            reports.append(
+                self._page(
+                    fetcher,
+                    self.config.suspensions,
+                    "suspensions",
+                    self.config.suspensions_enabled,
+                    read_suspensions,
+                    suspensions_submissions,
+                )
+            )
         return CollectReport(started_at=started, finished_at=self.clock(), round=round, pages=reports)
 
     def collect_finished(self, round: int) -> CollectReport:

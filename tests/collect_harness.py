@@ -29,6 +29,8 @@ ROUND_ROUTE = "/probabili-formazioni/ultima-giornata"
 STATS_ROUTE = "/statistiche-serie-a"
 TAKERS_ROUTE = "/rigoristi-serie-a"
 TABLE_ROUTE = "/serie-a/classifica"
+INJURIES_ROUTE = "/infortunati-serie-a"
+SUSPENSIONS_ROUTE = "/squalificati-e-diffidati-campionato-serie-a"
 
 
 @dataclass
@@ -138,12 +140,16 @@ def round_collector(
     table_enabled: bool = True,
     other_competitions: Sequence[str] = (),
     other_competitions_enabled: bool = True,
+    unavailable: bool = False,
+    injuries_enabled: bool = True,
+    suspensions_enabled: bool = True,
 ) -> Collector:
     """The collector over `store`, reading the round page at `base_url` + `ROUND_ROUTE` (or round n's page),
     with `statistics` the statistics page at `base_url` + `STATS_ROUTE`, with `takers` the penalty takers at
     `base_url` + `TAKERS_ROUTE`, with `table` the table at `base_url` + `TABLE_ROUTE`, and the other
-    competitions' pages at `other_competitions`, with a fake monotonic clock so the rate limit costs no
-    time."""
+    competitions' pages at `other_competitions`, with `unavailable` the injured and suspended pages at
+    `base_url` + `INJURIES_ROUTE` and `SUSPENSIONS_ROUTE`, with a fake monotonic clock so the rate limit costs
+    no time."""
     clock = clock or ticking()
     time = FakeTime()
 
@@ -169,6 +175,10 @@ def round_collector(
         table_enabled=table_enabled,
         other_competitions=list(other_competitions),
         other_competitions_enabled=other_competitions_enabled,
+        injuries=base_url + INJURIES_ROUTE if unavailable else None,
+        injuries_enabled=injuries_enabled,
+        suspensions=base_url + SUSPENSIONS_ROUTE if unavailable else None,
+        suspensions_enabled=suspensions_enabled,
     )
     return Collector(
         fetcher=fetcher, lake=store, clubs=CLUBS, config=config, allowed_hosts=tuple(hosts), clock=clock

@@ -11,6 +11,7 @@ design C7; R7.1, R7.2).
 | Penalty takers | Daily (mvp-lineup R10.3) |
 | The table | Daily (mvp-cards C1) |
 | The other competitions' matches | Weekly; daily when one of them is in the coming week (mvp-sources C9) |
+| Injuries and bans | Daily; twice a day in the 48 hours before the round's first kickoff (mvp-sources C9) |
 
 A match's facts stop being due at its kickoff: there's nothing left to forecast. Each interval counts from the
 collector's last attempt at the page that carries the fact, successful or not: a site that refuses is asked
@@ -40,6 +41,8 @@ SCHEDULED = (
     "penalty_takers",
     "team_season",
     "other_fixtures",
+    "injuries",
+    "suspensions",
 )
 _HOUR = dt.timedelta(hours=1)
 _ALWAYS = {
@@ -48,11 +51,16 @@ _ALWAYS = {
     "penalty_takers": 24 * _HOUR,
     "team_season": 24 * _HOUR,
     "other_fixtures": 7 * 24 * _HOUR,
+    "injuries": 24 * _HOUR,
+    "suspensions": 24 * _HOUR,
 }
 """Due at these intervals whatever the matches."""
 _WEEK = 7 * 24 * _HOUR
 _MATCH_WEEK = {"other_fixtures": 24 * _HOUR}
 """Due at these intervals instead when one of the fact's own matches is in the coming week."""
+_BEFORE_ROUND = 48 * _HOUR
+_NEAR_ROUND = {"injuries": 12 * _HOUR, "suspensions": 12 * _HOUR}
+"""Due at these intervals instead in the 48 hours before the round's first kickoff."""
 _WINDOW = {
     "probable_lineups": 72 * _HOUR,
     "match_odds": 72 * _HOUR,
@@ -71,6 +79,8 @@ _ON_DEMAND_EVERY: dict[PageKind, dt.timedelta] = {
     "takers": 24 * _HOUR,
     "table": 24 * _HOUR,
     "other_fixtures": 24 * _HOUR,
+    "injuries": 12 * _HOUR,
+    "suspensions": 12 * _HOUR,
 }
 """The shortest interval of each page's facts in the table."""
 
@@ -85,10 +95,14 @@ def due(
 ) -> bool:
     """Whether `fact`, last read at `last_read` (None: never), is due at `now` for the match kicking off at
     `kickoff`; `confirmed` means the match's official lineup is already in. For the other competitions'
-    matches, `kickoff` is the next of them."""
+    matches, `kickoff` is the next of them; for injuries and bans, the next round's first."""
     if fact in _ALWAYS:
-        match_week = fact in _MATCH_WEEK and kickoff is not None and now <= kickoff <= now + _WEEK
-        every = _MATCH_WEEK[fact] if match_week else _ALWAYS[fact]
+        if fact in _MATCH_WEEK and kickoff is not None and now <= kickoff <= now + _WEEK:
+            every = _MATCH_WEEK[fact]
+        elif fact in _NEAR_ROUND and kickoff is not None and now <= kickoff <= now + _BEFORE_ROUND:
+            every = _NEAR_ROUND[fact]
+        else:
+            every = _ALWAYS[fact]
     elif (
         kickoff is None
         or now >= kickoff
@@ -134,9 +148,11 @@ def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]
         default=None,
     )
     found = []
+    first = min((row.kickoff_at for row in upcoming), default=None)
     for fact in SCHEDULED:
         if fact in _ALWAYS:
-            if due(fact, log.last_attempt(now, page_of(fact)), now, other if fact in _MATCH_WEEK else None):
+            kickoff = other if fact in _MATCH_WEEK else first if fact in _NEAR_ROUND else None
+            if due(fact, log.last_attempt(now, page_of(fact)), now, kickoff):
                 found.append(fact)
         elif any(
             due(fact, last_read, now, row.kickoff_at, confirmed=(row.home, row.away) in confirmed)

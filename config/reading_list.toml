@@ -37,9 +37,13 @@ other_competitions = [
     "https://en.wikipedia.org/wiki/2026%E2%80%9327_UEFA_Conference_League_league_phase?action=raw",
     "https://en.wikipedia.org/wiki/2026%E2%80%9327_Coppa_Italia?action=raw",
 ]
-# Fantacalcio.it's injured page and its suspended-and-diffidati page (mvp-sources C4).
+# Fantacalcio.it's injured page and its suspended-and-diffidati page (mvp-sources C4), read daily and twice a day
+# in the 48 hours before a round. Set `injuries_enabled` or `suspensions_enabled` to false to switch one off:
+# Claude then reads it through read_page.
 injuries = "https://www.fantacalcio.it/infortunati-serie-a"
+injuries_enabled = true
 suspensions = "https://www.fantacalcio.it/squalificati-e-diffidati-campionato-serie-a"
+suspensions_enabled = true
 # Fantacalcio-Online's round ratings page: three desks' base ratings, per match (mvp-sources C6).
 ratings = "https://www.fantacalcio-online.com/it/serie-a/2026-2027/voti/{round}-giornata"
 
@@ -115,6 +119,20 @@ search = [
     "2026-27 Coppa Italia site:en.wikipedia.org",
 ]
 patterns = ["https://en.wikipedia.org/wiki/2026{title}"]
+
+[facts.injuries]
+need = "N8"
+submit_tool = "submit_injuries"
+# Why each injured player is out and for how long (mvp-sources C4): Fantadamus reads the page itself.
+pages = ["https://www.fantacalcio.it/infortunati-serie-a"]
+search = ["infortunati Serie A site:fantacalcio.it"]
+
+[facts.suspensions]
+need = "N8"
+submit_tool = "submit_suspensions"
+# Who's banned, for which round, and who's one booking from a ban (mvp-sources C4).
+pages = ["https://www.fantacalcio.it/squalificati-e-diffidati-campionato-serie-a"]
+search = ["squalificati diffidati Serie A site:fantacalcio.it"]
 
 [facts.penalty_takers]
 need = "N9"

@@ -51,6 +51,7 @@ async def test_served_tools(tmp_path: Path) -> None:
         "set_league_rules",
         "set_squad",
         "submit_fixtures",
+        "submit_injuries",
         "submit_match_odds",
         "submit_official_lineup",
         "submit_other_fixtures",
@@ -58,6 +59,7 @@ async def test_served_tools(tmp_path: Path) -> None:
         "submit_penalty_takers",
         "submit_player_season",
         "submit_probable_lineups",
+        "submit_suspensions",
         "submit_team_season",
     ]
     for fact, entry in load_reading_list(ROOT / "config" / "reading_list.toml").items():
@@ -112,6 +114,8 @@ async def test_schemas_spell_out_every_field(tmp_path: Path) -> None:
         "submit_team_season": '"goals_for"',
         "submit_penalty_takers": '"takers"',
         "submit_other_fixtures": '"competition"',
+        "submit_injuries": '"back_from"',
+        "submit_suspensions": '"one_booking"',
     }
     for name, field in shapes.items():
         assert field in (tools[name].description or ""), name

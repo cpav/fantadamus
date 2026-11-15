@@ -19,6 +19,7 @@ from fantadamus.web.html import parse
 from fantadamus.web.readers.fcit_stats import read_stats
 from fantadamus.web.readers.fcit_table import read_table
 from fantadamus.web.readers.fcit_takers import read_takers
+from fantadamus.web.readers.fcit_unavailable import read_injuries, read_suspensions
 from fantadamus.web.readers.fco import read_round
 from fantadamus.web.readers.wiki_fixtures import competition_of, read_other_fixtures
 from fantadamus.web.text import page_text, parts
@@ -29,6 +30,8 @@ SAVED = sorted(PAGES.glob("*.html")) if PAGES.is_dir() else []
 STATS = PAGES / "fcit-statistiche.html"
 TAKERS = PAGES / "fcit-rigoristi.html"
 TABLE = PAGES / "fcit-classifica.html"
+INJURED = PAGES / "fcit-infortunati.html"
+SUSPENDED = PAGES / "fcit-squalificati.html"
 WIKI = sorted(PAGES.glob("wiki-*.txt")) if PAGES.is_dir() else []
 """Wikipedia's pages of the other competitions as raw wikitext, each named for its competition: wiki-cl, wiki-
 el, wiki-ecl and wiki-coppa (mvp-sources task 2)."""
@@ -37,6 +40,8 @@ SOURCE = Source(
     captured_at=dt.datetime(2026, 11, 13, tzinfo=dt.UTC),
     content_sha256="0" * 64,
 )
+PLACED = 0.75
+"""The share of real injury sentences the rules must place (mvp-sources task 4)."""
 WIKI_TITLES = {
     "cl": "UEFA_Champions_League",
     "el": "UEFA_Europa_League",
@@ -211,3 +216,26 @@ def test_the_other_competitions_pages() -> None:
             top = set(re.findall(r"\[\[(?:[^\]|]+\|)?([^\]|]+)\]\] \(1\)", text))
             for name in top:
                 CLUBS.key(name)
+
+
+@pytest.mark.skipif(
+    not INJURED.exists() or not SUSPENDED.exists(),
+    reason="no real pages saved under data/private/pages/, which is never committed",
+)
+def test_the_unavailable_pages() -> None:
+    """mvp-sources task 4.1: the real injured and suspended pages give every club, each a name
+    config/clubs.toml knows. The rules place most sentences: a kind other than "other", and a return window
+    or "to be assessed", for at least `PLACED` of them; the rest show as detail on the page."""
+    read_on = dt.date.fromtimestamp(INJURED.stat().st_mtime)
+    injuries = read_injuries(INJURED.read_text(encoding="utf-8"), read_on)
+    suspensions = read_suspensions(SUSPENDED.read_text(encoding="utf-8"))
+    assert injuries.problems == suspensions.problems == []
+    for payload in (injuries.payload, suspensions.payload):
+        assert len(payload.clubs) == 20
+        for club in payload.clubs:
+            CLUBS.key(club.club)
+    players = [player for club in injuries.payload.clubs for player in club.players]
+    kinds = sum(player.kind != "other" for player in players)
+    returns = sum(player.back_from is not None or player.to_be_assessed for player in players)
+    assert kinds >= PLACED * len(players), (kinds, len(players))
+    assert returns >= PLACED * len(players), (returns, len(players))

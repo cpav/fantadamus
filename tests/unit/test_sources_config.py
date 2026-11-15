@@ -25,6 +25,8 @@ SUBMIT_TOOLS = {
     "submit_team_season",
     "submit_penalty_takers",
     "submit_other_fixtures",
+    "submit_injuries",
+    "submit_suspensions",
 }
 PLACEHOLDERS = {"home", "away", "club", "player"}
 

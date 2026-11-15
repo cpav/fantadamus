@@ -118,3 +118,14 @@ Headings are `## <Contract> <version> (<date>)`.
 - First version: one competition's matches from its Wikipedia page (the Champions League, Europa League, Conference
   League or Coppa Italia), each a `Fixture` with its kickoff and both clubs (mvp-sources R2.1). Only the matches with a
   Serie A club reach silver.
+
+## InjuriesPayload 1.0.0 (2026-11-15)
+
+- First version: each club's injured players from Fantacalcio.it's injured page, each with the kind of injury, the
+  body part and the return window the rules read in his sentence, or that his return is to be assessed (mvp-sources
+  R3.1). The sentence isn't kept.
+
+## SuspensionsPayload 1.0.0 (2026-11-15)
+
+- First version: each club's banned players, with the rounds they miss where the page names them, and those one
+  booking from a ban, from Fantacalcio.it's suspended-and-diffidati page (mvp-sources R3.1).

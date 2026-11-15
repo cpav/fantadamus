@@ -52,14 +52,16 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
     - The card and the outlook have the collector read the pages first when none is fresh; the design notes the line's
       wording and where its facts come from.
 
-- [ ] 4. Injury and ban detail
+- [x] 4. Injury and ban detail
   - Branch: `feat/so-4-unavailable` · Depends on: 1 · ADRs: ADR-0007
-  - [ ] 4.1 The injury and ban readers with their rules, the contracts, the silver tables, the two collector pages with their switches and
+  - [x] 4.1 The injury and ban readers with their rules, the contracts, the silver tables, the two collector pages with their switches and
     cadence, and `submit_injuries` and `submit_suspensions`.
     - _Requirements: R1.2, R3.1, R7.1_
     - _Test: `tests/unit/sources/test_fcit_unavailable.py`; **P3** `tests/property/sources/test_injury_rules.py::test_p3_a_known_kind_and_a_later_return`;
       `tests/contract/test_sources_contracts.py::test_injuries_and_suspensions_payloads`;
-      `tests/integration/sources/test_unavailable_pages.py::test_read_stored_and_switched_off`_
+      `tests/integration/sources/test_unavailable_pages.py::test_read_stored_and_switched_off`,
+      `::test_due_daily_and_twice_a_day_before_a_round`; `tests/contract/test_real_pages.py::test_the_unavailable_pages`_
+    - The rules' order and the real pages' results are noted in the design (C4).
 
 - [ ] 5. The detail on the answers
   - Branch: `feat/so-5-detail` · Depends on: 4 · ADRs: none

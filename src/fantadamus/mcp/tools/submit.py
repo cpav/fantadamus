@@ -19,10 +19,17 @@ from fantadamus.contracts.xy.fixtures import FixturesPayload, OtherFixturesPaylo
 from fantadamus.contracts.xy.lineups import OfficialLineupPayload, OutletLineupPayload, ProbableLineupPayload
 from fantadamus.contracts.xy.odds import MatchOddsPayload
 from fantadamus.contracts.xy.season import PenaltyTakersPayload, PlayerSeasonPayload, TeamSeasonPayload
+from fantadamus.contracts.xy.unavailable import InjuriesPayload, SuspensionsPayload
 from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains import facts
-from fantadamus.domains.availability.silver import LINEUP_VIEWS, OFFICIAL_LINEUPS, OUTLET_VIEWS
+from fantadamus.domains.availability.silver import (
+    INJURIES,
+    LINEUP_VIEWS,
+    OFFICIAL_LINEUPS,
+    OUTLET_VIEWS,
+    SUSPENSIONS,
+)
 from fantadamus.domains.facts import Domain, Receipt
 from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES
 from fantadamus.domains.odds.silver import ODDS
@@ -99,6 +106,38 @@ def register(
         published_at: AwareDatetime | None = None,
     ) -> Receipt:
         return submit(OTHER_FIXTURES, payload, source_url, captured_at, published_at)
+
+    @server.tool(
+        description="Submit each club's injured players from Fantacalcio.it's injured page. For each, read "
+        "his sentence into: the kind (muscle, knock, fracture, ligament, surgery, illness, 'national team' "
+        "for an injury with his national team, else other), the body part where it says (thigh, calf, knee, "
+        "ankle, adductor, hamstring, foot, shoulder, back, other), and when he's back: a window, as "
+        "back_from and back_until ('dalla fine di novembre' is the 21st to the 30th), or to_be_assessed for "
+        "'da valutare'. Leave out what the sentence doesn't say; never copy the sentence. Shape: "
+        '{"clubs": [{"club": "Inter", "players": [{"name": "Rossi", "kind": "muscle", "body_part": '
+        '"hamstring", "back_from": "2026-11-21", "back_until": "2026-11-30"}]}, ...]}. ' + PROVENANCE
+    )
+    def submit_injuries(
+        payload: InjuriesPayload,
+        source_url: str,
+        captured_at: AwareDatetime,
+        published_at: AwareDatetime | None = None,
+    ) -> Receipt:
+        return submit(INJURIES, payload, source_url, captured_at, published_at)
+
+    @server.tool(
+        description="Submit each club's banned players, with the rounds they miss where the page names them, "
+        "and those one booking from a ban (diffidati), from Fantacalcio.it's squalificati-e-diffidati page. "
+        'Shape: {"clubs": [{"club": "Inter", "banned": [{"name": "Rossi", "rounds": [12]}], "one_booking": '
+        '["Bianchi"]}, ...]}. ' + PROVENANCE
+    )
+    def submit_suspensions(
+        payload: SuspensionsPayload,
+        source_url: str,
+        captured_at: AwareDatetime,
+        published_at: AwareDatetime | None = None,
+    ) -> Receipt:
+        return submit(SUSPENSIONS, payload, source_url, captured_at, published_at)
 
     @server.tool(
         description="Submit a player's Serie A season so far from his Fantacalcio.it profile: appearances, "
