@@ -56,6 +56,10 @@ _PAGES = (
     (r"fantacalcio\.it/rigoristi-serie-a", "Fantacalcio.it, penalty takers"),
     (r"fantacalcio\.it/statistiche-serie-a", "Fantacalcio.it, statistics"),
     (r"fantacalcio\.it/probabili-formazioni-serie-a", "Fantacalcio.it, probable lineups"),
+    (r"/wiki/[^/?]*UEFA_Champions_League", "Wikipedia, Champions League"),
+    (r"/wiki/[^/?]*UEFA_Europa_League", "Wikipedia, Europa League"),
+    (r"/wiki/[^/?]*UEFA_Conference_League", "Wikipedia, Conference League"),
+    (r"/wiki/[^/?]*Coppa_Italia", "Wikipedia, Coppa Italia"),
     (r"wikipedia\.org/wiki/", "Wikipedia, season page"),
 )
 """Address patterns and the short label each page gets in an answer's Sources list (R6.3)."""

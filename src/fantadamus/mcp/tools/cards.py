@@ -40,6 +40,7 @@ from fantadamus.domains.cards import (
     takers,
     your_players,
 )
+from fantadamus.domains.context import RestDays
 from fantadamus.domains.fixtures.gold import deadline, matches, next_round
 from fantadamus.domains.fixtures.silver import FixtureRow
 from fantadamus.domains.odds.gold import TeamXg
@@ -75,6 +76,9 @@ class CardSide(BaseModel):
     disputed: list[Place]
     out: list[Out]
     takers: list[Taker]
+    rest: RestDays
+    """Its matches before and after this one, in any competition: context that moves no number (mvp-sources
+    R2.3)."""
 
 
 class Card(BaseModel):
@@ -161,9 +165,13 @@ def card_for(
     def ask(when: dt.datetime, facts: Facts, _tried: Mapping[str, str] | None) -> _Found:
         return _find(advisor, keys, facts, when)
 
-    done = advisor.after_collecting(
-        as_of, ask, lambda found: [item.fact for item in found.gathered.plan.items] if found.gathered else []
-    )
+    def wanted(found: _Found) -> list[str]:
+        facts = [item.fact for item in found.gathered.plan.items] if found.gathered else []
+        if found.match is None and found.round is not None:  # the asked clubs have no match in the round
+            return facts
+        return facts + advisor.context_due(found.match.kickoff_at if found.match else None)
+
+    done = advisor.after_collecting(as_of, ask, wanted)
     found, when = done.result, done.when
     names = " and ".join(advisor.clubs.names[key] for key in keys)
     if found.past is not None:
@@ -173,7 +181,7 @@ def card_for(
         known = known_players(facts.players, at)
         playing = [player for player in known if player.club in (match.home, match.away)]
         gathered = advisor.gather(playing, at, facts=facts, known=known, any_age=True)
-        return _answer(advisor, squads, team, match, gathered, at, past=True, tried={}, log=False)
+        return _answer(advisor, squads, team, match, gathered, facts, at, past=True, tried={}, log=False)
     if found.round is None or found.gathered is None:
         items = found.gathered.plan.items if found.gathered is not None else []
         return CardResult(status="refresh", message=REFRESH, refresh=items)
@@ -187,6 +195,7 @@ def card_for(
         team,
         found.match,
         found.gathered,
+        done.facts,
         when,
         past=False,
         tried=done.tried,
@@ -258,7 +267,9 @@ def register(server: MCPServer, advisor: Advisor, squads: SquadStore) -> None:
         "goals, clean sheets, three goals or more and both teams to score where the odds price "
         "them, how far apart the odds pages are); each side's season so far (goals per match, "
         "its record and last five results, oldest first: context that should never move a "
-        "number); each side's likely eleven with how sure it is, its disputed places naming the"
+        "number); each side's rest days (its line: its matches before and after this one in any "
+        "competition, and whether one is European within three days; context too); each side's likely "
+        "eleven with how sure it is, its disputed places naming the"
         " outlets that disagree, and who's out, said as 'listed as out by 3 outlets', never "
         "'injured'; the penalty takers with their record; the likeliest scorers; rotation "
         "risks. Sources at the bottom. Round chances the way people say them. Without stored "
@@ -327,6 +338,7 @@ def _answer(
     team: str,
     match: FixtureRow,
     gathered: Gathered,
+    facts: Facts,
     when: dt.datetime,
     *,
     past: bool,
@@ -355,8 +367,14 @@ def _answer(
     table = {club: row for club in clubs if (row := team_season(gathered.teams, club, when)) is not None}
     orders = {side.player.club: side.order for side in sides}
     listed = [part.listed for part in valued]
+    rested = {club: advisor.rest(club, match.kickoff_at, facts, when) for club in clubs}
     card_sides = [
-        _side(advisor, lineups(club, listed, match.kickoff_at), takers(orders.get(club), club, valued))
+        _side(
+            advisor,
+            lineups(club, listed, match.kickoff_at),
+            takers(orders.get(club), club, valued),
+            rested[club].days,
+        )
         for club in clubs
     ]
     squad = squads.get(advisor.user, team)
@@ -368,7 +386,7 @@ def _answer(
     ]
     by_id = {part.listed.player.player_id: part for part in valued}
     shown = [by_id[player_id] for player_id in dict.fromkeys(named)]
-    sources = sources_of(sides)
+    sources = [*sources_of(sides), *(source for club in clubs for source in rested[club].sources)]
     lines = source_lines(sources, advisor, when)
     times = [line.captured_at for line in lines]
     round = match.round
@@ -421,7 +439,7 @@ def _answer(
     return CardResult(status="card", message=_message(card, improve), card=rounded, improve=improve)
 
 
-def _side(advisor: Advisor, found: Lineups, order: list[Taker]) -> CardSide:
+def _side(advisor: Advisor, found: Lineups, order: list[Taker], rest: RestDays) -> CardSide:
     return CardSide(
         club=advisor.clubs.names[found.club],
         eleven=[starter.player_id for starter in found.eleven],
@@ -430,6 +448,7 @@ def _side(advisor: Advisor, found: Lineups, order: list[Taker]) -> CardSide:
         disputed=found.disputed,
         out=found.out,
         takers=order,
+        rest=rest,
     )
 
 

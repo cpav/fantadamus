@@ -37,9 +37,10 @@ from fantadamus.domains.availability.silver import (
     LineupViewRow,
     OutletViewRow,
 )
+from fantadamus.domains.context import RestDays, Rested, rest_days
 from fantadamus.domains.facts import SilverRow, Source, latest_by, read_silver
 from fantadamus.domains.fixtures.gold import deadline, fixture, matches, next_round
-from fantadamus.domains.fixtures.silver import FIXTURES, FixtureRow
+from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES, FixtureRow
 from fantadamus.domains.freshness import FACTS_WINDOW, Fact, is_fresh
 from fantadamus.domains.odds.gold import TeamXg, team_xg
 from fantadamus.domains.odds.silver import ODDS
@@ -214,6 +215,8 @@ class PlayerAnswer(BaseModel):
     notes: list[str]
     sources: list[SourceUsed]
     movement: Movement | None = None
+    rest: RestDays | None = None
+    """His club's rest days before the match: context that moves no number (mvp-sources R2.3)."""
 
 
 class Flip(BaseModel):
@@ -267,6 +270,8 @@ class Facts:
     outlet_views: Sequence[Any]
     officials: Sequence[Any]
     odds: Sequence[Any]
+    other: Sequence[Any] = ()
+    """The other competitions' matches (mvp-sources C2)."""
 
     @classmethod
     def read(cls, lake: LakeStore, as_of: dt.datetime) -> Facts:
@@ -281,6 +286,7 @@ class Facts:
             outlet_views=read_silver(lake, OUTLET_VIEWS, since, as_of),
             officials=read_silver(lake, OFFICIAL_LINEUPS, since, as_of),
             odds=read_silver(lake, ODDS, since, as_of),
+            other=read_silver(lake, OTHER_FIXTURES, since, as_of),
         )
 
 
@@ -439,6 +445,29 @@ class Advisor:
         except Exception:
             _LOG.exception("Couldn't score a finished round; it's tried again later")
 
+    def rest(self, club: str, kickoff: dt.datetime, facts: Facts, as_of: dt.datetime) -> Rested:
+        """A side's rest days at `as_of` (mvp-sources C3): every Serie A match known then, and each other
+        competition's match from its newest read."""
+        other = latest_by(facts.other, as_of, key=lambda row: (row.competition, row.home, row.away))
+        return rest_days(
+            club, kickoff, matches(facts.fixtures, as_of), list(other.values()), self.clubs.names
+        )
+
+    def context_due(self, kickoff: dt.datetime | None) -> list[str]:
+        """The context to read before an answer that shows it (mvp-sources C9): the other competitions'
+        matches when none of their pages' reads is fresh for the match at `kickoff`; without one, the next
+        round's first."""
+        now = self.clock().astimezone(dt.UTC)
+        since = now - FACTS_WINDOW
+        if kickoff is None:
+            fixtures = read_silver(self.lake, FIXTURES, since, now)
+            round = next_round(fixtures, now)
+            kickoff = deadline(fixtures, round, now) if round is not None else None
+        rows = read_silver(self.lake, OTHER_FIXTURES, since, now)
+        confirmed = self.collect_log.confirmed(now) if self.collect_log is not None else {}
+        fresh = _fresh(rows, "other_fixtures", now, kickoff, confirmed.get(OTHER_FIXTURES.table.name))
+        return [] if fresh else ["other_fixtures"]
+
     def refresh_item(self, fact: str, why: Why, about: str, **values: str) -> RefreshItem:
         entry = self.reading[fact]
         fields = {"home": "", "away": "", "club": "", "player": ""} | values
@@ -517,7 +546,13 @@ class Advisor:
         def ask(when: dt.datetime, facts: Facts, tried: Mapping[str, str] | None) -> CompareResult:
             return self.answer_at(names, when, odds_unavailable=odds_unavailable, facts=facts, tried=tried)
 
-        done = self.after_collecting(as_of, ask, lambda found: [item.fact for item in found.refresh])
+        def wanted(found: CompareResult) -> list[str]:
+            facts = [item.fact for item in found.refresh]
+            if len(names) == 1 and found.status in ("refresh", "outlook"):  # it shows his club's rest days
+                facts += self.context_due(found.answer.players[0].kickoff if found.answer else None)
+            return facts
+
+        done = self.after_collecting(as_of, ask, wanted)
         result = done.result
         if result.answer is None:
             return result
@@ -582,7 +617,12 @@ class Advisor:
                 refresh=refresh,
             )
         league = league_goals_per_match(gathered.teams, as_of)
-        answer = self._answer(sides, known, round, first_kickoff, as_of, stored, league)
+        rest = {
+            side.player.club: self.rest(side.player.club, side.match.kickoff_at, facts, as_of)
+            for side in sides
+            if side.match is not None
+        }
+        answer = self._answer(sides, known, round, first_kickoff, as_of, stored, league, rest)
         kind = _kind(answer)
         return CompareResult(
             status="answer" if kind == "compare" else kind, message=answer.message, answer=answer
@@ -847,13 +887,17 @@ class Advisor:
         as_of: dt.datetime,
         stored: StoredRules,
         league: float,
+        rest: Mapping[str, Rested],
     ) -> Answer:
         inputs = [model_inputs(side, league) for side in sides]
         values = [
             model_value(part, scoring_for(stored.rules, side.form.role))
             for part, side in zip(inputs, sides, strict=True)
         ]
-        players = [self._player_answer(side, value, round) for side, value in zip(sides, values, strict=True)]
+        players = [
+            self._player_answer(side, value, round, rest.get(side.player.club))
+            for side, value in zip(sides, values, strict=True)
+        ]
         judged = _judged(inputs, scoring_for(stored.rules, sides[0].form.role))
         verdict, flip = judged if judged is not None else (None, None)
         if verdict is not None:
@@ -960,7 +1004,7 @@ class Advisor:
         )
 
     def _player_answer(
-        self, side: PlayerFacts, value: OutfieldValue | KeeperValue, round: int
+        self, side: PlayerFacts, value: OutfieldValue | KeeperValue, round: int, rested: Rested | None
     ) -> PlayerAnswer:
         match, present, xg = side.match, side.present, side.xg
         notes = list(side.disagreements)
@@ -991,6 +1035,8 @@ class Advisor:
                 notes.append("Team xG comes from regressed team form: no match odds were found.")
             elif not xg.totals:
                 notes.append("No over/under 2.5 was found: goal chances come from the 1X2 alone.")
+        if rested is not None:
+            sources += rested.sources
         home = match is not None and match.home == side.player.club
         form = side.form
         if form.role == "P" and form.goals_conceded is None:
@@ -1028,6 +1074,7 @@ class Advisor:
             p_scores_confidence=scores_confidence,
             notes=notes,
             sources=_unique(sources),
+            rest=rested.days if rested is not None else None,
         )
 
 

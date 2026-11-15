@@ -61,6 +61,17 @@ A knockout round's Wikipedia page appears after its draw; its title is added to 
 The card's `CardSide` and the outlook gain it. The line: "Inter played Wednesday in the Champions League: 3 days'
 rest." No number moves (decision 2).
 
+*Set in task 3:*
+
+- **The line** is said the same before and after the other match, since a card can be read on either side of it:
+  "Inter: 3 days' rest since the Champions League on Wednesday 28 October; 3 days to Serie A on Saturday 31
+  October."
+- **The data.** Serie A's matches are every one known in the answers' window. Each other match is its page's
+  newest read.
+- **The pages** are at the bottom with the sources, labelled "Wikipedia, Champions League" and the like.
+- **On demand.** Before a card or an outlook, the collector reads the pages when none of their reads is fresh. An
+  "X or Y?" answer carries each player's rest days too, from what's stored, but never waits for a read.
+
 ### C4. Injury and ban detail (`web/readers/fcit_unavailable.py`, `domains/availability/`; R3.1)
 
 - **Reader, injuries.** By club, each entry a name and a sentence. Rules turn the sentence into facts, and the sentence
