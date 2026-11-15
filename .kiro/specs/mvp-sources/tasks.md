@@ -43,12 +43,14 @@ Status: **Approved by the owner, 2026-11-12** · From the approved [requirements
     - The cup's matches are `Football box collapsible` templates, and a match waiting for a draw is left out and counted;
       the design is corrected. The cadence is ADR-0007's: weekly, daily when a match is in the coming week.
 
-- [ ] 3. Rest days
+- [x] 3. Rest days
   - Branch: `feat/so-3-rest-days` · Depends on: 2 · ADRs: none
-  - [ ] 3.1 `rest_days` for each side of a match, on the card and in the outlook, with its line and its source.
+  - [x] 3.1 `rest_days` for each side of a match, on the card and in the outlook, with its line and its source.
     - _Requirements: R2.2, R2.3_
     - _Test: **AT-2** `tests/acceptance/sources/test_rest_days.py::test_at2_rest_days_by_hand`, `::test_at2_on_the_card_and_the_outlook`;
-      **P1** `tests/property/sources/test_rest_days.py::test_p1_rest_days_in_order`_
+      **P1** `tests/property/sources/test_rest_days.py::test_p1_rest_days_in_order`; `tests/unit/sources/test_rest_days.py`_
+    - The card and the outlook have the collector read the pages first when none is fresh; the design notes the line's
+      wording and where its facts come from.
 
 - [ ] 4. Injury and ban detail
   - Branch: `feat/so-4-unavailable` · Depends on: 1 · ADRs: ADR-0007

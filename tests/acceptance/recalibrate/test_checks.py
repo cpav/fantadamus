@@ -209,6 +209,7 @@ SETTINGS = {
     "USUAL_SHARE",
     "ROTATION_P_START",
     "SCORERS",
+    "EUROPEAN_WEEK_DAYS",  # what the rest-days line calls a European week (mvp-sources C3)
 }
 """How the answers are worked out and shown, not estimates: nothing to calibrate."""
 

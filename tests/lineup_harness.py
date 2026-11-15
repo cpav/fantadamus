@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime as dt
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -136,9 +136,11 @@ async def a_round(
     table: bool = True,
     rounds: int = 500,
     takers: str | None = None,
+    other: Mapping[str, str] | None = None,
 ) -> AsyncIterator[Round]:
     """The tools over a lake that holds the table and the takers; the collector reads the pages when asked,
-    the takers too once they're stale. With `takers`, it reads them from that page, and the lake has none."""
+    the takers too once they're stale. With `takers`, it reads them from that page, and the lake has none.
+    With `other`, it reads the other competitions' pages there, by address, each its raw wikitext."""
     store, clock = LakeStore(tmp_path / "lake"), SetClock(NOW)
     base = "https://example.org"
     routes: dict[str, Response | Exception] = {
@@ -146,6 +148,10 @@ async def a_round(
         f"{base}{ROUND_ROUTE}": Response(200, HTML, fco_round_page(*matches).encode()),
         f"{base}{STATS_ROUTE}": Response(200, HTML, stats_page(players or rows()).encode()),
         f"{base}{TAKERS_ROUTE}": Response(200, HTML, (takers or _usual_takers()).encode()),
+        **{
+            url: Response(200, {"Content-Type": "text/x-wiki"}, text.encode())
+            for url, text in (other or {}).items()
+        },
     }
     web = FakeWeb(routes)
     collector = round_collector(
@@ -157,6 +163,7 @@ async def a_round(
         clock=clock,
         statistics=True,
         takers=True,
+        other_competitions=list(other or {}),
     )
     log = CollectLog(tmp_path / "collect")
     async with tools(

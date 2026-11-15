@@ -132,6 +132,11 @@ FRESH_FOR_HOURS = {
 FRESH_NEAR_MATCH_HOURS = {"probable_lineups": 3, "match_odds": 6, "other_fixtures": 24}
 NEAR_MATCH_HOURS = 24
 
+# Rest days (mvp-sources C3), (start)
+EUROPEAN_WEEK_DAYS = (
+    3  # a European match this many days or fewer before or after a Serie A one: a European week
+)
+
 # The match card (mvp-cards R4.4, design C4), (start)
 USUAL_SHARE = 0.7  # rated in at least this share of his club's matches: he usually starts
 ROTATION_P_START = 0.6  # a usual starter below this chance of starting is a rotation risk
