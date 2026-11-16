@@ -94,6 +94,9 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
     - From `main` on 2026-11-15: `fantadamus alerts --test` was taken by macOS; round 11's last day, replayed read-only,
       would have sent 4 alerts. Left to the owner: seeing the notification, installing the schedule, and a real alert
       in round 12's last day.
+    - 2026-11-16 (`mvp-store`, decision 1): the schedule is installed after `mvp-store`. Until then
+      `fantadamus collect --due --user owner`, run by hand in a round's last day, sends a real alert if the call has
+      changed.
   - [x] 4.3 A mutation run on the new core functions, with survivors read; the slice report: tests, coverage, quality, cost, open risks
     and the acceptance tests.
     - _Requirements: R4.1; phase gate (`quality.md`)_

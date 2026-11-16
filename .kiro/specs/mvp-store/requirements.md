@@ -1,7 +1,7 @@
 # Requirements Document: `mvp-store` (Phase 2, tenth slice)
 
-Status: **Draft, for the owner's approval** · Workflow: requirements-first · Depends on: `mvp-alerts` (built 2026-11-15;
-its sign-off is decision 1) · Abbreviation: `st` ·
+Status: **Approved by the owner, 2026-11-16**, with both recommendations · Workflow: requirements-first · Depends on:
+`mvp-alerts` (built 2026-11-15; it closes without the schedule, decision 1) · Abbreviation: `st` ·
 Research: [`docs/reports/review-before-phase-3.md`](../../../docs/reports/review-before-phase-3.md), findings 1 and 2
 
 ## Introduction
@@ -148,6 +148,8 @@ change of code, with nothing to do by hand.
   scheduled run and its check).
 
 ## Decisions for the owner
+
+Both decided by the owner on 2026-11-16, as recommended.
 
 1. **The order.** Recommendation: install the schedule after this slice, and close `mvp-alerts` without it.
    `fantadamus alerts --test` shows that notifications get through. `fantadamus collect --due --user owner`, run by

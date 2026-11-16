@@ -141,6 +141,8 @@ challenge an answer.
 - **R7.1** WHEN a fact is submitted THE SYSTEM SHALL validate it against its versioned contract and store it
   in bronze with the Spec 0 envelope (source URL, publication time, `captured_at`, `received_at`, content
   hash, submitter), then rebuild the affected silver and gold tables.
+  *(Amended by `mvp-store` R1.1, 2026-11-16: its rows are added to the silver table, which is rebuilt only when it
+  must be.)*
 - **R7.2** THE SYSTEM SHALL keep facts from different outlets side by side, never overwriting one outlet with
   another.
 - **R7.3** THE SYSTEM SHALL treat a fact as stale when it is older than its target *(start)*:
