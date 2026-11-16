@@ -126,7 +126,8 @@ carries over: v1 changes how the data arrives (licensed or permitted sources, on
 | 4 | v1: automated, scheduled pipelines on licensed or permitted sources; more users | After the MVP has been used for real rounds |
 
 **Every feature in scope comes before going online** (the owner's decisions, 2026-11-06 and 2026-11-07). Then, **before Phase
-3, a full review of the code, the specs and the docs, run with Fable 5.2** (the owner, 2026-11-11). Phase 3 then does one
+3, a full review of the code, the specs and the docs, run with Fable 5.2** (the owner, 2026-11-11). It was run on 2026-11-16
+([report](../../docs/reports/review-before-phase-3.md)), and its first finding is slice 7 below. Phase 3 then does one
 thing: making Fantadamus easy to reach and install. The slices after `mvp-lineup`, each its own spec, in this order:
 
 | Order | Slice | Needs |
@@ -137,6 +138,7 @@ thing: making Fantadamus easy to reach and install. The slices after `mvp-lineup
 | 4 | Match cards, numbers (`mvp-cards`): one card per fixture, from the facts already collected, and the round at a glance (signed off 2026-11-11) | Nothing new |
 | 5 | New sources (`mvp-sources`), research first, each route approved by the owner: rest days and midweek European fixtures, injury detail, per-match ratings and rater bias, and research into anytime-scorer odds. Match news for the cards and set-piece takers wait for v1 (the owner, 2026-11-11); signed off 2026-11-15 | ADRs, then the source registry |
 | 6 | Alerts (`mvp-alerts`): "the official lineup changes your call", as a notification on the user's Mac from the scheduled run; once online, a notification service such as Amazon SNS (the owner, 2026-11-11); built 2026-11-15 | A scheduled run on the Mac |
+| 7 | Storing and reading that keep their speed (`mvp-store`): a stored read adds its rows instead of rebuilding its table, and an answer reads only what it uses, so that the schedule can run all season (the review of 2026-11-16); requirements drafted, for the owner's approval | Nothing new |
 
 Trades, auctions and market valuation stay out of scope.
 
