@@ -1,6 +1,6 @@
 # Design Document: `mvp-store` (Phase 2, tenth slice)
 
-Status: **Draft, for the owner's approval** · From the approved [requirements](requirements.md)
+Status: **Approved by the owner, 2026-11-16**, with the recommendation on gold · From the approved [requirements](requirements.md)
 
 ## Overview
 
@@ -232,6 +232,8 @@ is some tens of megabytes.
 6. The docs, the real lake's comparison, the mutation run and the slice report (C8).
 
 ## Open points for the owner
+
+Decided by the owner on 2026-11-16, as recommended.
 
 1. **Gold.** The storage code can name a `gold` layer that nothing has ever written, and `tech.md` says answers come
    from stored gold products. Recommendation: remove the unused layer here, and have `tech.md` say that gold is
