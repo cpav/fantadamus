@@ -127,7 +127,6 @@ PLAYER_SEASONS = Domain(
     Table(
         "player_seasons",
         f"CREATE TEMP TABLE player_seasons ({PROVENANCE_COLUMNS}, {_SEASON_COLUMNS})",
-        "INSERT INTO player_seasons VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 SEASON_STATS = Domain(
@@ -138,7 +137,6 @@ SEASON_STATS = Domain(
     Table(
         "season_stats",
         f"CREATE TEMP TABLE season_stats ({PROVENANCE_COLUMNS}, {_SEASON_COLUMNS})",
-        "INSERT INTO season_stats VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 TEAM_SEASONS = Domain(
@@ -150,7 +148,6 @@ TEAM_SEASONS = Domain(
         "team_seasons",
         f"CREATE TEMP TABLE team_seasons ({PROVENANCE_COLUMNS}, club VARCHAR, played BIGINT, "
         "goals_for BIGINT, goals_against BIGINT, wins BIGINT, draws BIGINT, losses BIGINT, form VARCHAR)",
-        "INSERT INTO team_seasons VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 PENALTY_TAKERS = Domain(
@@ -161,7 +158,6 @@ PENALTY_TAKERS = Domain(
     Table(
         "penalty_takers",
         f"CREATE TEMP TABLE penalty_takers ({PROVENANCE_COLUMNS}, club VARCHAR, rank BIGINT, name VARCHAR)",
-        "INSERT INTO penalty_takers VALUES (?, ?, ?, ?, ?, ?)",
     ),
 )
 

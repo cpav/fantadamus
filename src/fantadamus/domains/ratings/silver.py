@@ -54,7 +54,6 @@ MATCH_RATINGS = Domain(
         f"CREATE TEMP TABLE match_ratings ({PROVENANCE_COLUMNS}, round BIGINT, home VARCHAR, away VARCHAR, "
         "club VARCHAR, name VARCHAR, role VARCHAR, came_on BOOLEAN, minutes BIGINT, desk VARCHAR, "
         "rating DOUBLE)",
-        "INSERT INTO match_ratings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 """`RatingsPayload`: a round's base ratings from the Fantacalcio.it, Roma and Torino desks."""

@@ -58,6 +58,5 @@ ODDS = Domain(
         "odds",
         f"CREATE TEMP TABLE odds ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, bookmaker VARCHAR, "
         "p_home DOUBLE, p_draw DOUBLE, p_away DOUBLE, p_over DOUBLE, p_btts DOUBLE)",
-        "INSERT INTO odds VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
