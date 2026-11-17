@@ -118,6 +118,8 @@ A payload is checked and turned into rows before anything is written, as today. 
 
 - `newest_by`: for each page and each value of the named columns, keep the rows of the newest submission in the
   window, by `captured_at` and then by content hash, as `latest_by` orders them. A tie keeps the whole submission.
+  DuckDB compares each row's `{captured, hash}` with its group's maximum: a third faster than `rank()` on the
+  largest table today, and the same on a small one (task 3).
 - `equals`: keep only the rows whose column has one of the values given.
 
 **Which tables.** A domain names its `newest_by`; five do, the ones that grow with every read:
@@ -143,7 +145,10 @@ a different number.
 their row types in place of `Any`.
 
 - **A movement** compares with an earlier time. `Facts.at(lake, earlier)` reads the five tables again as they stood
-  then, over the same window, and reuses the others: one or two more reads for an "X or Y?".
+  then, over the same window, and reuses the others: one or two more reads for an "X or Y?". Every answer goes
+  through it, a movement's replay among them, so no answer about an earlier time can use a newer read's rows (task 3,
+  2026-11-17). A table none of whose kept rows was captured after that time is already what a read then keeps, and
+  isn't read again.
 - **Calibration** asks about each match at its own kickoff, so it reads everything: `Facts.read(lake, as_of,
   history=True)`. So does the test that holds the two paths together (P4).
 - **Ratings** leave `Facts`. `claims` reads them for `compare_players`, `player_outlook` and `match_card`, with
@@ -207,8 +212,10 @@ their row types in place of `Any`.
 
 ## Correctness properties
 
-Each is a Hypothesis test, required. P2 is pure and lives in `tests/property/store/`. The others write Parquet files,
-so they live in `tests/integration/store/`: `make test-fast` runs none of them (the review, finding 5).
+Each is a Hypothesis test, required. P2 and P4 are pure and live in `tests/property/store/`. The others write Parquet
+files, so they live in `tests/integration/store/`: `make test-fast` runs none of them (the review, finding 5). P4
+reduces the rows as P5 holds DuckDB's read to, with each domain's own `newest_by`, so that it also checks the keys the
+domains declare (task 3).
 
 - **P1** For any sequence of submissions to a domain, stored one at a time or a page at a time, the table after each
   store holds the rows a rebuild gives, in the same order, and no bronze file has changed.

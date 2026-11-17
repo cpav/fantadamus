@@ -14,6 +14,7 @@ mvp-roles design C9, R4, R5; mvp-lineup C5): the facts, the models and the steps
 
 from __future__ import annotations
 
+import dataclasses
 import datetime as dt
 import functools
 import logging
@@ -37,19 +38,22 @@ from fantadamus.domains.availability.silver import (
     OFFICIAL_LINEUPS,
     OUTLET_VIEWS,
     SUSPENSIONS,
+    InjuryRow,
     LineupViewRow,
+    OfficialLineupRow,
     OutletViewRow,
+    SuspensionRow,
 )
 from fantadamus.domains.context import RestDays, Rested, rest_days
 from fantadamus.domains.facts import Domain, SilverRow, Source, latest_by, read_silver
 from fantadamus.domains.fixtures.gold import deadline, fixture, matches, next_round
-from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES, FixtureRow
+from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES, FixtureRow, OtherFixtureRow
 from fantadamus.domains.freshness import FACTS_WINDOW, Fact, is_fresh
 from fantadamus.domains.odds.gold import TeamXg, team_xg
-from fantadamus.domains.odds.silver import ODDS
+from fantadamus.domains.odds.silver import ODDS, OddsRow
 from fantadamus.domains.players.resolve import KnownPlayer, resolve
 from fantadamus.domains.raters import Bias, claims_for, desk_bias
-from fantadamus.domains.ratings.silver import MATCH_RATINGS
+from fantadamus.domains.ratings.silver import MATCH_RATINGS, MatchRatingRow
 from fantadamus.domains.season.gold import (
     PenaltyOrder,
     known_players,
@@ -276,41 +280,101 @@ class CompareResult(BaseModel):
     answer: Answer | None = None
 
 
+Growing = tuple[
+    list[PlayerSeasonRow], list[LineupViewRow], list[OutletViewRow], list[OfficialLineupRow], list[OddsRow]
+]
+
+
+def _growing(lake: LakeStore, since: dt.datetime, until: dt.datetime, *, newest: bool) -> Growing:
+    """The tables that grow with every stored read: the season figures, both kinds of probable lineup, the
+    official lineups and the odds (mvp-store C5)."""
+    return (
+        read_player_seasons(lake, since, until, newest=newest),
+        read_silver(lake, LINEUP_VIEWS, since, until, newest=newest),
+        read_silver(lake, OUTLET_VIEWS, since, until, newest=newest),
+        read_silver(lake, OFFICIAL_LINEUPS, since, until, newest=newest),
+        read_silver(lake, ODDS, since, until, newest=newest),
+    )
+
+
 @dataclass(frozen=True)
 class Facts:
+    """The rows captured in an answer's window, from `since` to `as_of`: no answer needs older ones
+    (mvp-lineup C4). Of the tables that grow with every stored read, each page's newest submission for each
+    key, which is all an answer at `as_of` uses; with `history`, every row (mvp-store C5)."""
+
+    as_of: dt.datetime
+    since: dt.datetime
+    history: bool
     fixtures: list[FixtureRow]
-    players: Sequence[Any]
-    teams: Sequence[Any]
-    takers: Sequence[Any]
-    views: Sequence[Any]
-    outlet_views: Sequence[Any]
-    officials: Sequence[Any]
-    odds: Sequence[Any]
-    other: Sequence[Any] = ()
+    players: list[PlayerSeasonRow]
+    teams: list[TeamSeasonRow]
+    takers: list[PenaltyTakerRow]
+    views: list[LineupViewRow]
+    outlet_views: list[OutletViewRow]
+    officials: list[OfficialLineupRow]
+    odds: list[OddsRow]
+    other: list[OtherFixtureRow]
     """The other competitions' matches (mvp-sources C2)."""
-    injuries: Sequence[Any] = ()
-    suspensions: Sequence[Any] = ()
+    injuries: list[InjuryRow]
+    suspensions: list[SuspensionRow]
     """What the injured and suspended pages list (mvp-sources C4)."""
-    ratings: Sequence[Any] = ()
-    """The season's ratings from three desks, for their bias (mvp-sources C7)."""
 
     @classmethod
-    def read(cls, lake: LakeStore, as_of: dt.datetime) -> Facts:
-        """The rows captured in the window up to `as_of`: no answer needs older ones (mvp-lineup C4)."""
+    def read(cls, lake: LakeStore, as_of: dt.datetime, *, history: bool = False) -> Facts:
+        """The window up to `as_of`. Calibration asks about each match at its own kickoff, so it reads
+        `history`: every row of the window."""
         since = as_of - FACTS_WINDOW
+        players, views, outlet_views, officials, odds = _growing(lake, since, as_of, newest=not history)
         return cls(
+            as_of=as_of,
+            since=since,
+            history=history,
             fixtures=read_silver(lake, FIXTURES, since, as_of),
-            players=read_player_seasons(lake, since, as_of),
+            players=players,
             teams=read_silver(lake, TEAM_SEASONS, since, as_of),
             takers=read_silver(lake, PENALTY_TAKERS, since, as_of),
-            views=read_silver(lake, LINEUP_VIEWS, since, as_of),
-            outlet_views=read_silver(lake, OUTLET_VIEWS, since, as_of),
-            officials=read_silver(lake, OFFICIAL_LINEUPS, since, as_of),
-            odds=read_silver(lake, ODDS, since, as_of),
+            views=views,
+            outlet_views=outlet_views,
+            officials=officials,
+            odds=odds,
             other=read_silver(lake, OTHER_FIXTURES, since, as_of),
             injuries=read_silver(lake, INJURIES, since, as_of),
             suspensions=read_silver(lake, SUSPENSIONS, since, as_of),
-            ratings=read_silver(lake, MATCH_RATINGS, None, as_of),
+        )
+
+    def at(self, lake: LakeStore, as_of: dt.datetime) -> Facts:
+        """The facts as an answer at `as_of` sees them. Before the time they were read at, a page's newest
+        submission may since have replaced the one that was newest then: a growing table with a row captured
+        after `as_of` is read again as it stood, over the same window, as a movement compares (R3.5). One
+        without is already what a read at `as_of` keeps. The others are these: an answer leaves out what was
+        captured after its time."""
+        if self.history or as_of >= self.as_of:
+            return self
+
+        def later(rows: Sequence[SilverRow]) -> bool:
+            return any(row.captured_at > as_of for row in rows)
+
+        if not any(
+            later(rows) for rows in (self.players, self.views, self.outlet_views, self.officials, self.odds)
+        ):
+            return self
+        since = self.since
+
+        def again[R: SilverRow](domain: Domain[Any, R], rows: list[R]) -> list[R]:
+            return read_silver(lake, domain, since, as_of, newest=True) if later(rows) else rows
+
+        players = (
+            read_player_seasons(lake, since, as_of, newest=True) if later(self.players) else self.players
+        )
+        return dataclasses.replace(
+            self,
+            as_of=as_of,
+            players=players,
+            views=again(LINEUP_VIEWS, self.views),
+            outlet_views=again(OUTLET_VIEWS, self.outlet_views),
+            officials=again(OFFICIAL_LINEUPS, self.officials),
+            odds=again(ODDS, self.odds),
         )
 
 
@@ -471,12 +535,17 @@ class Advisor:
         except Exception:
             _LOG.exception("Couldn't score a finished round; it's tried again later")
 
+    def ratings(self, clubs: Collection[str], as_of: dt.datetime) -> list[MatchRatingRow]:
+        """The season's ratings of the clubs' players, as known at `as_of`: only an answer that shows a
+        rater's claim reads them, and only its clubs' (mvp-store R3.3)."""
+        return read_silver(self.lake, MATCH_RATINGS, None, as_of, equals={"club": sorted(clubs)})
+
     def claims(
-        self, sides: Sequence[PlayerFacts], known: Sequence[KnownPlayer], facts: Facts
+        self, sides: Sequence[PlayerFacts], known: Sequence[KnownPlayer], as_of: dt.datetime
     ) -> dict[int, list[str]]:
         """Each player's claims about the raters, from the season's ratings (mvp-sources C7)."""
         clubs = {side.player.club for side in sides}
-        biases: list[Bias] = desk_bias([row for row in facts.ratings if row.club in clubs])
+        biases: list[Bias] = desk_bias(self.ratings(clubs, as_of))
         found = {}
         for side in sides:
             mates = [mate for mate in known if mate.club == side.player.club]
@@ -612,9 +681,10 @@ class Advisor:
         odds_unavailable: bool = False,
         facts: Facts | None = None,
         tried: Mapping[str, str] | None = None,
+        claims: bool = True,
     ) -> CompareResult:
         """What the facts known at `as_of` answer, without collecting or logging; `facts`, when given, saves
-        reading the lake again."""
+        reading the lake again. Without `claims`, as for a movement's replay, the raters aren't read."""
         as_of = as_of.astimezone(dt.UTC)
         stored = self.rules.get(self.user)
         if stored is None:
@@ -623,7 +693,7 @@ class Advisor:
                 message="This user has no league rules yet: ask for them, then call set_league_rules.",
                 setup=setup_step(None, lineup=False),
             )
-        facts = facts or Facts.read(self.lake, as_of)
+        facts = facts.at(self.lake, as_of) if facts is not None else Facts.read(self.lake, as_of)
         known = known_players(facts.players, as_of)
         unknown: list[RefreshItem] = []
         players: list[KnownPlayer] = []
@@ -666,8 +736,8 @@ class Advisor:
             for side in sides
             if side.match is not None
         }
-        claims = self.claims(sides, known, facts)
-        answer = self._answer(sides, known, round, first_kickoff, as_of, stored, league, rest, claims)
+        said = self.claims(sides, known, as_of) if claims else {}
+        answer = self._answer(sides, known, round, first_kickoff, as_of, stored, league, rest, said)
         kind = _kind(answer)
         return CompareResult(
             status="answer" if kind == "compare" else kind, message=answer.message, answer=answer
@@ -685,6 +755,7 @@ class Advisor:
     ) -> Gathered:
         """Each player's facts at `as_of`, and what's missing or stale (mvp-lineup C5); with `any_age`, the
         facts stored by then however old, as a review prices them (mvp-review C6)."""
+        facts = facts.at(self.lake, as_of)
         confirmed = self.collect_log.confirmed(as_of) if self.collect_log is not None else {}
         plan = _Plan()
         need = plan.need
@@ -918,6 +989,7 @@ class Advisor:
     ) -> tuple[Gathered, list[tuple[FixtureRow, TeamXg | None]]]:
         """The next round's matches, each with its team xG as an answer prices it, and what's missing or
         stale, without gathering a player (mvp-cards C6)."""
+        facts = facts.at(self.lake, as_of)
         gathered = self.gather([], as_of, facts=facts, known=[])
         if gathered.round is None:
             return gathered, []
@@ -1023,7 +1095,9 @@ class Advisor:
             ]
             since = max(previous, default=answer.as_of - dt.timedelta(hours=24))
             if since not in earlier:
-                earlier[since] = self.answer_at(names, since, odds_unavailable=odds_unavailable, facts=facts)
+                earlier[since] = self.answer_at(
+                    names, since, odds_unavailable=odds_unavailable, facts=facts, claims=False
+                )
             then = earlier[since].answer
             before = next((p for p in then.players if p.player_id == part.player_id), None) if then else None
             basis: Literal["previous answer", "24 hours earlier"] = (

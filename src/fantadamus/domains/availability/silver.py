@@ -104,6 +104,7 @@ LINEUP_VIEWS = Domain(
         f"CREATE TEMP TABLE lineup_views ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, outlet VARCHAR, "
         "club VARCHAR, name VARCHAR, status VARCHAR, share DOUBLE, contest BIGINT)",
     ),
+    newest_by=("home", "away", "outlet"),
 )
 OFFICIAL_LINEUPS = Domain(
     "official_lineup",
@@ -115,6 +116,7 @@ OFFICIAL_LINEUPS = Domain(
         f"CREATE TEMP TABLE official_lineups ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, "
         "club VARCHAR, name VARCHAR, status VARCHAR, unnamed_starters BIGINT)",
     ),
+    newest_by=("home", "away"),
 )
 
 
@@ -171,6 +173,7 @@ OUTLET_VIEWS = Domain(
         f"CREATE TEMP TABLE outlet_views ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, outlet VARCHAR, "
         "club VARCHAR, name VARCHAR, role VARCHAR, percent DOUBLE, unavailable BOOLEAN)",
     ),
+    newest_by=("home", "away", "outlet"),
 )
 
 

@@ -374,7 +374,7 @@ def _answer(
     orders = {side.player.club: side.order for side in sides}
     listed = [part.listed for part in valued]
     rested = {club: advisor.rest(club, match.kickoff_at, facts, when) for club in clubs}
-    claims = advisor.claims(sides, gathered.known, facts)
+    claims = advisor.claims(sides, gathered.known, when)
     reported = [
         Reported(side.player, side.form.role, side.news, side.present)
         for side in sides

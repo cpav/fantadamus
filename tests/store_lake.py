@@ -140,6 +140,34 @@ class Told:
         return rows, said(written)
 
 
+def _value(row: Any, name: str) -> Any:
+    return row[name] if isinstance(row, dict) else getattr(row, name)
+
+
+def newest_submissions[R](
+    rows: Sequence[R], keys: Sequence[str], since: dt.datetime | None = None, until: dt.datetime | None = None
+) -> list[R]:
+    """What a reduced read keeps, worked out here: within the window, each page's newest submission for each
+    value of `keys`, by its time and then its content hash, as `latest_by` orders them; in the order given."""
+
+    def group(row: R) -> tuple[Any, ...]:
+        return (_value(row, "source_url"), *(_value(row, key) for key in keys))
+
+    def mark(row: R) -> tuple[dt.datetime, str]:
+        return _value(row, "captured_at"), _value(row, "content_sha256")
+
+    window = [
+        row
+        for row in rows
+        if (since is None or _value(row, "captured_at") >= since)
+        and (until is None or _value(row, "captured_at") <= until)
+    ]
+    newest: dict[tuple[Any, ...], tuple[dt.datetime, str]] = {}
+    for row in window:
+        newest[group(row)] = max(newest.get(group(row), mark(row)), mark(row))
+    return [row for row in window if mark(row) == newest[group(row)]]
+
+
 def told_by_bronze(store: LakeStore, domain: Domain[Any, Any] = FIXTURES) -> Told:
     """What the lake's bronze records say was stored, whoever stored them and however far they got."""
     told = Told(domain)

@@ -241,7 +241,7 @@ class Calibrator:
                 p_clean_sheet=logged.p_clean_sheet,
             )
         overrides = final_overrides(decisions, round, frame.first_kickoff, MINE)
-        facts = Facts.read(self.lake, frame.last_kickoff)
+        facts = Facts.read(self.lake, frame.last_kickoff, history=True)  # each match at its own kickoff
         ratings = self._ratings(round, known, rows_before, rows_after)
         model = self._model_on_everyone(frame, facts, known, sheets, before, after, now, ratings)
         against = goals_against(rows_before, rows_after) if rows_after is not None else {}
