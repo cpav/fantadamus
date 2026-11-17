@@ -9,8 +9,7 @@ their provenance, so nothing is overwritten and a read at an earlier as-of time 
 from __future__ import annotations
 
 import datetime as dt
-import re
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -22,7 +21,8 @@ from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.core.hashing import canonical_json, content_sha256
 from fantadamus.core.urls import host_allowed, url_host
-from fantadamus.lake.duckdb_store import LakeStore, Table
+from fantadamus.lake.duckdb_store import Description, LakeStore, Table
+from fantadamus.lake.months import month_of
 
 PROVENANCE_COLUMNS = "source_url VARCHAR, captured_at TIMESTAMPTZ, content_sha256 VARCHAR"
 """The first columns of every silver table, matching `SilverRow`."""
@@ -70,9 +70,12 @@ class Domain[P: Contract, R: SilverRow]:
     """Silver rows for one payload; raises `UnknownClubError` or `RefusedError` if it can't be stored."""
     table: Table
     """The silver table, its columns in the row model's field order."""
+    rows_version: int = 1
+    """Raised when `to_rows` gives other rows for the same payload, so that the table is written again from
+    bronze (mvp-store C3)."""
 
     def __post_init__(self) -> None:
-        columns = re.findall(r"[(,] *(\w+) ", self.table.create_sql)
+        columns = list(self.table.columns)
         if columns != list(self.row.model_fields):
             raise ValueError(
                 f"{self.table.name}: columns {columns} differ from {list(self.row.model_fields)}"
@@ -214,13 +217,19 @@ def submit_many[P: Contract](
     return Stored(receipts=receipts, rejections=rejections)
 
 
-def rebuild(store: LakeStore, domain: Domain[Any, Any], clubs: Clubs) -> None:
-    """Replace the domain's silver table with the rows of every bronze record."""
-    rows: list[SilverRow] = []
-    for record in store.read_bronze(domain.source):
-        payload = domain.contract.model_validate_json(canonical_json(record.envelope.payload))
-        rows.extend(domain.to_rows(payload, clubs, _provenance(record.envelope)))
-    store.write_table("silver", domain.table, [tuple(row.model_dump().values()) for row in rows])
+def rebuild(store: LakeStore, domain: Domain[Any, Any], clubs: Clubs) -> int:
+    """Write the domain's silver table again from every bronze record, a month's file for each month a row
+    was captured in, and return how many rows it holds (mvp-store C4). Bronze is read a batch of files at a
+    time and each row goes straight to its month, so a rebuild's memory doesn't grow with the season."""
+
+    def rows() -> Iterator[tuple[str, str]]:
+        for record in store.iter_bronze(domain.source):
+            payload = domain.contract.model_validate_json(canonical_json(record.envelope.payload))
+            for row in domain.to_rows(payload, clubs, _provenance(record.envelope)):
+                yield month_of(row.captured_at), row.model_dump_json()
+
+    description = Description(columns=list(domain.table.columns), rows_version=domain.rows_version)
+    return store.replace_rows(domain.table, rows(), description)
 
 
 def read_silver[R: SilverRow](
@@ -230,7 +239,7 @@ def read_silver[R: SilverRow](
     until: dt.datetime | None = None,
 ) -> list[R]:
     """The domain's rows, or only those captured from `since` to `until`, both included."""
-    rows = store.read_table("silver", domain.table.name, since, until)
+    rows = store.read_rows(domain.table, since, until)
     return [domain.row.model_validate(row) for row in rows]
 
 

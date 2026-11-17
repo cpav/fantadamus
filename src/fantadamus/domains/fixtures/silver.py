@@ -38,7 +38,6 @@ TABLE = Table(
     "fixtures",
     f"CREATE TEMP TABLE fixtures ({PROVENANCE_COLUMNS}, round BIGINT, home VARCHAR, away VARCHAR, "
     "kickoff_at TIMESTAMPTZ)",
-    "INSERT INTO fixtures VALUES (?, ?, ?, ?, ?, ?, ?)",
 )
 FIXTURES = Domain("fixtures", FixturesPayload, FixtureRow, _rows, TABLE)
 
@@ -80,6 +79,5 @@ OTHER_TABLE = Table(
     "other_fixtures",
     f"CREATE TEMP TABLE other_fixtures ({PROVENANCE_COLUMNS}, competition VARCHAR, home VARCHAR, "
     "away VARCHAR, kickoff_at TIMESTAMPTZ)",
-    "INSERT INTO other_fixtures VALUES (?, ?, ?, ?, ?, ?, ?)",
 )
 OTHER_FIXTURES = Domain("other_fixtures", OtherFixturesPayload, OtherFixtureRow, _other_rows, OTHER_TABLE)

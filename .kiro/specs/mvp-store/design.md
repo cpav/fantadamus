@@ -53,6 +53,9 @@ silver/<table>.parquet             the earlier layout: read until the table's fi
 - A read takes the files of the months its window touches, or every file without a window, and returns rows in stored
   order: by file, then by position in the file. Today's order across files is DuckDB's to choose.
 - Each file is written to a temporary name and renamed, as today, so a reader sees a month before a store or after it.
+  A rename alone turned out not to be enough (task 1, 2026-11-17): DuckDB opens a file once for its description and
+  again for its rows, and a file renamed into place between the two was read half from each. So a read checks
+  afterwards that no file it read was replaced meanwhile, and reads again if one was. Readers still take no lock.
 - `LakeStore.read_table` and `write_table` give way to `read_rows`, `append_rows` and `replace_rows`, which know this
   layout. The `gold` layer they could name was never written and goes with them (open point 1).
 
@@ -176,6 +179,7 @@ their row types in place of `Any`.
 |---|---|
 | A run stops between bronze and silver, or anywhere in a store | `_storing` stays; the next store rebuilds the table |
 | Two runs store at once | The second waits for the lock, then appends |
+| A store replaces a file while an answer reads it | The read finds the file changed and reads again |
 | `_table.json` is missing, unreadable, or names other columns or another version | Out of step: rebuilt at the next store |
 | A table in the earlier layout | Read as before; rebuilt into months at its first store, or by `fantadamus rebuild` |
 | A payload that gives no row | Its bronze file is kept; nothing is appended |

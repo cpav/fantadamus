@@ -103,7 +103,6 @@ LINEUP_VIEWS = Domain(
         "lineup_views",
         f"CREATE TEMP TABLE lineup_views ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, outlet VARCHAR, "
         "club VARCHAR, name VARCHAR, status VARCHAR, share DOUBLE, contest BIGINT)",
-        "INSERT INTO lineup_views VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 OFFICIAL_LINEUPS = Domain(
@@ -115,7 +114,6 @@ OFFICIAL_LINEUPS = Domain(
         "official_lineups",
         f"CREATE TEMP TABLE official_lineups ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, "
         "club VARCHAR, name VARCHAR, status VARCHAR, unnamed_starters BIGINT)",
-        "INSERT INTO official_lineups VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 
@@ -172,7 +170,6 @@ OUTLET_VIEWS = Domain(
         "outlet_views",
         f"CREATE TEMP TABLE outlet_views ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, outlet VARCHAR, "
         "club VARCHAR, name VARCHAR, role VARCHAR, percent DOUBLE, unavailable BOOLEAN)",
-        "INSERT INTO outlet_views VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 
@@ -204,7 +201,6 @@ INJURIES = Domain(
         "injuries",
         f"CREATE TEMP TABLE injuries ({PROVENANCE_COLUMNS}, club VARCHAR, name VARCHAR, kind VARCHAR, "
         "body_part VARCHAR, back_from DATE, back_until DATE, to_be_assessed BOOLEAN)",
-        "INSERT INTO injuries VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 """`InjuriesPayload`: each club's injured players, with the kind, body part and return the rules found."""
@@ -250,7 +246,6 @@ SUSPENSIONS = Domain(
         "suspensions",
         f"CREATE TEMP TABLE suspensions ({PROVENANCE_COLUMNS}, club VARCHAR, name VARCHAR, status VARCHAR, "
         "round BIGINT)",
-        "INSERT INTO suspensions VALUES (?, ?, ?, ?, ?, ?, ?)",
     ),
 )
 """`SuspensionsPayload`: a row per round each banned player misses, and one for each player a booking from a

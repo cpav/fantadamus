@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-from collections.abc import Sequence
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +15,7 @@ from fantadamus.contracts.xy.lineups import OutletLineupPayload
 from fantadamus.core.clock import fixed_clock
 from fantadamus.domains import facts
 from fantadamus.domains.availability.silver import OUTLET_VIEWS
-from fantadamus.lake.duckdb_store import LakeStore, Layer, Row, Table
+from fantadamus.lake.duckdb_store import Description, LakeStore, Table
 from tests.xy_harness import CLUBS, NOW, URL, outlet_lineup
 
 READ = dt.datetime(2026, 10, 26, 9, 0, tzinfo=dt.UTC)
@@ -42,13 +42,13 @@ def _submit_many(store: LakeStore, items: list[facts.Submission[Any]], url: str 
 def test_one_rebuild_per_domain(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     store = LakeStore(tmp_path)
     rebuilt: list[str] = []
-    write_table = store.write_table
+    replace_rows = store.replace_rows
 
-    def counting(layer: Layer, table: Table, rows: Sequence[Row]) -> Path:
+    def counting(table: Table, rows: Iterable[tuple[str, str]], description: Description) -> int:
         rebuilt.append(table.name)
-        return write_table(layer, table, rows)
+        return replace_rows(table, rows, description)
 
-    monkeypatch.setattr(store, "write_table", counting)
+    monkeypatch.setattr(store, "replace_rows", counting)
     published = dt.datetime(2026, 10, 26, 8, 0, tzinfo=dt.UTC)
     stored = _submit_many(
         store,

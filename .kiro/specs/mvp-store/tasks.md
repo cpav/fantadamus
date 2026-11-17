@@ -20,27 +20,30 @@ Status: **Approved by the owner, 2026-11-16** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. Silver in month files, loaded in bulk
+- [x] 1. Silver in month files, loaded in bulk
   - Branch: `feat/st-1-months` · Depends on: none · ADRs: none
-  - [ ] 1.1 From here, before anything changes: the answers of a copy of the owner's lake at five past times, kept privately. This
+  - [x] 1.1 From here, before anything changes: the answers of a copy of the owner's lake at five past times, kept privately. This
     spec becomes the current one.
     - _Requirements: R3.5, R4.2_
     - _Test: `python -m tests.real_lake --record`, its times and counts in the task report;
       `tests/unit/store/test_real_lake.py::test_the_answers_are_kept_where_git_ignores_them`, `::test_only_times_and_counts_are_printed`_
-  - [ ] 1.2 The month of a row and the files of a window, pure.
+  - [x] 1.2 The month of a row and the files of a window, pure.
     - _Requirements: R1.2, R3.2_
     - _Test: `tests/unit/store/test_months.py::test_a_row_goes_to_the_month_it_was_captured_in`, `::test_the_files_of_a_window`,
       `::test_without_a_window_every_file`; **P2** `tests/property/store/test_months.py::test_p2_a_window_reads_exactly_its_months`_
-  - [ ] 1.3 Rows loaded in bulk from a JSON-lines file, typed by the table's own columns; a table loses its insert statement.
+  - [x] 1.3 Rows loaded in bulk from a JSON-lines file, typed by the table's own columns; a table loses its insert statement.
     - _Requirements: R1.2_
     - _Test: `tests/integration/store/test_bulk_load.py::test_every_type_comes_back_as_it_went_in`, `::test_rows_keep_their_order`,
       `::test_the_temporary_file_is_gone`_
-  - [ ] 1.4 A table is a folder of month files with `_table.json`; a read takes its window's files, in stored order; a rebuild
+  - [x] 1.4 A table is a folder of month files with `_table.json`; a read takes its window's files, in stored order; a rebuild
     writes the months from bronze, 500 files at a time; a table in the earlier layout is read until then. A store still rebuilds.
     - _Requirements: R1.4, R2.5_
     - _Test: `tests/integration/store/test_layout.py::test_a_rebuild_writes_a_file_for_each_month`, `::test_a_window_reads_only_its_months`,
       `::test_rows_come_back_in_stored_order`, `::test_the_earlier_layout_is_read_until_a_rebuild_replaces_it`,
-      `::test_a_rebuild_reads_bronze_in_batches`; `tests/integration/test_atomic_writes.py::test_a_reader_never_sees_half_a_month`_
+      `::test_a_rebuild_reads_bronze_in_batches`, `::test_files_are_read_oldest_name_first_however_they_are_given`,
+      `::test_a_file_that_isnt_a_month_is_never_read`; `tests/integration/test_atomic_writes.py::test_a_reader_never_sees_half_a_month`,
+      `::test_a_file_replaced_during_a_read_is_read_again`, `::test_an_error_while_a_file_is_replaced_is_read_again`,
+      `::test_an_error_of_a_file_nobody_replaced_is_raised`, `::test_a_file_removed_before_a_read_starts_is_listed_again`_
 
 - [ ] 2. A store appends
   - Branch: `feat/st-2-append` · Depends on: 1 · ADRs: none
