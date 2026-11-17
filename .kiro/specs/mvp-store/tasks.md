@@ -41,28 +41,37 @@ Status: **Approved by the owner, 2026-11-16** · From the approved [requirements
     - _Test: `tests/integration/store/test_layout.py::test_a_rebuild_writes_a_file_for_each_month`, `::test_a_window_reads_only_its_months`,
       `::test_rows_come_back_in_stored_order`, `::test_the_earlier_layout_is_read_until_a_rebuild_replaces_it`,
       `::test_a_rebuild_reads_bronze_in_batches`, `::test_files_are_read_oldest_name_first_however_they_are_given`,
-      `::test_a_file_that_isnt_a_month_is_never_read`; `tests/integration/test_atomic_writes.py::test_a_reader_never_sees_half_a_month`,
-      `::test_a_file_replaced_during_a_read_is_read_again`, `::test_an_error_while_a_file_is_replaced_is_read_again`,
-      `::test_an_error_of_a_file_nobody_replaced_is_raised`, `::test_a_file_removed_before_a_read_starts_is_listed_again`_
+      `::test_a_file_that_isnt_named_is_never_read`; `tests/integration/test_atomic_writes.py::test_a_reader_never_sees_half_a_table`
+      (it was `::test_a_reader_never_sees_half_a_month` until task 2 made `_table.json` the one switch; task 2's reader tests
+      replace task 1's)_
 
-- [ ] 2. A store appends
+- [x] 2. A store appends
   - Branch: `feat/st-2-append` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 In step or not, pure: the columns, the rows version, a store under way, the earlier layout.
+  - [x] 2.1 In step or not, pure: the columns, the rows version, a store under way, the earlier layout.
     - _Requirements: R2.1, R2.3_
-    - _Test: `tests/unit/store/test_in_step.py::test_in_step`, `::test_each_way_out_of_step`_
-  - [ ] 2.2 A store, under the lake's lock: `_storing`, the bronze files, the rows appended to their month when the table is in
-    step, `_table.json`. Bronze never changes.
-    - _Requirements: R1.1, R1.3, R2.2_
+    - _Test: `tests/unit/store/test_in_step.py::test_in_step`, `::test_each_way_out_of_step`,
+      `::test_new_records_sort_after_the_last`_
+  - [x] 2.2 A store, under the lake's lock: `_storing`, the bronze files, the rows appended to their month when the table is in
+    step, `_table.json`. Bronze never changes. A month's file is written once and `_table.json` names it, so a reader sees
+    the whole table before a store or after it.
+    - _Requirements: R1.1, R1.3, R1.4, R2.2_
     - _Test: **AT-1** `tests/acceptance/store/test_append.py::test_at1_the_table_a_rebuild_gives`;
       **P1** `tests/integration/store/test_append.py::test_p1_appending_gives_what_a_rebuild_gives` (it takes over from
-      `tests/property/test_lake.py::test_bronze_append_only`); `::test_a_payload_without_rows_keeps_its_bronze`,
-      `::test_rows_of_two_months_go_to_two_files`; **AT-3** `tests/acceptance/store/test_silver_stays_right.py::test_at3_two_runs_at_once_keep_both`_
-  - [ ] 2.3 A store rebuilds a table that's out of step: an earlier store stopped, at any step; other columns; another rows version.
+      `tests/property/test_lake.py::test_bronze_append_only`); `::test_a_rebuild_gives_what_was_told`,
+      `::test_a_store_in_step_adds_its_rows_and_rebuilds_nothing`, `::test_a_payload_without_rows_keeps_its_bronze`,
+      `::test_rows_of_two_months_go_to_two_files`; **AT-3** `tests/acceptance/store/test_silver_stays_right.py::test_at3_two_runs_at_once_keep_both`;
+      `tests/integration/test_atomic_writes.py::test_writers_take_turns`, `::test_a_reader_never_sees_half_a_table`,
+      `::test_a_read_while_a_store_takes_effect_gives_the_table_before`, `::test_a_file_a_store_removed_is_listed_again`,
+      `::test_a_file_gone_before_it_is_opened_is_listed_again`, `::test_an_error_while_the_table_is_replaced_is_read_again`,
+      `::test_an_error_of_a_file_nobody_replaced_is_raised`, `::test_a_file_removed_by_hand_leaves_its_rows_out`_
+  - [x] 2.3 A store rebuilds a table that's out of step: an earlier store stopped, at any step; other columns; another rows version.
     - _Requirements: R2.1, R2.3_
-    - _Test: **P3** `tests/integration/store/test_stopped.py::test_p3_a_stopped_store_is_healed_by_the_next`;
+    - _Test: **P3** `tests/integration/store/test_stopped.py::test_p3_a_stopped_store_is_healed_by_the_next`,
+      `::test_a_store_makes_at_most_six_writes`; `tests/integration/store/test_layout.py::test_a_store_by_earlier_code_is_noticed`,
+      `::test_a_month_removed_by_hand_comes_back_at_the_next_store`;
       **AT-3** `tests/acceptance/store/test_silver_stays_right.py::test_at3_a_run_stopped_between_bronze_and_silver`,
       `::test_at3_a_domain_whose_rows_changed`_
-  - [ ] 2.4 `fantadamus rebuild [--table <name>]`, from the one list of domains; a lake in the earlier layout answers after it.
+  - [x] 2.4 `fantadamus rebuild [--table <name>]`, from the one list of domains; a lake in the earlier layout answers after it.
     - _Requirements: R2.4, R2.5_
     - _Test: **AT-4** `tests/acceptance/store/test_rebuild_command.py::test_at4_every_table_or_one`, `::test_at4_no_request_is_sent`,
       `::test_at4_a_lake_in_the_earlier_layout_answers_after_it`; `tests/unit/store/test_domains.py::test_every_domain_is_listed_once`_

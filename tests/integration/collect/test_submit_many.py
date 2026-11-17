@@ -15,7 +15,7 @@ from fantadamus.contracts.xy.lineups import OutletLineupPayload
 from fantadamus.core.clock import fixed_clock
 from fantadamus.domains import facts
 from fantadamus.domains.availability.silver import OUTLET_VIEWS
-from fantadamus.lake.duckdb_store import Description, LakeStore, Table
+from fantadamus.lake.duckdb_store import Incoming, LakeStore, Table
 from tests.xy_harness import CLUBS, NOW, URL, outlet_lineup
 
 READ = dt.datetime(2026, 10, 26, 9, 0, tzinfo=dt.UTC)
@@ -44,9 +44,9 @@ def test_one_rebuild_per_domain(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     rebuilt: list[str] = []
     replace_rows = store.replace_rows
 
-    def counting(table: Table, rows: Iterable[tuple[str, str]], description: Description) -> int:
+    def counting(table: Table, rows: Iterable[Incoming], rows_version: int) -> int:
         rebuilt.append(table.name)
-        return replace_rows(table, rows, description)
+        return replace_rows(table, rows, rows_version)
 
     monkeypatch.setattr(store, "replace_rows", counting)
     published = dt.datetime(2026, 10, 26, 8, 0, tzinfo=dt.UTC)

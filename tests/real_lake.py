@@ -2,6 +2,7 @@
 
     python -m tests.real_lake --record    keep a snapshot of data/local, and its answers at five past times
     python -m tests.real_lake --compare   ask the snapshot again, and say whether each answer is identical
+    python -m tests.real_lake --compare --rebuilt   the same, once every silver table has been rebuilt
 
 Everything it keeps is under git-ignored `data/private/mvp-store/`: the snapshot, the questions (they name the
 squad's players) and the answers. It prints times and counts only. Each question is asked of a fresh copy of
@@ -27,6 +28,8 @@ from pydantic import BaseModel
 
 from fantadamus.core.clock import fixed_clock
 from fantadamus.core.clubs import Clubs
+from fantadamus.domains.facts import rebuild
+from fantadamus.domains.tables import DOMAINS
 from fantadamus.lake.alert_log import AlertLog
 from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
@@ -95,12 +98,11 @@ def ask(question: Question, home: Path, user: str) -> Any:
     collect_log = CollectLog(home / "collect")
     rules = RulesStore(home / "league")
     squads = SquadStore(home / "league")
-    clubs = Clubs.from_toml((ROOT / "config" / "clubs.toml").read_text(encoding="utf-8"))
     advisor = make_advisor(
         lake,
         rules=rules,
         log=log,
-        clubs=clubs,
+        clubs=_clubs(),
         reading=load_reading_list(ROOT / "config" / "reading_list.toml"),
         user=user,
         clock=clock,
@@ -264,11 +266,28 @@ def record(user: str) -> int:
     return 0
 
 
-def compare(user: str) -> int:
+def _clubs() -> Clubs:
+    return Clubs.from_toml((ROOT / "config" / "clubs.toml").read_text(encoding="utf-8"))
+
+
+def rebuilt_copy(snapshot: Path, folder: Path) -> Path:
+    """A copy of the snapshot whose silver tables have all been rebuilt from bronze: the lake as it will be
+    once it has stored again, in month files."""
+    home = folder / "rebuilt"
+    shutil.copytree(snapshot, home)
+    lake, clubs = LakeStore(home / "lake"), _clubs()
+    rows = sum(rebuild(lake, domain, clubs) for domain in DOMAINS)
+    print(f"Rebuilt {len(DOMAINS)} tables, {rows:,} rows")
+    return home
+
+
+def compare(user: str, rebuilt: bool = False) -> int:
     if not ANSWERS.exists():
         print("Nothing recorded yet: run `python -m tests.real_lake --record` first.")
         return 1
-    results = run(SNAPSHOT, _load_plan(), user)
+    with tempfile.TemporaryDirectory() as folder:
+        snapshot = rebuilt_copy(SNAPSHOT, Path(folder)) if rebuilt else SNAPSHOT
+        results = run(snapshot, _load_plan(), user)
     same = [
         (ANSWERS / f"{result.index:02d}-{result.tool}.json").read_text(encoding="utf-8") == result.text
         for result in results
@@ -282,9 +301,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--record", action="store_true", help="keep the snapshot and its answers")
     mode.add_argument("--compare", action="store_true", help="ask again and compare")
+    parser.add_argument("--rebuilt", action="store_true", help="compare once every table is rebuilt")
     parser.add_argument("--user", default="owner", help="whose squad and rules")
     args = parser.parse_args(argv)
-    return record(args.user) if args.record else compare(args.user)
+    return record(args.user) if args.record else compare(args.user, args.rebuilt)
 
 
 if __name__ == "__main__":

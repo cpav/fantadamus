@@ -40,10 +40,12 @@ Measured for this design, on generated rows, with DuckDB's own calls and no SQL 
 ### C1. Silver in month files (`lake/months.py`, `lake/duckdb_store.py`; R1.2, R1.4, R2.5)
 
 ```text
-silver/<table>/<YYYY-MM>.parquet   the rows captured in that month (UTC), in the order they were stored
-silver/<table>/_table.json         what the files were written with: the columns and the domain's rows version
-silver/<table>/_storing            there while a store is under way
-silver/<table>.parquet             the earlier layout: read until the table's first store or rebuild replaces it
+silver/<table>/_table.json              the table: its columns, the domain's rows version, the bronze record its
+                                        last row came from, and its file for each month
+silver/<table>/<YYYY-MM>.<id>.parquet   the rows captured in that month (UTC), in the order they were stored;
+                                        written once, under a name of its own, and never changed
+silver/<table>/_storing                 there while a store is under way
+silver/<table>.parquet                  the earlier layout: read until the table's first store or rebuild replaces it
 ```
 
 - A row goes to the month of its `captured_at`. A month holds about 250,000 outlet rows at the scheduled cadence, which
@@ -52,10 +54,15 @@ silver/<table>.parquet             the earlier layout: read until the table's fi
   joins the mutation run.
 - A read takes the files of the months its window touches, or every file without a window, and returns rows in stored
   order: by file, then by position in the file. Today's order across files is DuckDB's to choose.
-- Each file is written to a temporary name and renamed, as today, so a reader sees a month before a store or after it.
-  A rename alone turned out not to be enough (task 1, 2026-11-17): DuckDB opens a file once for its description and
-  again for its rows, and a file renamed into place between the two was read half from each. So a read checks
-  afterwards that no file it read was replaced meanwhile, and reads again if one was. Readers still take no lock.
+- **`_table.json` is the one switch** (tasks 1 and 2, 2026-11-17). A store writes a month's file anew, under a new
+  name, and then `_table.json`, which names the table's files; writing it, by a rename, is the moment the store takes
+  effect. A reader takes the files `_table.json` names, and they never change, so it sees the whole table before a
+  store or after it, a rebuild's many months included (R1.4). The file a store replaced is removed afterwards: a reader
+  that finds one gone reads `_table.json` again. Readers take no lock. The same scheme works on S3, which has no
+  rename for a data file.
+- Two findings led here. A month's file renamed into place under the same name was read half from each version: DuckDB
+  opens a file once for its description and again for its rows (task 1). And a rebuild replaces its months one at a
+  time, so a reader in between could have taken one month from before and one from after (task 2).
 - `LakeStore.read_table` and `write_table` give way to `read_rows`, `append_rows` and `replace_rows`, which know this
   layout. The `gold` layer they could name was never written and goes with them (open point 1).
 
@@ -70,12 +77,20 @@ columns and loses its insert statement; bronze, one row at a time, keeps its own
 A payload is checked and turned into rows before anything is written, as today. Then, holding the lake's lock:
 
 1. **In step?** The table is in step when `_table.json` names the domain's columns and rows version, no `_storing` is
-   there, and the table isn't in the earlier layout.
+   there, every file it names is there, and there is no file in the earlier layout: code from before the slice,
+   still running in a server, would have written one.
 2. `_storing` is written.
 3. The bronze file is added, or the files of a page's payloads (`submit_many`). Bronze doesn't change otherwise.
-4. In step: the new rows are appended to their month's file. Out of step: the table is rebuilt (C4), the new bronze
+4. In step, and the new bronze files sort after the last one the table holds: the new rows are appended to their
+   month, in a new file holding that month's rows and then theirs. Otherwise the table is rebuilt (C4), the new bronze
    included.
-5. `_table.json` is written, and `_storing` removed.
+5. `_table.json` is written, the files it no longer names are removed, and `_storing` goes.
+
+- **The table is always the one a rebuild gives, row for row** (task 2, 2026-11-17). A rebuild reads bronze in its
+  files' order, and a file's name starts with the time it was received. Two stores in the same microsecond, or a
+  clock set back, give a file that sorts before one already stored: its rows don't belong at the end, so that store
+  rebuilds. `_table.json` keeps the last bronze record for this, and the clock is read holding the lock, so that two
+  runs at once still append.
 
 - **A stopped run** leaves `_storing` behind, at whichever step it stopped, so the next store rebuilds (R2.1).
 - **Two runs at once:** the lock is a file lock from the standard library (`fcntl.flock` on `<lake>/.lock`), held for
@@ -179,13 +194,15 @@ their row types in place of `Any`.
 |---|---|
 | A run stops between bronze and silver, or anywhere in a store | `_storing` stays; the next store rebuilds the table |
 | Two runs store at once | The second waits for the lock, then appends |
-| A store replaces a file while an answer reads it | The read finds the file changed and reads again |
+| A store takes effect while an answer reads | The answer reads the files it listed, which don't change; if a store removed one, it lists them again |
+| A server still running code from before the slice stores | It writes the earlier layout's file; the next store finds it, and rebuilds |
 | `_table.json` is missing, unreadable, or names other columns or another version | Out of step: rebuilt at the next store |
 | A table in the earlier layout | Read as before; rebuilt into months at its first store, or by `fantadamus rebuild` |
 | A payload that gives no row | Its bronze file is kept; nothing is appended |
-| A store's rows fall in two months | Each month's file is appended in turn |
-| A temporary file left by a stopped run | Not a month file, so never read; removed by the next rebuild |
-| A month file removed by hand | Its rows are missing until `fantadamus rebuild` |
+| A store's rows fall in two months | Each month gets its new file, and one `_table.json` names both |
+| A file left by a stopped run | `_table.json` doesn't name it, so it's never read; removed when the next store takes effect |
+| A bronze file that sorts before one already stored | The table is rebuilt, so every row stands where a rebuild puts it |
+| A month file removed by hand | Its rows are missing until the table's next store, which rebuilds it, or `fantadamus rebuild` |
 | The lock can't be taken or the disk can't be written | The store fails with the reason, as any write does today |
 
 ## Correctness properties
@@ -198,6 +215,8 @@ so they live in `tests/integration/store/`: `make test-fast` runs none of them (
 - **P2** A row is in the file of the month it was captured in, and the files chosen for a window are exactly those
   whose month it touches.
 - **P3** A store stopped after any of its steps leaves a lake whose next store ends with the table a rebuild gives.
+  A store makes at most six writes, so the test goes through every one: stopped before and after each, for each
+  kind of store, on a lake with the table and on one without.
 - **P4** For any history of submissions and any time asked about, each player's availability, each match's team xG and
   each player's season figures are the same from the reduced read as from the full one.
 - **P5** A reduced read never holds a row captured after the time asked about, and holds for each page and key exactly

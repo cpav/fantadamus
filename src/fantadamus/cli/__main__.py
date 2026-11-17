@@ -6,7 +6,8 @@ score a finished round, then check whether what it stored changes the user's cal
 shows the last run (C10) fantadamus alerts print the alerts sent and the calls kept; `--test` sends a sample
 fantadamus calibrate print a finished round's report, scoring it if it hasn't been; `--again` recomputes it
 fantadamus recalibrate propose new starting values from the stored calibration sets, changing nothing
-(mvp-recalibrate C8)"""
+(mvp-recalibrate C8) fantadamus rebuild write every silver table again from bronze, or one with `--table`;
+it reads no page (mvp-store C4)"""
 
 from __future__ import annotations
 
@@ -18,9 +19,10 @@ from fantadamus.cli.notify import alerts_enabled, notify
 from fantadamus.core.clock import utc_now
 from fantadamus.core.clubs import Clubs
 from fantadamus.domains.calibration import render
-from fantadamus.domains.facts import read_silver
+from fantadamus.domains.facts import read_silver, rebuild
 from fantadamus.domains.recalibration import propose, render_proposal, season_read
 from fantadamus.domains.season.silver import SEASON_STATS, TEAM_SEASONS
+from fantadamus.domains.tables import BY_TABLE, DOMAINS
 from fantadamus.lake.alert_log import AlertLog
 from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import CollectLog
@@ -143,6 +145,24 @@ def _recalibrate(args: argparse.Namespace) -> int:
     )
     scores.keep_proposal(proposal)
     print(render_proposal(proposal))
+    return 0
+
+
+def _counted(count: int, thing: str) -> str:
+    return f"{count} {thing}" if count == 1 else f"{count} {thing}s"
+
+
+def _rebuild(args: argparse.Namespace) -> int:
+    """Each silver table, or the one asked for, written again from its bronze records (mvp-store C4). It
+    builds no fetcher, so it can't read a page."""
+    lake = LakeStore(Path(args.lake))
+    clubs = _clubs()
+    for domain in DOMAINS if args.table is None else [BY_TABLE[args.table]]:
+        rows = rebuild(lake, domain, clubs)
+        records = len(lake.bronze_files(domain.source))
+        months = len(lake.months(domain.table))
+        counts = [_counted(records, "bronze record"), _counted(rows, "row"), _counted(months, "month")]
+        print(f"{domain.table.name}: " + ", ".join(counts))
     return 0
 
 
@@ -280,6 +300,11 @@ def _parser() -> argparse.ArgumentParser:
     recalibrate.add_argument("--rounds", type=int, nargs="+", help="the rounds (default: every one stored)")
     recalibrate.add_argument("--lake", default=str(DEFAULT_ROOT), help="lake root directory")
     recalibrate.set_defaults(handler=_recalibrate)
+
+    again = commands.add_parser("rebuild", help="write the silver tables again from bronze, reading no page")
+    again.add_argument("--table", choices=sorted(BY_TABLE), help="only this table (default: every one)")
+    again.add_argument("--lake", default=str(DEFAULT_ROOT), help="lake root directory")
+    again.set_defaults(handler=_rebuild)
     return parser
 
 

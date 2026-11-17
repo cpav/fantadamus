@@ -1,9 +1,13 @@
 """How a submitted fact reaches bronze and silver, shared by the slice's domains (design C3; R7.1, R7.2).
 
 A submit tool's payload has already passed its contract. `submit` checks the page's host against the
-allowlist and maps the clubs through `config/clubs.toml`; only then does it append the payload to bronze and
-rebuild the domain's silver table from all of its bronze records. Silver keeps every submission's rows with
-their provenance, so nothing is overwritten and a read at an earlier as-of time sees what was known then.
+allowlist and maps the clubs through `config/clubs.toml`; only then does it add the payload to bronze and its
+rows to the domain's silver table. Silver keeps every submission's rows with their provenance, so nothing is
+overwritten and a read at an earlier as-of time sees what was known then.
+
+A store holds the lake's lock and adds its rows to the end of their month's file (mvp-store C3). The table
+is always what a rebuild from bronze gives: when a store finds it isn't, because an earlier store stopped
+part-way, the domain's rows changed, or the new bronze files don't sort last, it rebuilds the table instead.
 """
 
 from __future__ import annotations
@@ -21,8 +25,8 @@ from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.core.hashing import canonical_json, content_sha256
 from fantadamus.core.urls import host_allowed, url_host
-from fantadamus.lake.duckdb_store import Description, LakeStore, Table
-from fantadamus.lake.months import month_of
+from fantadamus.lake.duckdb_store import Incoming, LakeStore, Table
+from fantadamus.lake.months import bronze_order, follows, month_of
 
 PROVENANCE_COLUMNS = "source_url VARCHAR, captured_at TIMESTAMPTZ, content_sha256 VARCHAR"
 """The first columns of every silver table, matching `SilverRow`."""
@@ -126,6 +130,47 @@ def _envelope(
     )
 
 
+def _incoming(bronze_id: str, rows: Iterable[SilverRow]) -> Iterator[Incoming]:
+    for row in rows:
+        yield Incoming(bronze_id, month_of(row.captured_at), row.model_dump_json())
+
+
+def _rebuild(store: LakeStore, domain: Domain[Any, Any], clubs: Clubs) -> int:
+    """Write the domain's silver table again from every bronze record. Bronze is read a batch of files at a
+    time and each row goes straight to its month, so a rebuild's memory doesn't grow with the season."""
+
+    def rows() -> Iterator[Incoming]:
+        for record in store.iter_bronze(domain.source):
+            payload = domain.contract.model_validate_json(canonical_json(record.envelope.payload))
+            yield from _incoming(
+                record.bronze_id, domain.to_rows(payload, clubs, _provenance(record.envelope))
+            )
+
+    return store.replace_rows(domain.table, rows(), domain.rows_version)
+
+
+def _store(
+    store: LakeStore,
+    domain: Domain[Any, Any],
+    clubs: Clubs,
+    accepted: Sequence[tuple[BronzeEnvelope, Sequence[SilverRow]]],
+) -> list[str]:
+    """Store payloads already checked and turned into rows, holding the lake's lock (mvp-store C3): the
+    store is marked as under way, the bronze files are added, and their rows go to the end of the silver
+    table, or the table is rebuilt if it was out of step or the new files don't sort last. Returns the
+    bronze IDs, in the order given."""
+    with store.storing(domain.table, domain.rows_version) as written:
+        bronze_ids = [store.append_bronze(envelope) for envelope, _ in accepted]
+        if written is not None and follows(written.last_bronze, bronze_ids):
+            stored = zip(bronze_ids, (rows for _, rows in accepted), strict=True)
+            ordered = sorted(stored, key=lambda pair: bronze_order(pair[0]))
+            lines = (line for bronze_id, rows in ordered for line in _incoming(bronze_id, rows))
+            store.append_rows(domain.table, lines, written)
+        else:
+            _rebuild(store, domain, clubs)
+    return bronze_ids
+
+
 def submit[P: Contract](
     store: LakeStore,
     domain: Domain[P, Any],
@@ -139,20 +184,21 @@ def submit[P: Contract](
     submitted_by: str,
     clubs: Clubs,
 ) -> Receipt:
-    """Check the page and the clubs, append the payload to bronze and rebuild the domain's silver table."""
+    """Check the page and the clubs, then add the payload to bronze and its rows to the domain's silver
+    table."""
     _check_host(source_url, allowed_hosts)
-    envelope = _envelope(
-        domain,
-        payload,
-        source_url=source_url,
-        captured_at=captured_at,
-        published_at=published_at,
-        received_at=clock(),
-        submitted_by=submitted_by,
-    )
-    rows = domain.to_rows(payload, clubs, _provenance(envelope))
-    bronze_id = store.append_bronze(envelope)
-    rebuild(store, domain, clubs)
+    with store.lock():
+        envelope = _envelope(
+            domain,
+            payload,
+            source_url=source_url,
+            captured_at=captured_at,
+            published_at=published_at,
+            received_at=clock(),
+            submitted_by=submitted_by,
+        )
+        rows = domain.to_rows(payload, clubs, _provenance(envelope))
+        (bronze_id,) = _store(store, domain, clubs, [(envelope, rows)])
     return Receipt(bronze_id=bronze_id, rows=len(rows))
 
 
@@ -188,48 +234,43 @@ def submit_many[P: Contract](
     submitted_by: str,
     clubs: Clubs,
 ) -> Stored:
-    """The payloads one page gave for a domain: each checked first, one bronze record each and one silver
-    rebuild for all (design C8). A payload that fails is reported and the others still go in; a page off the
-    allowlist refuses them all."""
+    """The payloads one page gave for a domain: each checked first, one bronze record each and one store for
+    all (design C8). A payload that fails is reported and the others still go in; a page off the allowlist
+    refuses them all."""
     _check_host(source_url, allowed_hosts)
-    received_at = clock()
-    accepted: list[tuple[BronzeEnvelope, int]] = []
+    accepted: list[tuple[BronzeEnvelope, list[SilverRow]]] = []
     rejections: list[Rejection] = []
-    for index, submission in enumerate(submissions):
-        envelope = _envelope(
-            domain,
-            submission.payload,
-            source_url=source_url,
-            captured_at=captured_at,
-            published_at=submission.published_at,
-            received_at=received_at,
-            submitted_by=submitted_by,
-        )
-        try:
-            rows = domain.to_rows(submission.payload, clubs, _provenance(envelope))
-        except ValueError as rejection:
-            rejections.append(Rejection(index=index, reason=str(rejection)))
-        else:
-            accepted.append((envelope, len(rows)))
-    receipts = [Receipt(bronze_id=store.append_bronze(envelope), rows=rows) for envelope, rows in accepted]
-    if receipts:
-        rebuild(store, domain, clubs)
+    with store.lock():
+        received_at = clock()
+        for index, submission in enumerate(submissions):
+            envelope = _envelope(
+                domain,
+                submission.payload,
+                source_url=source_url,
+                captured_at=captured_at,
+                published_at=submission.published_at,
+                received_at=received_at,
+                submitted_by=submitted_by,
+            )
+            try:
+                rows = domain.to_rows(submission.payload, clubs, _provenance(envelope))
+            except ValueError as rejection:
+                rejections.append(Rejection(index=index, reason=str(rejection)))
+            else:
+                accepted.append((envelope, rows))
+        bronze_ids = _store(store, domain, clubs, accepted) if accepted else []
+    receipts = [
+        Receipt(bronze_id=bronze_id, rows=len(rows))
+        for bronze_id, (_, rows) in zip(bronze_ids, accepted, strict=True)
+    ]
     return Stored(receipts=receipts, rejections=rejections)
 
 
 def rebuild(store: LakeStore, domain: Domain[Any, Any], clubs: Clubs) -> int:
-    """Write the domain's silver table again from every bronze record, a month's file for each month a row
-    was captured in, and return how many rows it holds (mvp-store C4). Bronze is read a batch of files at a
-    time and each row goes straight to its month, so a rebuild's memory doesn't grow with the season."""
-
-    def rows() -> Iterator[tuple[str, str]]:
-        for record in store.iter_bronze(domain.source):
-            payload = domain.contract.model_validate_json(canonical_json(record.envelope.payload))
-            for row in domain.to_rows(payload, clubs, _provenance(record.envelope)):
-                yield month_of(row.captured_at), row.model_dump_json()
-
-    description = Description(columns=list(domain.table.columns), rows_version=domain.rows_version)
-    return store.replace_rows(domain.table, rows(), description)
+    """Write the domain's silver table again from every bronze record, holding the lake's lock, a month's
+    file for each month a row was captured in, and return how many rows it holds (mvp-store C4)."""
+    with store.lock(), store.storing(domain.table, domain.rows_version):
+        return _rebuild(store, domain, clubs)
 
 
 def read_silver[R: SilverRow](

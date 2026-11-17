@@ -1,4 +1,4 @@
-"""mvp-store task 1.4: a silver table is a folder of month files with its description; a read takes its
+"""mvp-store task 1.4: a silver table is a folder of month files that `_table.json` names; a read takes its
 window's files, in stored order; a rebuild writes the months from bronze, a batch of files at a time; a table
 in the earlier layout is read until a rebuild replaces it (design C1, C4; R1.4, R2.5)."""
 
@@ -18,7 +18,8 @@ from fantadamus.core.hashing import content_sha256
 from fantadamus.domains import facts
 from fantadamus.domains.fixtures.silver import FIXTURES, FixtureRow
 from fantadamus.lake import duckdb_store
-from fantadamus.lake.duckdb_store import Description, LakeStore, connect
+from fantadamus.lake.duckdb_store import Incoming, LakeStore, connect
+from fantadamus.lake.months import Description
 from tests.xy_harness import CLUBS
 
 URL = "https://example.org/calendar"
@@ -64,17 +65,35 @@ def files(root: Path) -> list[str]:
     return sorted(str(path.relative_to(root)) for path in (root / "silver").rglob("*") if path.is_file())
 
 
+def month_file(store: LakeStore, month: str) -> Path:
+    """The file `_table.json` names for a month."""
+    written = store.description(FIXTURES.table)
+    assert written is not None
+    return store.root / "silver" / "fixtures" / written.files[month]
+
+
+def named(store: LakeStore) -> list[str]:
+    """`_table.json`, and the files it names: what the table's folder should hold."""
+    written = store.description(FIXTURES.table)
+    assert written is not None
+    return sorted(f"silver/fixtures/{name}" for name in [*written.files.values(), "_table.json"])
+
+
 def test_a_rebuild_writes_a_file_for_each_month(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     three_reads(store)
-    assert files(tmp_path) == [
-        "silver/fixtures/2026-10.parquet",
-        "silver/fixtures/2026-11.parquet",
-        "silver/fixtures/_table.json",
-    ]
-    assert store.description(FIXTURES.table) == Description(
-        columns=list(FixtureRow.model_fields), rows_version=FIXTURES.rows_version
+    written = store.description(FIXTURES.table)
+    assert written == Description(
+        columns=list(FIXTURES.table.columns.items()),
+        rows_version=FIXTURES.rows_version,
+        last_bronze=store.bronze_files("fixtures")[-1].stem,
+        files=written.files if written is not None else {},
     )
+    assert written is not None
+    assert list(written.files) == ["2026-10", "2026-11"]
+    assert all(name.startswith(f"{month}.") for month, name in written.files.items())
+    assert files(tmp_path) == named(store)  # and nothing else
+    assert store.months(FIXTURES.table) == ["2026-10", "2026-11"]
     rows = facts.read_silver(store, FIXTURES)
     assert [(row.round, row.captured_at) for row in rows] == [
         (9, OCTOBER),
@@ -86,12 +105,16 @@ def test_a_rebuild_writes_a_file_for_each_month(tmp_path: Path) -> None:
     ]
     assert facts.rebuild(store, FIXTURES, CLUBS) == 6  # and again gives the same
     assert facts.read_silver(store, FIXTURES) == rows
+    again = store.description(FIXTURES.table)
+    assert again is not None
+    assert set(again.files.values()).isdisjoint(written.files.values())  # in files of its own
+    assert files(tmp_path) == named(store)  # the earlier ones gone
 
 
 def test_a_window_reads_only_its_months(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     three_reads(store)
-    (tmp_path / "silver" / "fixtures" / "2026-10.parquet").write_bytes(b"not a Parquet file")
+    month_file(store, "2026-10").write_bytes(b"not a Parquet file")
     november = facts.read_silver(store, FIXTURES, dt.datetime(2026, 11, 1, tzinfo=dt.UTC), LATE_NOVEMBER)
     assert [row.round for row in november] == [10, 10, 11, 11]  # October's file is never opened
     late = facts.read_silver(store, FIXTURES, dt.datetime(2026, 11, 10, tzinfo=dt.UTC), LATE_NOVEMBER)
@@ -124,22 +147,37 @@ def test_rows_come_back_in_stored_order(tmp_path: Path) -> None:
 def test_files_are_read_oldest_name_first_however_they_are_given(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     three_reads(store)
-    folder = tmp_path / "silver" / "fixtures"
-    rows = duckdb_store._read_parquet([folder / "2026-11.parquet", folder / "2026-10.parquet"])
+    october, november = month_file(store, "2026-10"), month_file(store, "2026-11")
+    rows = duckdb_store._read_parquet([november, october])
     assert [row["round"] for row in rows] == [9, 9, 10, 10, 11, 11]
-    assert [Path(str(row["filename"])).stem for row in rows] == ["2026-10"] * 2 + ["2026-11"] * 4
+    assert [Path(str(row["filename"])) for row in rows] == [october] * 2 + [november] * 4
 
 
-def test_a_file_that_isnt_a_month_is_never_read(tmp_path: Path) -> None:
+def test_a_file_that_isnt_named_is_never_read(tmp_path: Path) -> None:
+    """As one a stopped store wrote, or a copy made by hand: `_table.json` doesn't name it."""
     store = LakeStore(tmp_path)
     three_reads(store)
     rows = facts.read_silver(store, FIXTURES)
-    stray = tmp_path / "silver" / "fixtures" / "2026-10 copy.parquet"
-    stray.write_bytes(b"not a Parquet file")
+    strays = [tmp_path / "silver" / "fixtures" / name for name in ("2026-10.parquet", "2026-11.0123.parquet")]
+    for stray in strays:
+        stray.write_bytes(b"not a Parquet file")
     assert facts.read_silver(store, FIXTURES) == rows
     assert facts.read_silver(store, FIXTURES, OCTOBER, LATE_NOVEMBER) == rows
-    facts.rebuild(store, FIXTURES, CLUBS)  # which removes what the table doesn't have
-    assert not stray.exists()
+    submit(store, fixtures(12), LATE_NOVEMBER + dt.timedelta(days=1), LATE_NOVEMBER + dt.timedelta(days=1))
+    assert not any(stray.exists() for stray in strays)  # a store removes what the table doesn't name
+    assert files(tmp_path) == named(store)
+
+
+def test_a_month_removed_by_hand_comes_back_at_the_next_store(tmp_path: Path) -> None:
+    store = LakeStore(tmp_path)
+    three_reads(store)
+    rows = facts.read_silver(store, FIXTURES)
+    month_file(store, "2026-10").unlink()
+    assert [row.round for row in facts.read_silver(store, FIXTURES)] == [10, 10, 11, 11]  # its rows missing
+    later = LATE_NOVEMBER + dt.timedelta(days=1)
+    submit(store, fixtures(12), later, later)  # the store finds a file missing, and rebuilds
+    assert facts.read_silver(store, FIXTURES)[:6] == rows
+    assert files(tmp_path) == named(store)
 
 
 def _envelope(payload: FixturesPayload, captured_at: dt.datetime) -> BronzeEnvelope:
@@ -186,18 +224,29 @@ def test_the_earlier_layout_is_read_until_a_rebuild_replaces_it(tmp_path: Path) 
     assert store.description(FIXTURES.table) is None
     assert facts.read_silver(store, FIXTURES) == rows
     assert facts.read_silver(store, FIXTURES, since=dt.datetime(2026, 11, 1, tzinfo=dt.UTC)) == rows[2:]
-    # A rebuild stopped before its description was written: the earlier file is still the table.
+    # A rebuild stopped before `_table.json` was written: the earlier file is still the table.
     half = tmp_path / "silver" / "fixtures"
     half.mkdir()
-    (half / "2026-10.parquet").write_bytes(b"half a rebuild")
+    (half / "2026-10.0123456789ab.parquet").write_bytes(b"half a rebuild")
     assert facts.read_silver(store, FIXTURES) == rows
     assert facts.rebuild(store, FIXTURES, CLUBS) == 4
-    assert files(tmp_path) == [
-        "silver/fixtures/2026-10.parquet",
-        "silver/fixtures/2026-11.parquet",
-        "silver/fixtures/_table.json",
-    ]
+    assert files(tmp_path) == named(store)  # the earlier file and the half rebuild gone
+    assert store.months(FIXTURES.table) == ["2026-10", "2026-11"]
     assert facts.read_silver(store, FIXTURES) == rows
+
+
+def test_a_store_by_earlier_code_is_noticed(tmp_path: Path) -> None:
+    """A server still running code from before the slice stores as it did: its bronze file, then the whole
+    table again as one file. The next store finds that file beside the month files, and rebuilds."""
+    store = LakeStore(tmp_path)
+    three_reads(store)
+    earlier_read = LATE_NOVEMBER + dt.timedelta(hours=1)
+    store.append_bronze(_envelope(fixtures(12), earlier_read))  # the earlier code's store
+    (tmp_path / "silver" / "fixtures.parquet").write_bytes(b"the whole table, as the earlier code wrote it")
+    later = LATE_NOVEMBER + dt.timedelta(days=1)
+    submit(store, fixtures(13), later, later)
+    assert [row.round for row in facts.read_silver(store, FIXTURES)] == [9, 9, 10, 10, 11, 11, 12, 12, 13, 13]
+    assert files(tmp_path) == named(store)  # its file gone
 
 
 def test_a_rebuild_reads_bronze_in_batches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -228,7 +277,6 @@ def test_a_rebuild_reads_bronze_in_batches(tmp_path: Path, monkeypatch: pytest.M
 
 def test_a_month_that_isnt_one_is_refused(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
-    description = Description(columns=list(FIXTURES.table.columns), rows_version=1)
     with pytest.raises(ValueError, match="isn't a month"):
-        store.replace_rows(FIXTURES.table, [("../elsewhere", "{}")], description)
+        store.replace_rows(FIXTURES.table, [Incoming("a-bronze-record", "../elsewhere", "{}")], 1)
     assert not any(path.is_file() for path in tmp_path.rglob("*"))

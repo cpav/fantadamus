@@ -10,15 +10,16 @@ import duckdb
 import pytest
 from pydantic import BaseModel
 
-from fantadamus.lake.duckdb_store import Description, LakeStore, Table
-from fantadamus.lake.months import month_of
+from fantadamus.lake.duckdb_store import Incoming, LakeStore, Table
+from fantadamus.lake.months import Description, month_of
 
 EVERY_TYPE = Table(
     "every_type",
     "CREATE TEMP TABLE every_type (source_url VARCHAR, captured_at TIMESTAMPTZ, content_sha256 VARCHAR, "
     "count BIGINT, share DOUBLE, flag BOOLEAN, day DATE, note VARCHAR)",
 )
-DESCRIPTION = Description(columns=list(EVERY_TYPE.columns), rows_version=1)
+BRONZE_ID = "20261121T090000000000Z-0123456789ab"
+DESCRIPTION = Description(columns=list(EVERY_TYPE.columns.items()), rows_version=1, last_bronze=BRONZE_ID)
 
 
 class Row(BaseModel):
@@ -46,8 +47,8 @@ def row(index: int, when: dt.datetime, **changes: object) -> Row:
     return base.model_copy(update=changes)
 
 
-def lines(rows: list[Row]) -> list[tuple[str, str]]:
-    return [(month_of(item.captured_at), item.model_dump_json()) for item in rows]
+def lines(rows: list[Row]) -> list[Incoming]:
+    return [Incoming(BRONZE_ID, month_of(item.captured_at), item.model_dump_json()) for item in rows]
 
 
 def test_every_type_comes_back_as_it_went_in(tmp_path: Path) -> None:
@@ -65,7 +66,11 @@ def test_every_type_comes_back_as_it_went_in(tmp_path: Path) -> None:
             day=dt.date(2027, 2, 28),
         ),
     ]
-    assert store.replace_rows(EVERY_TYPE, lines(rows), DESCRIPTION) == 4
+    assert store.replace_rows(EVERY_TYPE, lines(rows), 1) == 4
+    written = store.description(EVERY_TYPE)
+    assert written is not None
+    assert written.model_copy(update={"files": {}}) == DESCRIPTION
+    assert list(written.files) == ["2026-11"]
     found = [Row.model_validate(read) for read in store.read_rows(EVERY_TYPE)]
     assert found == rows
     assert all(read.captured_at.utcoffset() == dt.timedelta(0) for read in found)
@@ -79,7 +84,7 @@ def test_rows_keep_their_order(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     october, november = (dt.datetime(2026, month, 3, tzinfo=dt.UTC) for month in (10, 11))
     rows = [row(index, november if index % 3 else october) for index in range(5_000)]
-    store.replace_rows(EVERY_TYPE, lines(rows), DESCRIPTION)
+    store.replace_rows(EVERY_TYPE, lines(rows), 1)
     found = [read["count"] for read in store.read_rows(EVERY_TYPE)]
     assert found == [
         *(index for index in range(5_000) if index % 3 == 0),
@@ -89,9 +94,11 @@ def test_rows_keep_their_order(tmp_path: Path) -> None:
 
 def test_the_temporary_file_is_gone(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
-    store.replace_rows(EVERY_TYPE, lines([row(1, dt.datetime(2026, 11, 3, tzinfo=dt.UTC))]), DESCRIPTION)
+    store.replace_rows(EVERY_TYPE, lines([row(1, dt.datetime(2026, 11, 3, tzinfo=dt.UTC))]), 1)
     left = sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file())
-    assert left == ["silver/every_type/2026-11.parquet", "silver/every_type/_table.json"]
+    written = store.description(EVERY_TYPE)
+    assert written is not None
+    assert left == [f"silver/every_type/{written.files['2026-11']}", "silver/every_type/_table.json"]
     assert not any(path.name.startswith(".") for path in tmp_path.rglob("*"))
 
 
@@ -99,7 +106,7 @@ def test_a_load_that_fails_leaves_no_file(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     good = lines([row(1, dt.datetime(2026, 11, 3, tzinfo=dt.UTC))])
     with pytest.raises(duckdb.Error):
-        store.replace_rows(EVERY_TYPE, [*good, ("2026-11", "not a row")], DESCRIPTION)
+        store.replace_rows(EVERY_TYPE, [*good, Incoming(BRONZE_ID, "2026-11", "not a row")], 1)
     assert not any(path.is_file() for path in tmp_path.rglob("*"))
     assert store.read_rows(EVERY_TYPE) == []
 
@@ -107,6 +114,7 @@ def test_a_load_that_fails_leaves_no_file(tmp_path: Path) -> None:
 def test_a_table_without_rows(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     assert store.read_rows(EVERY_TYPE) == []  # never written
-    assert store.replace_rows(EVERY_TYPE, [], DESCRIPTION) == 0
+    assert store.replace_rows(EVERY_TYPE, [], 1) == 0
     assert store.read_rows(EVERY_TYPE) == []
-    assert store.description(EVERY_TYPE) == DESCRIPTION
+    assert store.description(EVERY_TYPE) == DESCRIPTION.model_copy(update={"last_bronze": None})
+    assert store.months(EVERY_TYPE) == []
