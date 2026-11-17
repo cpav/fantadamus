@@ -4,12 +4,10 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
-from scripts.checks._common import run_command
 
 from fantadamus.engine.simulate import Simulated, recommended
 from tests.collect_pages import FcoMatch
@@ -195,11 +193,9 @@ async def test_at9_same_facts_same_lineup_and_small(tmp_path: Path) -> None:
     assert len(json.dumps(first).encode()) < 15_000
 
 
-def test_at9_fast() -> None:
+def test_at9_fast(timings: dict[str, Any]) -> None:
     """In a process of its own, where the coverage tracer doesn't reach: see `tests/lineup_speed.py`."""
-    result = run_command([sys.executable, "-m", "tests.lineup_speed"])
-    assert result.returncode == 0, result.stderr
-    assert float(result.stdout) < 3.0
+    assert timings["lineup"] < 3.0
 
 
 async def test_at14_warnings_and_improve(tmp_path: Path) -> None:

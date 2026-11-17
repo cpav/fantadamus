@@ -6,19 +6,16 @@ from __future__ import annotations
 import ast
 import sys
 from pathlib import Path
-
-from scripts.checks._common import run_command
+from typing import Any
 
 from fantadamus.cli import notify
 from fantadamus.engine.constants import ALERT_SECONDS
 from fantadamus.mcp import alerts
 
 
-def test_at4_a_check_in_budget() -> None:
+def test_at4_a_check_in_budget(timings: dict[str, Any]) -> None:
     """Timed in a process of its own, the fastest of three, as `tests/lineup_speed.py` times a lineup."""
-    timed = run_command([sys.executable, "-m", "tests.lineup_speed", "--alert"])
-    assert timed.returncode == 0, timed.stderr
-    assert float(timed.stdout) < ALERT_SECONDS
+    assert timings["alert"] < ALERT_SECONDS
 
 
 def _imports(module: Path) -> set[str]:

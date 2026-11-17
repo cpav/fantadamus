@@ -181,7 +181,8 @@ their row types in place of `Any`.
   budget, the existing six and this slice's, and prints them as JSON. A session fixture runs it once for the whole run,
   behind a file lock so that one worker starts it and the others read its result. Each budget test asserts its own
   number. Today the eight timings start eight processes, each building its own round: 60 s run alone, 93 s inside the
-  suite.
+  suite. Built (task 5, 2026-11-17): the process takes 52 s alone, the season's timings included. The season grows on
+  a copy of the asked round in 6 s, on a DuckDB of its own with four threads: the lake's runs on one, as answers do.
 - **The wall-clock assertion** in `tests/integration/lineup/test_reads.py` goes; gathering a squad at season size is
   timed in the process instead, still under 1 second.
 - **The real lake.** `python -m tests.real_lake --record` asks a copy of the owner's lake every question at five past

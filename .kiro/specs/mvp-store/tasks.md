@@ -112,24 +112,24 @@ Status: **Approved by the owner, 2026-11-16** · From the approved [requirements
       `tests/integration/store/test_collect_log.py::test_only_the_windows_months`, `::test_scoring_a_round_reads_back_to_it`,
       `::test_the_schedule_reads_a_fortnight`_
 
-- [ ] 5. Season size, in one timing process
+- [x] 5. Season size, in one timing process
   - Branch: `test/st-5-budgets` · Depends on: 4 · ADRs: none
-  - [ ] 5.1 A generated season around a synthetic round: month files, `_table.json`, the logs.
+  - [x] 5.1 A generated season around a synthetic round: month files, `_table.json`, the logs.
     - _Requirements: R5.1_
     - _Test: `tests/integration/store/test_season.py::test_the_season_has_its_size`, `::test_the_round_still_answers`_
-  - [ ] 5.2 One process times every budget, and each budget test reads its own number from it.
+  - [x] 5.2 One process times every budget, and each budget test reads its own number from it.
     - _Requirements: R5.1, R5.2_
     - _Test: `tests/integration/store/test_timings.py::test_one_process_for_a_whole_run`; unchanged in what they assert:
       `tests/acceptance/lineup/test_lineup.py::test_at9_fast`, `tests/acceptance/rules/test_simulation.py::test_at12_a_squad_with_rules_stays_in_budget`,
       `tests/acceptance/review/test_answer.py::test_at7_in_budget`, `tests/acceptance/cards/test_answer.py::test_at10_in_budget`,
       `tests/acceptance/sources/test_budgets.py::test_at7_a_card_and_an_outlook_in_budget`, `tests/acceptance/alerts/test_budget.py::test_at4_a_check_in_budget`_
-  - [ ] 5.3 The season's budgets: a store, the schedule's check, the reading, gathering a squad, every answer and an alerts' check.
+  - [x] 5.3 The season's budgets: a store, the schedule's check, the reading, gathering a squad, every answer and an alerts' check.
     The wall-clock assertion gives way.
     - _Requirements: R1.2, R1.4, R1.5, R3.1, R3.2, R5.3_
     - _Test: **AT-2** `tests/acceptance/store/test_budgets.py::test_at2_a_read_stored_in_two_seconds`, `::test_at2_nothing_due_checked_in_a_second`,
       `::test_at2_a_reader_in_between_sees_before_or_after`; **AT-5** `::test_at5_every_answer_in_budget`, `::test_at5_reading_in_a_second`,
       `::test_at5_gathering_a_squad_in_a_second`; `tests/integration/lineup/test_reads.py::test_a_whole_squad_reads_quickly` loses its timing_
-  - [ ] 5.4 No new dependency, and the gate's time before and after.
+  - [x] 5.4 No new dependency, and the gate's time before and after.
     - _Requirements: R4.1, R5.2_
     - _Test: **AT-9** `tests/acceptance/store/test_budgets.py::test_at9_no_new_dependency`; the suite's summed time and `make check`'s,
       on `main` before task 1 and on this branch, in the task report_
