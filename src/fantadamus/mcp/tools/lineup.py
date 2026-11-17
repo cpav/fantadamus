@@ -25,6 +25,7 @@ from fantadamus.domains.calibration import summary_line
 from fantadamus.domains.facts import Source
 from fantadamus.domains.fixtures.gold import matches as round_matches
 from fantadamus.domains.fixtures.silver import FixtureRow
+from fantadamus.domains.freshness import FACTS_WINDOW
 from fantadamus.domains.players.resolve import KnownPlayer, resolve
 from fantadamus.domains.season.gold import known_players, league_goals_per_match
 from fantadamus.domains.sources import Confidence, describe, of_outlets
@@ -577,7 +578,8 @@ def sources_of(sides: Sequence[PlayerFacts]) -> list[Source]:
 
 def source_lines(sources: Sequence[Source], advisor: Advisor, as_of: dt.datetime) -> list[SourceLine]:
     """Each page once, by label, as read most recently."""
-    worked = advisor.collect_log.last_worked(as_of) if advisor.collect_log is not None else {}
+    since = as_of - FACTS_WINDOW  # every source is a row of the window: read later, if at all
+    worked = advisor.collect_log.last_worked(as_of, since) if advisor.collect_log is not None else {}
     newest: dict[str, dt.datetime] = {}
     for source in sources:
         label = describe(source.source_url)

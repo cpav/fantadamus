@@ -123,10 +123,14 @@ class Calibrator:
     def _has_a_read_after(self, frame: RoundFrame, now: dt.datetime) -> bool:
         rows = read_silver(self.lake, SEASON_STATS, frame.first_kickoff - FACTS_WINDOW, now)
         changed, same = changed_reads(rows)
-        return statistics_reads(changed, frame, worked=[*same, *self._worked(now)])[1] is not None
+        return statistics_reads(changed, frame, worked=[*same, *self._worked(frame, now)])[1] is not None
 
-    def _worked(self, now: dt.datetime) -> list[dt.datetime]:
-        return self.collect_log.worked("statistics", now) if self.collect_log is not None else []
+    def _worked(self, frame: RoundFrame, now: dt.datetime) -> list[dt.datetime]:
+        """When the statistics page was read and gave facts, from the round's window on: scoring an earlier
+        round reads the log back to it."""
+        if self.collect_log is None:
+            return []
+        return self.collect_log.worked("statistics", now, since=frame.first_kickoff - FACTS_WINDOW)
 
     def _statistics_ready(self, frame: RoundFrame, now: dt.datetime) -> bool:
         """Whether scoring can go ahead: a read of the statistics page after the round, read now if need be,
@@ -156,7 +160,7 @@ class Calibrator:
             self._read_after(frame, now)
             now = self.clock()
         rows = read_silver(self.lake, SEASON_STATS, frame.first_kickoff - FACTS_WINDOW, now)
-        return _reads(rows, frame, self._worked(now))
+        return _reads(rows, frame, self._worked(frame, now))
 
     def _read_finished_page(self, round: int, now: dt.datetime, *, wait: bool = True) -> bool:
         """Whether the round's page gave who started: it's asked again later if not (R7.2)."""
@@ -219,7 +223,7 @@ class Calibrator:
         known = known_players([*read_silver(self.lake, PLAYER_SEASONS, since, now), *stats], now)
         by_id = {player.player_id: player for player in known}
         sheets = self._sheets(frame, known, now)
-        rows_before, rows_after = _reads(stats, frame, self._worked(now))
+        rows_before, rows_after = _reads(stats, frame, self._worked(frame, now))
         before, after = _lines(rows_before), _lines(rows_after)
 
         kickoffs = {club: row.kickoff_at for row in frame.matches for club in (row.home, row.away)}

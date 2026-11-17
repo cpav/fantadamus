@@ -167,6 +167,8 @@ their row types in place of `Any`.
   copy. An appended line changes both, so it's seen.
 - It can start at a month. The collection log is read from the window's start: an older run can't confirm a row inside
   the window, and can't be the last attempt of a page read at least weekly. Scoring a round reads back to that round.
+  A run goes to the file of the month it started in, so a read from a time takes the files from the month of the day
+  before it: a run that began late on a month's last day may have read its pages after midnight (task 4).
 - The decision, review and alert logs are read whole, once while unchanged, as their answers need them.
 
 ### C7. The proof (`tests/season.py`, `tests/lineup_speed.py`, `tests/real_lake.py`; R4.2, R5.1 to R5.3)

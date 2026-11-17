@@ -139,17 +139,19 @@ def may_read_page(page: PageKind, log: CollectLog | None, now: dt.datetime) -> b
     """Whether this kind of page may be read now: each has its shortest interval."""
     if log is None:
         return True
-    last = log.last_attempt(now, page)
+    last = log.last_attempt(now, page, since=now - FACTS_WINDOW)
     return last is None or now - last >= _ON_DEMAND_EVERY[page]
 
 
 def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]:
-    """The facts past their cadence at `now`, in the table's order."""
-    last_read = log.last_attempt(now)
+    """The facts past their cadence at `now`, in the table's order. A cadence is a week at most, so the
+    attempts of the window are enough: an older one would be due all the same."""
+    since = now - FACTS_WINDOW
+    last_read = log.last_attempt(now, since=since)
     fixtures = read_silver(lake, FIXTURES)
     round = next_round(fixtures, now)
     upcoming = [row for row in matches(fixtures, now) if row.round == round] if round is not None else []
-    officials = read_silver(lake, OFFICIAL_LINEUPS, now - FACTS_WINDOW, now, newest=True)
+    officials = read_silver(lake, OFFICIAL_LINEUPS, since, now, newest=True)
     confirmed = {(row.home, row.away) for row in officials}  # a match asked about kicks off within days
     other = min(
         (
@@ -165,11 +167,11 @@ def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]
     last = max((row.kickoff_at for row in matches(fixtures, now) if row.round == played), default=None)
     for fact in SCHEDULED:
         if fact in _MORNING_AFTER:
-            if due(fact, log.last_attempt(now, page_of(fact)), now, last):
+            if due(fact, log.last_attempt(now, page_of(fact), since), now, last):
                 found.append(fact)
         elif fact in _ALWAYS:
             kickoff = other if fact in _MATCH_WEEK else first if fact in _NEAR_ROUND else None
-            if due(fact, log.last_attempt(now, page_of(fact)), now, kickoff):
+            if due(fact, log.last_attempt(now, page_of(fact), since), now, kickoff):
                 found.append(fact)
         elif any(
             due(fact, last_read, now, row.kickoff_at, confirmed=(row.home, row.away) in confirmed)
