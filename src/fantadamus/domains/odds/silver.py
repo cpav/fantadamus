@@ -59,4 +59,5 @@ ODDS = Domain(
         f"CREATE TEMP TABLE odds ({PROVENANCE_COLUMNS}, home VARCHAR, away VARCHAR, bookmaker VARCHAR, "
         "p_home DOUBLE, p_draw DOUBLE, p_away DOUBLE, p_over DOUBLE, p_btts DOUBLE)",
     ),
+    newest_by=("home", "away", "bookmaker"),
 )

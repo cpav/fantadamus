@@ -33,7 +33,7 @@ import json
 import os
 import re
 import uuid
-from collections.abc import Callable, Iterable, Iterator, Sequence
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import IO, NamedTuple
@@ -51,6 +51,10 @@ TIMESTAMPTZ = "TIMESTAMP WITH TIME ZONE"
 BRONZE_BATCH = 500
 """How many bronze files are read at once: a rebuild's memory doesn't grow with the season."""
 DESCRIPTION = "_table.json"
+_NEWEST = "_newest"
+_SUBMISSION = "{'captured': captured_at, 'hash': content_sha256}"
+"""A submission's mark: the newest is the latest captured, and of those the highest content hash, as
+`latest_by` orders them. A third faster than `rank()` on a table of 17,000 rows, the same on a small one."""
 STORING = "_storing"
 LOCK = ".lock"
 _COLUMN = re.compile(r"[(,] *(\w+) (\w+)")
@@ -125,25 +129,56 @@ def _write_bronze(row: Row, path: Path) -> None:
         connection.table(BRONZE.name).write_parquet(str(path))
 
 
+Equals = Mapping[str, Collection[object]]
+"""For a column, the values a read keeps."""
+
+
+def _window(
+    connection: duckdb.DuckDBPyConnection,
+    paths: Sequence[Path],
+    since: dt.datetime | None,
+    until: dt.datetime | None,
+    equals: Equals | None,
+) -> duckdb.DuckDBPyRelation:
+    """The files' rows, each with its file's name and place in it: those captured from `since` to `until`, and
+    with one of the values `equals` gives for its columns."""
+    relation = connection.read_parquet([str(path) for path in paths], filename=True, file_row_number=True)
+    captured = duckdb.ColumnExpression("captured_at")
+    if since is not None:
+        relation = relation.filter(captured >= duckdb.ConstantExpression(since))
+    if until is not None:
+        relation = relation.filter(captured <= duckdb.ConstantExpression(until))
+    for column, values in (equals or {}).items():
+        wanted = [duckdb.ConstantExpression(value) for value in values]
+        relation = relation.filter(duckdb.ColumnExpression(column).isin(*wanted) if wanted else "false")
+    return relation
+
+
 def _read_parquet(
-    paths: Sequence[Path], since: dt.datetime | None = None, until: dt.datetime | None = None
+    paths: Sequence[Path],
+    since: dt.datetime | None = None,
+    until: dt.datetime | None = None,
+    *,
+    newest_by: Sequence[str] = (),
+    equals: Equals | None = None,
 ) -> list[dict[str, object]]:
     """The files' rows, each with its file's name, by file name and then by place in the file; with `since`
-    or `until`, those captured from one to the other."""
+    or `until`, those captured from one to the other; with `equals`, those with one of its values. With
+    `newest_by`, only the rows of each page's newest submission for each value of those columns: the latest
+    captured, and of those the highest content hash, as `latest_by` orders them."""
     with connect() as connection:
-        relation = connection.read_parquet([str(path) for path in paths], filename=True, file_row_number=True)
-        captured = duckdb.ColumnExpression("captured_at")
-        if since is not None:
-            relation = relation.filter(captured >= duckdb.ConstantExpression(since))
-        if until is not None:
-            relation = relation.filter(captured <= duckdb.ConstantExpression(until))
+        relation = _window(connection, paths, since, until, equals)
+        if newest_by:
+            groups = ", ".join(f'"{column}"' for column in ("source_url", *newest_by))
+            newest = f'max({_SUBMISSION}) OVER (PARTITION BY {groups}) AS "{_NEWEST}"'
+            relation = relation.project(f"*, {newest}").filter(f'{_SUBMISSION} = "{_NEWEST}"')
         relation = relation.order("filename, file_row_number")
         kinds = zip(relation.columns, relation.types, strict=True)
         zoned = {name for name, kind in kinds if str(kind) == TIMESTAMPTZ}
         columns = [
             f'"{name}"::TIMESTAMP AS "{name}"' if name in zoned else f'"{name}"'
             for name in relation.columns
-            if name != "file_row_number"
+            if name not in ("file_row_number", _NEWEST)
         ]
         projected = relation.project(", ".join(columns))
         rows = [dict(zip(projected.columns, row, strict=True)) for row in projected.fetchall()]
@@ -153,6 +188,14 @@ def _read_parquet(
             if isinstance(value, dt.datetime):
                 row[name] = value.replace(tzinfo=dt.UTC)
     return rows
+
+
+def _newest_hashes(paths: Sequence[Path], source_url: str, since: dt.datetime | None) -> set[str]:
+    with connect() as connection:
+        relation = _window(connection, paths, since, None, {"source_url": [source_url]})
+        ranked = relation.project(f'content_sha256, rank() OVER (ORDER BY captured_at DESC) AS "{_NEWEST}"')
+        newest = ranked.filter(f'"{_NEWEST}" = 1').project("content_sha256").distinct()
+        return {str(found) for (found,) in newest.fetchall()}
 
 
 @dataclass
@@ -401,10 +444,26 @@ class LakeStore:
             return found
 
     def read_rows(
-        self, table: Table, since: dt.datetime | None = None, until: dt.datetime | None = None
+        self,
+        table: Table,
+        since: dt.datetime | None = None,
+        until: dt.datetime | None = None,
+        *,
+        newest_by: Sequence[str] = (),
+        equals: Equals | None = None,
     ) -> list[dict[str, object]]:
         """The table's rows in the order they were stored, or no rows if it hasn't been built yet; with
         `since` or `until`, those captured from one to the other, both included, from the months they
-        touch."""
-        rows = self._read(table, since, until, lambda files: _read_parquet(files, since, until))
+        touch; with `newest_by` and `equals`, as `_read_parquet` keeps them (mvp-store C5)."""
+
+        def read(files: Sequence[Path]) -> list[dict[str, object]]:
+            return _read_parquet(files, since, until, newest_by=newest_by, equals=equals)
+
+        rows = self._read(table, since, until, read)
         return [{key: value for key, value in row.items() if key != "filename"} for row in rows or []]
+
+    def newest_hashes(self, table: Table, source_url: str, since: dt.datetime | None = None) -> set[str]:
+        """The content hashes of `source_url`'s newest stored read in the table, from `since` on: what the
+        page said last (mvp-collect R1.4). DuckDB finds them, so no row is read into Python."""
+        found = self._read(table, since, None, lambda files: _newest_hashes(files, source_url, since))
+        return found or set()

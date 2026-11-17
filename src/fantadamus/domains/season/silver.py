@@ -128,6 +128,7 @@ PLAYER_SEASONS = Domain(
         "player_seasons",
         f"CREATE TEMP TABLE player_seasons ({PROVENANCE_COLUMNS}, {_SEASON_COLUMNS})",
     ),
+    newest_by=("player_id",),
 )
 SEASON_STATS = Domain(
     "season_stats",
@@ -138,6 +139,7 @@ SEASON_STATS = Domain(
         "season_stats",
         f"CREATE TEMP TABLE season_stats ({PROVENANCE_COLUMNS}, {_SEASON_COLUMNS})",
     ),
+    newest_by=("player_id",),
 )
 TEAM_SEASONS = Domain(
     "team_season",
@@ -163,11 +165,15 @@ PENALTY_TAKERS = Domain(
 
 
 def read_player_seasons(
-    store: LakeStore, since: dt.datetime | None = None, until: dt.datetime | None = None
+    store: LakeStore,
+    since: dt.datetime | None = None,
+    until: dt.datetime | None = None,
+    *,
+    newest: bool = False,
 ) -> list[PlayerSeasonRow]:
     """The season-figures rows captured from `since` to `until`, or all of them, from profiles and
-    statistics-page reads alike (mvp-roles C2)."""
+    statistics-page reads alike (mvp-roles C2); with `newest`, each page's newest for each player."""
     return [
-        *read_silver(store, PLAYER_SEASONS, since, until),
-        *read_silver(store, SEASON_STATS, since, until),
+        *read_silver(store, PLAYER_SEASONS, since, until, newest=newest),
+        *read_silver(store, SEASON_STATS, since, until, newest=newest),
     ]

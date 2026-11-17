@@ -7,6 +7,7 @@ from __future__ import annotations
 import datetime as dt
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import duckdb
 import pytest
@@ -258,10 +259,13 @@ def test_a_rebuild_reads_bronze_in_batches(tmp_path: Path, monkeypatch: pytest.M
     batches: list[int] = []
 
     def counting(
-        paths: Sequence[Path], since: dt.datetime | None = None, until: dt.datetime | None = None
+        paths: Sequence[Path],
+        since: dt.datetime | None = None,
+        until: dt.datetime | None = None,
+        **options: Any,
     ) -> list[dict[str, object]]:
         batches.append(len(paths))
-        return read(paths, since, until)
+        return read(paths, since, until, **options)
 
     monkeypatch.setattr(duckdb_store, "BRONZE_BATCH", 2)
     monkeypatch.setattr(duckdb_store, "_read_parquet", counting)

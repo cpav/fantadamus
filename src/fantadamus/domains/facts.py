@@ -25,7 +25,7 @@ from fantadamus.core.clock import Clock
 from fantadamus.core.clubs import Clubs
 from fantadamus.core.hashing import canonical_json, content_sha256
 from fantadamus.core.urls import host_allowed, url_host
-from fantadamus.lake.duckdb_store import Incoming, LakeStore, Table
+from fantadamus.lake.duckdb_store import Equals, Incoming, LakeStore, Table
 from fantadamus.lake.months import bronze_order, follows, month_of
 
 PROVENANCE_COLUMNS = "source_url VARCHAR, captured_at TIMESTAMPTZ, content_sha256 VARCHAR"
@@ -77,6 +77,9 @@ class Domain[P: Contract, R: SilverRow]:
     rows_version: int = 1
     """Raised when `to_rows` gives other rows for the same payload, so that the table is written again from
     bronze (mvp-store C3)."""
+    newest_by: tuple[str, ...] = ()
+    """For a table that grows with every stored read: the columns an answer needs only each page's newest
+    submission of, for each of their values (mvp-store C5)."""
 
     def __post_init__(self) -> None:
         columns = list(self.table.columns)
@@ -84,6 +87,8 @@ class Domain[P: Contract, R: SilverRow]:
             raise ValueError(
                 f"{self.table.name}: columns {columns} differ from {list(self.row.model_fields)}"
             )
+        if not set(self.newest_by) <= set(columns):
+            raise ValueError(f"{self.table.name}: no column {sorted(set(self.newest_by) - set(columns))}")
 
 
 def _provenance(envelope: BronzeEnvelope) -> Source:
@@ -278,9 +283,15 @@ def read_silver[R: SilverRow](
     domain: Domain[Any, R],
     since: dt.datetime | None = None,
     until: dt.datetime | None = None,
+    *,
+    newest: bool = False,
+    equals: Equals | None = None,
 ) -> list[R]:
-    """The domain's rows, or only those captured from `since` to `until`, both included."""
-    rows = store.read_rows(domain.table, since, until)
+    """The domain's rows, or only those captured from `since` to `until`, both included. With `newest`, only
+    each page's newest submission for each value of the domain's `newest_by`, by then; with `equals`, only
+    the rows with one of its values (mvp-store C5)."""
+    newest_by = domain.newest_by if newest else ()
+    rows = store.read_rows(domain.table, since, until, newest_by=newest_by, equals=equals)
     return [domain.row.model_validate(row) for row in rows]
 
 
@@ -289,9 +300,7 @@ def last_read(
 ) -> set[str]:
     """The content hashes of the newest stored read of `source_url` in the domain, from `since` on: what the
     page said last."""
-    rows = [row for row in read_silver(store, domain, since) if row.source_url == source_url]
-    newest = max((row.captured_at for row in rows), default=None)
-    return {row.content_sha256 for row in rows if row.captured_at == newest}
+    return store.newest_hashes(domain.table, source_url, since)
 
 
 def latest_by[R: SilverRow, K](rows: Iterable[R], as_of: dt.datetime, key: Callable[[R], K]) -> dict[K, R]:

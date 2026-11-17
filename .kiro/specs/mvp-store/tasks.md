@@ -76,24 +76,25 @@ Status: **Approved by the owner, 2026-11-16** · From the approved [requirements
     - _Test: **AT-4** `tests/acceptance/store/test_rebuild_command.py::test_at4_every_table_or_one`, `::test_at4_no_request_is_sent`,
       `::test_at4_a_lake_in_the_earlier_layout_answers_after_it`; `tests/unit/store/test_domains.py::test_every_domain_is_listed_once`_
 
-- [ ] 3. An answer reads what it uses
+- [x] 3. An answer reads what it uses
   - Branch: `feat/st-3-read` · Depends on: 2 · ADRs: none
-  - [ ] 3.1 A read can keep each page's newest submission for a domain's key, and only some values of a column.
+  - [x] 3.1 A read can keep each page's newest submission for a domain's key, and only some values of a column.
     - _Requirements: R3.2, R3.5_
     - _Test: **P5** `tests/integration/store/test_newest.py::test_p5_the_newest_submission_and_nothing_later`;
       `::test_a_tie_keeps_the_whole_submission`, `::test_only_the_values_asked_for`, `::test_stored_order_is_kept`_
-  - [ ] 3.2 `Facts` reads the five growing tables that way, with its window and real row types; a movement reads them again as they
+  - [x] 3.2 `Facts` reads the five growing tables that way, with its window and real row types; a movement reads them again as they
     stood; calibration reads everything.
     - _Requirements: R3.2, R3.5_
-    - _Test: **P4** `tests/integration/store/test_same_answers.py::test_p4_the_same_numbers_both_ways`;
-      **AT-7** `tests/acceptance/store/test_same_answers.py::test_at7_every_tool_answers_the_same_both_ways`,
-      `::test_at7_a_movement_is_the_same`, `::test_at7_a_review_and_a_check_are_the_same`;
-      `tests/integration/store/test_facts.py::test_calibration_reads_everything`, `::test_a_movement_reads_the_same_window`_
-  - [ ] 3.3 The ratings are read only for an answer that shows a claim, and only its clubs'.
+    - _Test: **P4** `tests/property/store/test_same_answers.py::test_p4_the_same_numbers_both_ways` (pure, so in the property
+      layer); **AT-7** `tests/acceptance/store/test_same_answers.py::test_at7_every_tool_answers_the_same_both_ways`,
+      `::test_at7_a_movement_is_the_same`, `::test_at7_a_review_and_a_check_are_the_same`, `::test_the_round_was_read_and_stored_several_times`;
+      `tests/integration/store/test_facts.py::test_calibration_reads_everything`, `::test_a_movement_reads_the_same_window`,
+      `::test_an_answer_about_an_earlier_time_reads_it_as_it_stood`_
+  - [x] 3.3 The ratings are read only for an answer that shows a claim, and only its clubs'.
     - _Requirements: R3.3_
     - _Test: **AT-6** `tests/acceptance/store/test_reads.py::test_at6_ratings_only_where_a_claim_is_shown`,
       `::test_at6_only_the_clubs_asked_about`_
-  - [ ] 3.4 The collector asks for a page's newest stored hashes, and the schedule's check reads the window's official lineups.
+  - [x] 3.4 The collector asks for a page's newest stored hashes, and the schedule's check reads the window's official lineups.
     - _Requirements: R1.2, R1.5_
     - _Test: `tests/integration/store/test_collector_reads.py::test_the_newest_reads_hashes`, `::test_what_is_due_reads_the_window`;
       `tests/property/collect/test_collect.py::test_p3_same_pages_store_nothing_new` stays as it is_

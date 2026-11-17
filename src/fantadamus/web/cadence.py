@@ -30,6 +30,7 @@ from fantadamus.domains.calibration import finished_round
 from fantadamus.domains.facts import read_silver
 from fantadamus.domains.fixtures.gold import matches, next_round
 from fantadamus.domains.fixtures.silver import FIXTURES, OTHER_FIXTURES
+from fantadamus.domains.freshness import FACTS_WINDOW
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.duckdb_store import LakeStore
 from fantadamus.web.collector import Collector, CollectReport, PageKind, page_of
@@ -148,9 +149,8 @@ def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]
     fixtures = read_silver(lake, FIXTURES)
     round = next_round(fixtures, now)
     upcoming = [row for row in matches(fixtures, now) if row.round == round] if round is not None else []
-    confirmed = {
-        (row.home, row.away) for row in read_silver(lake, OFFICIAL_LINEUPS) if row.captured_at <= now
-    }
+    officials = read_silver(lake, OFFICIAL_LINEUPS, now - FACTS_WINDOW, now, newest=True)
+    confirmed = {(row.home, row.away) for row in officials}  # a match asked about kicks off within days
     other = min(
         (
             row.kickoff_at

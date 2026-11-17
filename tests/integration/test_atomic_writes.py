@@ -8,6 +8,7 @@ import threading
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 import duckdb
 import pytest
@@ -109,9 +110,12 @@ def test_a_read_while_a_store_takes_effect_gives_the_table_before(
     reads: list[int] = []
 
     def stored_meanwhile(
-        paths: Sequence[Path], since: dt.datetime | None = None, until: dt.datetime | None = None
+        paths: Sequence[Path],
+        since: dt.datetime | None = None,
+        until: dt.datetime | None = None,
+        **options: Any,
     ) -> Read:
-        found = read(paths, since, until)
+        found = read(paths, since, until, **options)
         if not reads:
             store.replace_rows(_TABLE, _rows(5), 1)
         reads.append(len(found))
@@ -131,12 +135,15 @@ def test_a_file_a_store_removed_is_listed_again(tmp_path: Path, monkeypatch: pyt
     asked: list[list[str]] = []
 
     def stored_first(
-        paths: Sequence[Path], since: dt.datetime | None = None, until: dt.datetime | None = None
+        paths: Sequence[Path],
+        since: dt.datetime | None = None,
+        until: dt.datetime | None = None,
+        **options: Any,
     ) -> Read:
         if not asked:
             store.replace_rows(_TABLE, _rows(5), 1)  # October's file, and November's, go
         asked.append([path.name for path in paths])
-        return read(paths, since, until)
+        return read(paths, since, until, **options)
 
     monkeypatch.setattr(duckdb_store, "_read_parquet", stored_first)
     assert _values(store) == 5
@@ -182,14 +189,17 @@ def test_an_error_while_the_table_is_replaced_is_read_again(
     reads: list[str] = []
 
     def torn(
-        paths: Sequence[Path], since: dt.datetime | None = None, until: dt.datetime | None = None
+        paths: Sequence[Path],
+        since: dt.datetime | None = None,
+        until: dt.datetime | None = None,
+        **options: Any,
     ) -> Read:
         if not reads:
             reads.append("failed")
             store.replace_rows(_TABLE, _rows(5), 1)
             raise duckdb.InvalidInputException("Prefetch registered for bytes outside file")
         reads.append("whole")
-        return read(paths, since, until)
+        return read(paths, since, until, **options)
 
     monkeypatch.setattr(duckdb_store, "_read_parquet", torn)
     assert _values(store) == 5

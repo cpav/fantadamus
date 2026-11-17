@@ -63,8 +63,15 @@ async def test_window_moves_with_as_of(tmp_path: Path) -> None:
     store = LakeStore(tmp_path)
     await _lineups_at(store, NOW - 30 * DAY, NOW - 20 * DAY, NOW - 10 * DAY, NOW - DAY)
     # The 14 days up to then: not what came later, nor what's older.
-    assert {row.captured_at for row in Facts.read(store, NOW - 15 * DAY).views} == {NOW - 20 * DAY}
-    assert {row.captured_at for row in Facts.read(store, NOW).views} == {NOW - 10 * DAY, NOW - DAY}
+    assert {row.captured_at for row in Facts.read(store, NOW - 15 * DAY, history=True).views} == {
+        NOW - 20 * DAY
+    }
+    assert {row.captured_at for row in Facts.read(store, NOW, history=True).views} == {
+        NOW - 10 * DAY,
+        NOW - DAY,
+    }
+    # And of those, an answer reads the page's newest (mvp-store C5).
+    assert {row.captured_at for row in Facts.read(store, NOW).views} == {NOW - DAY}
 
 
 async def test_old_rows_left_out(tmp_path: Path) -> None:
