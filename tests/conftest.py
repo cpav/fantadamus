@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from scripts.checks._common import run_command
 
 from tests import hypothesis_profiles
+from tests.timings import measured, shared
 
 pytest_plugins = ["pytester"]
 
@@ -41,6 +43,13 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         item.add_marker(getattr(pytest.mark, layer))
         if layer in NO_NETWORK:
             item.add_marker(pytest.mark.disable_socket)
+
+
+@pytest.fixture(scope="session")
+def timings(tmp_path_factory: pytest.TempPathFactory, worker_id: str) -> dict[str, Any]:
+    """Every budget's CPU seconds, timed once for the whole run in a process of its own (mvp-store C7)."""
+    root = tmp_path_factory.getbasetemp()
+    return shared((root if worker_id == "master" else root.parent) / "timings.json", measured)
 
 
 @pytest.fixture

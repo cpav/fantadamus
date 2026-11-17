@@ -4,11 +4,10 @@ new page (design C8; R2.4, R5.1 to R5.3)."""
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
-from scripts.checks._common import run_command
 
 from tests.integration.review.test_tool import review
 from tests.lineup_harness import a_round, finished, stats_after_rated
@@ -63,13 +62,11 @@ async def test_at7_the_advice_replayed_when_none_was_asked(tmp_path: Path) -> No
     assert result["review"]["replayed"]
 
 
-async def test_at7_in_budget(tmp_path: Path) -> None:
+async def test_at7_in_budget(tmp_path: Path, timings: dict[str, Any]) -> None:
     """In a process of its own for the time, as the lineup's budget is measured: see
     `tests/lineup_speed.py`."""
-    for replayed in ([], ["--replayed"]):
-        timed = run_command([sys.executable, "-m", "tests.lineup_speed", "--review", *replayed])
-        assert timed.returncode == 0, timed.stderr
-        assert float(timed.stdout) < 3.0, replayed
+    for timed in ("review", "review_replayed"):
+        assert timings[timed] < 3.0, timed
     async with a_round(tmp_path) as here:
         await here.ask()
         finished(here)

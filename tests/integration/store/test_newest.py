@@ -11,6 +11,7 @@ from pathlib import Path
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from fantadamus.lake import duckdb_store
 from fantadamus.lake.duckdb_store import Incoming, LakeStore, Table
 from fantadamus.lake.months import month_of
 from tests.store_lake import newest_submissions
@@ -56,21 +57,60 @@ def stored(store: LakeStore, history: list[Submission]) -> list[dict[str, object
     return store.read_rows(TABLE)
 
 
+Stored = list[tuple[str, dict[str, object]]]
+
+
+def _rows(history: list[Submission]) -> Stored:
+    """The rows as the table stores them, each with its month: the months oldest first, and in each the order
+    they came in."""
+    found = [
+        (
+            month_of(at(step)),
+            {
+                "source_url": page,
+                "captured_at": at(step),
+                "content_sha256": f"{content:064x}",
+                "home": home,
+                "outlet": outlet,
+                "name": name,
+            },
+        )
+        for page, step, content, home, outlet, names in history
+        for name in names
+    ]
+    return sorted(found, key=lambda pair: pair[0])
+
+
 @settings(deadline=None)
 @given(
     history=st.lists(submissions, min_size=1, max_size=8),
     ends=st.tuples(st.integers(0, 12), st.integers(0, 12)),
 )
 def test_p5_the_newest_submission_and_nothing_later(history: list[Submission], ends: tuple[int, int]) -> None:
+    """On the month files DuckDB reads, written straight from the history: the oracle needs no read."""
     since, until = (at(step) for step in sorted(ends))
+    stored_rows = _rows(history)
+    rows = [row for _, row in stored_rows]
     with tempfile.TemporaryDirectory() as root:
-        store = LakeStore(Path(root))
-        everything = stored(store, history)
-        reduced = store.read_rows(TABLE, since, until, newest_by=KEYS)
+        files = []
+        for month in sorted({month for month, _ in stored_rows}):
+            lines = Path(root) / f"{month}.ndjson"
+            mine = [row for its, row in stored_rows if its == month]
+            lines.write_text("".join(json.dumps(row, default=str) + "\n" for row in mine), encoding="utf-8")
+            files.append(Path(root) / f"{month}.parquet")
+            duckdb_store._load(TABLE, lines, files[-1])
+
+        def read(
+            since: dt.datetime | None = None, until: dt.datetime | None = None
+        ) -> list[dict[str, object]]:
+            found = duckdb_store._read_parquet(files, since, until, newest_by=KEYS)
+            return [{key: value for key, value in row.items() if key != "filename"} for row in found]
+
+        reduced = read(since, until)
         stamps = [row["captured_at"] for row in reduced]
         assert all(isinstance(at, dt.datetime) and since <= at <= until for at in stamps)  # nothing outside
-        assert reduced == newest_submissions(everything, KEYS, since, until)
-        assert store.read_rows(TABLE, newest_by=KEYS) == newest_submissions(everything, KEYS)
+        assert reduced == newest_submissions(rows, KEYS, since, until)
+        assert read() == newest_submissions(rows, KEYS)
 
 
 def test_a_tie_keeps_the_whole_submission(tmp_path: Path) -> None:

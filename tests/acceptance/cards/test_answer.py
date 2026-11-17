@@ -4,12 +4,10 @@ description saying how to show it (design C7; R6.2 to R6.4)."""
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
-from scripts.checks._common import run_command
 
 from tests.lineup_harness import Round, a_round
 
@@ -24,13 +22,11 @@ async def _content(here: Round, tool: str, args: dict[str, Any]) -> dict[str, An
     return content
 
 
-async def test_at10_in_budget(tmp_path: Path) -> None:
+async def test_at10_in_budget(tmp_path: Path, timings: dict[str, Any]) -> None:
     """In a process of its own for the time, as the lineup's budget is measured: see
     `tests/lineup_speed.py`."""
-    for kind in ("--card", "--overview"):
-        timed = run_command([sys.executable, "-m", "tests.lineup_speed", kind])
-        assert timed.returncode == 0, timed.stderr
-        assert float(timed.stdout) < 3.0, kind
+    for timed in ("card", "overview"):
+        assert timings[timed] < 3.0, timed
     async with a_round(tmp_path) as here:
         card = await _content(here, "match_card", {"club": "Alfa"})
         overview = await _content(here, "round_overview", {})

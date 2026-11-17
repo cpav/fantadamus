@@ -4,12 +4,10 @@ R3.2, R3.4, R5.1)."""
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
-from scripts.checks._common import run_command
 
 from tests.lineup_data import BUDGET_RULES
 from tests.lineup_harness import Round, a_round
@@ -111,11 +109,9 @@ async def test_at9_an_overrides_cost_includes_the_rules(tmp_path: Path) -> None:
     assert override["cost"] > 9.0
 
 
-async def test_at12_a_squad_with_rules_stays_in_budget(tmp_path: Path) -> None:
+async def test_at12_a_squad_with_rules_stays_in_budget(tmp_path: Path, timings: dict[str, Any]) -> None:
     """A captain and three modifiers, in a process of its own for the time: see `tests/lineup_speed.py`."""
-    result = run_command([sys.executable, "-m", "tests.lineup_speed", "--rules"])
-    assert result.returncode == 0, result.stderr
-    assert float(result.stdout) < 3.0
+    assert timings["rules"] < 3.0
     async with a_round(tmp_path) as here:
         await _with(here, *BUDGET_RULES)
         answer = await here.ask()
