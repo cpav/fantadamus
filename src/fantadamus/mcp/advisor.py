@@ -572,7 +572,7 @@ class Advisor:
             fixtures = read_silver(self.lake, FIXTURES, since, now)
             round = next_round(fixtures, now)
             kickoff = deadline(fixtures, round, now) if round is not None else None
-        confirmed = self.collect_log.confirmed(now) if self.collect_log is not None else {}
+        confirmed = self.collect_log.confirmed(now, since) if self.collect_log is not None else {}
         due: list[str] = []
         for fact in wanted:
             domain = _CONTEXT[fact]
@@ -756,7 +756,7 @@ class Advisor:
         """Each player's facts at `as_of`, and what's missing or stale (mvp-lineup C5); with `any_age`, the
         facts stored by then however old, as a review prices them (mvp-review C6)."""
         facts = facts.at(self.lake, as_of)
-        confirmed = self.collect_log.confirmed(as_of) if self.collect_log is not None else {}
+        confirmed = self.collect_log.confirmed(as_of, facts.since) if self.collect_log is not None else {}
         plan = _Plan()
         need = plan.need
         recent = _Recent(as_of, confirmed, {}, any_age)
@@ -993,7 +993,7 @@ class Advisor:
         gathered = self.gather([], as_of, facts=facts, known=[])
         if gathered.round is None:
             return gathered, []
-        confirmed = self.collect_log.confirmed(as_of) if self.collect_log is not None else {}
+        confirmed = self.collect_log.confirmed(as_of, facts.since) if self.collect_log is not None else {}
         recent = _Recent(as_of, confirmed, {})
         return gathered, [
             (match, self._match_xg(match, facts, gathered.teams, as_of, False, gathered.plan.need, recent))
@@ -1071,7 +1071,8 @@ class Advisor:
 
     def _updated(self, players: list[PlayerAnswer], as_of: dt.datetime) -> Updated:
         """The newest and oldest time the facts were captured or a collector read found them unchanged."""
-        worked = self.collect_log.last_worked(as_of) if self.collect_log is not None else {}
+        since = as_of - FACTS_WINDOW  # every source is a row of the window: read later, if at all
+        worked = self.collect_log.last_worked(as_of, since) if self.collect_log is not None else {}
         times = [
             max(source.captured_at, worked.get(source.source_url, source.captured_at))
             for part in players

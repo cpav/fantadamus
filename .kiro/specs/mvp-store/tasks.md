@@ -99,17 +99,18 @@ Status: **Approved by the owner, 2026-11-16** · From the approved [requirements
     - _Test: `tests/integration/store/test_collector_reads.py::test_the_newest_reads_hashes`, `::test_what_is_due_reads_the_window`;
       `tests/property/collect/test_collect.py::test_p3_same_pages_store_nothing_new` stays as it is_
 
-- [ ] 4. Logs read once
+- [x] 4. Logs read once
   - Branch: `feat/st-4-logs` · Depends on: 3 · ADRs: none
-  - [ ] 4.1 A log's file is parsed once while it's unchanged, and a read can start at a month.
+  - [x] 4.1 A log's file is parsed once while it's unchanged, and a read can start at a month.
     - _Requirements: R3.4_
     - _Test: `tests/unit/store/test_logs.py::test_a_file_is_parsed_once_while_unchanged`, `::test_an_appended_line_is_seen`,
-      `::test_a_read_from_a_month_skips_older_files`, `::test_a_caller_cant_change_what_is_kept`_
-  - [ ] 4.2 The collection log is read from the window's start, and scoring a round reads back to that round; an answer reads each
+      `::test_a_read_from_a_month_skips_older_files`, `::test_a_caller_cant_change_what_is_kept`, `::test_a_line_it_cant_read_is_skipped_once`_
+  - [x] 4.2 The collection log is read from the window's start, and scoring a round reads back to that round; an answer reads each
     log once.
     - _Requirements: R1.5, R3.4_
     - _Test: **AT-6** `tests/acceptance/store/test_reads.py::test_at6_each_log_once_for_an_answer`;
-      `tests/integration/store/test_collect_log.py::test_only_the_windows_months`, `::test_scoring_a_round_reads_back_to_it`_
+      `tests/integration/store/test_collect_log.py::test_only_the_windows_months`, `::test_scoring_a_round_reads_back_to_it`,
+      `::test_the_schedule_reads_a_fortnight`_
 
 - [ ] 5. Season size, in one timing process
   - Branch: `test/st-5-budgets` · Depends on: 4 · ADRs: none

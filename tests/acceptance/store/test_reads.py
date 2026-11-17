@@ -1,5 +1,5 @@
 """AT-6 of mvp-store: the ratings are read only for the three answers that show a claim, and only the rows of
-the clubs they are about (R3.3)."""
+the clubs they are about; each log is read once for an answer (R3.3, R3.4)."""
 
 from __future__ import annotations
 
@@ -10,8 +10,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import BaseModel
 
 from fantadamus.domains.ratings.silver import MATCH_RATINGS
+from fantadamus.lake import jsonl
 from fantadamus.lake.duckdb_store import LakeStore, Table
 from tests.acceptance.sources.test_raters import _stored as stored_ratings
 from tests.lineup_harness import Round, a_round
@@ -100,3 +102,23 @@ async def test_at6_only_the_clubs_asked_about(tmp_path: Path, monkeypatch: pytes
     assert claims["Alfa Nove"]
     assert outlook["answer"]["players"][0]["raters"] == claims["Alfa Nove"]
     assert all("raters" not in player for player in card["card"]["players"])  # Alfa's ratings weren't read
+
+
+async def test_at6_each_log_once_for_an_answer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """An "X or Y?" with a movement asks the collection log four times and the decision log once: each of
+    their files is parsed once."""
+    async with a_round(tmp_path) as here:
+        await here.ask()  # the round's pages read, and the squad's lineup given
+        monkeypatch.setattr(jsonl, "_PARSED", {})
+        parse = jsonl._parse
+        parsed: list[str] = []
+
+        def counting(path: Path, model: type[BaseModel]) -> list[BaseModel]:
+            parsed.append(str(path.relative_to(tmp_path)))
+            return parse(path, model)
+
+        monkeypatch.setattr(jsonl, "_parse", counting)
+        compared = await _asked(here, "compare_players", first="Beta Nove", second="Delta Nove")
+    assert compared["answer"]["players"][0]["movement"]["basis"] == "previous answer"
+    assert sorted(parsed) == sorted(set(parsed))  # each file once
+    assert {Path(found).parent.name for found in parsed} >= {"collect", "decisions"}
