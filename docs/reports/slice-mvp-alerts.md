@@ -1,6 +1,7 @@
 # Slice report: `mvp-alerts`
 
-2026-11-15 · Phase 2, the ninth and last slice before going online · **Awaiting the owner's sign-off**
+2026-11-15 · Phase 2, the ninth and last slice before going online · **Signed off by the owner on 2026-11-18**,
+with all three recommendations; AT-5 closes with round 12
 
 When the news changes your lineup in the last day before a round, your Mac now says so, unasked. After a
 scheduled run that stores a new official lineup, a probable lineup or an injury or ban, Fantadamus works the lineup
@@ -117,7 +118,9 @@ $0, as estimated:
 
 ## Decisions for the owner
 
-1. **Sign off this slice?** Recommendation: yes. Every automated acceptance test passes, the real replay of round 11
+All three decided by the owner on 2026-11-18, as recommended ("Sign off all three").
+
+1. **Sign off this slice?** Signed off on 2026-11-18. Every automated acceptance test passes, the real replay of round 11
    shows what the alerts would have said, and macOS took the sample notification. Only your own look at it (AT-5)
    is left, and it can close with round 12.
 2. **Install the schedule and let the notifications through,** before round 12's window opens, 24 hours before its
