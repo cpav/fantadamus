@@ -93,7 +93,7 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
     - _Test: recorded in the report, without the squad's names_
     - From `main` on 2026-11-15: `fantadamus alerts --test` was taken by macOS; round 11's last day, replayed read-only,
       would have sent 4 alerts. Left to the owner: seeing the notification, installing the schedule, and a real alert
-      in round 12's last day.
+      in round 12's last day. The owner signed off on 2026-11-18 with this step closing in round 12.
     - 2026-11-16 (`mvp-store`, decision 1): the schedule is installed after `mvp-store`. Until then
       `fantadamus collect --due --user owner`, run by hand in a round's last day, sends a real alert if the call has
       changed.
@@ -104,6 +104,6 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
     - `domains/alerts.py` joins the mutation set with its pure tests: 403 of 413 mutants killed, after nine tests for the
       gaps the first run showed (`tests/unit/alerts/test_call.py`, `test_cause.py`, `test_text.py`, `test_decide.py`);
       the 10 left change nothing.
-  - [ ] 4.4 **Owner:** sign off this slice.
+  - [x] 4.4 **Owner:** sign off this slice.
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the report_
