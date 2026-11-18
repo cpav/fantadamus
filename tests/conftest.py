@@ -36,9 +36,14 @@ def layer_of(path: str | Path) -> str | None:
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Mark every test with its layer, so `pytest -m <layer>` selects it, and block sockets where required.
-    The budget tests go last, where the timing process, started as the run begins, has most often finished
-    (mvp-store C7)."""
+
+    A budget test reads the one timing process's result (mvp-store C7). Its two-minute limit counts its own
+    code, not the wait for that process: the process takes about a minute alone and three on a busy Mac, and
+    has a limit of its own (`tests/timings.py`), so a hang there still fails, with its reason. The budget
+    tests go last, where the process has most often finished."""
     for item in items:
+        if _uses_timings(item):
+            item.add_marker(pytest.mark.timeout(func_only=True))
         layer = layer_of(item.path.relative_to(ROOT))
         if layer is None:
             continue
