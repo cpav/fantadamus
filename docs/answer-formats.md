@@ -331,5 +331,6 @@ off the bench.
 ## Later, in their own specs
 
 - **Context, on the match card:** "Como's new coach takes his first match. That widens Como's lineup uncertainty; it
-  doesn't move the numbers." It needs a source for news, with its route approved: the new-sources slice.
+  doesn't move the numbers." It needs a source for news with its route approved; `mvp-sources` left match news for v1
+  (the owner, 2026-11-11).
 - **Alerts once online:** the same alert through a notification service such as Amazon SNS, with Phase 3.

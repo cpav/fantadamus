@@ -33,12 +33,12 @@ depend on a pending decision (research gate, `quality.md`).
 
 | Concern | MVP choice | Notes |
 |---|---|---|
-| Interface | **MCP server** exposing the Fantadamus tools to each user's Claude app | stdio on the owner's Mac first; then a remote endpoint (AWS Lambda) for the second user. Auth for the remote endpoint is decided in the `chat-agent` MVP design |
-| Collection | **Fantadamus's collector** fetches the approved pages (robots.txt honoured, one request a second per host, an identifying user agent) when `compare_players` needs a fact and on a schedule; **the user's Claude app** collects only what the collector couldn't, guided by the refresh plan | Pages, readers and cadences are in the `mvp-collect` spec; stdlib-only fetching unless its design's ADR says otherwise |
+| Interface | **MCP server** exposing the Fantadamus tools to each user's Claude app | stdio on the owner's Mac first; then a remote endpoint (AWS Lambda) for the second user. Auth for the remote endpoint is decided in Phase 3's design |
+| Collection | **Fantadamus's collector** fetches the approved pages (robots.txt honoured, one request a second per host, an identifying user agent) when an answer needs a fact and on a schedule; **the user's Claude app** collects only what the collector couldn't, guided by the refresh plan | Pages, readers and cadences are in the `mvp-collect` spec and the slices that added pages (`mvp-roles`, `mvp-lineup`, `mvp-cards`, `mvp-sources`); stdlib-only fetching unless its design's ADR says otherwise |
 | Submission | MCP **submit tools** whose input schemas are the pydantic contracts | Validated for contract, allowed source host, name resolution and quality rules; a rejection returns its reason |
 | Bronze | The submitted payload with its source URL, the source's publication time, `received_at` and a content hash | No page text is stored ([ADR-0005](../../docs/adr/0005-mvp-claude-collects-tools-decide.md), guardrail 4) |
-| Freshness | Per data product, for example probable lineups a few hours, fixtures a week; a refresh by one user serves both | Targets are set in Spec 1; the refresh plan lists whatever is past its target |
-| Storage | **DuckDB over Parquet**, same medallion layout and contracts as v1 | Local `data/private/` first; the same layout on a private S3 prefix once the endpoint is remote. Bronze is a file for each submission. Silver is a file for each month of each table, written once and named by the table's `_table.json`: a store adds its rows to their month, and a table out of step with bronze is rebuilt from it (`fantadamus rebuild`). An answer reads each page's newest submission of the tables that grow with every read. Gold is computed when asked (`mvp-store`) |
+| Freshness | Per data product, for example probable lineups a few hours, fixtures a week; a refresh by one user serves both | Targets are set in `engine/constants.py` (`mvp-collect`); the refresh plan lists whatever is past its target |
+| Storage | **DuckDB over Parquet**, same medallion layout and contracts as v1 | Local `data/local/` first; the same layout on a private S3 prefix once the endpoint is remote. Bronze is a file for each submission. Silver is a file for each month of each table, written once and named by the table's `_table.json`: a store adds its rows to their month, and a table out of step with bronze is rebuilt from it (`fantadamus rebuild`). An answer reads each page's newest submission of the tables that grow with every read. Gold is computed when asked (`mvp-store`) |
 | Approved for v1, unused in the MVP | Brave Search, The Odds API, API-Football (registry D-S6, D-T1); search-driven fetching (ADR-0004) | They return when v1 automates collection; ADR-0006 brings only fetching of the approved fixed pages forward |
 
 The MVP doesn't use Iceberg, Glue, Athena, Step Functions or EventBridge. Those arrive with v1.
@@ -48,7 +48,7 @@ The MVP doesn't use Iceberg, Glue, Athena, Step Functions or EventBridge. Those 
 | Concern | Choice | Notes |
 |---|---|---|
 | Storage | Medallion lakehouse on S3 with **Apache Iceberg** | Bronze: raw, immutable, timestamped, hashed snapshots per source. Silver: normalised, resolved, validated tables. Gold: data products read by the engine and agent. |
-| Iceberg flavour | **S3 Tables** (managed) vs self-managed Iceberg on general-purpose S3, **pending ADR in Spec 1** | AWS guidance points small teams to S3 Tables and notes self-managed can be cheaper for small, infrequent workloads. Decide on cost per refresh at our volumes. |
+| Iceberg flavour | **S3 Tables** (managed) vs self-managed Iceberg on general-purpose S3, **pending an ADR when v1 is specified** | AWS guidance points small teams to S3 Tables and notes self-managed can be cheaper for small, infrequent workloads. Decide on cost per refresh at our volumes. |
 | Catalog and governance | AWS Glue Data Catalog, Lake Formation permissions | |
 | Query | Amazon Athena | |
 | Transforms | AWS Glue (PySpark or Python shell) or Lambda, **whichever is cheaper per job** | Evaluate Iceberg materialized views for silver and gold. Their limits: minimum refresh interval one hour, refreshes don't cascade, deletes need a full refresh. **The official-lineup fast path must not depend on them.** |
@@ -63,13 +63,13 @@ Data mesh solves an *organisational* scaling problem (many teams, many domains).
 - adopt its **product thinking**: domain-oriented data products, each with an owner, a contract, a
   freshness target and a catalog entry;
 - run in **one AWS account**;
-- Spec 1's design documents the path to multi-account governance (Amazon DataZone / SageMaker Catalog,
+- v1's design documents the path to multi-account governance (Amazon DataZone / SageMaker Catalog,
   data.all, Lake Formation-only), with costs, and recommends whether any of it is worth adopting now.
 
 ## Infrastructure as code
 
-**CDK or Terraform, pending ADR-0002**, decided in Phase 3 when the AWS work is built (moved from Spec 0
-by the 2026-10-26 re-plan). Leaning: **Terraform (≥ 1.11)**. The owner already
+**CDK or Terraform, pending ADR-0002**, decided in Phase 3 when the AWS work is built (moved from
+`engineering-foundation` by the 2026-10-26 re-plan). Leaning: **Terraform (≥ 1.11)**. The owner already
 runs Terraform in the same AWS account (gamegusto), with a reviewed least-privilege bootstrap, a deploy
 role, a permissions boundary and a policy evaluator that we reuse rather than rebuild in CDK. The
 toolchain is `terraform fmt`, `validate`, `tflint`, `checkov`, and `terraform test` with `override_data`
@@ -124,14 +124,15 @@ fantadamus-terraform   ──assume──▶ fantadamus-deploy ──applies─�
 - An **AWS Budgets alarm from day one**.
 - **Ask the owner before adding any paid service** beyond the agreed stack (S3, S3 Tables, Glue, Athena,
   Lake Formation, Lambda, Step Functions, EventBridge, CloudWatch, Budgets, plus the LLM API for extraction;
-  the candidate is Amazon Bedrock, already enabled in the account for gamegusto, and the choice is an ADR in Spec 1).
+  the candidate is Amazon Bedrock, already enabled in the account for gamegusto, and the choice is an ADR in v1).
   This includes paid SaaS such as GitHub plans and third-party data feeds. The free plans of the Brave
-  Search API, The Odds API and API-Football are agreed for v1 (the MVP uses none of them); moving any of
-  them to a paid plan needs approval.
+  Search API, The Odds API and API-Football are agreed for v1 (the MVP uses none of them, apart from a one-round
+  trial of The Odds API for research, [ADR-0008](../../docs/adr/0008-anytime-scorer-odds-trial.md), which waits
+  for the owner's API key); moving any of them to a paid plan needs approval.
 
 ### Parametric token-cost model
 
-Spec 1's design compares (a) an agent that browses per question with (b) ingest-once, serve-many, in
+The design that adds LLM extraction (v1) compares (a) an agent that browses per question with (b) ingest-once, serve-many, in
 tokens, with prices as inputs and nothing hardcoded. Starting shape (refined in design.md):
 
 ```text

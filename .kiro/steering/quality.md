@@ -10,7 +10,7 @@ We go step by step. Every step ends at a gate, and **nothing moves forward on a 
 
 | Phase | Spec | What gets built | Research around it | Exit gate |
 |---|---|---|---|---|
-| 0 | `engineering-foundation` | Repository, tooling, CI, test harness, Claude Code hooks, and a walking skeleton (a tiny fixture through bronze → silver → gold) | Tool choices (ADR-0001) | Spec 0's acceptance tests pass, including those proving each gate blocks a bad change: the **local gate** first, the **remote gate** after the owner's go-ahead to push (Spec 0, R2.11) |
+| 0 | `engineering-foundation` | Repository, tooling, CI, test harness, Claude Code hooks, and a walking skeleton (a tiny fixture through bronze → silver → gold) | Tool choices (ADR-0001) | Its acceptance tests pass, including those proving each gate blocks a bad change: the **local gate** first, the **remote gate** after the owner's go-ahead to push (`engineering-foundation`, R2.11) |
 | 1 | `mvp-x-or-y` | "X or Y?" for two forwards, locally: submit tools and storage for the facts it needs (ADR-0005), the method for forwards ([`docs/method.md`](../../docs/method.md) §A3–§A4), and `compare_players` | The MVP reading list for those facts; fitting team xG from betting lines | The slice's acceptance tests pass, including method §A9 tests 2, 4 and 6; one real round answered end to end in the owner's Claude Desktop |
 | 2 | Further slices | First `mvp-collect`: Fantadamus collects the round's facts itself, many sources compared, forecast-style answers (ADR-0006). Then every role (keepers, defenders, midfielders); then the full lineup with league rules, the bench, the formation and the simulation (`docs/answer-formats.md`); then every other feature discussed, in the order in `product.md` | Calibrating the *(start)* constants against this season's data | Each slice's acceptance tests pass, ending with all six of method §A9; a calibration report exists for at least one real round |
 | 3 | Online and easy to install | The remote MCP endpoint, so that a player installs nothing, with the AWS skeleton, budget alarm and deploy gate moved from Phase 0 | Remote MCP auth; IaC (ADR-0002); account, region and deploy identity (ADR-0003) | Both users answered from their Claude apps; the first deploy passes its smoke test |
@@ -77,7 +77,7 @@ updated with the final list.
 | Contract tests | `pytest` against recorded source payloads | CI |
 | Integration and golden files | The whole medallion on DuckDB from fixtures | CI |
 | Coverage | `pytest-cov`: ≥ 90 % of lines and branches in `src/`; the threshold only goes up | CI |
-| Data quality | Spec 1's rules, on fixtures | CI, and after every real ingestion |
+| Data quality | v1's rules, on fixtures | CI, and after every real ingestion |
 | Data-contract versioning | Schema diff against `main`: a changed contract needs a version bump and a changelog entry | CI |
 | Secrets and identities | `gitleaks`; a FantaCreator-identity check fed from private configuration | Pre-commit, **pre-push** (the preventive gate in a public repository), CI |
 | Dependency security | `pip-audit` (allowlist with reason and expiry); Dependabot or Renovate | CI, weekly |
@@ -86,6 +86,9 @@ updated with the final list.
 | IAM policy self-test | Deny-wins evaluator (adapted from gamegusto's `verify_policy.py`) on the rendered deploy policy and boundary: escalation, blast radius (including `gamegusto-*`), still-does-its-job, size limit | CI |
 | Commit messages | Conventional Commits | Pre-commit (commit-msg) |
 | Mutation testing | `make mutate`: `mutmut` on the core modules, on fast tests only, and it stops itself after 10 minutes. `ONLY=<names>` runs just what a task changed | Phase gate; a task's own module with `ONLY` |
+
+Four of these don't run yet, because what they check doesn't exist yet: data-quality rules defined once (v1), the
+infrastructure checks and the IAM policy self-test (Phase 3, with `infra/`), and golden files.
 
 - Dependencies are managed with `uv` and a committed lockfile.
 - **The pull-request gate stays under 5 minutes**: the median of the last 10 runs, wall clock, all required
@@ -109,8 +112,8 @@ updated with the final list.
   - name resolution gives the same answer whatever order names arrive in.
 - **Contract:** every source parser runs against recorded raw payloads and must produce valid models, so a
   format change at the source fails loudly instead of loading garbage.
-- **Integration:** bronze → silver → gold on DuckDB from fixtures, including the manual CSV path. AWS calls
-  are mocked with moto. If Glue PySpark jobs are chosen, their tests run in CI inside AWS's Glue 5 image
+- **Integration:** bronze → silver → gold on DuckDB from fixtures, including the manual CSV path. From Phase 3,
+  AWS calls are mocked with moto. If Glue PySpark jobs are chosen, their tests run in CI inside AWS's Glue 5 image
   (`public.ecr.aws/glue/aws-glue-libs:5`).
 - **Golden files:** gold products for the round-6 seed at fixed as-of times, compared with outputs the owner
   has reviewed.
@@ -119,10 +122,11 @@ updated with the final list.
 - **Infrastructure:** `terraform test` assertions on the planned resources, tflint and checkov (or CDK
   assertions, a snapshot test and cdk-nag), plus the IAM policy self-test on the rendered deploy policy.
 - **Cloud smoke test:** after each deploy, run one pipeline on the seed and check row counts in Athena
-  (Spec 0: check that the deployed resources exist and are configured as tested).
+  (the first deploy, in Phase 3: check that the deployed resources exist and are configured as tested).
 - **Acceptance:** each spec's acceptance tests, automated wherever the platform allows.
-- **Collector check (MVP):** the collector is the user's Claude, so tools are tested with scripted
-  submissions, and each slice ends with one manual end-to-end check in a Claude app (ADR-0005).
+- **Collector check (MVP):** Fantadamus's own collector is tested on pages saved under `data/private/` where
+  they exist (ADR-0006); Claude's fallback collection with scripted submissions (ADR-0005). Each slice ends with
+  one manual end-to-end check in a Claude app.
 - **Calibration (from the MVP's first real round):** every published probability is logged with its as-of
   time; after each round, Brier score and reliability by bucket, next to the market's numbers (method §A8).
   This audits decisions, not results, and is reported in each phase report.

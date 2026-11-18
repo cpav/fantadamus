@@ -248,15 +248,15 @@
       Fantadamus is a set of tools inside each player's Claude app. It reads the round's pages from approved
       sites itself, and Claude fills any gaps; Fantadamus checks every fact, keeps them in a small lakehouse and
       does all the arithmetic. This page
-      describes the version for two players now being built, and marks what already runs.
+      describes the version for two players, built and running on the owner's Mac, and marks what already runs.
     </p>
-    <div class="glance" aria-label="At a glance, 7 November 2026">
-      <span>Phase <b>2</b> of 4</span>
-      <span><b>5</b> specs built</span>
+    <div class="glance" aria-label="At a glance, 18 November 2026">
+      <span>Phase <b>2</b> of 4 built</span>
+      <span><b>12</b> specs built</span>
       <span><b>19</b> checks in <code>make check</code></span>
-      <span><b>1,039</b> tests</span>
-      <span><b>98%</b> line coverage</span>
-      <span><b>11</b> versioned contracts</span>
+      <span><b>1,659</b> tests</span>
+      <span><b>99%</b> line coverage</span>
+      <span><b>15</b> versioned contracts</span>
       <span><b>13</b> approved sites</span>
       <span><b>0</b> AWS resources yet</span>
     </div>
@@ -286,7 +286,7 @@
     <figure class="fig">
       <div class="scroll">
         <svg viewBox="0 0 1000 470" role="img"
-             aria-label="Your Claude app asks the read tools and gets an answer or a refresh plan. When asked, it reads approved sites and sends facts to the submit tools. Checks pass facts into bronze storage, which feeds silver and gold. Fantadamus's collector also reads two approved pages itself and sends their facts to the checks. The decision engine gives the read tools their numbers.">
+             aria-label="Your Claude app asks the read tools and gets an answer or a refresh plan. When asked, it reads approved sites and sends facts to the submit tools. Checks pass facts into bronze storage, which feeds silver and gold. Fantadamus's collector also reads its own pages from approved sites, when asked and every 15 minutes, and sends their facts to the checks. The decision engine gives the read tools their numbers.">
           <defs>
             <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0 0 L10 5 L0 10 z" class="mk" />
@@ -315,11 +315,11 @@
           <text class="gl" x="262" y="56">MCP SERVER</text>
           <rect class="bx" x="265" y="80" width="200" height="104" rx="8" />
           <text class="t" x="365" y="114" text-anchor="middle">Read tools</text>
-          <text class="ts" x="365" y="138" text-anchor="middle">best_lineup · outlook</text>
-          <text class="ts" x="365" y="156" text-anchor="middle">compare_players</text>
+          <text class="ts" x="365" y="138" text-anchor="middle">best_lineup · compare</text>
+          <text class="ts" x="365" y="156" text-anchor="middle">outlook · cards · review</text>
           <rect class="bx" x="265" y="196" width="200" height="88" rx="8" />
           <text class="t" x="365" y="230" text-anchor="middle">Collector</text>
-          <text class="ts" x="365" y="254" text-anchor="middle">reads its main pages</text>
+          <text class="ts" x="365" y="254" text-anchor="middle">11 pages, every 15 min</text>
           <rect class="bx" x="265" y="296" width="200" height="104" rx="8" />
           <text class="t" x="365" y="330" text-anchor="middle">Submit tools</text>
           <text class="ts" x="365" y="354" text-anchor="middle">what Claude reads</text>
@@ -416,7 +416,7 @@
       <li><span class="who claude">Claude</span><p>Says “refreshing Genoa's lineup news…” and reads those pages through <code>read_page</code>.</p></li>
       <li><span class="who claude">Claude</span><p>Submits structured facts with the page's link, when the page was published and when it was read. It leaves a field empty rather than guess.</p></li>
       <li><span class="who us">Fantadamus</span><p>Checks the contract, the source host, the player names and the quality rules. A rejection comes back with its reason; Claude fixes only what the reason names.</p></li>
-      <li><span class="who us">Fantadamus</span><p>Appends the submission to bronze, rebuilds silver, and works out the engine's numbers from it.</p></li>
+      <li><span class="who us">Fantadamus</span><p>Appends the submission to bronze, adds its rows to silver, and works out the engine's numbers from it.</p></li>
       <li><span class="who claude">Claude</span><p>Calls the read tool again and relays the verdict, the margin and the reasons, in the player's language.</p></li>
     </ol>
   </section>
@@ -434,7 +434,7 @@
         <thead><tr><th scope="col">Layer</th><th scope="col">Holds</th><th scope="col">Rule</th></tr></thead>
         <tbody>
           <tr><th scope="row">Bronze</th><td>Each submission exactly as received, inside its envelope.</td><td>Append-only. The same payload sent twice adds a second file; no file is ever rewritten.</td></tr>
-          <tr><th scope="row">Silver</th><td>Validated rows, one per player, the latest by when the source was read.</td><td>Invalid rows stay out and are reported with field-level reasons. Ties break on content, so the order facts arrive in never changes the result.</td></tr>
+          <tr><th scope="row">Silver</th><td>Validated rows in a file per month; an answer reads each page's newest read.</td><td>A store adds its rows; a table out of step with bronze is rebuilt from it. Invalid rows stay out and are reported with field-level reasons. Ties break on content, so the order facts arrive in never changes the result.</td></tr>
           <tr><th scope="row">Gold</th><td>The data products the read tools serve, each carrying its source links.</td><td>Worked out from silver when asked, as of any moment.</td></tr>
         </tbody>
       </table>
@@ -530,8 +530,8 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
     <span class="label">Gates</span>
     <h2>Nothing moves on a red check</h2>
     <div class="stats">
-      <div class="stat"><b>1,039</b><span>tests, written before the code they test</span></div>
-      <div class="stat"><b>98.7 95.4%</b><span>of lines covered (% of branches); the floor is 90% and only goes up</span></div>
+      <div class="stat"><b>1,659</b><span>tests, written before the code they test</span></div>
+      <div class="stat"><b>98.8%</b><span>of lines covered (96.2% of branches); the floor is 90% and only goes up</span></div>
       <div class="stat"><b>500</b><span>generated examples per property test in <code>make check</code></span></div>
       <div class="stat"><b>0</b><span>errors from <code>mypy --strict</code></span></div>
     </div>
@@ -565,8 +565,9 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
       <div class="stage now">
         <span class="label">MVP · first</span>
         <h3>The owner's Mac</h3>
-        <p>The MCP server runs locally over stdio for the owner's Claude app. The lake lives in a git-ignored
-          folder. No cloud needed.</p>
+        <p>The MCP server runs locally over stdio for the owner's Claude app. A launchd schedule reads the pages
+          every 15 minutes and sends alerts as macOS notifications. The lake lives in a git-ignored folder. No
+          cloud needed.</p>
       </div>
       <div class="stage">
         <span class="label">MVP · Phase 3</span>
@@ -610,15 +611,15 @@ E[goals] = team xG × goal share × minutes share      <span class="c"># team xG
         <tbody>
           <tr><th scope="row">0 · Foundation</th><td>Repository, gates, CI and storage.</td><td>Its acceptance tests pass, including those proving each gate blocks a bad change.</td><td>Done</td></tr>
           <tr><th scope="row">1 · First answers</th><td>"X or Y?" for two forwards, from data to answer.</td><td>One real round answered in the owner's Claude app.</td><td>Done</td></tr>
-          <tr><th scope="row">2 · Every feature</th><td>Collection, every role, the full lineup and calibration; then custom league rules, recalibration, the review after a round, match cards, new sources, alerts and more.</td><td>Each slice's tests pass, and each ends with its own report.</td><td>In progress</td></tr>
-          <tr><th scope="row">3 · Online</th><td>The endpoint on AWS, so that a player installs nothing.</td><td>Both players answered from their own Claude apps.</td><td>After Phase 2</td></tr>
+          <tr><th scope="row">2 · Every feature</th><td>Collection, every role, the full lineup and calibration; then custom league rules, recalibration, the review after a round, match cards, new sources, alerts and more.</td><td>Each slice's tests pass, and each ends with its own report.</td><td>Every slice signed off; a real round end to end now</td></tr>
+          <tr><th scope="row">3 · Online</th><td>The endpoint on AWS, so that a player installs nothing.</td><td>Both players answered from their own Claude apps.</td><td>Next</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <div class="foot">
-    <p class="fineprint">Figures measured against the code on 7 November 2026 (main at 8f244e9). Update them when the system changes.</p>
+    <p class="fineprint">Figures measured against the code on 18 November 2026 (main at 5cc87e3). Update them when the system changes.</p>
     <p class="fineprint">Source of truth: .kiro/steering/, ADR-0005, ADR-0006 and docs/method.md.</p>
   </div>
 </div>

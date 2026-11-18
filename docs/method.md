@@ -1,7 +1,7 @@
 # Fantacalcio advisor: the decision method
 
-Status: **the owner's method, 2026-10-24.** The `decision-engine` spec implements it, and its acceptance
-tests come from §A9. Numbers marked *(start)* are starting values, calibrated from the logged predictions
+Status: **the owner's method, 2026-10-24.** The MVP's slices implement it, from `mvp-x-or-y` on, and their
+acceptance tests come from §A9. Numbers marked *(start)* are starting values, calibrated from the logged predictions
 (§A8). The chat agent's system prompt (Part B of the same brief) is in [agent-prompt.md](agent-prompt.md).
 
 ## A1. What we optimise

@@ -9,7 +9,7 @@ inclusion: always
 Fantadamus advises players of **Fantacalcio** (Serie A fantasy football, Classic rules) on who to field.
 The audience ranges from a group of friends to a live chat under a YouTube stream, where people post two
 names and ask which to play. **The method is [`docs/method.md`](../../docs/method.md)** (the owner's,
-2026-10-24): the `decision-engine` spec implements it and takes its acceptance tests from §A9. The chat
+2026-10-24): the MVP's slices implement it, from `mvp-x-or-y` on, and take their acceptance tests from §A9. The chat
 agent's behaviour is [`docs/agent-prompt.md`](../../docs/agent-prompt.md), and the shape of every answer, a
 forecast like a good weather app's, is [`docs/answer-formats.md`](../../docs/answer-formats.md). Numbers marked *(start)* are
 starting values, calibrated from logged predictions (§A8). The owner's earlier hand-written playbook isn't the method: it's real-world evidence the owner can
@@ -60,7 +60,7 @@ most of the architecture: facts are collected once and served many times (see `t
 | | **MVP** (now) | **v1** (later) |
 |---|---|---|
 | Users | Two: the owner and one friend | More: friends' leagues, live-chat viewers |
-| Interface | Each person's own Claude app, calling the Fantadamus **MCP tools**: local on the owner's Mac first, then a remote endpoint on AWS | Decided in the `chat-agent` spec |
+| Interface | Each person's own Claude app, calling the Fantadamus **MCP tools**: local on the owner's Mac first, then a remote endpoint on AWS | Decided when v1 is specified |
 | Ingestion | **Collected by Fantadamus itself** from the approved pages, on demand and on a schedule ([ADR-0006](../../docs/adr/0006-mvp-fantadamus-collects-round-facts.md)); **each user's Claude collects only as the fallback** when a page can't be read: a read tool reports what's missing and where to read it, Claude submits structured facts, and the tools validate, store and decide ([ADR-0005](../../docs/adr/0005-mvp-claude-collects-tools-decide.md)) | **Automated.** Schedules driven by the fixture calendar, licensed or permitted sources ([source registry](../../docs/source-registry.md)) |
 | Storage | DuckDB over Parquet with the medallion layout; local first, the same layout on S3 once remote | Lakehouse on AWS (Iceberg, Glue, Athena), per `tech.md` |
 | Sources | The MVP reading list in the source registry: the approved sites only, enforced by the submit tools | Routes approved per source, including the licensed APIs |
