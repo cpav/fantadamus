@@ -119,7 +119,8 @@ Status: **Approved by the owner, 2026-11-16** · From the approved [requirements
     - _Test: `tests/integration/store/test_season.py::test_the_season_has_its_size`, `::test_the_round_still_answers`_
   - [x] 5.2 One process times every budget, and each budget test reads its own number from it.
     - _Requirements: R5.1, R5.2_
-    - _Test: `tests/integration/store/test_timings.py::test_one_process_for_a_whole_run`; unchanged in what they assert:
+    - _Test: `tests/integration/store/test_timings.py::test_one_process_for_a_whole_run`, `::test_a_failure_is_read_by_every_test_at_once`,
+      `::test_begun_before_it_is_asked_for` (both from task 6); unchanged in what they assert:
       `tests/acceptance/lineup/test_lineup.py::test_at9_fast`, `tests/acceptance/rules/test_simulation.py::test_at12_a_squad_with_rules_stays_in_budget`,
       `tests/acceptance/review/test_answer.py::test_at7_in_budget`, `tests/acceptance/cards/test_answer.py::test_at10_in_budget`,
       `tests/acceptance/sources/test_budgets.py::test_at7_a_card_and_an_outlook_in_budget`, `tests/acceptance/alerts/test_budget.py::test_at4_a_check_in_budget`_
@@ -136,13 +137,13 @@ Status: **Approved by the owner, 2026-11-16** · From the approved [requirements
 
 - [ ] 6. The docs, the real lake and this slice's sign-off
   - Branch: `docs/st-6-gate` · Depends on: 5 · ADRs: none
-  - [ ] 6.1 The docs: `tech.md`'s storage row, the README's commands, the lake's own descriptions.
+  - [x] 6.1 The docs: `tech.md`'s storage row, the README's commands, the lake's own descriptions.
     - _Requirements: R5.4_
     - _Test: **AT-10** `tests/unit/test_repo_hygiene.py::test_the_readme_names_every_command` (from the command line's own list)_
-  - [ ] 6.2 From here: the answers of a copy of the owner's lake, compared with task 1.1's, and its times before and after.
+  - [x] 6.2 From here: the answers of a copy of the owner's lake, compared with task 1.1's, and its times before and after.
     - _Requirements: R2.5, R3.5, R4.2, R5.4_
     - _Test: **AT-8** `python -m tests.real_lake --compare`: identical at the five times; recorded in the report, times and counts only_
-  - [ ] 6.3 A mutation run on the new pure functions (`lake/months.py`), with survivors read; the slice report: tests, coverage, quality,
+  - [x] 6.3 A mutation run on the new pure functions (`lake/months.py`), with survivors read; the slice report: tests, coverage, quality,
     cost, open risks and the acceptance tests.
     - _Requirements: R5.4; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_

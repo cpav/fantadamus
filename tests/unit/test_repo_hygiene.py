@@ -303,6 +303,7 @@ def test_mutation_run_stays_fast() -> None:
         "src/fantadamus/domains/cards.py",  # mvp-cards task 2
         "src/fantadamus/domains/recalibration.py",  # mvp-recalibrate task 4
         "src/fantadamus/domains/alerts.py",  # mvp-alerts task 4
+        "src/fantadamus/lake/months.py",  # mvp-store task 6
     ]
 
     selected: set[Path] = set()
@@ -393,3 +394,17 @@ def test_the_guide_lets_notifications_through() -> None:
         assert part in guide, part
     product = (ROOT / ".kiro" / "steering" / "product.md").read_text(encoding="utf-8")
     assert "Alerts (`mvp-alerts`)" in product
+
+
+def test_the_readme_names_every_command() -> None:
+    """mvp-store task 6.1 (AT-10, R5.4): the README names each of the command line's commands, from the
+    command line's own list."""
+    from fantadamus.cli.__main__ import _parser
+
+    usage = _parser().format_usage()
+    found = re.search(r"\{([a-z,]+)\}", usage)
+    assert found is not None, usage
+    commands = found.group(1).split(",")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "rebuild" in commands
+    assert [command for command in commands if f"fantadamus {command}" not in readme] == []

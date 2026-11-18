@@ -70,6 +70,9 @@ statistics page now (`--fact` picks one fact's page); `--report` shows the last 
 prints a finished round's report on the forecasts, and keeps its calibration set beside it, player by player, for a
 recalibration; `--again` rebuilds both. `uv run fantadamus recalibrate` proposes new starting values from the
 stored sets, each checked where it wasn't fitted, and changes nothing until the owner approves one.
+`uv run fantadamus alerts` prints the alerts sent and the calls kept to compare with; `--test` sends a sample
+notification. `uv run fantadamus rebuild` writes every silver table again from its bronze records, or one with
+`--table`, and reads no page: a store does it by itself when it finds a table out of step.
 
 ## Use it in Claude Desktop
 
