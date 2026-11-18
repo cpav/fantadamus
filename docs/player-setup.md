@@ -263,6 +263,8 @@ again over the old one in the project's instructions, keeping your league profil
   `~/Library/Logs/Claude/mcp-server-fantadamus.log`. Send the last lines to whoever shared this guide.
 - **The schedule (step 8) seems idle:** its output is in `~/fantadamus/data/local/collect/schedule.log`;
   "Nothing due." is normal between reads.
+- **An answer says facts are missing that were stored, after a crash or a copy by hand:** in the `fantadamus`
+  folder, run `uv run fantadamus rebuild`. It writes the stored facts again from what was read, and reads no page.
 - **Starting over:** your league rules, your squads, the stored facts, the log of answers and the scores are in
   `~/fantadamus/data/local/`. Quitting Claude Desktop and deleting that folder resets everything.
 

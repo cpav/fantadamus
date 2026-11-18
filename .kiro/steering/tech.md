@@ -19,7 +19,8 @@ depend on a pending decision (research gate, `quality.md`).
 - **v1: AWS, serverless-first, batch plus micro-batch.** Most data moves on a fixture-driven batch
   schedule. One path is near-real-time: **official lineups**, which need minutes, not hours.
 - **Collect once, serve many.** All facts land in a lakehouse on a refresh schedule; questions are answered
-  from precomputed gold data products. The chat model never browses per question.
+  from precomputed gold data products. The chat model never browses per question. In the MVP, gold is computed
+  when an answer asks, from the silver rows it reads, and is stored once a measurement asks for it (`mvp-store`).
 - **Single AWS account for v1: the account the owner's `gamegusto` project already uses** (owner
   decision, 2026-10-17; recorded in ADR-0003). The AWS Budgets alarm filters on `Project=fantadamus`.
   Projects are isolated by the `fantadamus-` name prefix, a permissions boundary and a scoped
@@ -37,7 +38,7 @@ depend on a pending decision (research gate, `quality.md`).
 | Submission | MCP **submit tools** whose input schemas are the pydantic contracts | Validated for contract, allowed source host, name resolution and quality rules; a rejection returns its reason |
 | Bronze | The submitted payload with its source URL, the source's publication time, `received_at` and a content hash | No page text is stored ([ADR-0005](../../docs/adr/0005-mvp-claude-collects-tools-decide.md), guardrail 4) |
 | Freshness | Per data product, for example probable lineups a few hours, fixtures a week; a refresh by one user serves both | Targets are set in Spec 1; the refresh plan lists whatever is past its target |
-| Storage | **DuckDB over Parquet**, same medallion layout and contracts as v1 | Local `data/private/` first; the same layout on a private S3 prefix once the endpoint is remote |
+| Storage | **DuckDB over Parquet**, same medallion layout and contracts as v1 | Local `data/private/` first; the same layout on a private S3 prefix once the endpoint is remote. Bronze is a file for each submission. Silver is a file for each month of each table, written once and named by the table's `_table.json`: a store adds its rows to their month, and a table out of step with bronze is rebuilt from it (`fantadamus rebuild`). An answer reads each page's newest submission of the tables that grow with every read. Gold is computed when asked (`mvp-store`) |
 | Approved for v1, unused in the MVP | Brave Search, The Odds API, API-Football (registry D-S6, D-T1); search-driven fetching (ADR-0004) | They return when v1 automates collection; ADR-0006 brings only fetching of the approved fixed pages forward |
 
 The MVP doesn't use Iceberg, Glue, Athena, Step Functions or EventBridge. Those arrive with v1.

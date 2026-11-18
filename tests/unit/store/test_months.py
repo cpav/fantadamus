@@ -21,7 +21,7 @@ def test_a_row_goes_to_the_month_it_was_captured_in() -> None:
     assert month_of(at(2027, 1, 1, 0)) == "2027-01"
     # The month is UTC's: half past midnight on 1 December in Rome is still November.
     assert month_of(dt.datetime(2026, 12, 1, 0, 30, tzinfo=ROME)) == "2026-11"
-    with pytest.raises(ValueError, match="timezone"):
+    with pytest.raises(ValueError, match=r"^a month needs a timezone-aware time$"):
         month_of(dt.datetime(2026, 11, 15, 12))
     assert MONTH.fullmatch("2026-11")
     assert not MONTH.fullmatch("2026-13")

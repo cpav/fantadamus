@@ -59,6 +59,7 @@ only_mutate = [
     "src/fantadamus/domains/cards.py",
     "src/fantadamus/domains/recalibration.py",
     "src/fantadamus/domains/alerts.py",
+    "src/fantadamus/lake/months.py",
 ]
 also_copy = ["config", "scripts"]
 pytest_add_cli_args_test_selection = [
@@ -109,6 +110,9 @@ pytest_add_cli_args_test_selection = [
     "tests/property/alerts/test_text.py",
     "tests/property/alerts/test_check.py::test_p3_one_alert_for_the_same_facts",  # pure; P1 goes through the lake
     "tests/property/alerts/test_check.py::test_p4_a_change_back_alerts_again",
+    "tests/unit/store/test_months.py",  # the pure ones: the rest write files
+    "tests/unit/store/test_in_step.py",
+    "tests/property/store/test_months.py",
 ]
 pytest_add_cli_args = [
     "--timeout=30",

@@ -54,7 +54,7 @@ def in_step(
     *,
     storing: bool,
     earlier_layout: bool,
-    missing_file: bool = False,
+    missing_file: bool,
 ) -> bool:
     """Whether a store can add its rows to a silver table as it stands: its files were written with these
     columns and this rows version, no earlier store stopped part-way (`storing`), it isn't one file in the

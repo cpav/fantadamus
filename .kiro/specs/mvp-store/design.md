@@ -183,6 +183,12 @@ their row types in place of `Any`.
   number. Today the eight timings start eight processes, each building its own round: 60 s run alone, 93 s inside the
   suite. Built (task 5, 2026-11-17): the process takes 52 s alone, the season's timings included. The season grows on
   a copy of the asked round in 6 s, on a DuckDB of its own with four threads: the lake's runs on one, as answers do.
+- **Started as the run begins** (task 6, 2026-11-18). Run inside the first budget test, the process went past that
+  test's two-minute limit on a busy Mac, and every waiting worker then ran it again in turn. It now starts in the
+  background as soon as a run has a budget test, the run puts its budget tests last, and its result or its failure is
+  written once, for every test to read. A budget test that comes before the process has finished still waits for it
+  within its own two-minute limit, and on the busiest Mac seen (a load average of 11) that wait went past it: whether
+  the wait may count apart from that limit is the owner's decision (the slice report, decision 2).
 - **The wall-clock assertion** in `tests/integration/lineup/test_reads.py` goes; gathering a squad at season size is
   timed in the process instead, still under 1 second.
 - **The real lake.** `python -m tests.real_lake --record` asks a copy of the owner's lake every question at five past

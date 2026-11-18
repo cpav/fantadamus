@@ -10,7 +10,7 @@ import pytest
 from scripts.checks._common import run_command
 
 from tests import hypothesis_profiles
-from tests.timings import measured, shared
+from tests import timings as timings_module
 
 pytest_plugins = ["pytester"]
 
@@ -35,7 +35,9 @@ def layer_of(path: str | Path) -> str | None:
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Mark every test with its layer, so `pytest -m <layer>` selects it, and block sockets where required."""
+    """Mark every test with its layer, so `pytest -m <layer>` selects it, and block sockets where required.
+    The budget tests go last, where the timing process, started as the run begins, has most often finished
+    (mvp-store C7)."""
     for item in items:
         layer = layer_of(item.path.relative_to(ROOT))
         if layer is None:
@@ -43,13 +45,31 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         item.add_marker(getattr(pytest.mark, layer))
         if layer in NO_NETWORK:
             item.add_marker(pytest.mark.disable_socket)
+    items.sort(key=_uses_timings)
+
+
+def _uses_timings(item: pytest.Item) -> bool:
+    return isinstance(item, pytest.Function) and "timings" in item.fixturenames
 
 
 @pytest.fixture(scope="session")
-def timings(tmp_path_factory: pytest.TempPathFactory, worker_id: str) -> dict[str, Any]:
-    """Every budget's CPU seconds, timed once for the whole run in a process of its own (mvp-store C7)."""
+def timings_folder(tmp_path_factory: pytest.TempPathFactory, worker_id: str) -> Path:
+    """Where the timing process's result is kept: one folder for every worker of the run."""
     root = tmp_path_factory.getbasetemp()
-    return shared((root if worker_id == "master" else root.parent) / "timings.json", measured)
+    return (root if worker_id == "master" else root.parent) / "timings"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _timings_begun(request: pytest.FixtureRequest, timings_folder: Path) -> None:
+    """The timing process starts as the run begins, when the run has a budget test (mvp-store C7)."""
+    if any(_uses_timings(item) for item in request.session.items):
+        timings_module.begin(timings_folder, timings_module.command())
+
+
+@pytest.fixture(scope="session")
+def timings(timings_folder: Path) -> dict[str, Any]:
+    """Every budget's CPU seconds, timed once for the whole run in a process of its own (mvp-store C7)."""
+    return timings_module.measured(timings_folder, timings_module.command())
 
 
 @pytest.fixture

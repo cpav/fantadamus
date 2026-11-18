@@ -27,7 +27,7 @@ import sys
 import tempfile
 import threading
 import time
-from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -351,14 +351,6 @@ def main(argv: Sequence[str]) -> int:
         return 2
     print(json.dumps(asyncio.run(measure(only)), indent=1))
     return 0
-
-
-def read(found: Mapping[str, Any], *path: str) -> float:
-    """A timing from `measure`'s JSON, by its keys."""
-    value: Any = found
-    for key in path:
-        value = value[key]
-    return float(value)
 
 
 if __name__ == "__main__":
