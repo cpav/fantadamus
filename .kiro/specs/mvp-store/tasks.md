@@ -135,7 +135,7 @@ Status: **Approved by the owner, 2026-11-16** · From the approved [requirements
     - _Test: **AT-9** `tests/acceptance/store/test_budgets.py::test_at9_no_new_dependency`; the suite's summed time and `make check`'s,
       on `main` before task 1 and on this branch, in the task report_
 
-- [ ] 6. The docs, the real lake and this slice's sign-off
+- [x] 6. The docs, the real lake and this slice's sign-off
   - Branch: `docs/st-6-gate` · Depends on: 5 · ADRs: none
   - [x] 6.1 The docs: `tech.md`'s storage row, the README's commands, the lake's own descriptions.
     - _Requirements: R5.4_
@@ -147,6 +147,6 @@ Status: **Approved by the owner, 2026-11-16** · From the approved [requirements
     cost, open risks and the acceptance tests.
     - _Requirements: R5.4; phase gate (`quality.md`)_
     - _Test: the report exists with every section; `make check` green on `main`_
-  - [ ] 6.4 **Owner:** sign off this slice. The schedule can then be installed (`docs/player-setup.md`, step 8).
+  - [x] 6.4 **Owner:** sign off this slice (2026-11-18). The schedule can then be installed (`docs/player-setup.md`, step 8).
     - _Requirements: Phase gate (`quality.md`)_
     - _Test: sign-off recorded in the report_
