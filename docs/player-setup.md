@@ -121,8 +121,9 @@ In a new chat in the Fantadamus project, ask for example:
   [`docs/league-rules.md`](https://github.com/cpav/fantadamus/blob/main/docs/league-rules.md).
 - Claude Desktop asks permission before each Fantadamus tool. "Allow always" is fine: everything runs on
   your Mac.
-- Claude then reads the pages Fantadamus lists (lineups, odds, players' profiles, the table), submits what
-  they say and asks again. The first answer can take a few minutes; later ones reuse what's stored.
+- Fantadamus reads the round's pages itself. If one can't be read, or a player needs his profile, Claude reads the
+  pages Fantadamus lists, submits what they say and asks again. The first answer can take a minute or two; later ones
+  reuse what's stored.
 - The answer starts with the formation, the expected score and the chance of each threshold, then the eleven, the
   bench in order, the calls that matter and what to check before the deadline.
 - If you'd rather play someone else, say so. Claude says once what that costs, then helps with your choice.
@@ -140,15 +141,16 @@ Your Mac can check the round's lineups and odds in the background, so answers ar
 ask, even minutes before the deadline. Every 15 minutes it looks at what's due, and reads Fantacalcio-Online's
 round page only if something is: lineups twice a day from three days before a match, every 3 hours on the
 last day; odds daily, then every 3 hours; official lineups every 15 minutes in the 75 minutes before
-kickoff. Once a day it also reads Fantacalcio.it's statistics page, with every player's season figures, and its penalty-takers
-page. It reads the injured and suspended pages daily, twice a day in the two days before a round; Wikipedia's pages
+kickoff. Once a day it also reads Fantacalcio.it's statistics page, with every player's season figures, its
+penalty-takers page and the table. It reads the injured and suspended pages daily, twice a day in the two days before a round; Wikipedia's pages
 of the Champions League, Europa League, Conference League and Coppa Italia weekly, daily in a week with one of their
 matches; and Fantacalcio-Online's round ratings the morning after each round. Rest days, injuries, bans and a rater's
 claim show on the match card and the outlook as context: what they say never moves a number.
 Nothing runs while your Mac sleeps.
 
 Paste this whole block into Terminal, with `your-name` replaced by the name you gave in step 5 (`owner` if you
-gave none). It writes the schedule with your own paths:
+gave none). It writes the schedule with your own paths. If you cloned Fantadamus somewhere other than `~/fantadamus`,
+change that folder everywhere it appears in the block (four places) first:
 
 ```bash
 mkdir -p ~/Library/LaunchAgents ~/fantadamus/data/local/collect
@@ -253,12 +255,15 @@ cd ~/fantadamus && uv run --frozen --no-dev fantadamus calibrate --round 11
 cd ~/fantadamus && git pull
 ```
 
-Then quit and reopen Claude Desktop. If `docs/agent-prompt.md` has changed, copy it again as in step 6 and paste it
+Then quit Claude Desktop with ⌘Q and open it again: closing its window isn't enough, because the Fantadamus server
+keeps running the code it started with. If `docs/agent-prompt.md` has changed, copy it again as in step 6 and paste it
 again over the old one in the project's instructions, keeping your league profile below it.
 
 ## If something goes wrong
 
 - **Claude says a fact is still missing right after submitting it:** ask again a minute later.
+- **Claude doesn't know a tool or an answer this guide describes:** Claude Desktop is still running older code. Quit
+  it with ⌘Q and open it again.
 - **`fantadamus` shows an error in Settings → Developer:** the log is in
   `~/Library/Logs/Claude/mcp-server-fantadamus.log`. Send the last lines to whoever shared this guide.
 - **The schedule (step 8) seems idle:** its output is in `~/fantadamus/data/local/collect/schedule.log`;

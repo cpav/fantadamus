@@ -2,7 +2,9 @@
 
 A Fantacalcio advisor (Serie A fantasy football, Classic rules). It answers "who do I field?": "X or Y?"
 with a verdict and its reasons, one player's outlook, the best eleven and bench under a league's own rules,
-and the formation call. You ask in your own Claude app; Fantadamus's MCP tools hold the data and do the arithmetic.
+and the formation call. It also puts a match on one screen and the round at a glance, and after a round reviews
+the lineup you fielded. You ask in your own Claude app; Fantadamus's MCP tools hold the data and do the arithmetic.
+On a Mac, a schedule keeps the facts fresh and a notification says when the news changes your lineup.
 
 - **For players:** what it answers, how it decides and what it costs, in
   [`docs/presentation/product.html`](docs/presentation/product.html).
@@ -21,36 +23,52 @@ your Claude app ──ask──▶ best_lineup, compare_players… ──▶ col
        └─read_page (Fantadamus fetches the listed page) ──▶ submit tools ───────────────────────────────┘
 ```
 
-- **Fantadamus collects, Claude fills the gaps, the tools decide.** Fantadamus reads three pages itself,
-  politely: Fantacalcio-Online's round page (fixtures, four outlets' chances of starting, official lineups and
-  odds), and Fantacalcio.it's statistics page (every player's season figures) and penalty-takers page. For the rest, Claude reads the listed pages through `read_page`, which fetches them, and submits what they say.
-  Fantadamus checks every fact, stores it, and computes every probability in tested Python
-  ([ADR-0006](docs/adr/0006-mvp-fantadamus-collects-round-facts.md)).
+- **Fantadamus collects, Claude fills the gaps, the tools decide.** Fantadamus reads its pages itself, politely,
+  when an answer needs them and on a schedule: Fantacalcio-Online's round page (fixtures, four outlets' chances of
+  starting, official lineups and odds) and its round ratings; Fantacalcio.it's statistics page (every player's
+  season figures), penalty takers, table, and injured and suspended players; and Wikipedia's pages of the European
+  cups and the Coppa Italia. For the rest, Claude reads the listed pages through `read_page`, which fetches them,
+  and submits what they say. Fantadamus checks every fact, stores it, and computes every probability in tested
+  Python ([ADR-0006](docs/adr/0006-mvp-fantadamus-collects-round-facts.md),
+  [ADR-0007](docs/adr/0007-mvp-reads-other-competitions-injuries-and-ratings.md)).
 - **The method** is the owner's own: [`docs/method.md`](docs/method.md). Bonuses are priced from the betting
-  odds, small samples are shrunk, and source disagreement is shown rather than averaged.
-- **Storage** is a small medallion lakehouse: Parquet files read through DuckDB, bronze append-only, every
-  table under a versioned contract. The same layout moves to S3 when the server goes online.
+  odds, small samples are shrunk, and source disagreement is shown rather than averaged. After each round it scores
+  its own forecasts, and its starting values are recalibrated from them ([`docs/calibration-log.md`](docs/calibration-log.md)).
+- **Storage** is a small medallion lakehouse: Parquet files read through DuckDB, bronze append-only, silver in a
+  file per month that each store adds to, every table under a versioned contract. Gold is worked out when an answer
+  asks. The same layout moves to S3 when the server goes online.
 
 ## Status
 
-Phase 2 is under way. Its first two slices are signed off ([report](docs/reports/slices-mvp-collect-and-roles.md)).
-`mvp-collect`: Fantadamus reads the round's lineups and odds
-itself, compares its sources, and answers as a forecast, with how sure each number is, how it moved and where it
-came from. `mvp-roles`: "X or Y?" for any two players of the same role, and one player's outlook. A second player can install
-it from the [setup guide](docs/player-setup.md). `mvp-lineup`, built and waiting for a real round before its sign-off:
-the eleven, the bench in order and the formation for a user's squad under their league's own rules, simulated to give the
-expected score and the chance of each goal threshold; a finished round scores its own forecasts. Phases 0 and 1 are signed off
-([reports](docs/reports/phase-1-report.md)). The answers' shapes, from "X or Y?" to the full lineup, are in
-[docs/answer-formats.md](docs/answer-formats.md).
+Every slice of Phase 2 is built and signed off, each with its report in [`docs/reports/`](docs/reports/). What it
+answers today:
 
-Re-planned on 2026-10-26: the work now goes in thin slices, each taking one question from data to answer.
+- **"X or Y?"** for any two players of the same role, and **one player's outlook** (`mvp-collect`, `mvp-roles`):
+  a forecast, with how sure each number is, how it moved and where it came from;
+- **the full lineup** (`mvp-lineup`, `mvp-rules`): the eleven, the bench in order and the formation for a user's
+  squad under their league's own rules, modifiers and captain included, simulated to give the expected score and the
+  chance of each goal threshold;
+- **a match card** for each fixture and **the round at a glance** (`mvp-cards`), with rest days, European fixtures,
+  injuries and bans as context (`mvp-sources`);
+- **the review of a fielded lineup** after a round: what each choice against the advice was expected to cost, and what
+  it did (`mvp-review`).
+
+Behind them: the starting values recalibrated on the rounds scored so far (`mvp-recalibrate`), a notification on the Mac
+when the news changes a lineup (`mvp-alerts`), and storing and reading that keep their speed all season (`mvp-store`).
+The answers' shapes are in [docs/answer-formats.md](docs/answer-formats.md). A second player installs it from the
+[setup guide](docs/player-setup.md).
+
+**Now:** a real round end to end, round 12 (21 to 23 November 2026), with the schedule installed. Then the Phase 2
+report and Phase 3. The review before going online ran on 2026-11-16
+([report](docs/reports/review-before-phase-3.md)); its first finding became `mvp-store`, and two of its decisions are
+still the owner's.
 
 | Phase | Builds | Status |
 |---|---|---|
-| 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton (retired 2026-10-31) | Done, signed off 2026-10-26 |
+| 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton (retired 2026-10-31) | Done, signed off 2026-10-26 ([report](docs/reports/phase-0-report.md)) |
 | 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Done, signed off 2026-10-26 ([report](docs/reports/phase-1-report.md)) |
-| 2 Slices | `mvp-collect` and `mvp-roles` (every role), signed off 2026-11-04; `mvp-lineup` (the full lineup, the bench, the formation and calibration), built; then every other feature discussed, in the order in [`product.md`](.kiro/steering/product.md#delivery-order) | In progress: `mvp-lineup`'s real round |
-| 3 Online | The MCP server online, so that a player installs nothing, with the AWS work moved from Phase 0 | After Phase 2 |
+| 2 Slices | `mvp-collect` and `mvp-roles` (2026-11-04), `mvp-lineup` (11-07), `mvp-rules` (11-09), `mvp-review` and `mvp-cards` (11-11), `mvp-recalibrate` (11-12), `mvp-sources` (11-15), `mvp-alerts` and `mvp-store` (11-18), in the order in [`product.md`](.kiro/steering/product.md#delivery-order) | Every slice signed off on the date shown; the phase report follows round 12 |
+| 3 Online | The MCP server online, so that a player installs nothing, with the AWS work moved from Phase 0 | Next |
 
 For now each player installs and runs Fantadamus on their own Mac; going online in Phase 3 removes the install.
 
@@ -65,8 +83,10 @@ make test-fast  # format, lint, unit and property tests with the fast profile
 ```
 
 `uv run fantadamus serve` starts the MCP server on stdio: `best_lineup`, `compare_players`, `player_outlook`,
-`set_squad`, `set_league_rules`, `collect`, `read_page` and the submit tools. `uv run fantadamus collect` reads the round page and Fantacalcio.it's
-statistics page now (`--fact` picks one fact's page); `--report` shows the last run. `uv run fantadamus calibrate --round N`
+`match_card`, `round_overview`, `review_round`, `set_squad`, `set_league_rules`, `collect`, `read_page` and the submit
+tools. `uv run fantadamus collect` reads the round page and Fantacalcio.it's statistics, penalty-takers and table pages
+now (`--fact` picks one fact's page, `--round` another round's page); `--due` reads only what is past its cadence, as
+the schedule does; `--report` shows the last run. `uv run fantadamus calibrate --round N`
 prints a finished round's report on the forecasts, and keeps its calibration set beside it, player by player, for a
 recalibration; `--again` rebuilds both. `uv run fantadamus recalibrate` proposes new starting values from the
 stored sets, each checked where it wasn't fitted, and changes nothing until the owner approves one.
@@ -99,6 +119,12 @@ notification. `uv run fantadamus rebuild` writes every silver table again from i
 5. In that project, ask "Who do I field this round?". The first time, Claude saves your rules and squad from the profile,
    or asks for them, with the Fantacalcio Classic values offered. When facts are missing or stale, Claude reads the
    approved pages, submits what they say, and asks again.
+6. To keep the facts fresh between questions and get alerts, install the schedule:
+   [step 8 of the setup guide](docs/player-setup.md#8-keep-the-forecast-fresh-optional), with your folder in place of
+   `~/fantadamus`.
+
+After a `git pull`, quit Claude Desktop (⌘Q) and open it again: its Fantadamus server keeps running the code it
+started with.
 
 A second player installs it from [`docs/player-setup.md`](docs/player-setup.md), step by step.
 

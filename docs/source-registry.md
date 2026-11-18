@@ -336,8 +336,8 @@ mining needs them** ([analysis](https://www.agendadigitale.eu/mercati-digitali/t
 - check each outlet's machine-readable reservation (robots.txt, TDMRep, terms) before adding it;
 - extract **claims** (facts, with link and source), never republish article text;
 - **don't keep full article text in bronze indefinitely.** Store the URL, hash, claims and a short excerpt,
-  and delete the text after extraction. This is an exception to "bronze keeps raw payloads", and the Spec 1
-  design must reflect it.
+  and delete the text after extraction. This is an exception to "bronze keeps raw payloads", and the design
+  that adds news (v1) must reflect it.
 
 Fantacalcio.it's terms prohibit "any processing of the data" contractually, whatever the TDM exception
 allows, so their news is out until D1 is settled.

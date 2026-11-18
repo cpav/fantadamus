@@ -7,6 +7,7 @@ inclusion: always
 ## Repository layout
 
 Target layout. Directories appear as the task that needs them lands; nothing is created ahead of its spec.
+Paths marked `(later)` don't exist yet: they arrive with Phase 3 or with the feature that needs them.
 
 ```text
 .kiro/                 spec documents in Kiro's layout (Kiro itself isn't used)
@@ -14,37 +15,38 @@ Target layout. Directories appear as the task that needs them lands; nothing is 
   specs/<spec>/        requirements.md, design.md, tasks.md
 .github/
   workflows/           ci.yml (PR gate), audit.yml (weekly), …
-  rulesets/main.json   the `main` branch ruleset as code, applied through the GitHub API
+  rulesets/main.json   (later) the `main` branch ruleset as code; today it's set as in docs/runbooks/github-setup.md
   pull_request_template.md   Definition of Done checklist
   dependabot.yml       (or renovate.json; ADR-0001)
 docs/
-  method.md            the decision method (implemented by decision-engine; tests from §A9)
+  method.md            the decision method (implemented by the MVP's slices; tests from §A9)
   agent-prompt.md      the chat agent's system prompt (delivered by the MCP server)
   adr/NNNN-<decision>.md
   reports/             task, slice and phase reports (phase reports are committed)
   quality/suppressions.md      every approved suppression, with its reason and approval date
   runbooks/leak.md     what to do if a secret or a FantaCreator identity reaches GitHub
-  data-products/       catalog: one page per gold data product (owner, contract, freshness)
-  source-registry.md   (Spec 1) terms of use and access route per source; the first Spec 1 work
+  data-products/       (later) catalog: one page per gold data product (owner, contract, freshness)
+  source-registry.md   terms of use and access route per source, and the MVP reading list
 src/fantadamus/
   core/                shared, I/O-free helpers (hashing, clock, time zones, ids)
-  contracts/<domain>/  versioned pydantic models (bronze payloads, silver tables, gold products)
+  contracts/<domain>/  versioned pydantic models (bronze payloads, silver tables, gold products); today all
+                       under contracts/xy/, the first slice's name
   domains/<domain>/    bronze.py, silver.py, gold.py: one module set per data domain
-  quality/             data-quality rule definitions (defined once, rendered for DuckDB and Glue DQ)
+  quality/             (later) data-quality rule definitions (defined once, rendered for DuckDB and Glue DQ)
   engine/              the method's arithmetic: odds fit, player models, starting constants (pure)
   league/              each user's league rules and squads (stored privately, under data/local/)
   lake/                storage adapters: DuckDB/Parquet (MVP, local or S3), S3/Iceberg (v1)
   mcp/                 the MCP server: read tools, refresh plans and submit tools (ADR-0005)
   web/                 polite fetcher and page readers (ADR-0004, ADR-0006); the search client is v1 only
   cli/                 the `fantadamus` command line
-infra/                 IaC (Terraform proposed, ADR-0002)
+infra/                 (later, Phase 3) IaC (Terraform proposed, ADR-0002)
   bootstrap/           applied once by the owner as admin; local state (git-ignored):
                        state bucket, permissions boundary, deploy role, assume-only user, budget
   stack/               applied as fantadamus-deploy; remote state; backend config from private config
 tests/
-  unit/ property/ contract/ integration/ acceptance/ infra/
+  unit/ property/ contract/ integration/ acceptance/   and infra/ (later, Phase 3)
   fixtures/<source>/   synthetic data, or recorded payloads whose terms permit public redistribution
-  golden/              reviewed outputs for golden-file tests (same redistribution rule)
+  golden/              (later) reviewed outputs for golden-file tests (same redistribution rule)
 data/
   private/             owner-supplied and non-redistributable data: official list, rosters,
                        recorded payloads (git-ignored)
@@ -55,8 +57,9 @@ config/                thresholds.toml (gate thresholds), sources.toml (submit-t
 scripts/               helpers called by `make`
   checks/              one module per check (suppressions, thresholds, coverage gate, identities, …)
   hooks/               Claude Code hook logic, tested in CI
-  tools/ smoke/ selftest/   tool installer, post-deploy smoke test, gate self-tests
-Makefile               `make check`, `make test-fast`, `make setup`, `make bootstrap`, `make deploy`, …
+  tools/ smoke/ selftest/   tool installer; post-deploy smoke test and gate self-tests (later)
+Makefile               `make check`, `make test-fast`, `make setup`, `make mutate`, `make task-check`; and
+                       `make bootstrap`, `make deploy` (later, Phase 3)
 tool-versions.toml     pinned versions and checksums of the non-Python tools
 bin/                   project-local tools installed by `make setup` (git-ignored)
 .claude/settings.json  Claude Code project hooks (thin wrappers over scripts/hooks/)
@@ -93,7 +96,7 @@ The repository may contain a `private.example.toml` with placeholder values only
 | Columns | snake_case; timestamps end in `_at` (UTC); dates end in `_date`; probabilities start with `p_` | `captured_at`, `p_start` |
 | Data domains | singular lowercase | `competition`, `availability`, `performance`, `context`, `opinion`, `league` |
 | ADRs | `docs/adr/NNNN-<kebab-decision>.md`, numbered in order, never renumbered | `0002-iac-cdk-vs-terraform.md` |
-| Requirement IDs | `R<requirement>.<criterion>`, unique within a spec; across specs, `<spec>#R<n>.<m>` | `R3.2`, `data-foundation#R4.1` |
+| Requirement IDs | `R<requirement>.<criterion>`, unique within a spec; across specs, `<spec>#R<n>.<m>` | `R3.2`, `mvp-lineup#R4.1` |
 | Acceptance tests | `AT-<n>` per spec; test function `test_at<n>_<slug>` in `tests/acceptance/` | `test_at4_fake_aws_key_rejected` |
 | Branches | `<type>/<spec-abbrev>-<task-id>-<slug>`; types `feat`, `fix`, `refactor`, `test`, `chore`, `docs`; abbreviations `ef`, `xy`, `mc`, `mr`, `ml`, `ru`, `rv`, `cd`, `rc`, `so`, `al`, `st` | `chore/ef-1.4-test-harness` |
 | Commits | Conventional Commits; the scope is the spec abbreviation or domain | `feat(availability): add consensus p_start` |

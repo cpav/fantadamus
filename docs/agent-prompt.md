@@ -7,8 +7,9 @@ lineup and the league profile for `mvp-lineup` on 2026-11-05, custom league rule
 changes per user or per round arrives through tools. **The MVP adds a collecting section** (below, marked
 *MVP only*), per [ADR-0005](adr/0005-mvp-claude-collects-tools-decide.md); v1 deletes it, and "never browse
 the web" applies again in full. In the MVP it is delivered by the MCP server (as
-server instructions and as an MCP prompt), and can also be pasted into a Claude Project's instructions; the
-`chat-agent` spec decides which. The method behind the numbers is [method.md](method.md).
+server instructions and as an MCP prompt), and is also pasted into a Claude Project's instructions, as the
+[player guide](player-setup.md) asks; the online server decides in Phase 3 whether the paste is still needed. The
+method behind the numbers is [method.md](method.md).
 
 ---
 
