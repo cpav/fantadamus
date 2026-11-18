@@ -134,5 +134,6 @@ All three decided by the owner on 2026-11-18, as recommended ("Sign off all thre
 
 ## Next
 
-This was Phase 2's last slice. Next is the full review of the code, the specs and the docs with Fable 5.2, then
-Phase 3: online, with nothing to install, where a notification service such as Amazon SNS takes over from `osascript`.
+Phase 2's slices are done. The review before Phase 3 ([`review-before-phase-3.md`](review-before-phase-3.md),
+2026-11-16) led to `mvp-store`, signed off on 2026-11-18, after which the schedule can be installed. Still open with
+the owner from the review: the gate changes (its decision 2) and Phase 3's platform (its decision 3).
