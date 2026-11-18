@@ -187,8 +187,9 @@ their row types in place of `Any`.
   test's two-minute limit on a busy Mac, and every waiting worker then ran it again in turn. It now starts in the
   background as soon as a run has a budget test, the run puts its budget tests last, and its result or its failure is
   written once, for every test to read. A budget test that comes before the process has finished still waits for it
-  within its own two-minute limit, and on the busiest Mac seen (a load average of 11) that wait went past it: whether
-  the wait may count apart from that limit is the owner's decision (the slice report, decision 2).
+  within its own two-minute limit, and on the busiest Mac seen (a load average of 11) that wait went past it. The owner
+  approved on 2026-11-18 that the wait counts apart from that limit, with pytest-timeout's `func_only`: the two
+  minutes still apply to each budget test's own code, and the process keeps a 15-minute limit of its own.
 - **The wall-clock assertion** in `tests/integration/lineup/test_reads.py` goes; gathering a squad at season size is
   timed in the process instead, still under 1 second.
 - **The real lake.** `python -m tests.real_lake --record` asks a copy of the owner's lake every question at five past

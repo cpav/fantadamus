@@ -92,7 +92,9 @@ updated with the final list.
   checks; any run over 8 minutes fails the gate's own acceptance test.
 - `make test-fast` is the inner loop: format, lint, unit and property tests with the fast Hypothesis profile,
   in under 20 seconds. `make check` runs its quick checks side by side and the test suite in parallel; slowness
-  is treated as a defect, and any single test over two minutes fails with a traceback.
+  is treated as a defect, and any single test over two minutes fails with a traceback. The budget tests' shared
+  timing process runs outside any one test with a limit of its own, 15 minutes, so the two minutes count each
+  budget test's own code and not its wait for that process (`mvp-store`).
 
 ## Test layers
 
