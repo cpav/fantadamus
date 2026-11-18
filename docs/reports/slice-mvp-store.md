@@ -158,7 +158,8 @@ Nothing runs on AWS.
 2. **The gate: its time, and the timing process's wait.** Two changes only you can approve:
    - *The wait.* Let a budget test's wait for the shared timing process count apart from its two-minute limit, with
      pytest-timeout's `func_only`: the two minutes still apply to each test's own code, and the process keeps a
-     15-minute limit of its own, so a hang still fails with its reason. It is ready as a separate pull request. In
+     15-minute limit of its own, so a hang still fails with its reason. It is ready on the branch
+     `test/st-timing-limit`, a few lines in `tests/conftest.py`, and its pull request opens on your approval. In
      letter it relaxes `quality.md`'s rule that any single test over two minutes fails, which is why it waits for you.
      Without it, the gate can fail on a busy Mac. Recommendation: approve it.
    - *The time.* The slice didn't keep the gate as fast as before (R5.2): 37 seconds more locally, and CI will pass its
