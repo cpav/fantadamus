@@ -1,6 +1,6 @@
 # Slice report: `mvp-store`
 
-2026-11-17 · Phase 2, the tenth slice, before the schedule is installed · **Awaiting the owner's sign-off**
+2026-11-17 · Phase 2, the tenth slice, before the schedule is installed · **Signed off by the owner on 2026-11-18**
 
 Storing a read and reading for an answer now cost what is new, not what is already stored, so that the schedule can
 run every 15 minutes for a whole season. A store adds its rows to one month's file instead of rebuilding its table,
@@ -154,7 +154,7 @@ Nothing runs on AWS.
 ## Decisions for the owner
 
 1. **Sign off this slice?** Recommendation: yes. Every acceptance test passes, the season's budgets hold with room,
-   and the owner's lake answers identically.
+   and the owner's lake answers identically. **Signed off by the owner on 2026-11-18.**
 2. **The gate: its time, and the timing process's wait.** Two changes only you can approve:
    - *The wait.* Let a budget test's wait for the shared timing process count apart from its two-minute limit, with
      pytest-timeout's `func_only`: the two minutes still apply to each test's own code, and the process keeps a
