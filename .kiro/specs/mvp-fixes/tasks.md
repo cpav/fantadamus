@@ -61,9 +61,9 @@ Status: **Approved by the owner, 2026-11-21** · From the approved [requirements
       **AT-3** `tests/acceptance/fixes/test_at3_report.py::test_at3_the_report_says_it_tries_again`;
       AT-8's replay in the task report (times and counts)_
 
-- [ ] 2. `collect` takes every fact
+- [x] 2. `collect` takes every fact
   - Branch: `fix/fx-2-collect-facts` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 `CollectFact` beside `FACTS`, a test that they agree; `PAGE_NAMES` beside `PAGE_FACTS`; the tool's `fact`
+  - [x] 2.1 `CollectFact` beside `FACTS`, a test that they agree; `PAGE_NAMES` beside `PAGE_FACTS`; the tool's `fact`
     and description from them.
     - _Requirements: R2.1, R2.2, R2.3_
     - _Test: `tests/unit/fixes/test_collect_facts.py::test_the_literal_is_the_collectors_list`,
