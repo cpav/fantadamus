@@ -85,6 +85,21 @@ SUSPENSIONS_FACTS = ("suspensions",)
 RATINGS_FACTS = ("match_ratings",)
 """And the round ratings page's, the round just played (mvp-sources C6)."""
 FACTS = REFRESHED + OTHER_FIXTURES_FACTS + INJURIES_FACTS + SUSPENSIONS_FACTS + RATINGS_FACTS
+CollectFact = Literal[
+    "fixtures",
+    "probable_lineups",
+    "official_lineups",
+    "match_odds",
+    "player_season",
+    "penalty_takers",
+    "team_season",
+    "other_fixtures",
+    "injuries",
+    "suspensions",
+    "match_ratings",
+]
+"""A fact the collector reads, as the `collect` tool takes it: `FACTS`, in order, which a test keeps so
+(mvp-fixes R2.2)."""
 PageKind = Literal[
     "round",
     "statistics",
@@ -107,6 +122,23 @@ PAGE_FACTS: dict[PageKind, tuple[str, ...]] = {
     "suspensions": SUSPENSIONS_FACTS,
     "ratings": RATINGS_FACTS,
 }
+PAGE_NAMES: dict[PageKind, str] = {
+    "round": (
+        "Fantacalcio-Online's round page (the fixtures, four outlets' chances of starting, the official "
+        "lineups once out, and the odds)"
+    ),
+    "statistics": "Fantacalcio.it's statistics page (every player's season figures)",
+    "takers": "Fantacalcio.it's penalty-takers page",
+    "table": "Fantacalcio.it's table",
+    "injuries": "Fantacalcio.it's injured players page",
+    "suspensions": "Fantacalcio.it's suspended players page",
+    "other_fixtures": (
+        "Wikipedia's pages of the Champions, Europa and Conference Leagues and the Coppa Italia"
+    ),
+    "ratings": "Fantacalcio-Online's ratings of the round just played",
+}
+"""Each page the `collect` tool can read, named for people (mvp-fixes R2.1). A finished round's page is read
+only to score the round."""
 
 
 def page_of(fact: str) -> PageKind:
