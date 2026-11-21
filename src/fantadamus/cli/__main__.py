@@ -69,6 +69,8 @@ def _page_lines(page: PageReport) -> list[str]:
         line += " " + ", ".join(f"{table} {rows}" for table, rows in page.stored.items())
     if page.reason:
         line += f" ({page.reason})"
+    if page.outcome == "failed":  # no answer from the site: not a refusal (mvp-fixes R1.5)
+        line += ": tried again at the next run"
     lines = [line, *(f"  left out: {problem}" for problem in page.problems)]
     if page.for_claude:
         lines.append("  for Claude, through read_page: " + ", ".join(page.for_claude))

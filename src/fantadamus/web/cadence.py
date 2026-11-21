@@ -15,10 +15,12 @@ design C7; R7.1, R7.2).
 | Round ratings | Once a round, the morning after its last match (mvp-sources C9) |
 
 A match's facts stop being due at its kickoff: there's nothing left to forecast. Each interval counts from the
-collector's last attempt at the page that carries the fact, successful or not: a site that refuses is asked
-again at the fact's own interval, not every 15 minutes. The matches are the next round's, whose deadline is
-still ahead. A scheduled run reads only the pages whose facts are due, and an answer that finds a fact missing
-leaves alone a page tried moments ago: it has nothing new for a name it doesn't list or odds it doesn't show.
+collector's last try at the page that carries the fact and got the site's answer, facts or a refusal: a site
+that refuses is asked again at the fact's own interval, not every 15 minutes. A try that got no answer doesn't
+count: the next run tries the page again, and an answer waits `RETRY_AFTER` (mvp-fixes R1.2). The matches are
+the next round's, whose deadline is still ahead. A scheduled run reads only the pages whose facts are due, and
+an answer that finds a fact missing leaves alone a page tried moments ago: it has nothing new for a name it
+doesn't list or odds it doesn't show.
 """
 
 from __future__ import annotations
@@ -90,6 +92,8 @@ _ON_DEMAND_EVERY: dict[PageKind, dt.timedelta] = {
     "ratings": 12 * _HOUR,
 }
 """The shortest interval of each page's facts in the table."""
+RETRY_AFTER = dt.timedelta(minutes=15)
+"""An answer's wait after a try that got no answer: the schedule's interval (mvp-fixes decision 1)."""
 
 
 def due(
@@ -139,15 +143,25 @@ def may_read_page(page: PageKind, log: CollectLog | None, now: dt.datetime) -> b
     """Whether this kind of page may be read now: each has its shortest interval."""
     if log is None:
         return True
-    last = log.last_attempt(now, page, since=now - FACTS_WINDOW)
-    return last is None or now - last >= _ON_DEMAND_EVERY[page]
+    since = now - FACTS_WINDOW
+    return may_read_after(page, log.last_answered(now, page, since), log.last_failed(now, page, since), now)
+
+
+def may_read_after(
+    page: PageKind, last_answered: dt.datetime | None, last_failed: dt.datetime | None, now: dt.datetime
+) -> bool:
+    """Whether an answer may read this kind of page now: its shortest interval since the site last answered,
+    and `RETRY_AFTER` since a try that got no answer (mvp-fixes R1.2, R1.3)."""
+    answered_long_ago = last_answered is None or now - last_answered >= _ON_DEMAND_EVERY[page]
+    return answered_long_ago and (last_failed is None or now - last_failed >= RETRY_AFTER)
 
 
 def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]:
     """The facts past their cadence at `now`, in the table's order. A cadence is a week at most, so the
-    attempts of the window are enough: an older one would be due all the same."""
+    tries of the window are enough: an older one would be due all the same. Only a try that got the site's
+    answer counts (mvp-fixes R1.2)."""
     since = now - FACTS_WINDOW
-    last_read = log.last_attempt(now, since=since)
+    last_read = log.last_answered(now, since=since)
     fixtures = read_silver(lake, FIXTURES)
     round = next_round(fixtures, now)
     upcoming = [row for row in matches(fixtures, now) if row.round == round] if round is not None else []
@@ -167,11 +181,11 @@ def what_is_due(lake: LakeStore, log: CollectLog, now: dt.datetime) -> list[str]
     last = max((row.kickoff_at for row in matches(fixtures, now) if row.round == played), default=None)
     for fact in SCHEDULED:
         if fact in _MORNING_AFTER:
-            if due(fact, log.last_attempt(now, page_of(fact), since), now, last):
+            if due(fact, log.last_answered(now, page_of(fact), since), now, last):
                 found.append(fact)
         elif fact in _ALWAYS:
             kickoff = other if fact in _MATCH_WEEK else first if fact in _NEAR_ROUND else None
-            if due(fact, log.last_attempt(now, page_of(fact), since), now, kickoff):
+            if due(fact, log.last_answered(now, page_of(fact), since), now, kickoff):
                 found.append(fact)
         elif any(
             due(fact, last_read, now, row.kickoff_at, confirmed=(row.home, row.away) in confirmed)

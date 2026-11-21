@@ -18,6 +18,7 @@ from fantadamus.web.fetch import (
     HostBlockedError,
     NotAllowedError,
     Response,
+    RobotsUnreadableError,
 )
 from tests.collect_harness import FakeTime, FakeWeb
 
@@ -154,18 +155,26 @@ def test_block_expires(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "unreadable", [TimeoutError("timed out"), Response(503, {}, b""), Response(429, {}, b"")]
+    ("unreadable", "error"),
+    [
+        (TimeoutError("timed out"), RobotsUnreadableError),
+        (Response(503, {}, b""), DisallowedError),
+        (Response(429, {}, b""), DisallowedError),
+    ],
 )
-def test_a_robots_failure_isnt_remembered(tmp_path: Path, unreadable: Response | Exception) -> None:
+def test_a_robots_failure_isnt_remembered(
+    tmp_path: Path, unreadable: Response | Exception, error: type[Exception]
+) -> None:
     """Found by the code review: nothing is fetched while robots.txt can't be read, but one failure isn't the
-    site's answer, so the next run asks again rather than staying away all day."""
+    site's answer, so the next run asks again rather than staying away all day. Since mvp-fixes (R1.1), one
+    that got no answer says so instead of reading as disallowed; a block status still disallows."""
     down = FakeWeb(
         {
             "https://site.example/robots.txt": unreadable,
             "https://site.example/page": WEB["https://site.example/page"],
         }
     )
-    with pytest.raises(DisallowedError):
+    with pytest.raises(error):
         _fetcher(down, tmp_path).fetch("https://site.example/page")
     assert _fetcher(FakeWeb(dict(WEB)), tmp_path).fetch("https://site.example/page").status == 200
 

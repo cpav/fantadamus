@@ -3,6 +3,8 @@
 Runs go to `<root>/<YYYY-MM>.jsonl`, by default under the git-ignored `data/local/collect/`. `last` is the
 newest run, `last_worked` the newest time each page was read, whether it stored facts or found them unchanged,
 and `confirmed` when each page last confirmed a table's facts unchanged, which keeps them fresh (R1.5).
+`last_answered` is the newest try at a page that got the site's answer, the read the cadence counts, and
+`last_failed` the newest that got none (mvp-fixes R1.2).
 
 Each takes `since`: the runs from then on are enough for an answer, whose rows are all captured in its window,
 and for the schedule, whose cadences are a week at most (mvp-store C6). A run before it may still be read, as
@@ -12,16 +14,36 @@ the log is read a month's file at a time.
 from __future__ import annotations
 
 import datetime as dt
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import get_args
 
 from fantadamus.lake.jsonl import read_lines
-from fantadamus.web.collector import CollectReport, PageKind, PageReport
+from fantadamus.web.collector import CollectReport, Outcome, PageKind, PageReport
 
 DEFAULT_ROOT = Path("data/local/collect")
 WORKED = {"stored", "unchanged"}
 """A read that gave facts, whether or not they were new."""
+FAILED: frozenset[Outcome] = frozenset({"failed"})
+"""A try that got no answer from the site: tried again at the next run (mvp-fixes R1.2)."""
+ANSWERED: frozenset[Outcome] = frozenset(get_args(Outcome)) - FAILED
+"""A try that got the site's answer, or the collector's own setting: it counts as the page's read."""
+
+
+def newest(
+    runs: Sequence[CollectReport], as_of: dt.datetime, page: PageKind, outcomes: Collection[Outcome]
+) -> dt.datetime | None:
+    """When the newest of `runs` at or before `as_of` that tried `page` with one of `outcomes` started."""
+    return max(
+        (
+            run.started_at
+            for run in runs
+            if run.started_at <= as_of
+            and any(report.page == page and report.outcome in outcomes for report in run.pages)
+        ),
+        default=None,
+    )
 
 
 @dataclass(frozen=True)
@@ -53,6 +75,20 @@ class CollectLog:
             ),
             default=None,
         )
+
+    def last_answered(
+        self, as_of: dt.datetime, page: PageKind = "round", since: dt.datetime | None = None
+    ) -> dt.datetime | None:
+        """When the newest run at or before `as_of` that got the site's answer for `page` started: the read
+        the cadence counts (mvp-fixes R1.2)."""
+        return newest(self.runs(since), as_of, page, ANSWERED)
+
+    def last_failed(
+        self, as_of: dt.datetime, page: PageKind = "round", since: dt.datetime | None = None
+    ) -> dt.datetime | None:
+        """When the newest run at or before `as_of` whose try at `page` got no answer started (mvp-fixes
+        R1.2)."""
+        return newest(self.runs(since), as_of, page, FAILED)
 
     def last_worked(
         self, as_of: dt.datetime | None = None, since: dt.datetime | None = None

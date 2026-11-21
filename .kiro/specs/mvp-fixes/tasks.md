@@ -23,36 +23,37 @@ Status: **Approved by the owner, 2026-11-21** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. A failed try doesn't count as a read
+- [x] 1. A failed try doesn't count as a read
   - Branch: `fix/fx-1-failed-tries` · Depends on: none · ADRs: none · **Merged before round 13's alerts window**
-  - [ ] 1.1 This spec becomes the current one. A robots.txt that gets no answer, a timeout or a server error outside
+  - [x] 1.1 This spec becomes the current one. A robots.txt that gets no answer, a timeout or a server error outside
     the block statuses is remembered for the run and not cached; each of the host's pages fails with "robots.txt
     couldn't be read"; robots.txt is asked once per host per run.
     - _Requirements: R1.1, R1.3_
     - _Test: `tests/unit/fixes/test_fetch.py::test_robots_without_an_answer_fails_the_hosts_pages`,
       `::test_robots_server_error_fails_the_hosts_pages`, `::test_robots_is_asked_once_a_run`,
       `::test_robots_block_status_still_disallows`, `::test_robots_not_found_still_allows_everything`_
-  - [ ] 1.2 A page's 4xx outside the block statuses is `missing`, the site's answer; a 5xx outside them is `failed`.
+  - [x] 1.2 A page's 4xx outside the block statuses is `missing`, the site's answer; a 5xx outside them is `failed`.
     - _Requirements: R1.1, R1.4_
     - _Test: `tests/unit/fixes/test_fetch.py::test_a_page_the_site_says_is_gone_is_missing`,
       `::test_a_page_server_error_fails`; `tests/unit/fixes/test_collector.py::test_outcomes_by_error`_
-  - [ ] 1.3 The collection log counts answered tries: `last_answered` and `last_failed`; lines logged before read as
+  - [x] 1.3 The collection log counts answered tries: `last_answered` and `last_failed`; lines logged before read as
     they are.
     - _Requirements: R1.2_
     - _Test: `tests/unit/fixes/test_collect_log.py::test_a_failed_try_is_not_the_last_answered`,
       `::test_last_failed`, `::test_old_lines_read_as_they_are`_
-  - [ ] 1.4 The cadence and the answers: a failed page is due at the next run; an answer waits `RETRY_AFTER` after a
+  - [x] 1.4 The cadence and the answers: a failed page is due at the next run; an answer waits `RETRY_AFTER` after a
     failed try; a block still waits for the cadence.
     - _Requirements: R1.2, R1.3, R1.4_
     - _Test: `tests/unit/fixes/test_cadence.py::test_a_failed_page_is_due_at_the_next_run`,
       `::test_an_answer_waits_after_a_failed_try`, `::test_a_block_waits_for_the_cadence`;
       **P1** `tests/property/fixes/test_due.py::test_p1_due_follows_the_last_answered_try`;
-      **P2** `tests/property/fixes/test_retry.py::test_p2_one_robots_try_a_run_and_no_page_requested`_
-  - [ ] 1.5 The run's report, `collect --report` and the refresh plan's note say a failed page is tried again.
+      **P2** `tests/property/fixes/test_retry.py::test_p2_one_robots_try_a_run_and_no_page_requested`,
+      `::test_p2_an_answer_never_retries_sooner`_
+  - [x] 1.5 The run's report, `collect --report` and the refresh plan's note say a failed page is tried again.
     - _Requirements: R1.5_
     - _Test: `tests/integration/fixes/test_report.py::test_a_failed_page_is_shown_with_its_cause_and_retry`,
       `::test_the_refresh_note_says_it_tries_again`_
-  - [ ] 1.6 The proof: the collector on a fake transport that can't reach two hosts, then the next tick; and from here,
+  - [x] 1.6 The proof: the collector on a fake transport that can't reach two hosts, then the next tick; and from here,
     Saturday 21 November's run replayed on a copy of the owner's lake.
     - _Requirements: R1.2, R1.6_
     - _Test: **AT-1** `tests/acceptance/fixes/test_at1_failed_tries.py::test_at1_a_failed_try_is_tried_again_at_the_next_run`;

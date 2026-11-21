@@ -63,7 +63,8 @@ def test_statistics_failure_for_claude(tmp_path: Path) -> None:
         off = round_collector(store, site.base_url, tmp_path, statistics=True, statistics_enabled=False)
         [switched_off] = off.collect(facts=["player_season"]).pages
         requests = [path for path, _ in site.requests]
-    assert (failed.outcome, failed.for_claude) == ("failed", ["player_season"])
+    # A 404: since mvp-fixes (design C1), a page the site says isn't there is `missing`, still Claude's.
+    assert (failed.outcome, failed.for_claude) == ("missing", ["player_season"])
     assert (refused.outcome, refused.for_claude) == ("rejected", ["player_season"])
     assert "the read has no players of Gamma" in " ".join(refused.problems)
     assert (switched_off.outcome, switched_off.for_claude) == ("switched off", ["player_season"])
