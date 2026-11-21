@@ -139,6 +139,7 @@ thing: making Fantadamus easy to reach and install. The slices after `mvp-lineup
 | 5 | New sources (`mvp-sources`), research first, each route approved by the owner: rest days and midweek European fixtures, injury detail, per-match ratings and rater bias, and research into anytime-scorer odds. Match news for the cards and set-piece takers wait for v1 (the owner, 2026-11-11); signed off 2026-11-15 | ADRs, then the source registry |
 | 6 | Alerts (`mvp-alerts`): "the official lineup changes your call", as a notification on the user's Mac from the scheduled run; once online, a notification service such as Amazon SNS (the owner, 2026-11-11); signed off 2026-11-18 | A scheduled run on the Mac |
 | 7 | Storing and reading that keep their speed (`mvp-store`): a stored read adds its rows instead of rebuilding its table, and an answer reads only what it uses, so that the schedule can run all season (the review of 2026-11-16); requirements, design and tasks approved 2026-11-16; built 2026-11-17, signed off 2026-11-18 | Nothing new |
+| 8 | Fixes from the round 12 test (`mvp-fixes`): a try that got no answer from the site no longer counts as the page's read, first and before round 13; the `collect` tool takes every fact; an answer's sources name every page it shows; a penalty note says when the taker listed ahead is out; the review keeps the app's total; requirements approved 2026-11-21 | Nothing new |
 
 Trades, auctions and market valuation stay out of scope.
 

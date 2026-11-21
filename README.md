@@ -58,8 +58,8 @@ when the news changes a lineup (`mvp-alerts`), and storing and reading that keep
 The answers' shapes are in [docs/answer-formats.md](docs/answer-formats.md). A second player installs it from the
 [setup guide](docs/player-setup.md).
 
-**Now:** a real round end to end, round 12 (21 to 23 November 2026), with the schedule installed. Then the Phase 2
-report and Phase 3. The review before going online ran on 2026-11-16
+**Now:** a real round end to end, round 12 (21 to 23 November 2026), with the schedule installed, and `mvp-fixes`,
+five small fixes that test found. Then the Phase 2 report and Phase 3. The review before going online ran on 2026-11-16
 ([report](docs/reports/review-before-phase-3.md)); its first finding became `mvp-store`, and two of its decisions are
 still the owner's.
 
