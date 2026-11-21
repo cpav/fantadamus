@@ -1,6 +1,6 @@
 # Design Document: `mvp-fixes` (Phase 2, eleventh slice)
 
-Status: **Draft, awaiting the owner's approval** · From the approved [requirements](requirements.md) (2026-11-21, all three
+Status: **Approved by the owner, 2026-11-21** · From the approved [requirements](requirements.md) (2026-11-21, all three
 decisions as recommended) · Abbreviation: `fx`
 
 ## Overview
