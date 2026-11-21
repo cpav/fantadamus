@@ -560,20 +560,9 @@ def _sources(priced: Sequence[_Priced]) -> list[Source]:
 
 
 def sources_of(sides: Sequence[PlayerFacts]) -> list[Source]:
-    """Every fact these players' answer rests on: their seasons, the table, the takers, their match, its
-    lineups and odds (mvp-cards C5 shares it)."""
-    sources: list[Source] = []
-    for facts in sides:
-        sources += [facts.form.source, facts.table.source, facts.order.source]
-        if facts.match is not None:
-            sources.append(facts.match.source)
-        if facts.present is not None:
-            sources += [view.source for view in facts.present.outlets]
-            if facts.present.official is not None:
-                sources.append(facts.present.official.source)
-        if facts.xg is not None:
-            sources += facts.xg.sources
-    return sources
+    """Every page these players' answer shows, each player's from `PlayerFacts.sources`: the injured or
+    suspended page included when he has news (mvp-cards C5 shares it; mvp-fixes R3)."""
+    return [source for facts in sides for source in facts.sources()]
 
 
 def source_lines(sources: Sequence[Source], advisor: Advisor, as_of: dt.datetime) -> list[SourceLine]:

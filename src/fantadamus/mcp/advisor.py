@@ -433,6 +433,25 @@ class PlayerFacts:
     news: News | None = None
     """What the injured and suspended pages say about him: shown, never priced (mvp-sources R3.3)."""
 
+    def sources(self, rested: Rested | None = None) -> list[Source]:
+        """Every page his answer shows: his season, the table, the takers, his match, its lineups and odds,
+        the injured or suspended page when he has news, and the other competitions' pages when his club's rest
+        days are shown (mvp-fixes R3)."""
+        found = [self.form.source, self.table.source, self.order.source]
+        if self.match is not None:
+            found.append(self.match.source)
+        if self.present is not None:
+            found += [view.source for view in self.present.outlets]
+            if self.present.official is not None:
+                found.append(self.present.official.source)
+        if self.xg is not None:
+            found += self.xg.sources
+        if rested is not None:
+            found += rested.sources
+        if self.news is not None:
+            found += self.news.sources
+        return found
+
 
 @dataclass(frozen=True)
 class _Recent:
@@ -1149,33 +1168,23 @@ class Advisor:
             if start_confidence is not None and win_confidence is not None
             else start_confidence or win_confidence
         )
-        sources = [side.form.source, side.table.source, side.order.source]
+        sources = side.sources(rested)
         if match is None:
             notes.append(f"{side.player.name} has no match in round {round}: counted as not playing.")
-        else:
-            sources.append(match.source)
         if present is not None:
-            sources += [view.source for view in present.outlets]
-            if present.official is not None:
-                sources.append(present.official.source)
             if present.disputed:
                 notes.append(f"The outlets disagree about {side.player.name} (spread {present.spread:.2f}).")
             if present.by_surname:
                 written = ", ".join(present.by_surname)
                 notes.append(f"The outlets write {written}: matched to {side.player.name} by surname.")
         if xg is not None:
-            sources += xg.sources
             if not xg.from_odds:
                 notes.append("Team xG comes from regressed team form: no match odds were found.")
             elif not xg.totals:
                 notes.append("No over/under 2.5 was found: goal chances come from the 1X2 alone.")
-        if rested is not None:
-            sources += rested.sources
         news = side.news
-        if news is not None:
-            sources += news.sources
-            if (said := page_disagreement(news, present)) is not None:
-                notes.append(said)
+        if news is not None and (said := page_disagreement(news, present)) is not None:
+            notes.append(said)
         home = match is not None and match.home == side.player.club
         form = side.form
         if form.role == "P" and form.goals_conceded is None:

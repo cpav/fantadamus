@@ -85,7 +85,7 @@ The other four change words and sources in answers, and one log line. No chance,
 - The tool's `fact` parameter takes a `CollectFact`. The ratings are read for the round just played, as
   `collector.collect(round, [fact])` already does (R2.3). The prompt is unchanged.
 
-### C6. One list of a player's sources (`mcp/advisor.py`, `mcp/tools/lineup.py`, `mcp/tools/cards.py`; R3)
+### C6. One list of a player's sources (`mcp/advisor.py`, `mcp/tools/lineup.py`, `mcp/tools/cards.py`, `mcp/tools/review.py`; R3)
 
 - `PlayerFacts.sources(rested: Rested | None = None) -> list[Source]`: the season figures, the table, the takers, the
   match, the outlets, the official lineup, the odds, the injured or suspended page when the player has news, and the
@@ -93,8 +93,10 @@ The other four change words and sources in answers, and one log line. No chance,
 - The lineup (`sources_of`), the card and the answer builder for an outlook and "X or Y?" all call it, in place of their
   own lists (the review's R7, for this list only). A lineup that says why a player is out now names the injured or
   suspended page, with when it was read.
-- The review's sources (the statistics reads before and after, the fixtures) are already its own and complete; a test
-  checks them too (R3.2).
+- The round overview and the review had no Sources list at all, which this design first missed (changed while building
+  task 3). The overview gains one from its fixtures and odds, or the table where form stands in; the review gains one
+  from the facts priced at the lock and the statistics reads before and after the round, and its log keeps those two
+  reads' content hashes beside the lock's (R3.2). Format 5's overview and format 7 name them last.
 
 ### C7. The penalty note says who's out (`mcp/advisor.py`; R4)
 

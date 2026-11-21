@@ -70,15 +70,16 @@ Status: **Approved by the owner, 2026-11-21** · From the approved [requirements
       `::test_every_page_with_a_fact_has_a_name`;
       **AT-4** `tests/acceptance/fixes/test_at4_collect.py::test_at4_collect_reads_every_fact`_
 
-- [ ] 3. One list of a player's sources
+- [x] 3. One list of a player's sources
   - Branch: `fix/fx-3-sources` · Depends on: 1 · ADRs: none
-  - [ ] 3.1 `PlayerFacts.sources()`, called by the lineup, the card, the outlook and "X or Y?"; the review's sources
-    checked as they are.
+  - [x] 3.1 `PlayerFacts.sources()`, called by the lineup, the card, the outlook and "X or Y?"; the overview and the
+    review gain a Sources list, and the review logs the statistics reads it scores from.
     - _Requirements: R3.1, R3.2_
-    - _Test: `tests/unit/fixes/test_sources.py::test_news_and_rest_days_are_sources`;
+    - _Test: `tests/unit/fixes/test_sources.py::test_news_and_rest_days_are_sources`,
+      `::test_without_news_or_rest_days_neither_is_a_source`, `::test_no_match_no_match_sources`;
       **P3** `tests/property/fixes/test_sources.py::test_p3_every_fact_present_has_its_source`;
       **AT-5** `tests/acceptance/fixes/test_at5_sources.py::test_at5_a_lineup_names_the_injured_page`,
-      `::test_at5_every_answer_names_the_pages_it_shows`_
+      `::test_at5_every_answer_names_the_pages_it_shows`, `::test_at5_the_overview_and_the_review_name_their_pages`_
 
 - [ ] 4. The penalty note says who's out
   - Branch: `fix/fx-4-penalty-note` · Depends on: 1 · ADRs: none
