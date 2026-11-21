@@ -47,7 +47,14 @@ from fantadamus.league.rules import StoredRules
 from fantadamus.league.squads import MINE, SquadStore, StoredSquad
 from fantadamus.mcp.advisor import ROME, Advisor
 from fantadamus.mcp.calibrate import Calibrator
-from fantadamus.mcp.tools.lineup import SquadAt, replayed_lineup, squad_at
+from fantadamus.mcp.tools.lineup import (
+    SourceLine,
+    SquadAt,
+    replayed_lineup,
+    source_lines,
+    sources_of,
+    squad_at,
+)
 
 APP_GAP = 0.5
 """A user's own total from their league's app that differs by more than this is worth a word (R2.4)."""
@@ -114,6 +121,9 @@ class Review(BaseModel):
     record: RecordLine
     not_counted: list[str]
     """What the reads couldn't count, by name: a player's round, or a kind of event."""
+    sources: list[SourceLine] = []
+    """The pages it rests on: the facts priced at the lock, and the statistics reads before and after the
+    round that give the real score (mvp-fixes R3.2)."""
 
 
 class ReviewResult(BaseModel):
@@ -218,6 +228,9 @@ def review_for(
         ),
         replayed=advice.replayed,
     )
+    reads = list(
+        dict.fromkeys(row.source for found in (before, after) if found is not None for row in found.values())
+    )
     line = logged(
         reviewed,
         user=advisor.user,
@@ -225,7 +238,7 @@ def review_for(
         round=round,
         as_of=lock,
         logged_at=advisor.clock(),
-        content_hashes=at_lock.content_hashes,
+        content_hashes=sorted({*at_lock.content_hashes, *(read.content_sha256 for read in reads)}),
     )
     if as_of is None:
         reviews.append(line)
@@ -236,7 +249,16 @@ def review_for(
     return ReviewResult(
         status="review",
         message=_message(round, reviewed),
-        review=_review(round, team, names, reviewed, found, played, app_total),
+        review=_review(
+            round,
+            team,
+            names,
+            reviewed,
+            found,
+            played,
+            app_total,
+            source_lines([*sources_of(at_lock.gathered.sides), *reads], advisor, now),
+        ),
     )
 
 
@@ -259,7 +281,7 @@ def register(
         "order, captain and vice, by name) or as_advised if they followed the advice; it's kept, so later "
         "calls need only the round. app_total is their real total from their league's app, to check against. "
         "It returns 'fielded' when it needs the lineup, 'choose' for a name that could be two players, "
-        "'refused' with the reason, 'not_ready' with when to ask again, or the review."
+        "'refused' with the reason, 'not_ready' with when to ask again, or the review, its sources last."
     )
     def review_round(
         round: int,
@@ -414,6 +436,7 @@ def _review(
     found: Record,
     played: Mapping[int, Round | Unknown],
     app_total: float | None,
+    sources: list[SourceLine],
 ) -> Review:
     def named(players: Sequence[int]) -> list[str]:
         return [names.get(player, str(player)) for player in players]
@@ -471,6 +494,7 @@ def _review(
             verdict=found.verdict,
         ),
         not_counted=not_counted,
+        sources=sources,
     )
 
 

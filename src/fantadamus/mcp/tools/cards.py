@@ -116,6 +116,9 @@ class RoundOverview(BaseModel):
     as_of: dt.datetime
     lines: list[FixtureLine]
     """One per fixture, in kickoff order, kickoffs in Europe/Rome."""
+    sources: list[SourceLine] = []
+    """The pages its numbers come from: the fixtures, and the odds or, where form stands in, the table
+    (mvp-fixes R3.2)."""
 
 
 class OverviewResult(BaseModel):
@@ -234,7 +237,17 @@ def overview_for(advisor: Advisor, *, as_of: dt.datetime | None = None) -> Overv
         for line in round_lines(found, advisor.clubs.names)
     ]
     lock = gathered.first_kickoff or min(match.kickoff_at for match, _ in found)
-    overview = RoundOverview(round=gathered.round, deadline=lock.astimezone(ROME), as_of=when, lines=lines)
+    shown = [
+        *(match.source for match, _ in found),
+        *(source for _, xg in found if xg is not None for source in xg.sources),
+    ]
+    overview = RoundOverview(
+        round=gathered.round,
+        deadline=lock.astimezone(ROME),
+        as_of=when,
+        lines=lines,
+        sources=source_lines(shown, advisor, when),
+    )
     said = f"Round {gathered.round}: {len(lines)} matches."
     if any(not line.from_odds for line in lines):
         said += " Some have no odds yet: team form gives their numbers, or there are none."
@@ -253,8 +266,8 @@ def register(server: MCPServer, advisor: Advisor, squads: SquadStore) -> None:
         description="The next round at a glance, team-level only. In this order: the round and its deadline"
         " (Rome time); then one line per fixture in kickoff order: the match and its kickoff, "
         "the favourite and its chance and the draw, both sides' expected goals and clean "
-        "sheets, and three goals or more where the odds price it. Use it for a question across "
-        "the round (where are the goals, which keepers are safest), then offer match_card for "
+        "sheets, and three goals or more where the odds price it; last, its sources. Use it for a question "
+        "across the round (where are the goals, which keepers are safest), then offer match_card for "
         "any fixture. It returns 'overview', or 'refresh' when the round's fixtures aren't "
         "known yet; 'improve' lists what could make it better. as_of replays an earlier time."
     )
