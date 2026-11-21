@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-fixes` (Phase 2, eleventh slice)
 
-Status: **Draft, awaiting the owner's approval** · Workflow: requirements-first · Depends on: `mvp-store` (signed off
+Status: **Approved by the owner, 2026-11-21**, with all three recommendations · Workflow: requirements-first · Depends on: `mvp-store` (signed off
 2026-11-18) · Abbreviation: `fx` · Research: the test of round 12 on the owner's Mac and lake, 18 to 21 November 2026
 (times and counts below, no names)
 
@@ -146,6 +146,8 @@ league's app, and when it doesn't.
   pages), `mvp-lineup` (the penalty notes), `mvp-review` (the review log).
 
 ## Decisions for the owner
+
+All three decided by the owner on 2026-11-21, as recommended.
 
 1. **How soon is a page that failed tried again?** Recommendation: at the next scheduled run, 15 minutes later while
    the Mac is awake, and by an answer 15 minutes after the failed try. That's at most four tries an hour per page while
