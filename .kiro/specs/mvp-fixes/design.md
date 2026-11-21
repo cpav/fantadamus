@@ -52,8 +52,11 @@ The other four change words and sources in answers, and one log line. No chance,
 ### C2. The log counts answered tries (`lake/collect_log.py`; R1.2)
 
 - `ANSWERED = every outcome but "failed"`.
-- `last_attempt` becomes `last_answered(as_of, page, since)`: the newest run at or before `as_of` whose report for the
-  page has an answered outcome. `last_failed(as_of, page, since)` gives the newest failed try.
+- `last_answered(as_of, page, since)`: the newest run at or before `as_of` whose report for the page has an answered
+  outcome; `last_failed(as_of, page, since)`: the newest failed try. Both go through one pure function, `newest`, so
+  the property tests need no files. `last_attempt` stays as it was, the newest try whatever came of it, since four
+  earlier tests use it, one an acceptance test; only the cadence moves to `last_answered` (changed while building
+  task 1).
 - Lines logged before this slice are read as they are: Saturday 21 November's unreadable robots.txt was logged as
   `disallowed` then, and still counts. History isn't rewritten.
 

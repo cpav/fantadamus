@@ -1269,6 +1269,8 @@ def tried_notes(report: CollectReport) -> dict[str, str]:
             if page.outcome in {"stored", "unchanged"}
             else f"Fantadamus couldn't read {page.url}: {page.outcome}{reason}"
         )
+        if page.outcome == "failed":  # no answer from the site: not a refusal (mvp-fixes R1.5)
+            said += "; it tries again at its next run"
         tried |= dict.fromkeys(PAGE_FACTS[page.page], said)
     return tried
 

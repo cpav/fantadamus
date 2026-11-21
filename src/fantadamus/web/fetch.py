@@ -1,10 +1,12 @@
 """The polite fetcher (mvp-collect design C1; R2; ADR-0004's rules, ADR-0006).
 
 Before any request: the host must be on the allowlist and the path allowed by the host's robots.txt. The
-site's answer is kept for the day; a failure isn't, so the next run asks again, and until then nothing is
-fetched from that host. Requests to one host are at least a second apart, carry a user agent
-naming Fantadamus, and get one attempt. A block, a bot check or "too many requests" stops the host for the
-rest of the run: nothing tries to get around it. Redirects are followed only within the same rules.
+site's answer is kept for the day; a failure isn't: until the next run asks again, nothing is fetched from
+that host, and its pages fail saying robots.txt couldn't be read, not that it disallows them (mvp-fixes R1.1).
+A page the site says isn't there is told apart from one that got no answer. Requests to one host are at least
+a second apart, carry a user agent naming Fantadamus, and get one attempt. A block, a bot check or "too many
+requests" stops the host for the rest of the run: nothing tries to get around it. Redirects are followed only
+within the same rules.
 """
 
 from __future__ import annotations
@@ -36,6 +38,8 @@ _REDIRECT_STATUSES = {301, 302, 303, 307, 308}
 _BOT_CHECK_MARKERS = ("captcha", "just a moment", "access denied", "cf-chl")
 _BOT_CHECK_MAX_BYTES = 50_000
 _MAX_REDIRECTS = 3
+_SERVER_GAVE_UP = 408
+"""The one 4xx that says nothing about the page: the server stopped waiting for the request."""
 
 
 @dataclass(frozen=True)
@@ -79,6 +83,16 @@ class FetchFailedError(FetchError):
 
 class OutOfTimeError(FetchFailedError):
     """The run's time budget is used up (mvp-collect R1.3)."""
+
+
+class RobotsUnreadableError(FetchFailedError):
+    """The host's robots.txt got no answer, a timeout or a server error outside the block statuses: nothing is
+    requested from the host this run, and the next run asks again (mvp-fixes R1.1)."""
+
+
+class PageMissingError(FetchFailedError):
+    """The site answered that the page isn't there, a 4xx outside the block statuses: its own answer, unlike a
+    failed try (mvp-fixes design C1)."""
 
 
 def http_transport(url: str, headers: Mapping[str, str], timeout: float) -> Response:
@@ -125,6 +139,7 @@ class Fetcher:
         self._deadline = None if budget is None else monotonic() + budget
         self._last: dict[str, float] = {}
         self._robots: dict[str, RobotFileParser] = {}
+        self._unreadable: dict[str, str] = {}  # host: why its robots.txt couldn't be read, for this run
         self._block_for = block_for
         self._blocked: dict[str, tuple[str, float]] = {}  # host: why, and until when (monotonic)
 
@@ -137,6 +152,8 @@ class Fetcher:
                 url = urljoin(url, location)
                 continue
             if answer.status != 200:
+                if 400 <= answer.status < 500 and answer.status != _SERVER_GAVE_UP:
+                    raise PageMissingError(f"{url} answered {answer.status}")
                 raise FetchFailedError(f"{url} answered {answer.status}")
             return Page(
                 url=url,
@@ -156,7 +173,10 @@ class Fetcher:
             if self._monotonic() < until:
                 raise HostBlockedError(f"{host} stopped for now: {why}")
             del self._blocked[host]
-        if not self._rules(url, host).can_fetch(ROBOTS_AGENT, url):
+        rules = self._rules(url, host)
+        if host in self._unreadable:
+            raise RobotsUnreadableError(f"robots.txt couldn't be read ({self._unreadable[host]})")
+        if not rules.can_fetch(ROBOTS_AGENT, url):
             raise DisallowedError(f"robots.txt disallows {url}")
         answer = self._request(url, host)
         if answer.status in _BLOCK_STATUSES:
@@ -208,8 +228,11 @@ class Fetcher:
                 status, text = answer.status, answer.body.decode("utf-8", errors="replace")
             except OutOfTimeError:
                 raise  # not the site's answer: nothing to remember for the day
-            except FetchFailedError:
+            except FetchFailedError as error:
                 status, text = 0, ""
+                self._unreadable[host] = str(error.__cause__ or error)
+            if status >= 500 and status not in _BLOCK_STATUSES:
+                self._unreadable[host] = f"it answered {status}"
             if status and status < 500 and status != 429:  # the site's own answer, not a passing failure
                 self._cache.mkdir(parents=True, exist_ok=True)
                 temporary = temporary_beside(cached)

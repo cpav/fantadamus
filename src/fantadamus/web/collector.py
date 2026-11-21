@@ -41,7 +41,15 @@ from fantadamus.domains.odds.silver import ODDS
 from fantadamus.domains.ratings.silver import MATCH_RATINGS
 from fantadamus.domains.season.silver import PENALTY_TAKERS, SEASON_STATS, TEAM_SEASONS
 from fantadamus.lake.duckdb_store import LakeStore
-from fantadamus.web.fetch import DisallowedError, Fetcher, FetchError, HostBlockedError, NotAllowedError, Page
+from fantadamus.web.fetch import (
+    DisallowedError,
+    Fetcher,
+    FetchError,
+    HostBlockedError,
+    NotAllowedError,
+    Page,
+    PageMissingError,
+)
 from fantadamus.web.readers import UnreadablePageError
 from fantadamus.web.readers.fcit_stats import StatsFacts, read_stats
 from fantadamus.web.readers.fcit_table import TableFacts, read_table
@@ -118,8 +126,11 @@ Outcome = Literal[
     "disallowed",
     "blocked",
     "failed",
+    "missing",
     "unreadable",
 ]
+"""`failed` is a try that got no answer from the site, which the next run tries again; every other outcome is
+the site's answer, or the collector's own setting (mvp-fixes design C1, C2)."""
 Submissions = dict[Domain[Any, Any], list[Submission[Any]]]
 
 
@@ -262,6 +273,8 @@ def _outcome(error: FetchError) -> Outcome:
         return "disallowed"
     if isinstance(error, HostBlockedError):
         return "blocked"
+    if isinstance(error, PageMissingError):
+        return "missing"
     return "failed"
 
 
