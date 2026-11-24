@@ -380,6 +380,7 @@ def waiting(rows: Sequence[SetRow]) -> list[Wait]:
             needs="each outlet's own views against who started, which the sets don't keep yet",
         ),
         Wait(names=["OWN_GOAL_RATE"], needs="own goals, which the statistics page doesn't count"),
+        Wait(names=["CAMEO_SHARE_PRICED"], needs="its own fit, which mvp-cameos task 2 adds"),
         Wait(
             names=["START_MAP_WEIGHT", "MINIMUM_SAMPLE"],
             needs="how this slice's proposals hold up on the rounds after them",

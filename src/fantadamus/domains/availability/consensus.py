@@ -85,8 +85,11 @@ def outlet_view(
     return OutletView(outlet=outlet, status=status, p_start=p_start, source=source, rivals=sorted(rivals))
 
 
-def combine(outlets: Sequence[OutletView], official: OfficialView | None = None) -> Availability:
-    """The consensus of the outlets through the calibration map, unless the official lineup is out."""
+def combine(
+    outlets: Sequence[OutletView], official: OfficialView | None = None, *, share: float = CAMEO_SHARE
+) -> Availability:
+    """The consensus of the outlets through the calibration map, unless the official lineup is out. `share` is
+    how often he comes on when he doesn't start: his kind of cameo's (mvp-cameos C2)."""
     ordered = sorted(
         outlets, key=lambda view: (view.outlet, view.source.captured_at, view.status, view.p_start)
     )
@@ -94,13 +97,13 @@ def combine(outlets: Sequence[OutletView], official: OfficialView | None = None)
     spread = round(max(values) - min(values), 9) if values else 0.0
     if official is not None:
         p_start = raw = 1.0 if official.status == "starter" else 0.0
-        p_cameo = CAMEO_SHARE if official.status == "bench" else 0.0
+        p_cameo = share if official.status == "bench" else 0.0
         disputed = False
     elif values:
         raw = math.fsum(values) / len(values)
         p_start = mapped(raw, START_MAP)
         unavailable = any(view.status == "unavailable" for view in ordered)
-        p_cameo = 0.0 if unavailable else CAMEO_SHARE * (1 - p_start)
+        p_cameo = 0.0 if unavailable else share * (1 - p_start)
         disputed = len(values) >= 2 and spread >= DISPUTED_SPREAD
     else:
         raise ValueError("no outlet views and no official lineup")

@@ -101,7 +101,8 @@ constants' comments say what each share means.
   (`tests/acceptance/recalibrate/test_rates.py`: `CAMEO_RATED` fitted, "one share doesn't fit both") and the AT-6 tests
   of the cameo check (`test_checks.py`: the check named "CAMEO_SHARE and CAMEO_RATED", the fitted cameo rating checked),
   with their unit and property tests. They test the fit that R1.4 replaces, so they become tests of the two shares; no
-  number moves.
+  number moves. Found in task 1: AT-5's test of what waits (`test_checks.py::test_at5_what_waits`) lists every
+  constant, so `CAMEO_SHARE_PRICED` waits there until task 2 fits it, and `CAMEO_RATED` joins it in task 2.
 - **Mutation:** `make mutate ONLY=…` on the new and changed functions in `engine/recalibrate.py`,
   `domains/recalibration.py` and `engine/outfield.py`.
 

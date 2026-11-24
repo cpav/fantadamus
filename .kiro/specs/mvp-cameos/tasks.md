@@ -17,22 +17,25 @@ Status: **Approved by the owner, 2026-11-24** · From the approved [requirements
 
 ## Tasks
 
-- [ ] 1. A share for each kind of cameo
+- [x] 1. A share for each kind of cameo
   - Branch: `feat/cs-1-share-by-kind` · Depends on: none · ADRs: none
-  - [ ] 1.1 This spec becomes the current one. `CAMEO_SHARE_PRICED = 0.5`; `cameo_share(role, mantra_role)` gives the
+  - [x] 1.1 This spec becomes the current one. `CAMEO_SHARE_PRICED = 0.5`; `cameo_share(role, mantra_role)` gives the
     share of his kind.
     - _Requirements: R1.1, R1.3_
     - _Test: `tests/unit/cameos/test_share.py::test_each_role_gets_its_kinds_share`,
-      `::test_both_shares_start_at_a_half`_
-  - [ ] 1.2 `combine` and `availability` take the share; `Advisor.gather`, `_assumed` and the calibration sets pass his
+      `::test_both_shares_start_at_a_half`; `tests/acceptance/recalibrate/test_checks.py::test_at5_what_waits` (the new
+      share waits until task 2 fits it: an earlier acceptance test, changed with the owner's yes)_
+  - [x] 1.2 `combine` and `availability` take the share; `Advisor.gather`, `_assumed` and the calibration sets pass his
     kind's.
     - _Requirements: R1.1, R1.2_
     - _Test: `tests/unit/cameos/test_share.py::test_combine_uses_the_share`, `::test_an_official_bench_gets_the_share`;
       `tests/property/cameos/test_share.py::test_p1_the_chance_of_a_cameo`, `::test_p2_equal_shares_change_nothing`;
       **AT-1** `tests/acceptance/cameos/test_share.py::test_at1_each_kind_by_hand`_
-  - [ ] 1.3 On a copy of the owner's lake, every answer is identical with both shares at 0.5.
+  - [x] 1.3 On a copy of the owner's lake, every answer is identical with both shares at 0.5.
     - _Requirements: R1.3_
     - _Test: **AT-2** `python -m tests.real_lake --compare`, from here_
+    - 2026-11-24, the lake as it stood that day: 77 answers recorded with `main`'s code, then asked again with this
+      task's: 77 identical. With the priced share set to 0.7 on purpose, 21 differ, so the check sees a change.
 
 - [ ] 2. Both shares fitted and checked
   - Branch: `feat/cs-2-two-shares` · Depends on: 1 · ADRs: none

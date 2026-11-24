@@ -14,6 +14,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from fantadamus.contracts.types import Role
+from fantadamus.engine import constants
 from fantadamus.engine.constants import (
     CAMEO_FLAT,
     CAMEO_GOAL_VOTE,
@@ -98,6 +99,15 @@ class Comparison(BaseModel):
 def priors(role: Role, mantra_role: str | None) -> RolePriors:
     """His first Mantra role's priors, or his Classic role's usual one's (mvp-roles R2.1, R2.2)."""
     return ROLE_PRIORS.get(mantra_role or "") or ROLE_PRIORS[USUAL_MANTRA_ROLE.get(role, "A")]
+
+
+def cameo_share(role: Role, mantra_role: str | None) -> float:
+    """How often he comes on when he doesn't start, by his kind of cameo (mvp-cameos C1):
+    `CAMEO_SHARE_PRICED` for a priced cameo, `CAMEO_SHARE` for a flat one. A keeper has no cameo to price. The
+    constants are read when it's called, so that a recalibration or a test sets them in one place."""
+    if role != "P" and priors(role, mantra_role).priced_cameo:
+        return constants.CAMEO_SHARE_PRICED
+    return constants.CAMEO_SHARE
 
 
 def expected_vote(rated: int, average: float | None, *, p_win: float, p_loss: float) -> float:
