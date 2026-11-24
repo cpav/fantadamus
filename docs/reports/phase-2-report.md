@@ -1,7 +1,7 @@
 # Phase 2 report: the whole advisor, slice by slice
 
-2026-11-24 · Specs `mvp-collect` to `mvp-fixes`, eleven slices · **For the owner's sign-off**: merging this report's pull
-request records it
+2026-11-24 · Specs `mvp-collect` to `mvp-fixes`, eleven slices · **Signed off by the owner on 2026-11-24** ("Sign off
+Phase 2")
 
 Phase 2 took Fantadamus from one question about two forwards to every feature the MVP plans before going online. It now
 collects the round's facts itself, on a schedule; answers "X or Y?" for every role; picks the full lineup under a league's
@@ -168,7 +168,7 @@ sheets were no better than the average in round 11 and a little better in round 
 | Each slice's acceptance tests pass | 119 acceptance tests in the eleven slices, each in its slice report | Met, with one manual test closed on a gap the owner accepted at sign-off (below) |
 | All six of method §A9 | Tests 2, 4 and 6 in Phase 1; test 3, and test 6 for defenders, in `mvp-roles`; tests 1 and 5 in `mvp-lineup` | Met |
 | A calibration report for at least one real round | [Round 10's](calibration-round-10.md), and rounds 11 and 12 above | Met |
-| The phase report: tests, coverage, quality, cost, open risks and a mutation run | This report | For sign-off |
+| The phase report: tests, coverage, quality, cost, open risks and a mutation run | This report | Signed off on 2026-11-24 |
 
 - **The gap: `mvp-collect` AT-10,** a real question on each player's Mac before and after an official lineup, ran on the
   owner's Mac only. The second player hasn't installed Fantadamus; Phase 3 removes the install.
@@ -298,5 +298,5 @@ The owner's, besides each slice's requirements, design, tasks and sign-off:
 
 ## Next
 
-With the owner's sign-off, the README and `product.md` record it. Then the cameo shares, if decision 3 is taken, and
-Phase 3: Fantadamus online, so that a player installs nothing.
+The owner signed Phase 2 off on 2026-11-24, and the README and `product.md` record it. Next come the three decisions
+above, then the cameo shares if decision 3 is taken, and Phase 3: Fantadamus online, so that a player installs nothing.
