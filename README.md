@@ -58,16 +58,16 @@ when the news changes a lineup (`mvp-alerts`), and storing and reading that keep
 The answers' shapes are in [docs/answer-formats.md](docs/answer-formats.md). A second player installs it from the
 [setup guide](docs/player-setup.md).
 
-**Now:** a real round end to end, round 12 (21 to 23 November 2026), with the schedule installed, and `mvp-fixes`,
-five small fixes that test found. Then the Phase 2 report and Phase 3. The review before going online ran on 2026-11-16
-([report](docs/reports/review-before-phase-3.md)); its first finding became `mvp-store`, and two of its decisions are
-still the owner's.
+**Now:** the Phase 2 report. Round 12 (21 to 23 November 2026) ran end to end with the schedule installed, and the
+five small fixes it found are `mvp-fixes`, signed off on 2026-11-24 ([report](docs/reports/slice-mvp-fixes.md)). Then
+Phase 3. The review before going online ran on 2026-11-16 ([report](docs/reports/review-before-phase-3.md)); its first
+finding became `mvp-store`, and two of its decisions are still the owner's.
 
 | Phase | Builds | Status |
 |---|---|---|
 | 0 Foundation | Repository, gates, CI, hooks, storage, walking skeleton (retired 2026-10-31) | Done, signed off 2026-10-26 ([report](docs/reports/phase-0-report.md)) |
 | 1 `mvp-x-or-y` | "X or Y?" for two forwards in the owner's Claude Desktop: the facts, the method, `compare_players` | Done, signed off 2026-10-26 ([report](docs/reports/phase-1-report.md)) |
-| 2 Slices | `mvp-collect` and `mvp-roles` (2026-11-04), `mvp-lineup` (11-07), `mvp-rules` (11-09), `mvp-review` and `mvp-cards` (11-11), `mvp-recalibrate` (11-12), `mvp-sources` (11-15), `mvp-alerts` and `mvp-store` (11-18), in the order in [`product.md`](.kiro/steering/product.md#delivery-order) | Every slice signed off on the date shown; the phase report follows round 12 |
+| 2 Slices | `mvp-collect` and `mvp-roles` (2026-11-04), `mvp-lineup` (11-07), `mvp-rules` (11-09), `mvp-review` and `mvp-cards` (11-11), `mvp-recalibrate` (11-12), `mvp-sources` (11-15), `mvp-alerts` and `mvp-store` (11-18), `mvp-fixes` (11-24), in the order in [`product.md`](.kiro/steering/product.md#delivery-order) | Every slice signed off on the date shown; the phase report follows round 12 |
 | 3 Online | The MCP server online, so that a player installs nothing, with the AWS work moved from Phase 0 | Next |
 
 For now each player installs and runs Fantadamus on their own Mac; going online in Phase 3 removes the install.

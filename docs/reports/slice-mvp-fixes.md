@@ -1,7 +1,7 @@
 # Slice report: `mvp-fixes`
 
-2026-11-24 · Phase 2, the eleventh slice, after round 12 · **Waiting for the owner's sign-off**; the owner accepted
-mvp-lineup AT-18's new sentence on 2026-11-24 (decision 1)
+2026-11-24 · Phase 2, the eleventh slice, after round 12 · **Signed off by the owner on 2026-11-24**, with both
+decisions
 
 Round 12 was the first round run end to end on the owner's Mac with the schedule installed, and it found five small
 faults. This slice fixes them. A page that got no answer is tried again at the next run, instead of 12 to 24 hours
@@ -130,12 +130,15 @@ each try as polite as before.
 
 ## Decisions for the owner
 
+Both decided by the owner on 2026-11-24, as recommended.
+
 1. **Accept mvp-lineup's AT-18 new sentence?** Accepted by the owner on 2026-11-24. It expected the old note for
    exactly the case R4.1 changes; the share, the value and where the note appears are unchanged.
-2. **Sign off this slice?** Recommendation: yes. Every acceptance test passes, and the real lake shows only the
+2. **Sign off this slice?** Signed off on 2026-11-24. Every acceptance test passes, and the real lake shows only the
    changes the slice is for.
 
-After both: `git pull` in `~/Documents/fantadamus`, then quit Claude Desktop with ⌘Q and open it again.
+After both, `~/Documents/fantadamus` was brought up to `main` on 2026-11-24; Claude Desktop runs it once quit with ⌘Q
+and opened again.
 
 ## Next
 

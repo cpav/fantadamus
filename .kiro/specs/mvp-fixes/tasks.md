@@ -99,7 +99,7 @@ Status: **Approved by the owner, 2026-11-21** · From the approved [requirements
       `::test_a_line_from_before_reads`; **P4** `tests/property/fixes/test_record.py::test_p4_the_app_count_follows_the_latest_reviews`;
       **AT-7** `tests/acceptance/fixes/test_at7_app_total.py::test_at7_the_record_says_how_often_the_app_matched`_
 
-- [ ] 6. The docs, the real check and this slice's sign-off
+- [x] 6. The docs, the real check and this slice's sign-off
   - Branch: `docs/fx-6-gate` · Depends on: 2, 3, 4, 5 · ADRs: none
   - [x] 6.1 The player guide, the README and format 7.
     - _Requirements: R6.3_
@@ -115,6 +115,6 @@ Status: **Approved by the owner, 2026-11-21** · From the approved [requirements
     - _Test: **AT-9** `tests/acceptance/fixes/test_at9_no_new_dependency.py::test_at9_no_new_dependency`; the mutation score
       in `docs/reports/slice-mvp-fixes.md`, with the gaps it found: `tests/unit/fixes/test_due_rules.py` (each rule of
       the cadence at its edges) and `tests/unit/fixes/test_collect_log.py::test_last_failed` (a run at its own instant)_
-  - [ ] 6.4 **Owner:** sign the slice off.
+  - [x] 6.4 **Owner:** sign the slice off (2026-11-24).
     - _Requirements: all_
     - _Test: the slice report_
