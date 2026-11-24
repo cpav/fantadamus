@@ -37,20 +37,24 @@ Status: **Approved by the owner, 2026-11-24** · From the approved [requirements
     - 2026-11-24, the lake as it stood that day: 77 answers recorded with `main`'s code, then asked again with this
       task's: 77 identical. With the priced share set to 0.7 on purpose, 21 differ, so the check sees a change.
 
-- [ ] 2. Both shares fitted and checked
+- [x] 2. Both shares fitted and checked
   - Branch: `feat/cs-2-two-shares` · Depends on: 1 · ADRs: none
-  - [ ] 2.1 `cameo_share_priced`, and `cameo_rates` gives both shares; `CAMEO_RATED` is held and listed as waiting.
+  - [x] 2.1 `cameo_share_priced`, and `cameo_rates` gives both shares; `CAMEO_RATED` is held and listed as waiting.
     - _Requirements: R1.4, R2.1, R2.2_
     - _Test: **AT-3** `tests/acceptance/cameos/test_fit.py::test_at3_both_shares_by_hand`,
-      `::test_at3_cameo_rated_is_held`; `tests/property/cameos/test_fit.py::test_p4_the_share_comes_back`_
-  - [ ] 2.2 `rerated` by kind; two checks, each held out on its kind's rows and decided against its own minimum.
+      `::test_at3_a_share_the_evidence_cant_give`, `::test_at3_cameo_rated_is_held`;
+      `tests/property/cameos/test_fit.py::test_p4_the_share_comes_back`_
+  - [x] 2.2 `rerated` by kind; two checks, each held out on its kind's rows and decided against its own minimum.
     - _Requirements: R2.3, R2.4_
     - _Test: **AT-4** `tests/acceptance/cameos/test_checks.py::test_at4_held_out_by_round_and_half`,
       `::test_at4_below_its_minimum`; `tests/property/cameos/test_checks.py::test_p3_rerated_by_kind`_
-  - [ ] 2.3 `mvp-recalibrate`'s AT-3 and AT-6 cameo tests, and their unit and property tests, become tests of the two
+  - [x] 2.3 `mvp-recalibrate`'s AT-3 and AT-6 cameo tests, and their unit and property tests, become tests of the two
     shares, as the design lists.
     - _Requirements: R1.4_
-    - _Test: the changed tests in `tests/acceptance/recalibrate/test_rates.py` and `test_checks.py`_
+    - _Test: the changed tests in `tests/acceptance/recalibrate/test_rates.py` and `test_checks.py` (AT-3, AT-5,
+      AT-6), `tests/unit/recalibrate/test_rates.py`, `tests/property/recalibrate/test_rates.py` and
+      `test_checks.py`; and AT-8's `tests/acceptance/recalibrate/test_proposal.py::test_at8_the_proposal`,
+      `::test_at8_the_proposal_in_words`, found in this task and held for the owner's yes_
 
 - [ ] 3. The proposal and the owner's approval
   - Branch: `test/cs-3-proposal` · Depends on: 2 · ADRs: none

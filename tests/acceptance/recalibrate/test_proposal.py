@@ -112,7 +112,7 @@ def test_at8_the_proposal() -> None:
     assert proposal.read_at == READ[0].captured_at
     assert proposal.table_at == TABLE[0].captured_at
 
-    start, share = proposal.fitted  # no forward: CAMEO_RATED isn't counted, so it isn't fitted
+    start, share = proposal.fitted  # no forward: the priced share isn't counted, so it isn't fitted
     assert start.name == "START_MAP"
     assert start.old == IDENTITY  # today's, here the starting map: the module works on the starting values
     rows = [row for rows in sets.values() for row in rows]
@@ -140,13 +140,15 @@ def test_at8_the_proposal() -> None:
     assert season["PENALTY_RATE"].check.proposed
     assert season["PENALTY_SAVED_SHARE"].check.why == "below its minimum sample: 10 of 30"
     assert season['RED_RATE["D"]'].old == constants.RED_RATE["D"]
-    assert proposal.not_counted == ["CAMEO_RATED: no attacker who didn't start and could have come on"]
+    assert proposal.not_counted == [
+        "CAMEO_SHARE_PRICED: no player with a priced cameo who didn't start and could have come on"
+    ]
     assert proposal.waits == waiting(rows)
 
     bare = propose(sets, [], [], made_at=MADE)  # no statistics read, no table
     assert (bare.read_at, bare.season, bare.missing_rounds) == (None, [], [])
     assert bare.not_counted == [
-        "CAMEO_RATED: no attacker who didn't start and could have come on",
+        "CAMEO_SHARE_PRICED: no player with a priced cameo who didn't start and could have come on",
         "PENALTY_RATE: no team matches in the table",
         "PENALTY_CONVERSION: no penalty taken",
         "PENALTY_SAVED_SHARE: no penalty missed",
@@ -187,13 +189,18 @@ def test_at8_the_proposal_in_words() -> None:
         f"  today: 0.500; fitted: {rate.value:.3f} over 60, 90% between {rate.low:.3f} and {rate.high:.3f}"
         in lines
     )
-    assert "  evidence: 60 players who didn't start and could have come on (its minimum: 200)" in lines
+    assert (
+        "  evidence: 60 players with a flat cameo who didn't start and could have come on (its minimum: 200)"
+        in lines
+    )
     assert "The season's own rates: counts, not forecasts" in lines
     read = f"{READ[0].captured_at:%Y-%m-%d %H:%M}"
     assert f"Counted from the statistics read of {read} UTC and the table of {read} UTC." in lines
     assert "PENALTY_RATE: proposed: counted, not forecast: no held-out check" in lines
     assert "Not counted" in lines
-    assert "  CAMEO_RATED: no attacker who didn't start and could have come on" in lines
+    assert (
+        "  CAMEO_SHARE_PRICED: no player with a priced cameo who didn't start and could have come on" in lines
+    )
     assert "What waits" in lines
     for heading in (
         "Fitted on the rounds",

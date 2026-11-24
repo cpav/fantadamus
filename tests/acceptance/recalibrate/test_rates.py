@@ -65,9 +65,9 @@ def _row(
 
 def test_at3_cameos_by_hand() -> None:
     """CAMEO_SHARE from the defenders and midfielders with a flat cameo who didn't start and could have come
-    on: how often they got a rating. CAMEO_RATED from those whose cameo is priced, forwards and attacking
-    midfielders, given that share: such a cameo is rated if he scores, or this often if not, so 9 of 60 at a
-    share of 0.3 and a 10% chance of a goal is (0.15 / 0.3 - 0.1) / 0.9."""
+    on: how often they got a rating. Since mvp-cameos (R1.4), CAMEO_SHARE_PRICED from those whose cameo is
+    priced, forwards and attacking midfielders: such a cameo is rated if he scores, or CAMEO_RATED's 60% of
+    the time if not, so 9 of 60 with a 10% chance of a goal is a share of 0.15 / 0.64."""
     rows = [
         *(_row(index, "D" if index % 2 else "C", rated=index < 3) for index in range(10)),
         _row(20, "D", rated=True, started=True, p_start=0.9, p_rating=0.95),  # he started
@@ -81,30 +81,33 @@ def test_at3_cameos_by_hand() -> None:
         _row(200, "A", rated=True),  # no cameo chance of scoring priced: nothing held before kickoff
     ]
     fitted = cameo_rates(rows)
-    share, rated = fitted.rates
+    share, priced = fitted.rates
     _check(share, "CAMEO_SHARE", 0.3, 10, _wilson(3, 10))
-    solved = [(chance / 0.3 - 0.1) / 0.9 for chance in (0.15, *_wilson(9, 60))]
-    _check(rated, "CAMEO_RATED", 4 / 9, 60, (solved[1], solved[2]))
+    once_on = 0.1 + 0.9 * 0.6
+    low, high = _wilson(9, 60)
+    _check(priced, "CAMEO_SHARE_PRICED", 0.15 / once_on, 60, (low / once_on, high / once_on))
     assert fitted.missing == []
 
 
 def test_at3_cameos_without_evidence() -> None:
-    fitted = cameo_rates([_row(1, "A", rated=True, p_scores_cameo=0.1)])
+    fitted = cameo_rates([_row(1, "A", rated=True, p_scores_cameo=0.1)])  # one forward, rated: above 0.64
     assert fitted.rates == []
     assert fitted.missing == [
-        "CAMEO_SHARE: no defender or midfielder who didn't start and could have come on",
-        "CAMEO_RATED: needs CAMEO_SHARE",
+        "CAMEO_SHARE: no player with a flat cameo who didn't start and could have come on",
+        "CAMEO_SHARE_PRICED: more of them got a rating than any share allows",
     ]
     benched = [_row(1, "D", rated=True), _row(2, "C", rated=False)]
     no_forward = cameo_rates(benched)
     assert [rate.name for rate in no_forward.rates] == ["CAMEO_SHARE"]
-    assert no_forward.missing == ["CAMEO_RATED: no attacker who didn't start and could have come on"]
+    assert no_forward.missing == [
+        "CAMEO_SHARE_PRICED: no player with a priced cameo who didn't start and could have come on"
+    ]
     scorers = cameo_rates([*benched, _row(3, "A", rated=True, p_scores_cameo=1.0)])  # every cameo scores
-    assert [rate.name for rate in scorers.rates] == ["CAMEO_SHARE"]
-    assert scorers.missing == ["CAMEO_RATED: the evidence can't tell"]
-    unrated = [_row(1, "D", rated=False), _row(2, "C", rated=False)]  # a share of none
-    nothing = cameo_rates([*unrated, _row(3, "A", rated=True, p_scores_cameo=0.1)])
-    assert nothing.missing == ["CAMEO_RATED: the evidence can't tell"]
+    assert [rate.name for rate in scorers.rates] == ["CAMEO_SHARE", "CAMEO_SHARE_PRICED"]
+    assert scorers.missing == []
+    unrated = [_row(1, "D", rated=False), _row(2, "C", rated=False)]  # a share of none fits both kinds
+    nothing = cameo_rates([*unrated, _row(3, "A", rated=False, p_scores_cameo=0.1)])
+    assert [rate.value for rate in nothing.rates] == [0.0, 0.0]
 
 
 def _player(
@@ -209,21 +212,17 @@ def test_at4_a_read_with_little_in_it() -> None:
 
 
 def test_at3_one_share_doesnt_fit_both() -> None:
-    """Benched attackers who got a rating more often than the share allows, or less often than their chance of
-    scoring as a cameo alone would, can't be fitted with CAMEO_RATED: it's named, not pinned at a bound."""
+    """Benched attackers who got a rating more often than benched defenders and midfielders allowed
+    CAMEO_RATED no value. Since mvp-cameos (R1.4) each kind has its own share, and only a priced share above
+    1 is named, not pinned at a bound."""
     flat = [_row(index, "D", rated=index < 2) for index in range(10)]  # a share of 0.2
     often = [
         _row(100 + index, "A", rated=index < 6, p_scores_cameo=0.1) for index in range(10)
-    ]  # 0.6 of them
+    ]  # 0.6 of them: a share of 0.6 / 0.64
     fitted = cameo_rates([*flat, *often])
-    assert [rate.name for rate in fitted.rates] == ["CAMEO_SHARE"]
-    assert fitted.missing == [
-        "CAMEO_RATED: benched attackers got a rating more often than CAMEO_SHARE allows: "
-        "one share doesn't fit both kinds of cameo"
-    ]
-    half = [_row(index, "D", rated=index < 5) for index in range(10)]  # a share of 0.5
-    seldom = [_row(100 + index, "A", rated=index < 1, p_scores_cameo=0.8) for index in range(10)]  # 0.1 / 0.5
-    assert cameo_rates([*half, *seldom]).missing == [
-        "CAMEO_RATED: benched attackers got a rating less often than "
-        "their chance of scoring as a cameo allows"
+    assert [rate.name for rate in fitted.rates] == ["CAMEO_SHARE", "CAMEO_SHARE_PRICED"]
+    assert [rate.value for rate in fitted.rates] == pytest.approx([0.2, 0.6 / 0.64])
+    more = [_row(100 + index, "A", rated=index < 7, p_scores_cameo=0.1) for index in range(10)]  # 0.7
+    assert cameo_rates([*flat, *more]).missing == [
+        "CAMEO_SHARE_PRICED: more of them got a rating than any share allows"
     ]

@@ -108,8 +108,8 @@ def test_at6_held_out_by_matches() -> None:
         _row(11, 0, 900, rated=True),
         _row(11, 1, 901, p_rating=0.6, rated="no statistics read after the round"),
     ]
-    check = check_cameos({11: rows})
-    assert check.name == "CAMEO_SHARE and CAMEO_RATED"
+    check, _ = check_cameos({11: rows})  # since mvp-cameos, a check for each kind of cameo: these are flat
+    assert check.name == "CAMEO_SHARE"
     assert [fold.held_out for fold in check.folds] == [
         "half 1 of round 11's matches",
         "half 2 of round 11's matches",
@@ -120,7 +120,7 @@ def test_at6_held_out_by_matches() -> None:
         assert fold.after.brier == pytest.approx(_brier(0.36, 24, 120) / 120)
     assert (check.count, check.minimum) == (240, 200)
     assert check.proposed
-    assert check_cameos({11: rows}, minimum=240).proposed  # exactly enough is enough
+    assert check_cameos({11: rows}, minimum=240)[0].proposed  # exactly enough is enough
 
 
 def test_at6_no_help_no_proposal() -> None:
@@ -133,7 +133,7 @@ def test_at6_no_help_no_proposal() -> None:
     assert all(fold.after.brier > fold.before.brier for fold in check.folds)
 
     even = [_benched(index % 4, index, rated=(index // 4) % 2 == 0) for index in range(240)]  # half
-    cameos = check_cameos({11: even})
+    cameos, _ = check_cameos({11: even})
     assert [fold.after.brier for fold in cameos.folds] == [fold.before.brier for fold in cameos.folds]
     assert not cameos.proposed
 
@@ -146,7 +146,7 @@ def test_at5_below_its_minimum() -> None:
         "half 1 of round 10's matches",
         "half 2 of round 10's matches",
     ]
-    few = check_cameos({11: [_benched(index % 4, index, rated=index % 5 == 0) for index in range(100)]})
+    few, _ = check_cameos({11: [_benched(index % 4, index, rated=index % 5 == 0) for index in range(100)]})
     assert few.why == "below its minimum sample: 100 of 200"
     assert not few.proposed
     assert check_start_map({}).why == "below its minimum sample: 0 of 300"
@@ -182,7 +182,7 @@ def test_at5_below_its_minimum() -> None:
 FITTED_HERE = {
     "START_MAP",
     "CAMEO_SHARE",
-    "CAMEO_RATED",
+    "CAMEO_SHARE_PRICED",
     "PENALTY_RATE",
     "PENALTY_CONVERSION",
     "PENALTY_SAVED_SHARE",
@@ -241,7 +241,7 @@ def test_at5_what_waits() -> None:
         "VOTE_BASELINE": "rated players with the league's rating, and cards in each match",
         "P_START_STARTER": "each outlet's own views against who started, which the sets don't keep yet",
         "OWN_GOAL_RATE": "own goals, which the statistics page doesn't count",
-        "CAMEO_SHARE_PRICED": "its own fit, which mvp-cameos task 2 adds",
+        "CAMEO_RATED": "held at the method's 60% (mvp-cameos R1.4)",
         "START_MAP_WEIGHT": "how this slice's proposals hold up on the rounds after them",
     }
 
@@ -252,13 +252,14 @@ def test_at5_what_waits() -> None:
 
 
 def test_at6_a_chance_of_a_rating_rerated_by_hand() -> None:
-    """What the held-out check scores: each chance of a rating with the fitted cameo rates instead of today's
-    0.5 and 0.6. A forward at 20% to start, with a 10% chance of scoring as a cameo, had 0.2 + 0.5 x 0.8 x
-    (0.1 + 0.9 x 0.6); at 0.25 and 0.3 he has 0.2 + 0.25 x 0.8 x (0.1 + 0.9 x 0.3)."""
+    """What the held-out check scores: each chance of a rating with the fitted shares instead of today's 0.5
+    and 0.5 (mvp-cameos C4). A forward at 20% to start, with a 10% chance of scoring as a cameo, had 0.2 + 0.5
+    x 0.8 x (0.1 + 0.9 x 0.6); at a priced share of 0.3 he has 0.2 + 0.3 x 0.8 x 0.64. The flat share moves
+    only the flat cameos."""
     forward = _row(11, 0, 1, role="A", priced=True).model_copy(update={"p_scores_cameo": 0.1})
-    assert rerated(forward, 0.2 + 0.4 * 0.64, 0.25, 0.3) == pytest.approx(0.2 + 0.2 * 0.37)
+    assert rerated(forward, 0.2 + 0.4 * 0.64, 0.25, 0.3) == pytest.approx(0.2 + 0.3 * 0.8 * 0.64)
     defender = _row(11, 0, 2, p_scores_cameo=0.05)
-    assert rerated(defender, 0.6, 0.25, 0.3) == pytest.approx(0.2 + 0.25 * 0.8)  # flat: the share only
+    assert rerated(defender, 0.6, 0.25, 0.3) == pytest.approx(0.2 + 0.25 * 0.8)  # flat: the flat share only
     keeper = _row(11, 0, 3, role="P", p_start=0.9)
     assert rerated(keeper, 0.9, 0.25, 0.3) == 0.9  # no cameo, nothing to rescale
     assert rerated(defender, 0.9, 1.0, 0.3) == 1.0  # never past certain
@@ -271,17 +272,22 @@ def _attacker(match: int, player_id: int, *, rated: bool) -> SetRow:
 
 
 def test_at6_the_fitted_cameo_rating_is_what_is_checked() -> None:
-    """Half the benched defenders and a quarter of the benched forwards got a rating: the share stays 0.5, and
-    CAMEO_RATED is fitted at (0.25 / 0.5 - 0.1) / 0.9, which takes a forward's chance to 0.2 + 0.4 x 0.5."""
+    """Half the benched defenders and a quarter of the benched forwards got a rating. Since mvp-cameos (C4)
+    each share is checked on its own kind: the flat share stays 0.5, which changes nothing, and the priced
+    share is fitted at 0.25 / 0.64, which takes a forward's chance to 0.2 + 0.4 x 0.5."""
     rows = []
     for match in range(4):
         rows += [_benched(match, 1000 * match + index, rated=index % 2 == 0) for index in range(60)]
-        rows += [_attacker(match, 1000 * match + 100 + index, rated=index % 4 == 0) for index in range(40)]
-    check = check_cameos({11: rows})
-    for fold in check.folds:
-        assert fold.before.brier == pytest.approx((_brier(0.6, 60, 120) + _brier(0.456, 20, 80)) / 200)
-        assert fold.after.brier == pytest.approx((_brier(0.6, 60, 120) + _brier(0.4, 20, 80)) / 200)
-    assert check.proposed
+        rows += [_attacker(match, 1000 * match + 100 + index, rated=index % 4 == 0) for index in range(60)]
+    flat, priced = check_cameos({11: rows})
+    for fold in flat.folds:
+        assert fold.before.brier == pytest.approx(_brier(0.6, 60, 120) / 120)
+        assert fold.after.brier == pytest.approx(fold.before.brier)
+    for fold in priced.folds:
+        assert fold.before.brier == pytest.approx(_brier(0.456, 30, 120) / 120)
+        assert fold.after.brier == pytest.approx(_brier(0.4, 30, 120) / 120)
+    assert not flat.proposed
+    assert priced.proposed
 
 
 def test_at6_a_part_with_nothing_to_score_is_skipped() -> None:
@@ -300,11 +306,15 @@ def test_at6_a_part_with_nothing_to_score_is_skipped() -> None:
     ]  # half 1 knows none either
 
     defenders = [_benched(0, index, rated=index % 5 == 0) for index in range(40)]
+    more = [_benched(0, 200 + index, rated=index % 5 == 0) for index in range(40)]
     forwards = [_attacker(0, 100 + index, rated=index % 4 == 0) for index in range(40)]
-    cameos = check_cameos({10: defenders, 11: forwards}, minimum=0)  # without round 10, no share to fit
-    assert [fold.held_out for fold in cameos.folds] == ["round 11"]
+    flat, priced = check_cameos({10: defenders, 11: [*more, *forwards]}, minimum=0)
+    assert [fold.held_out for fold in flat.folds] == ["round 10", "round 11"]
+    assert priced.folds == []  # forwards in round 11 only: fitted there, nothing of theirs to score elsewhere
 
-    alone = check_cameos({11: defenders}, minimum=0)  # one match: half 1 holds all of it, fitted on nothing
+    alone, _ = check_cameos(
+        {11: defenders}, minimum=0
+    )  # one match: half 1 holds all of it, fitted on nothing
     assert alone.folds == []
     assert alone.why == "nothing to check it on where it wasn't fitted"
     assert not alone.proposed
@@ -315,7 +325,7 @@ def test_at6_folds_where_the_evidence_is() -> None:
     starting map, known in both rounds, holds out each round in turn."""
     cameos = [_benched(index % 4, 5000 + index, rated=index % 5 == 0) for index in range(240)]
     sets = {10: _players(10, STARTER, 200, 10), 11: [*_players(11, STARTER, 200, 10), *cameos]}
-    assert [fold.held_out for fold in check_cameos(sets).folds] == [
+    assert [fold.held_out for fold in check_cameos(sets)[0].folds] == [
         "half 1 of round 11's matches",
         "half 2 of round 11's matches",
     ]

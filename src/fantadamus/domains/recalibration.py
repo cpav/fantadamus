@@ -17,8 +17,8 @@ from fantadamus.domains.calibration import RATING, STARTING, Pair, Scored, SetRo
 from fantadamus.domains.facts import latest_by
 from fantadamus.domains.season.silver import PlayerSeasonRow, TeamSeasonRow
 from fantadamus.engine.constants import (
-    CAMEO_RATED,
     CAMEO_SHARE,
+    CAMEO_SHARE_PRICED,
     MINIMUM_SAMPLE,
     PENALTY_CONVERSION,
     PENALTY_RATE,
@@ -31,8 +31,8 @@ from fantadamus.engine.recalibrate import (
     IDENTITY,
     Rate,
     StartMap,
-    cameo_rated,
     cameo_share,
+    cameo_share_priced,
     counted,
     fit_start_map,
     mapped,
@@ -58,47 +58,42 @@ def _benched(rows: Iterable[SetRow]) -> list[SetRow]:
     ]
 
 
+def _flat(rows: Iterable[SetRow]) -> list[SetRow]:
+    """The benched defenders and midfielders whose cameo is flat (mvp-cameos C3)."""
+    return [row for row in _benched(rows) if row.priced_cameo is False and row.role in ("D", "C")]
+
+
+def _priced(rows: Iterable[SetRow]) -> list[SetRow]:
+    """The benched forwards and attacking midfielders whose cameo is priced, with a chance of scoring once on
+    held before kickoff (mvp-cameos C3)."""
+    return [row for row in _benched(rows) if row.priced_cameo is True and row.p_scores_cameo is not None]
+
+
 def cameo_rates(rows: Sequence[SetRow]) -> Fitted:
-    """`CAMEO_SHARE` from the defenders and midfielders whose cameo is flat, then `CAMEO_RATED` with it from
-    those whose cameo is priced: forwards and attacking midfielders (C4)."""
-    benched = _benched(rows)
-    share = cameo_share(
-        [row.outcome.rated is True for row in benched if row.priced_cameo is False and row.role in ("D", "C")]
-    )
+    """`CAMEO_SHARE` from the defenders and midfielders whose cameo is flat, and `CAMEO_SHARE_PRICED` from the
+    forwards and attacking midfielders whose cameo is priced (mvp-cameos C3). `CAMEO_RATED` stays the
+    method's: rated games can't tell it from the priced share."""
+    rates, missing = [], []
+    share = cameo_share([row.outcome.rated is True for row in _flat(rows)])
     if share is None:
-        return Fitted(
-            rates=[],
-            missing=[
-                "CAMEO_SHARE: no defender or midfielder who didn't start and could have come on",
-                "CAMEO_RATED: needs CAMEO_SHARE",
-            ],
-        )
-    attackers = [
+        missing.append("CAMEO_SHARE: no player with a flat cameo who didn't start and could have come on")
+    else:
+        rates.append(share)
+    forwards = [
         (row.p_scores_cameo, row.outcome.rated is True)
-        for row in benched
+        for row in _benched(rows)
         if row.priced_cameo is True and row.p_scores_cameo is not None
     ]
-    rated = cameo_rated(attackers, share.value)
-    if rated is None:
-        return Fitted(rates=[share], missing=[f"CAMEO_RATED: {_unfitted(attackers, share.value)}"])
-    return Fitted(rates=[share, rated], missing=[])
-
-
-def _unfitted(attackers: Sequence[tuple[float, bool]], share: float) -> str:
-    """Why `CAMEO_RATED` can't be fitted: no evidence, evidence that can't tell, or more or fewer ratings than
-    one share allows."""
-    if not attackers:
-        return "no attacker who didn't start and could have come on"
-    rated = sum(happened for _, happened in attackers) / len(attackers)
-    scoring = math.fsum(chance for chance, _ in attackers) / len(attackers)
-    if share <= 0 or scoring >= 1:
-        return "the evidence can't tell"
-    if rated > share:
-        return (
-            "benched attackers got a rating more often than CAMEO_SHARE allows: "
-            "one share doesn't fit both kinds of cameo"
+    priced = cameo_share_priced(forwards)
+    if priced is not None:
+        rates.append(priced)
+    elif forwards:
+        missing.append("CAMEO_SHARE_PRICED: more of them got a rating than any share allows")
+    else:
+        missing.append(
+            "CAMEO_SHARE_PRICED: no player with a priced cameo who didn't start and could have come on"
         )
-    return "benched attackers got a rating less often than their chance of scoring as a cameo allows"
+    return Fitted(rates=rates, missing=missing)
 
 
 SAME_RUN = dt.timedelta(hours=1)
@@ -251,13 +246,12 @@ def check_start_map(
     return _decided("START_MAP", count, minimum, folds)
 
 
-def rerated(row: SetRow, rating: float, share: float, rated: float) -> float:
-    """His chance of a rating with these cameo rates instead of today's: his cameo's part of it scales with
-    the share and, if his cameo is priced, with how often one without a goal gets a rating."""
-    factor = share / CAMEO_SHARE
-    if row.priced_cameo is True and row.p_scores_cameo is not None:
-        goal = row.p_scores_cameo
-        factor *= (goal + (1 - goal) * rated) / (goal + (1 - goal) * CAMEO_RATED)
+def rerated(row: SetRow, rating: float, flat: float, priced: float) -> float:
+    """His chance of a rating with these shares instead of today's: his cameo's part of it scales with his
+    kind's share (mvp-cameos C4). A row written before the kinds were kept moves with neither."""
+    if row.priced_cameo is None:
+        return rating
+    factor = priced / CAMEO_SHARE_PRICED if row.priced_cameo else flat / CAMEO_SHARE
     return min(max(rating + (rating - row.p_start) * (factor - 1), 0.0), 1.0)
 
 
@@ -270,28 +264,34 @@ def _ratings(rows: Iterable[SetRow]) -> list[tuple[SetRow, float, bool]]:
     ]
 
 
-def check_cameos(sets: Mapping[int, Sequence[SetRow]], *, minimum: int = MINIMUM_SAMPLE["cameos"]) -> Check:
-    """The cameo rates (C4), fitted without each round or half, and every known chance of a rating there
-    scored with them against today's."""
-    folds = []
+def check_cameos(
+    sets: Mapping[int, Sequence[SetRow]], *, minimum: int = MINIMUM_SAMPLE["cameos"]
+) -> list[Check]:
+    """Each share (mvp-cameos C4), fitted without each round or half, and the known chances of a rating of
+    its own kind there scored with it against today's, each decided against its own minimum."""
     known = {round: rows for round, rows in sets.items() if _ratings(rows)}
-    for label, fitted_on, scored_on in held_out(known):
-        fitted = {rate.name: rate.value for rate in cameo_rates(fitted_on).rates}
-        test = _ratings(scored_on)
-        if "CAMEO_SHARE" not in fitted or not test:
-            continue
-        share, rated = fitted["CAMEO_SHARE"], fitted.get("CAMEO_RATED", CAMEO_RATED)
-        folds.append(
-            Fold(
-                held_out=label,
-                before=scored_chance(RATING, [(rating, happened) for _, rating, happened in test]),
-                after=scored_chance(
-                    RATING, [(rerated(row, rating, share, rated), happened) for row, rating, happened in test]
-                ),
+    everyone = [row for rows in sets.values() for row in rows]
+    checks = []
+    for name, priced, kind in (("CAMEO_SHARE", False, _flat), ("CAMEO_SHARE_PRICED", True, _priced)):
+        folds = []
+        for label, fitted_on, scored_on in held_out(known):
+            fitted = {rate.name: rate.value for rate in cameo_rates(fitted_on).rates}
+            test = [found for found in _ratings(scored_on) if found[0].priced_cameo is priced]
+            if name not in fitted or not test:
+                continue
+            flat, share = (CAMEO_SHARE, fitted[name]) if priced else (fitted[name], CAMEO_SHARE_PRICED)
+            folds.append(
+                Fold(
+                    held_out=label,
+                    before=scored_chance(RATING, [(rating, happened) for _, rating, happened in test]),
+                    after=scored_chance(
+                        RATING,
+                        [(rerated(row, rating, flat, share), happened) for row, rating, happened in test],
+                    ),
+                )
             )
-        )
-    count = len(_benched(row for rows in sets.values() for row in rows))
-    return _decided("CAMEO_SHARE and CAMEO_RATED", count, minimum, folds)
+        checks.append(_decided(name, len(kind(everyone)), minimum, folds))
+    return checks
 
 
 def season_checks(fitted: Fitted) -> list[Check]:
@@ -380,7 +380,7 @@ def waiting(rows: Sequence[SetRow]) -> list[Wait]:
             needs="each outlet's own views against who started, which the sets don't keep yet",
         ),
         Wait(names=["OWN_GOAL_RATE"], needs="own goals, which the statistics page doesn't count"),
-        Wait(names=["CAMEO_SHARE_PRICED"], needs="its own fit, which mvp-cameos task 2 adds"),
+        Wait(names=["CAMEO_RATED"], needs="held at the method's 60% (mvp-cameos R1.4)"),
         Wait(
             names=["START_MAP_WEIGHT", "MINIMUM_SAMPLE"],
             needs="how this slice's proposals hold up on the rounds after them",
@@ -392,7 +392,7 @@ Value = float | StartMap
 """A constant's value: a rate, or the starting map's knots."""
 _TODAY: dict[str, float] = {
     "CAMEO_SHARE": CAMEO_SHARE,
-    "CAMEO_RATED": CAMEO_RATED,
+    "CAMEO_SHARE_PRICED": CAMEO_SHARE_PRICED,
     "PENALTY_RATE": PENALTY_RATE,
     "PENALTY_CONVERSION": PENALTY_CONVERSION,
     "PENALTY_SAVED_SHARE": PENALTY_SAVED_SHARE,
@@ -401,7 +401,8 @@ _TODAY: dict[str, float] = {
 }
 _EVIDENCE = {
     "START_MAP": "players whose start is known",
-    "CAMEO_SHARE and CAMEO_RATED": "players who didn't start and could have come on",
+    "CAMEO_SHARE": "players with a flat cameo who didn't start and could have come on",
+    "CAMEO_SHARE_PRICED": "players with a priced cameo who didn't start and could have come on",
     "PENALTY_RATE": "penalties taken",
     "PENALTY_CONVERSION": "penalties taken",
     "PENALTY_SAVED_SHARE": "penalties missed",
@@ -447,7 +448,7 @@ def propose(
 ) -> Proposal:
     """The proposal from the stored sets, one statistics read and the table."""
     rows = [row for round in sorted(sets) for row in sets[round]]
-    cameos, cameo_check = cameo_rates(rows), check_cameos(sets)
+    cameos, cameo_checks = cameo_rates(rows), {check.name: check for check in check_cameos(sets)}
     season = season_rates(players, teams)
     checks = {check.name: check for check in season_checks(season)}
     start = Proposed(
@@ -462,7 +463,13 @@ def propose(
         fitted=[
             start,
             *(
-                Proposed(name=rate.name, old=_TODAY[rate.name], new=rate.value, rate=rate, check=cameo_check)
+                Proposed(
+                    name=rate.name,
+                    old=_TODAY[rate.name],
+                    new=rate.value,
+                    rate=rate,
+                    check=cameo_checks[rate.name],
+                )
                 for rate in cameos.rates
             ),
         ],

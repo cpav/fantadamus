@@ -8,7 +8,8 @@ import math
 from hypothesis import given
 from hypothesis import strategies as st
 
-from fantadamus.engine.recalibrate import Rate, cameo_rated, cameo_share, counted
+from fantadamus.engine.constants import CAMEO_RATED
+from fantadamus.engine.recalibrate import Rate, cameo_share, cameo_share_priced, counted
 
 
 def _bounded(rate: Rate) -> bool:
@@ -32,15 +33,16 @@ def test_p5_the_cameo_share_within_bounds(rated: list[bool]) -> None:
 
 @given(
     forwards=st.lists(
-        st.tuples(st.floats(min_value=0.0, max_value=0.99), st.booleans()), min_size=1, max_size=300
+        st.tuples(st.floats(min_value=0.0, max_value=1.0), st.booleans()), min_size=1, max_size=300
     ),
-    share=st.floats(min_value=0.01, max_value=1.0),
 )
-def test_p5_the_cameo_rating_within_bounds(forwards: list[tuple[float, bool]], share: float) -> None:
-    rated = cameo_rated(forwards, share)
+def test_p5_the_cameo_rating_within_bounds(forwards: list[tuple[float, bool]]) -> None:
+    """The priced share, which took `CAMEO_RATED`'s place (mvp-cameos R1.4): within its interval and [0, 1],
+    and no share where more of them got a rating than one who comes on is ever rated."""
+    priced = cameo_share_priced(forwards)
     scoring = math.fsum(chance for chance, _ in forwards) / len(forwards)
-    solved = (sum(happened for _, happened in forwards) / len(forwards) / share - scoring) / (1 - scoring)
-    assert (rated is None) == (not 0 <= solved <= 1)  # a value it can't fit is no value, not a bound
-    if rated is not None:
-        assert _bounded(rated)
-        assert rated.count == len(forwards)
+    seen = sum(happened for _, happened in forwards) / len(forwards)
+    assert (priced is None) == (seen > scoring + (1 - scoring) * CAMEO_RATED)  # no value pinned at a bound
+    if priced is not None:
+        assert _bounded(priced)
+        assert priced.count == len(forwards)

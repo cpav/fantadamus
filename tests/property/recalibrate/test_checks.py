@@ -55,4 +55,5 @@ def _honest(check: Check) -> None:
 @given(sets=_sets(), minimum=st.integers(min_value=0, max_value=60))
 def test_p3_never_proposed_without_help(sets: dict[int, list[SetRow]], minimum: int) -> None:
     _honest(check_start_map(sets, minimum=minimum))
-    _honest(check_cameos(sets, minimum=minimum))
+    for check in check_cameos(sets, minimum=minimum):  # one for each kind of cameo, since mvp-cameos
+        _honest(check)
