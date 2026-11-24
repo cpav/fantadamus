@@ -96,6 +96,12 @@ class RecordLine(BaseModel):
     counted: int
     margin: float | None
     verdict: Literal["too early", "mostly luck", "paid off", "cost"]
+    app_rounds: int = 0
+    """Rounds where the user's app total was compared with the real score (mvp-fixes R5.2)."""
+    app_matched: int = 0
+    """Of those, the rounds where it matched."""
+    app_note: str | None = None
+    """"Your app's total matched in 4 of 5 rounds.", once a round has one."""
 
 
 class Review(BaseModel):
@@ -239,6 +245,8 @@ def review_for(
         as_of=lock,
         logged_at=advisor.clock(),
         content_hashes=sorted({*at_lock.content_hashes, *(read.content_sha256 for read in reads)}),
+        app_total=app_total,
+        app_differs=differs_from_app(app_total, reviewed.fielded_real.total),
     )
     if as_of is None:
         reviews.append(line)
@@ -466,7 +474,7 @@ def _review(
         fantasy_goals=reviewed.fielded_real.fantasy_goals,
         position=reviewed.position,
         app_total=app_total,
-        app_differs=abs(app_total - real) > APP_GAP if app_total is not None and real is not None else None,
+        app_differs=differs_from_app(app_total, real),
         advice_expected=round_to(reviewed.advice.mean),
         advice_real=reviewed.advice_real.total,
         total_cost=round_to(reviewed.total_cost),
@@ -492,10 +500,27 @@ def _review(
             counted=found.counted,
             margin=round_to(found.margin) if found.margin is not None else None,
             verdict=found.verdict,
+            app_rounds=found.app_rounds,
+            app_matched=found.app_matched,
+            app_note=app_note(found.app_rounds, found.app_matched),
         ),
         not_counted=not_counted,
         sources=sources,
     )
+
+
+def differs_from_app(app_total: float | None, real: float | None) -> bool | None:
+    """Whether the user's app total is more than `APP_GAP` from the real score; None unless both are known."""
+    if app_total is None or real is None:
+        return None
+    return abs(app_total - real) > APP_GAP
+
+
+def app_note(rounds: int, matched: int) -> str | None:
+    """How often the user's app agreed, from the first round with an app total (mvp-fixes R5.2)."""
+    if rounds == 0:
+        return None
+    return f"Your app's total matched in {matched} of {rounds} round{'s' if rounds > 1 else ''}."
 
 
 def _not_counted(*scores: RealScore) -> list[str]:

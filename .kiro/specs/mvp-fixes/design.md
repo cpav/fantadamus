@@ -112,8 +112,10 @@ The other four change words and sources in answers, and one log line. No chance,
 - `logged(…)` takes both from the tool, which already works out `app_differs` against `APP_GAP` for its answer.
 - `Record` gains `app_rounds` (latest reviews of a round with an app total) and `app_matched` (of those, not differing).
   The answer's record gives "your app's total matched in n of m rounds" from the first round with one (decision 3).
+  The tool writes that line itself, as the record's `app_note`: the agent prompt is at its budget.
 - A total given in a second call, as on 18 November, is a new review of the round, and the latest takes over, as
-  today.
+  today. Each round counts by its latest review *with* an app total, compared with a known real score, so asking for
+  the review again without the total doesn't drop the round (decided while building task 5).
 
 ### C9. The docs (R6.3)
 
@@ -145,8 +147,8 @@ Each is a Hypothesis test (`quality.md`: required).
 - **P3 (R3).** For any player's facts, with any of them present or missing, `PlayerFacts.sources()` holds the source of
   every fact present.
 - **P4 (R5).** For any logged reviews, with or without an app total and with rounds reviewed more than once, the
-  record's `app_rounds` and `app_matched` count the latest review of each round, and a line without the new fields
-  reads.
+  record's `app_rounds` and `app_matched` count each round's latest review that compared an app total, in any order;
+  a later review without one doesn't change them; and a line without the new fields reads.
 
 ## Testing strategy
 

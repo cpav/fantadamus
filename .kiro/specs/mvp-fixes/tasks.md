@@ -90,10 +90,10 @@ Status: **Approved by the owner, 2026-11-21** · From the approved [requirements
       `::test_two_ahead_out`, `::test_someone_ahead_may_start`;
       **AT-6** `tests/acceptance/fixes/test_at6_penalty_note.py::test_at6_the_note_says_who_is_out`_
 
-- [ ] 5. The review keeps the app's total
+- [x] 5. The review keeps the app's total
   - Branch: `feat/fx-5-app-total` · Depends on: 1 · ADRs: none
-  - [ ] 5.1 `LoggedReview` gains `app_total` and `app_differs`; `logged` takes them; `Record` counts `app_rounds` and
-    `app_matched`; format 7's line.
+  - [x] 5.1 `LoggedReview` gains `app_total` and `app_differs`; `logged` takes them; `Record` counts `app_rounds` and
+    `app_matched`; format 7's line, as the record's `app_note`.
     - _Requirements: R5.1, R5.2, R5.3_
     - _Test: `tests/unit/fixes/test_review_log.py::test_the_app_total_is_kept`,
       `::test_a_line_from_before_reads`; **P4** `tests/property/fixes/test_record.py::test_p4_the_app_count_follows_the_latest_reviews`;

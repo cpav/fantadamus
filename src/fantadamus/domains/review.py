@@ -700,6 +700,11 @@ class LoggedReview(BaseModel):
     choices: list[LoggedChoice]
     content_hashes: list[str]
     """The snapshots it used."""
+    app_total: float | None = None
+    """The user's own total from their league's app, when they gave it (mvp-fixes R5.1). A line logged
+    before has none (R5.3)."""
+    app_differs: bool | None = None
+    """Whether it differed from the real score by more than the review's gap; None unless both are known."""
 
 
 def logged(
@@ -711,6 +716,8 @@ def logged(
     as_of: dt.datetime,
     logged_at: dt.datetime,
     content_hashes: Sequence[str],
+    app_total: float | None = None,
+    app_differs: bool | None = None,
 ) -> LoggedReview:
     return LoggedReview(
         user=user,
@@ -738,6 +745,8 @@ def logged(
             for choice in reviewed.choices
         ],
         content_hashes=list(content_hashes),
+        app_total=app_total,
+        app_differs=app_differs,
     )
 
 
@@ -763,20 +772,32 @@ class Record:
     margin: float | None
     """About two standard errors of that total: within it, it's still mostly luck."""
     verdict: Verdict
+    app_rounds: int = 0
+    """Rounds where the user's app total was compared with the real score (mvp-fixes R5.2)."""
+    app_matched: int = 0
+    """Of those, the rounds where it matched."""
 
 
-def record(reviews: Iterable[LoggedReview], *, user: str, team: str) -> Record:
-    """The record for one user's team: the latest review of each round, whatever order they come in."""
+def _latest(reviews: Iterable[LoggedReview]) -> dict[int, LoggedReview]:
+    """The latest review of each round, whatever order they come in."""
     latest: dict[int, LoggedReview] = {}
     for review in reviews:
-        if review.user != user or name_key(review.team) != name_key(team):
-            continue
         seen = latest.get(review.round)
         if seen is None or (review.logged_at, review.model_dump_json()) > (
             seen.logged_at,
             seen.model_dump_json(),
         ):
             latest[review.round] = review
+    return latest
+
+
+def record(reviews: Iterable[LoggedReview], *, user: str, team: str) -> Record:
+    """The record for one user's team: the latest review of each round, whatever order they come in. The app's
+    count takes each round's latest review that compared an app total, so asking again without it doesn't drop
+    the round."""
+    mine = [review for review in reviews if review.user == user and name_key(review.team) == name_key(team)]
+    latest = _latest(mine)
+    compared = _latest(review for review in mine if review.app_differs is not None)
     overrides = [review for review in latest.values() if review.choices]
     gains = sorted(review.total_gain for review in overrides if review.total_gain is not None)
     total = math.fsum(gains)
@@ -792,6 +813,8 @@ def record(reviews: Iterable[LoggedReview], *, user: str, team: str) -> Record:
         counted=len(gains),
         margin=margin,
         verdict=verdict,
+        app_rounds=len(compared),
+        app_matched=sum(1 for review in compared.values() if not review.app_differs),
     )
 
 
