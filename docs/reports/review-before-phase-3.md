@@ -433,6 +433,10 @@ Restart the Claude app to get them, and the alerts' code with them.
 
 ## Decisions for the owner
 
+The first was decided on 2026-11-16 and became `mvp-store`. The second and third were decided on 2026-11-24, as
+recommended, with the Phase 2 report: the gate changes are Phase 3's first step (`product.md`), and the platform is in
+`tech.md`.
+
 1. **Do R1 and R2 now, as a small slice of their own, before the schedule is installed; then R3 to R7 as the
    first step of Phase 3.** Recommended: yes. Without R1 the schedule slows itself down within two rounds.
 2. **Two changes to the gates:** disk-bound property tests run 100 examples in the pull-request gate and 500 at

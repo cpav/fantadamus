@@ -60,9 +60,10 @@ The answers' shapes are in [docs/answer-formats.md](docs/answer-formats.md). A s
 
 **Now:** Phase 3, online and easy to install. Phase 2 was signed off on 2026-11-24
 ([report](docs/reports/phase-2-report.md)), after round 12 (21 to 23 November 2026) ran end to end with the schedule
-installed and `mvp-fixes` fixed the five faults it found. Three decisions in the report are the owner's before Phase 3's
-first spec: the gate's speed and Phase 3's platform, both from the review before going online
-([report](docs/reports/review-before-phase-3.md)), and a share for each kind of cameo.
+installed and `mvp-fixes` fixed the five faults it found. The owner took the report's three decisions the same day: first
+`mvp-cameos`, a share for each kind of cameo; then Phase 3, which starts by making the gate faster and runs on the
+platform [`tech.md`](.kiro/steering/tech.md) now names, both from the
+[review before going online](docs/reports/review-before-phase-3.md).
 
 | Phase | Builds | Status |
 |---|---|---|
