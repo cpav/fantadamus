@@ -60,8 +60,9 @@ from fantadamus.domains.season.gold import (
     team_season,
 )
 from fantadamus.domains.season.silver import PLAYER_SEASONS, SEASON_STATS, PlayerSeasonRow
+from fantadamus.engine import constants
 from fantadamus.engine.keepers import KeeperValue
-from fantadamus.engine.outfield import OutfieldValue, priors
+from fantadamus.engine.outfield import OutfieldValue, cameo_share, priors
 from fantadamus.lake.calibration_store import CalibrationStore
 from fantadamus.lake.collect_log import WORKED, CollectLog
 from fantadamus.lake.decision_log import DecisionLog
@@ -371,7 +372,7 @@ def _score_match(
     league = league_goals_per_match(facts.teams, as_of)
     names: dict[tuple[str, str], KnownPlayer | None] = {}
 
-    def chances(player: KnownPlayer, when: dt.datetime) -> Availability | None:
+    def chances(player: KnownPlayer, when: dt.datetime, share: float | None = None) -> Availability | None:
         return availability(
             player,
             home=match.home,
@@ -382,6 +383,7 @@ def _score_match(
             as_of=when,
             outlet_views=on_page,
             names=names,
+            share=constants.CAMEO_SHARE if share is None else share,
         )
 
     def starts(mate: KnownPlayer) -> float:
@@ -398,12 +400,13 @@ def _score_match(
         if player.player_id in seen:
             continue
         seen.add(player.player_id)
-        present = chances(player, as_of)
-        outcome = outcome_of(player.player_id, sheets.get(club), before, after)
         form, table = forms.get(player.player_id), team_season(facts.teams, club, as_of)
+        kind = cameo_share(form.role, form.mantra_role) if form is not None else None
+        present = chances(player, as_of, kind)
+        outcome = outcome_of(player.player_id, sheets.get(club), before, after)
         order = penalty_order(facts.takers, club, as_of)
         if present is None or form is None or table is None or order is None:
-            page = present or chances(player, now)
+            page = present or chances(player, now, kind)
             if page is not None:
                 tally.add(STARTING, page.p_start, outcome.started)
                 rated = ratings.get(player.player_id, (None, None))

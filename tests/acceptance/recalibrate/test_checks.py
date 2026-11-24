@@ -241,6 +241,7 @@ def test_at5_what_waits() -> None:
         "VOTE_BASELINE": "rated players with the league's rating, and cards in each match",
         "P_START_STARTER": "each outlet's own views against who started, which the sets don't keep yet",
         "OWN_GOAL_RATE": "own goals, which the statistics page doesn't count",
+        "CAMEO_SHARE_PRICED": "its own fit, which mvp-cameos task 2 adds",
         "START_MAP_WEIGHT": "how this slice's proposals hold up on the rounds after them",
     }
 

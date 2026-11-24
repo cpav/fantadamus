@@ -30,7 +30,6 @@ from fantadamus.domains.players.resolve import KnownPlayer, resolve
 from fantadamus.domains.season.gold import known_players, league_goals_per_match
 from fantadamus.domains.sources import Confidence, describe, of_outlets
 from fantadamus.engine.constants import (
-    CAMEO_SHARE,
     DOUBTFUL_BELOW,
     P_START_BENCH,
     P_START_STARTER,
@@ -38,7 +37,7 @@ from fantadamus.engine.constants import (
 )
 from fantadamus.engine.keepers import KeeperInputs, KeeperValue
 from fantadamus.engine.lineup import ROLE_WORDS, ROLES, Arrangement, Candidate, CannotFieldError, arrange
-from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue
+from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue, cameo_share
 from fantadamus.engine.rank import Label, Option, Scoring, label, verdict
 from fantadamus.engine.simulate import (
     Reached,
@@ -249,7 +248,7 @@ def _assumed(facts: PlayerFacts) -> Availability:
     return Availability(
         p_start=p_start,
         raw_p_start=p_start,
-        p_cameo=CAMEO_SHARE * (1 - p_start),
+        p_cameo=cameo_share(facts.form.role, facts.form.mantra_role) * (1 - p_start),
         spread=0.0,
         disputed=False,
         outlets=[],

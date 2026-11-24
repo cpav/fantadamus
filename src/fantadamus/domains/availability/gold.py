@@ -22,7 +22,7 @@ from fantadamus.domains.availability.consensus import (
 from fantadamus.domains.availability.silver import LineupViewRow, OfficialLineupRow, OutletViewRow
 from fantadamus.domains.facts import latest_submissions
 from fantadamus.domains.players.resolve import KnownPlayer, resolve, same_surname
-from fantadamus.engine.constants import CONTESTED_PERCENT
+from fantadamus.engine.constants import CAMEO_SHARE, CONTESTED_PERCENT
 
 _STRONGEST: tuple[Status, ...] = ("unavailable", "ballottaggio", "starter", "bench")
 
@@ -95,6 +95,7 @@ def availability(
     as_of: dt.datetime,
     outlet_views: Sequence[OutletViewRow] = (),
     names: dict[tuple[str, str], KnownPlayer | None] | None = None,
+    share: float = CAMEO_SHARE,
 ) -> Availability | None:
     """His p_start and p_cameo for the match, or None if no lineup for it is known yet. Each outlet counts
     once, from its newest read, whether it gave a lineup or its own percentages (mvp-collect R4.2). A caller
@@ -153,4 +154,4 @@ def availability(
 
     if not outlets and official is None:
         return None
-    return combine(outlets, official).model_copy(update={"by_surname": sorted(by_surname)})
+    return combine(outlets, official, share=share).model_copy(update={"by_surname": sorted(by_surname)})

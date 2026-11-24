@@ -75,7 +75,7 @@ from fantadamus.domains.season.silver import (
     read_player_seasons,
 )
 from fantadamus.domains.sources import Confidence, describe, disagreement, of_odds, of_outlets, weaker
-from fantadamus.engine import keepers, outfield
+from fantadamus.engine import constants, keepers, outfield
 from fantadamus.engine.keepers import KeeperInputs, KeeperValue
 from fantadamus.engine.lineup import ROLE_WORDS
 from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue
@@ -823,8 +823,11 @@ class Advisor:
                     self.refresh_item("penalty_takers", "stale" if stale else "missing", "the penalty takers")
                 )
             match = fixture(fixtures, player.club, round, as_of) if round is not None else None
+            kind = outfield.cameo_share(form.role, form.mantra_role) if form is not None else None
             present, xg = (
-                self._match_facts(player, match, facts, known, teams, as_of, odds_unavailable, need, recent)
+                self._match_facts(
+                    player, match, facts, known, teams, as_of, odds_unavailable, need, recent, share=kind
+                )
                 if match
                 else (None, None)
             )
@@ -944,6 +947,8 @@ class Advisor:
         odds_unavailable: bool,
         need: Callable[[RefreshItem, dt.datetime], None],
         recent: _Recent,
+        *,
+        share: float | None = None,
     ) -> tuple[Availability | None, TeamXg | None]:
         """His availability and team xG for the match, asking for whatever is missing or stale. Without odds,
         team form gives the xG, for whoever goes ahead without them; "X or Y?" asks for the odds unless told
@@ -961,6 +966,7 @@ class Advisor:
                 officials=facts.officials,
                 players=known,
                 as_of=as_of,
+                share=constants.CAMEO_SHARE if share is None else share,
             )
 
         present = available(
