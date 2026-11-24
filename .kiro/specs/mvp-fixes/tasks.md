@@ -99,20 +99,22 @@ Status: **Approved by the owner, 2026-11-21** · From the approved [requirements
       `::test_a_line_from_before_reads`; **P4** `tests/property/fixes/test_record.py::test_p4_the_app_count_follows_the_latest_reviews`;
       **AT-7** `tests/acceptance/fixes/test_at7_app_total.py::test_at7_the_record_says_how_often_the_app_matched`_
 
-- [ ] 6. The docs, the real check and this slice's sign-off
+- [x] 6. The docs, the real check and this slice's sign-off
   - Branch: `docs/fx-6-gate` · Depends on: 2, 3, 4, 5 · ADRs: none
-  - [ ] 6.1 The player guide, the README and format 7.
+  - [x] 6.1 The player guide, the README and format 7.
     - _Requirements: R6.3_
     - _Test: `tests/unit/fixes/test_docs.py::test_the_guide_says_a_failed_page_is_tried_again`,
-      `::test_the_readme_says_collect_takes_any_fact`_
-  - [ ] 6.2 From here, on a copy of the owner's lake: every answer compared field by field before and after; only
+      `::test_the_readme_says_collect_takes_any_fact`, `::test_format_7_says_how_often_the_app_matched`_
+  - [x] 6.2 From here, on a copy of the owner's lake: every answer compared field by field before and after; only
     sources and penalty notes differ, listed by kind.
     - _Requirements: R1.6, R3, R4_
-    - _Test: **AT-8** `python -m tests.real_lake --compare --fields`, its counts in the slice report_
-  - [ ] 6.3 `make mutate ONLY=…` on the collection log and the cadence; no new dependency; the slice report.
+    - _Test: **AT-8** `python -m tests.real_lake --compare --fields`, its counts in the slice report;
+      `tests/unit/fixes/test_real_lake.py::test_changes_are_listed_by_kind`, `::test_only_kinds_and_counts_are_printed`_
+  - [x] 6.3 `make mutate ONLY=…` on the collection log and the cadence; no new dependency; the slice report.
     - _Requirements: R6.2_
     - _Test: **AT-9** `tests/acceptance/fixes/test_at9_no_new_dependency.py::test_at9_no_new_dependency`; the mutation score
-      in `docs/reports/slice-mvp-fixes.md`_
-  - [ ] 6.4 **Owner:** sign the slice off.
+      in `docs/reports/slice-mvp-fixes.md`, with the gaps it found: `tests/unit/fixes/test_due_rules.py` (each rule of
+      the cadence at its edges) and `tests/unit/fixes/test_collect_log.py::test_last_failed` (a run at its own instant)_
+  - [x] 6.4 **Owner:** sign the slice off (2026-11-24).
     - _Requirements: all_
     - _Test: the slice report_

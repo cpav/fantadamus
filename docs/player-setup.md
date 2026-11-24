@@ -146,7 +146,8 @@ penalty-takers page and the table. It reads the injured and suspended pages dail
 of the Champions League, Europa League, Conference League and Coppa Italia weekly, daily in a week with one of their
 matches; and Fantacalcio-Online's round ratings the morning after each round. Rest days, injuries, bans and a rater's
 claim show on the match card and the outlook as context: what they say never moves a number.
-Nothing runs while your Mac sleeps.
+Nothing runs while your Mac sleeps. A page it couldn't reach, because the Mac had no network yet or the site didn't
+answer, is tried again at the next run, so a closed lid costs only the time it was closed.
 
 Paste this whole block into Terminal, with `your-name` replaced by the name you gave in step 5 (`owner` if you
 gave none). It writes the schedule with your own paths. If you cloned Fantadamus somewhere other than `~/fantadamus`,
@@ -268,6 +269,8 @@ again over the old one in the project's instructions, keeping your league profil
   `~/Library/Logs/Claude/mcp-server-fantadamus.log`. Send the last lines to whoever shared this guide.
 - **The schedule (step 8) seems idle:** its output is in `~/fantadamus/data/local/collect/schedule.log`;
   "Nothing due." is normal between reads.
+- **`collect --report` shows a page as failed:** the Mac had no network yet, or the site didn't answer. There's
+  nothing to do: it's tried again at the next run, 15 minutes later while the Mac is awake.
 - **An answer says facts are missing that were stored, after a crash or a copy by hand:** in the `fantadamus`
   folder, run `uv run fantadamus rebuild`. It writes the stored facts again from what was read, and reads no page.
 - **Starting over:** your league rules, your squads, the stored facts, the log of answers and the scores are in

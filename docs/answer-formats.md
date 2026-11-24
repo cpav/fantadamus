@@ -246,6 +246,8 @@ Sun 18:00  Inter v Como        Inter 58%, draw 23%      goals 1.9 v 0.9   clean 
 Sun 20:45  Roma v Lazio        Roma 39%, draw 31%       goals 1.3 v 1.1   clean sheets 33% · 27%   3+ 44%
 
 Safest keepers this round: Inter's (41%), Udinese's (37%). Most goals expected: Inter v Como.
+
+Sources: Fantacalcio-Online, round 12
 ```
 
 ## 6. The bench order
@@ -280,9 +282,11 @@ Your choices, judged by what they were expected to cost:
 In all: expected to cost 0.4; this round your choices lost 0.5. The advice would have scored 72.
 
 Your record over 4 rounds: 6 overrides, expected to cost 1.2, a real gain of 2.5. A run of luck could give
-anything within 4.1 either way, so it's still mostly luck.
+anything within 4.1 either way, so it's still mostly luck. Your app's total matched in 3 of 4 rounds.
 
 Not counted: Moretti, two matches between the statistics reads; decisive goals, which the reads don't show.
+
+Sources: Fantacalcio-Online, round 11 · Fantacalcio.it, statistics, table, penalty takers
 ```
 
 - **The real score** is the league's own: each player's rating and events from the statistics page read before and
@@ -296,7 +300,10 @@ Not counted: Moretti, two matches between the statistics reads; decisive goals, 
 - **The record** says how much it can tell: too early before three rounds, mostly luck while the gain is within its
   margin, then whether the overrides paid off or cost.
 - **The user's app total**, when given, sits beside the real score, with the likely causes when they differ by more
-  than half a point. What the reads couldn't count is named, by player or by kind of event.
+  than half a point. The record says how often it matched, once a round has one (`mvp-fixes`): the tool gives the
+  line. What the reads couldn't count is named, by player or by kind of event.
+- **Its sources** are the pages it rests on: the facts priced at the lock, and the statistics reads before and after
+  the round that give the real score (`mvp-fixes`).
 
 ## 8. An alert
 
