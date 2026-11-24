@@ -304,6 +304,8 @@ def test_mutation_run_stays_fast() -> None:
         "src/fantadamus/domains/recalibration.py",  # mvp-recalibrate task 4
         "src/fantadamus/domains/alerts.py",  # mvp-alerts task 4
         "src/fantadamus/lake/months.py",  # mvp-store task 6
+        "src/fantadamus/lake/collect_log.py",  # mvp-fixes task 6
+        "src/fantadamus/web/cadence.py",  # mvp-fixes task 6
     ]
 
     selected: set[Path] = set()

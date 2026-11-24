@@ -41,6 +41,7 @@ def test_a_failed_try_is_not_the_last_answered() -> None:
 def test_last_failed() -> None:
     assert newest(RUNS, T + HOUR, "statistics", FAILED) == T
     assert newest(RUNS, T - HOUR, "statistics", FAILED) is None  # as it stood before it
+    assert newest(RUNS, T, "statistics", FAILED) == T  # at its own instant, it's there
     assert newest(RUNS, T + HOUR, "takers", ANSWERED) is None  # never tried
 
 

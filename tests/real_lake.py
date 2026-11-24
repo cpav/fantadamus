@@ -3,6 +3,8 @@
     python -m tests.real_lake --record    keep a snapshot of data/local, and its answers at five past times
     python -m tests.real_lake --compare   ask the snapshot again, and say whether each answer is identical
     python -m tests.real_lake --compare --rebuilt   the same, once every silver table has been rebuilt
+    python -m tests.real_lake --compare --fields    the same, field by field: each change counted by kind
+                                                    (mvp-fixes AT-8)
 
 Everything it keeps is under git-ignored `data/private/mvp-store/`: the snapshot, the questions (they name the
 squad's players) and the answers. It prints times and counts only. Each question is asked of a fresh copy of
@@ -16,9 +18,11 @@ import argparse
 import dataclasses
 import datetime as dt
 import json
+import re
 import shutil
 import tempfile
 import time
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -244,6 +248,82 @@ def report_lines(results: Sequence[Result], same: Sequence[bool] | None = None) 
     return lines
 
 
+class _Absent:
+    def __repr__(self) -> str:
+        return "absent"
+
+
+ABSENT: Any = _Absent()
+"""Where a field or an item is on one side only."""
+EMPTY: tuple[Any, ...] = (None, 0, "", [], {})
+SAFE = re.compile(r"[a-z_][a-z0-9_]*|\[\]")
+"""A place that can be printed: a field's own name, or an item of a list. Anything else may be a name."""
+PENALTY_NOTE = re.compile(r"penalties.*(misses the start|miss the start|counted in full)")
+
+
+@dataclass(frozen=True)
+class Change:
+    path: tuple[str, ...]
+    """Each field's name, and "[]" for an item of a list."""
+    before: Any
+    after: Any
+
+
+def changes(before: Any, after: Any, path: tuple[str, ...] = ()) -> list[Change]:
+    """Every field that differs between two answers, field by field and item by item: a field or an item on
+    one side only is one change."""
+    if isinstance(before, dict) and isinstance(after, dict):
+        return [
+            change
+            for key in sorted(before.keys() | after.keys())
+            for change in changes(before.get(key, ABSENT), after.get(key, ABSENT), (*path, key))
+        ]
+    if isinstance(before, list) and isinstance(after, list):
+        return [
+            change
+            for index in range(max(len(before), len(after)))
+            for change in changes(
+                before[index] if index < len(before) else ABSENT,
+                after[index] if index < len(after) else ABSENT,
+                (*path, "[]"),
+            )
+        ]
+    return [] if before == after else [Change(path, before, after)]
+
+
+def kind(change: Change) -> str:
+    """What a change is, by its place and never its value: sources, the answer's updated times (the newest and
+    oldest of its sources'), a penalty note, a new field still empty, or anything else, named by its place."""
+    if "sources" in change.path:
+        return "sources"
+    if "updated" in change.path:
+        return "updated, from the sources"
+    if any(isinstance(text, str) and PENALTY_NOTE.search(text) for text in (change.before, change.after)):
+        return "penalty notes"
+    if change.before is ABSENT and change.after in EMPTY:
+        return "new fields, empty"
+    return "other: " + "/".join(part if SAFE.fullmatch(part) else "…" for part in change.path)
+
+
+def field_lines(results: Sequence[Result], found: Sequence[Sequence[Change]]) -> list[str]:
+    """Each answer's changes counted by kind, then each kind over all the answers: kinds, places and counts,
+    never a value."""
+    lines = []
+    changed: Counter[str] = Counter()
+    answers: Counter[str] = Counter()
+    for result, answer in zip(results, found, strict=True):
+        kinds = Counter(kind(change) for change in answer)
+        said = ", ".join(f"{name} {count}" for name, count in sorted(kinds.items()))
+        lines.append(f"{result.index:02d} {result.tool} {result.status}: {said or 'identical'}")
+        changed.update(kinds)
+        answers.update(kinds.keys())
+    lines.append(f"{len(results)} answers, {sum(1 for answer in found if not answer)} identical")
+    lines += [
+        f"{name}: {changed[name]} in {answers[name]} of {len(results)} answers" for name in sorted(changed)
+    ]
+    return lines
+
+
 def _load_plan() -> list[Question]:
     return [Question(**entry) for entry in json.loads(PLAN.read_text(encoding="utf-8"))]
 
@@ -281,17 +361,27 @@ def rebuilt_copy(snapshot: Path, folder: Path) -> Path:
     return home
 
 
-def compare(user: str, rebuilt: bool = False) -> int:
+def compare(user: str, rebuilt: bool = False, fields: bool = False) -> int:
+    """Each answer against the one recorded: identical or not, or with `fields` its changes by kind, which may
+    only be the kinds `kind` names (sources and the updated times from them, penalty notes, new fields still
+    empty)."""
     if not ANSWERS.exists():
         print("Nothing recorded yet: run `python -m tests.real_lake --record` first.")
         return 1
     with tempfile.TemporaryDirectory() as folder:
         snapshot = rebuilt_copy(SNAPSHOT, Path(folder)) if rebuilt else SNAPSHOT
         results = run(snapshot, _load_plan(), user)
-    same = [
-        (ANSWERS / f"{result.index:02d}-{result.tool}.json").read_text(encoding="utf-8") == result.text
-        for result in results
+    kept = [
+        (ANSWERS / f"{result.index:02d}-{result.tool}.json").read_text(encoding="utf-8") for result in results
     ]
+    if fields:
+        found = [
+            changes(json.loads(before), json.loads(result.text))
+            for before, result in zip(kept, results, strict=True)
+        ]
+        print("\n".join(field_lines(results, found)))
+        return 1 if any(kind(change).startswith("other") for answer in found for change in answer) else 0
+    same = [before == result.text for before, result in zip(kept, results, strict=True)]
     print("\n".join(report_lines(results, same)))
     return 0 if all(same) else 1
 
@@ -302,9 +392,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     mode.add_argument("--record", action="store_true", help="keep the snapshot and its answers")
     mode.add_argument("--compare", action="store_true", help="ask again and compare")
     parser.add_argument("--rebuilt", action="store_true", help="compare once every table is rebuilt")
+    parser.add_argument("--fields", action="store_true", help="compare field by field, each change by kind")
     parser.add_argument("--user", default="owner", help="whose squad and rules")
     args = parser.parse_args(argv)
-    return record(args.user) if args.record else compare(args.user, args.rebuilt)
+    return record(args.user) if args.record else compare(args.user, args.rebuilt, args.fields)
 
 
 if __name__ == "__main__":

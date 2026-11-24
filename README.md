@@ -85,8 +85,9 @@ make test-fast  # format, lint, unit and property tests with the fast profile
 `uv run fantadamus serve` starts the MCP server on stdio: `best_lineup`, `compare_players`, `player_outlook`,
 `match_card`, `round_overview`, `review_round`, `set_squad`, `set_league_rules`, `collect`, `read_page` and the submit
 tools. `uv run fantadamus collect` reads the round page and Fantacalcio.it's statistics, penalty-takers and table pages
-now (`--fact` picks one fact's page, `--round` another round's page); `--due` reads only what is past its cadence, as
-the schedule does; `--report` shows the last run. `uv run fantadamus calibrate --round N`
+now (`--fact` takes any of the facts the collector reads and reads only its page, as the `collect` tool does in
+Claude; `--round` another round's page); `--due` reads only what is past its cadence, as the schedule does, and tries
+a page that got no answer again at the next run; `--report` shows the last run. `uv run fantadamus calibrate --round N`
 prints a finished round's report on the forecasts, and keeps its calibration set beside it, player by player, for a
 recalibration; `--again` rebuilds both. `uv run fantadamus recalibrate` proposes new starting values from the
 stored sets, each checked where it wasn't fitted, and changes nothing until the owner approves one.

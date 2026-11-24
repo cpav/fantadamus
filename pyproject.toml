@@ -60,6 +60,8 @@ only_mutate = [
     "src/fantadamus/domains/recalibration.py",
     "src/fantadamus/domains/alerts.py",
     "src/fantadamus/lake/months.py",
+    "src/fantadamus/lake/collect_log.py",  # its pure part, `newest`: the rest reads files (mvp-fixes)
+    "src/fantadamus/web/cadence.py",  # its pure parts, `due` and `may_read_after`: the rest reaches the lake
 ]
 also_copy = ["config", "scripts"]
 pytest_add_cli_args_test_selection = [
@@ -113,6 +115,11 @@ pytest_add_cli_args_test_selection = [
     "tests/unit/store/test_months.py",  # the pure ones: the rest write files
     "tests/unit/store/test_in_step.py",
     "tests/property/store/test_months.py",
+    "tests/unit/fixes/test_collect_log.py",  # pure: the newest try of a page, by outcome
+    "tests/unit/fixes/test_cadence.py",
+    "tests/unit/fixes/test_due_rules.py",  # each rule of the cadence at its edges
+    "tests/unit/collect/test_cadence.py",
+    "tests/property/fixes/test_due.py",
 ]
 pytest_add_cli_args = [
     "--timeout=30",
