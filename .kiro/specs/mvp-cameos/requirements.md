@@ -1,6 +1,6 @@
 # Requirements Document: `mvp-cameos` (after Phase 2, before Phase 3)
 
-Status: **Draft, for the owner's approval** · Workflow: requirements-first · Depends on: `mvp-recalibrate` (signed off
+Status: **Approved by the owner, 2026-11-24**, with both recommendations · Workflow: requirements-first · Depends on: `mvp-recalibrate` (signed off
 2026-11-12) · Abbreviation: `cs` · Research: the calibration sets of rounds 11 and 12 (counts below, no names); the
 [Phase 2 report](../../../docs/reports/phase-2-report.md)'s decision 3, taken by the owner on 2026-11-24
 
@@ -112,6 +112,8 @@ the bench order and the cover a doubtful starter gets are priced right.
   `mvp-lineup` (the simulation's three outcomes).
 
 ## Decisions for the owner
+
+Both decided by the owner on 2026-11-24, as recommended ("Approve both").
 
 1. **For forwards and attacking midfielders, fit how often they come on, and keep 60% rated once on?** Recommendation:
    yes. Rated games can't tell the two apart. The 60% follows from how ratings are given (a short cameo goes unrated)
