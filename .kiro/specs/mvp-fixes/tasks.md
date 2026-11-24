@@ -81,9 +81,9 @@ Status: **Approved by the owner, 2026-11-21** · From the approved [requirements
       **AT-5** `tests/acceptance/fixes/test_at5_sources.py::test_at5_a_lineup_names_the_injured_page`,
       `::test_at5_every_answer_names_the_pages_it_shows`, `::test_at5_the_overview_and_the_review_name_their_pages`_
 
-- [ ] 4. The penalty note says who's out
+- [x] 4. The penalty note says who's out
   - Branch: `fix/fx-4-penalty-note` · Depends on: 1 · ADRs: none
-  - [ ] 4.1 "X, first on the list, is out, so Y takes the penalties: counted in full", and the plural; today's note
+  - [x] 4.1 "X, first on the list, is out, so Y takes the penalties: counted in full", and the plural; today's note
     otherwise.
     - _Requirements: R4.1, R4.2_
     - _Test: `tests/unit/fixes/test_penalty_note.py::test_everyone_ahead_out`,
