@@ -1,6 +1,6 @@
 # Design Document: `mvp-cameos` (after Phase 2, before Phase 3)
 
-Status: **Draft, for the owner's approval** · From the approved [requirements](requirements.md) (2026-11-24, both
+Status: **Approved by the owner, 2026-11-24**, with its open point ("Approve, start task 1") · From the approved [requirements](requirements.md) (2026-11-24, both
 recommendations)
 
 ## Overview
@@ -118,5 +118,5 @@ $0: no dependency, service or account, and no page read. A proposal takes about 
 
 ## Open points for the owner
 
-One: approving this design also approves changing `mvp-recalibrate`'s AT-3 and AT-6 cameo tests, as listed under
+One, approved with the design on 2026-11-24: approving this design also approves changing `mvp-recalibrate`'s AT-3 and AT-6 cameo tests, as listed under
 "Testing strategy". They test the `CAMEO_RATED` fit that R1.4 retires. The two decisions were taken with the requirements.

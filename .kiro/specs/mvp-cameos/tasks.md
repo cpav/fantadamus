@@ -1,6 +1,6 @@
 # Implementation Plan: `mvp-cameos` (after Phase 2, before Phase 3)
 
-Status: **Draft, for the owner's approval** · From the approved [requirements](requirements.md) and the
+Status: **Approved by the owner, 2026-11-24** · From the approved [requirements](requirements.md) and the
 [design](design.md)
 
 ## How to read and run these tasks
