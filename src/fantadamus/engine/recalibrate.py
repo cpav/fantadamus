@@ -12,7 +12,7 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel
 
-from fantadamus.engine.constants import START_MAP_WEIGHT
+from fantadamus.engine.constants import CAMEO_RATED, START_MAP_WEIGHT
 
 StartMap = tuple[tuple[float, float], ...]
 """The knots of a map from the outlets' consensus to the chance of starting, from (0, 0) to (1, 1)."""
@@ -86,23 +86,23 @@ def cameo_share(rated: Sequence[bool]) -> Rate | None:
     return counted("CAMEO_SHARE", sum(rated), len(rated)) if rated else None
 
 
-def cameo_rated(forwards: Sequence[tuple[float, bool]], share: float) -> Rate | None:
-    """`CAMEO_RATED` (C4), from forwards who didn't start and could have come on: each one's chance of
-    scoring if he did, and whether he got a rating. He comes on `share` of the time, and his cameo is rated if
-    he scores or, if not, `CAMEO_RATED` of the time: solved from how often they got one, with its interval.
-    None when that's outside 0 to 1: the share and their goals can't explain how often they got one."""
-    if not forwards or share <= 0:
+def cameo_share_priced(forwards: Sequence[tuple[float, bool]]) -> Rate | None:
+    """`CAMEO_SHARE_PRICED` (mvp-cameos C3), from the players with a priced cameo who didn't start and could
+    have come on: each one's chance of scoring once on, and whether he got a rating. Once on, his cameo is
+    rated if he scores or, if not, `CAMEO_RATED` of the time, the method's 60%: so the share is how often they
+    got a rating over how often one who comes on does, and its interval is scaled the same way. None when
+    that's above 1: more of them got a rating than any share allows."""
+    if not forwards:
         return None
     scoring = math.fsum(chance for chance, _ in forwards) / len(forwards)
-    if scoring >= 1:
-        return None
-    seen = counted("CAMEO_RATED", sum(rated for _, rated in forwards), len(forwards))
-
-    def solved(rate: float) -> float:
-        return min(max((rate / share - scoring) / (1 - scoring), 0.0), 1.0)
-
-    if not 0 <= (seen.value / share - scoring) / (1 - scoring) <= 1:
+    once_on = scoring + (1 - scoring) * CAMEO_RATED
+    seen = counted("CAMEO_SHARE_PRICED", sum(rated for _, rated in forwards), len(forwards))
+    if seen.value > once_on:
         return None
     return seen.model_copy(
-        update={"value": solved(seen.value), "low": solved(seen.low), "high": solved(seen.high)}
+        update={
+            "value": seen.value / once_on,
+            "low": seen.low / once_on,
+            "high": min(seen.high / once_on, 1.0),
+        }
     )

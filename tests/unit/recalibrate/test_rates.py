@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from fantadamus.engine.recalibrate import cameo_rated, cameo_share, counted
+from fantadamus.engine.recalibrate import cameo_share, cameo_share_priced, counted
 
 
 def test_no_evidence_no_rate() -> None:
+    """The priced share took `CAMEO_RATED`'s place (mvp-cameos R1.4): no evidence, no share, and none where
+    more of them got a rating than one who comes on is ever rated."""
     assert cameo_share([]) is None
-    assert cameo_rated([], 0.5) is None
-    assert cameo_rated([(0.1, True)], 0.0) is None  # a share of none says nothing about a cameo's rating
-    assert cameo_rated([(1.0, True)], 0.5) is None  # every cameo scores: the rest can't be told
-    assert cameo_rated([(0.1, True)] * 6 + [(0.1, False)] * 4, 0.2) is None  # rated more often than the share
-    assert cameo_rated([(0.8, True)] + [(0.8, False)] * 9, 0.5) is None  # less often than their goals alone
+    assert cameo_share_priced([]) is None
+    assert cameo_share_priced([(0.1, True)] * 7 + [(0.1, False)] * 3) is None  # 0.7 rated, above 0.64
+    every = cameo_share_priced([(1.0, True)])  # every cameo scores: rated whenever he comes on
+    assert every is not None
+    assert every.value == 1.0
 
 
 def test_a_rate_with_nothing_or_everything() -> None:
