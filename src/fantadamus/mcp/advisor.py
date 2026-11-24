@@ -913,13 +913,9 @@ class Advisor:
         """What an answer should say about his club's penalty list (mvp-lineup R10.2, R10.4, R10.5)."""
         club = self.clubs.names[player.club]
         notes = []
-        ahead = takers_ahead(player, order, mates)
-        if ahead and share >= SHARE_SHOWN:
-            miss = "misses" if len(ahead) == 1 else "miss"
-            notes.append(
-                f"{player.name} takes {club}'s penalties if {' and '.join(ahead)} {miss} the start: "
-                f"they count at {share:.0%}."
-            )
+        said = share_note(player.name, club, takers_ahead(player, order, mates), share)
+        if said is not None:
+            notes.append(said)
         change = order_change(rows, player.club, as_of)
         if change is not None:
             notes.append(
@@ -1265,6 +1261,28 @@ def movement(
         p_clean_sheet=then.p_clean_sheet if isinstance(then, KeeperValue) else None,
         p_win=before.p_win,
         changes=changes,
+    )
+
+
+def share_note(name: str, club: str, ahead: Sequence[str], share: float) -> str | None:
+    """What to say about a taker's share of his club's penalties, given the names listed ahead of him: that
+    they're out, when none of them can start (mvp-fixes R4.1); otherwise the share, when it's worth a word
+    (mvp-lineup R10.2)."""
+    if not ahead or share < SHARE_SHOWN:
+        return None
+    if share >= 1.0:  # every one listed ahead has no chance of starting
+        if len(ahead) == 1:
+            return (
+                f"{ahead[0]}, first on {club}'s list, is out, so {name} takes the penalties: counted in full."
+            )
+        return (
+            f"{' and '.join(ahead)}, listed ahead of him on {club}'s list, are out, so {name} takes the "
+            "penalties: counted in full."
+        )
+    miss = "misses" if len(ahead) == 1 else "miss"
+    return (
+        f"{name} takes {club}'s penalties if {' and '.join(ahead)} {miss} the start: "
+        f"they count at {share:.0%}."
     )
 
 
