@@ -69,7 +69,10 @@ async def test_at18_the_next_taker_gets_what_the_first_leaves(tmp_path: Path) ->
 
 async def test_at18_a_first_taker_out_hands_it_all_on(tmp_path: Path) -> None:
     """Beta Quattordici is out on every outlet: Beta Nove is worth what he would be as the first taker."""
-    line = "Beta Nove takes Beta's penalties if Beta Quattordici misses the start: they count at 100%."
+    # mvp-fixes R4.1: the note says who's out, where it said "if he misses the start: they count at 100%".
+    line = (
+        "Beta Quattordici, first on Beta's list, is out, so Beta Nove takes the penalties: counted in full."
+    )
     async with a_round(tmp_path / "out") as here:
         await send(
             here.client, "submit_penalty_takers", _payload(Beta=["Beta Quattordici", "Beta Nove"]), NOW
