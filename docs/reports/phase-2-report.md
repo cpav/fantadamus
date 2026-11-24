@@ -261,8 +261,10 @@ The owner's, besides each slice's requirements, design, tasks and sign-off:
 1. **CI is at its budget.** The median of the last ten pull requests is 257 s against 300, and three went over: 334 to
    385 s. `make check` takes 7½ to 9¼ minutes on the owner's Mac, and `make test-fast` 34 s against 20. Each slice added
    tests that go through the tools, and their set-up is what costs (the review, §7). Decision 1.
-2. **The chance of a rating is overstated for players unlikely to start,** in both rounds that could score it. It feeds
-   every bench order and every cameo's value. Decision 3.
+2. **The chance of a cameo doesn't fit either kind.** Over rounds 11 and 12, of the players who didn't start and could
+   have come on, 24% of those with a flat cameo got a rating, against the model's 50% (255 players), and 41% of those
+   with a priced cameo, the forwards and attacking midfielders, against its 31% (128). It feeds every bench order and
+   every cameo's value. Decision 3.
 3. **One Mac.** The second player hasn't installed Fantadamus; a sleeping Mac misses its runs; and Claude Desktop keeps the
    code it started with until it's quit and reopened. Phase 3 removes all three.
 4. **Budgets nearly spent.** The agent prompt is at 12,911 of 13,000 characters, and round 12's largest card at 14.9 of
@@ -275,6 +277,9 @@ The owner's, besides each slice's requirements, design, tasks and sign-off:
 7. **Carried from Phase 0:** the cryptography allowlist must be renewed by 2027-01-26.
 
 ## Decisions for the owner
+
+All three decided by the owner on 2026-11-24, as recommended ("All three as recommended"): `product.md` records the
+first and third, and `tech.md` the second.
 
 1. **Make the gate faster, first.** CI is at its budget (risk 1). The review's decision 2 proposes two gate changes:
    disk-bound property tests run 100 examples in the pull-request gate and 500 at phase gates (R9), and `sqlfluff` and the
@@ -292,7 +297,7 @@ The owner's, besides each slice's requirements, design, tasks and sign-off:
    today, fitted at 0.248 on rounds 10 and 11 but on 183 of the 200 players it needs. Round 12 confirms the overstatement.
    The share can't simply be lowered: of the outfield players who didn't start, attackers got a rating 41% of the time over
    rounds 11 and 12 (71 players), midfielders 31% (169) and defenders 22% (143), so one share doesn't fit both kinds of
-   cameo. **Recommendation:** a small recalibration spec next, before Phase 3: attackers' cameos get a share of their own
+   cameo (risk 2 counts them by kind). **Recommendation:** a small recalibration spec next, before Phase 3: attackers' cameos get a share of their own
    in place of `CAMEO_RATED` (amending `mvp-recalibrate` R3.1), and both shares are fitted on rounds 10 to 12 and proposed
    to you value by value, as the first recalibration was.
 

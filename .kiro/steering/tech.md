@@ -41,7 +41,10 @@ depend on a pending decision (research gate, `quality.md`).
 | Storage | **DuckDB over Parquet**, same medallion layout and contracts as v1 | Local `data/local/` first; the same layout on a private S3 prefix once the endpoint is remote. Bronze is a file for each submission. Silver is a file for each month of each table, written once and named by the table's `_table.json`: a store adds its rows to their month, and a table out of step with bronze is rebuilt from it (`fantadamus rebuild`). An answer reads each page's newest submission of the tables that grow with every read. Gold is computed when asked (`mvp-store`) |
 | Approved for v1, unused in the MVP | Brave Search, The Odds API, API-Football (registry D-S6, D-T1); search-driven fetching (ADR-0004) | They return when v1 automates collection; ADR-0006 brings only fetching of the approved fixed pages forward |
 
-The MVP doesn't use Iceberg, Glue, Athena, Step Functions or EventBridge. Those arrive with v1.
+The MVP doesn't use Iceberg, Glue, Athena or Step Functions. **Phase 3's platform** (the owner, 2026-11-24, from the
+review before Phase 3, R14): this layout on S3, DuckDB inside a Lambda, EventBridge Scheduler calling one collection
+Lambda, and SNS for the alerts. Iceberg, Glue, Athena, Lake Formation and Step Functions wait for a measurement that
+asks for them. ADR-0003 records it with the account, the region and the deploy identity.
 
 ## Data platform (v1)
 
