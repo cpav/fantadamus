@@ -81,13 +81,13 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
     - _Test: **AT-4** `tests/acceptance/alerts/test_budget.py::test_at4_a_check_in_budget`, `::test_at4_no_install_and_no_account`_
     - 0.73 CPU-seconds for a check with all 10,000 simulated rounds, against 10.
 
-- [ ] 4. The docs, a real check and this slice's sign-off
+- [x] 4. The docs, a real check and this slice's sign-off
   - Branch: `docs/al-4-gate` · Depends on: 1, 2, 3 · ADRs: none
   - [x] 4.1 The docs: answer formats, the player guide's step 8, `product.md`.
     - _Requirements: R5.1_
     - _Test: **AT-6** `tests/unit/test_repo_hygiene.py::test_answer_formats_show_alerts`, `::test_the_guide_lets_notifications_through`,
       `::test_player_guide_schedule` (the schedule passes `--user`)_
-  - [ ] 4.2 **Owner:** on the Mac, `fantadamus alerts --test`, and let the notification through; then one from a real scheduled run
+  - [x] 4.2 **Owner:** on the Mac, `fantadamus alerts --test`, and let the notification through; then one from a real scheduled run
     in the last day before a round, or a replayed one.
     - _Requirements: R3.1 (AT-5)_
     - _Test: recorded in the report, without the squad's names_
@@ -97,6 +97,9 @@ Status: **Approved by the owner, 2026-11-15** · From the approved [requirements
     - 2026-11-16 (`mvp-store`, decision 1): the schedule is installed after `mvp-store`. Until then
       `fantadamus collect --due --user owner`, run by hand in a round's last day, sends a real alert if the call has
       changed.
+    - Closed with round 12: the sample showed on 2026-11-18, once the owner let Script Editor's notifications through,
+      and the owner saw the schedule's real alert of 2026-11-21, seven hours before the lock (confirmed on 2026-11-24,
+      in the Phase 2 report).
   - [x] 4.3 A mutation run on the new core functions, with survivors read; the slice report: tests, coverage, quality, cost, open risks
     and the acceptance tests.
     - _Requirements: R4.1; phase gate (`quality.md`)_

@@ -84,7 +84,7 @@ set, on 2026-11-15:
 | AT-2 | Nothing sent: outside the window, after the deadline, without a squad, with the switch off, with no baseline, when only the chances moved, when nothing new was stored, or when the squad was saved since | Passed |
 | AT-3 | The same change isn't sent twice; a change back is sent; another round's, user's or team's calls aren't compared | Passed |
 | AT-4 | A check within its time: under a second with all 10,000 simulated rounds, against 10; nothing installed, no account | Passed |
-| AT-5 | Manual: a notification on the owner's Mac | Half done: from `main`, `fantadamus alerts --test` was taken by macOS (exit 0); whether it showed, and a real alert in round 12's last day, are the owner's to see (decision 2) |
+| AT-5 | Manual: a notification on the owner's Mac | Passed with round 12: the sample showed on 2026-11-18, and the owner saw the schedule's real alert of 2026-11-21 (confirmed on 2026-11-24) |
 | AT-6 | The docs updated: answer formats, the player guide, `product.md` | Passed |
 
 P1 to P5 hold: no alert outside the window or without the league; a call compared with itself has no changes, and
