@@ -1,6 +1,7 @@
 # Slice report: `mvp-cameos`
 
-2026-11-25 · After Phase 2, before Phase 3 · **For the owner's sign-off** (task 4.4)
+2026-11-25 · After Phase 2, before Phase 3 · **Signed off by the owner on 2026-11-25** (task 4.4), with all three
+decisions
 
 A player who doesn't start can still come on and get a rating. One number, 0.5, stood for two different things: for a
 defender or most midfielders, coming on *and* being rated; for a forward or attacking midfielder, coming on at all. Round 12
@@ -109,6 +110,9 @@ $0. No dependency, service or account, and no page read. A proposal takes about 
   substitutes were overrated. Claude Desktop runs the old code until it's quit with ⌘Q and opened again.
 
 ## Decisions for the owner
+
+All three decided by the owner on 2026-11-25, as recommended ("Sign off, accept all"): the slice is signed off, the
+earlier tests are accepted, and the captain's pool stays as it is.
 
 1. **Sign off this slice?** Recommendation: yes. Every acceptance test passes, and round 12's lineup keeps its eleven.
 2. **Accept the earlier tests that change with the value?** Recommendation: yes. The design lists all of them. The one

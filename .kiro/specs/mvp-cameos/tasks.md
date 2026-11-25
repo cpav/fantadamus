@@ -71,7 +71,7 @@ Status: **Approved by the owner, 2026-11-24** · From the approved [requirements
     - _Test: **AT-6**, recorded in the slice report_
     - 2026-11-24: the owner approved `CAMEO_SHARE` at 0.239 ("Approve both"). `CAMEO_SHARE_PRICED` stays 0.5 and waits.
 
-- [ ] 4. The approved share, the docs and this slice's sign-off
+- [x] 4. The approved share, the docs and this slice's sign-off
   - Branch: `feat/cs-4-approved` · Depends on: 3 · ADRs: none
   - [x] 4.1 Each approved share in `engine/constants.py`, its calibration log entry, the `start_values` fixture.
     - _Requirements: R3.2_
@@ -83,7 +83,7 @@ Status: **Approved by the owner, 2026-11-24** · From the approved [requirements
       `tests/acceptance/cameos/test_checks.py::test_at4_rounds_made_with_another_share`,
       `::test_at4_a_part_with_nothing_to_score_is_skipped`, `::test_at4_only_the_players_it_counts` (the last two are
       the mutation run's gaps, closed).
-    - Earlier tests that changed are listed in the design, for the owner's yes.
+    - Earlier tests that changed are listed in the design, accepted by the owner on 2026-11-25.
   - [x] 4.2 What it moves on round 12's stored facts: the owner's lineup and the ten cards, counts and averages only.
     - _Requirements: R3.3_
     - _Test: **AT-7** `tests/acceptance/cameos/test_moves.py::test_at7_what_it_moves`_
@@ -95,6 +95,6 @@ Status: **Approved by the owner, 2026-11-24** · From the approved [requirements
     slice report.
     - _Requirements: R4.1, R4.2_
     - _Test: **AT-8** `tests/acceptance/cameos/test_docs.py::test_at8_no_new_dependency`, `::test_at8_the_method_has_both`_
-  - [ ] 4.4 **Owner:** sign the slice off.
+  - [x] 4.4 **Owner:** sign the slice off (2026-11-25, "Sign off, accept all").
     - _Requirements: all_
     - _Test: the slice report_

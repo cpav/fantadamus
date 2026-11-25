@@ -113,7 +113,7 @@ constants' comments say what each share means.
   (accepted by the owner on 2026-11-24). Found in task 2: AT-8's tests of the proposal
   (`test_proposal.py::test_at8_the_proposal`, `::test_at8_the_proposal_in_words`) name the retired fit's "not
   counted" line and the cameo evidence, so they name the two shares' instead (accepted by the owner on 2026-11-24).
-- **Earlier tests that change with the approved value** (found in task 4, each listed for the owner's yes):
+- **Earlier tests that change with the approved value** (found in task 4, accepted by the owner on 2026-11-25):
   - `mvp-recalibrate` AT-8 `test_at8_an_approved_change_and_its_log` pinned the calibration log's *newest* entry to
     12 November. It finds that entry by its heading; every other assertion is as it was (the owner's yes, 2026-11-25);
   - `mvp-collect` AT-12 names the flat share for a forward's cameo: the priced share, the same number;
