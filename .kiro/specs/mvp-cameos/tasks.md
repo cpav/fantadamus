@@ -54,17 +54,22 @@ Status: **Approved by the owner, 2026-11-24** · From the approved [requirements
     - _Test: the changed tests in `tests/acceptance/recalibrate/test_rates.py` and `test_checks.py` (AT-3, AT-5,
       AT-6), `tests/unit/recalibrate/test_rates.py`, `tests/property/recalibrate/test_rates.py` and
       `test_checks.py`; and AT-8's `tests/acceptance/recalibrate/test_proposal.py::test_at8_the_proposal`,
-      `::test_at8_the_proposal_in_words`, found in this task and held for the owner's yes_
+      `::test_at8_the_proposal_in_words`, found in this task and accepted by the owner on 2026-11-24 ("Approve both")_
 
-- [ ] 3. The proposal and the owner's approval
+- [x] 3. The proposal and the owner's approval
   - Branch: `test/cs-3-proposal` · Depends on: 2 · ADRs: none
-  - [ ] 3.1 `fantadamus recalibrate` on the rounds scored, from stored facts only: both shares listed, nothing changed.
+  - [x] 3.1 `fantadamus recalibrate` on the rounds scored, from stored facts only: both shares listed, nothing changed.
     - _Requirements: R3.1_
     - _Test: **AT-5** `tests/acceptance/cameos/test_proposal.py::test_at5_both_shares_listed`; the real proposal from
       here, counts only_
-  - [ ] 3.2 **Owner:** read the proposal and approve or turn down each share.
+    - 2026-11-24, on rounds 10 to 12, from a copy of the stored facts: `CAMEO_SHARE` proposed, 0.500 to 0.239 on 255
+      players (90% between 0.198 and 0.286); on the rounds it wasn't fitted on, Brier 0.149 to 0.120 and 0.134 to 0.111.
+      `CAMEO_SHARE_PRICED` not proposed: 128 of the 200 players it needs, and at its fit of 0.648 both rounds it wasn't
+      fitted on get slightly worse (0.106 to 0.108, 0.133 to 0.151).
+  - [x] 3.2 **Owner:** read the proposal and approve or turn down each share.
     - _Requirements: R3.1_
     - _Test: **AT-6**, recorded in the slice report_
+    - 2026-11-24: the owner approved `CAMEO_SHARE` at 0.239 ("Approve both"). `CAMEO_SHARE_PRICED` stays 0.5 and waits.
 
 - [ ] 4. The approved share, the docs and this slice's sign-off
   - Branch: `feat/cs-4-approved` · Depends on: 3 · ADRs: none
