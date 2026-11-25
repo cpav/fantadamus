@@ -20,8 +20,8 @@ build-backend = "uv_build"
 [dependency-groups]
 mutation = [
     # 3.8 needs libcst 1.9, which has no macOS x86_64 wheel for Python 3.12 (ADR-0001).
-    "libcst<1.9",
-    "mutmut>=3.7,<3.8",
+    "libcst<1.10",
+    "mutmut>=3.7,<3.9",
 ]
 dev = [
     "conventional-pre-commit>=4.4,<5",
