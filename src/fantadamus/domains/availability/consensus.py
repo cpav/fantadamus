@@ -14,8 +14,8 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from fantadamus.domains.facts import Source
+from fantadamus.engine import constants
 from fantadamus.engine.constants import (
-    CAMEO_SHARE,
     DISPUTED_SPREAD,
     P_START_BENCH,
     P_START_STARTER,
@@ -86,10 +86,11 @@ def outlet_view(
 
 
 def combine(
-    outlets: Sequence[OutletView], official: OfficialView | None = None, *, share: float = CAMEO_SHARE
+    outlets: Sequence[OutletView], official: OfficialView | None = None, *, share: float | None = None
 ) -> Availability:
     """The consensus of the outlets through the calibration map, unless the official lineup is out. `share` is
-    how often he comes on when he doesn't start: his kind of cameo's (mvp-cameos C2)."""
+    how often he comes on when he doesn't start: his kind of cameo's, or the flat one's (mvp-cameos C2)."""
+    share = constants.CAMEO_SHARE if share is None else share
     ordered = sorted(
         outlets, key=lambda view: (view.outlet, view.source.captured_at, view.status, view.p_start)
     )

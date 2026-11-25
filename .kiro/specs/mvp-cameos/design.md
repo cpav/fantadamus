@@ -40,6 +40,8 @@ every answer is what it was.
   player it prices, `_assumed`, and `mcp/calibrate.py` for the calibration sets. A penalty taker's chance of starting
   (`Advisor._p_start`) doesn't use the chance of a cameo, so it keeps the default.
 - The default keeps every existing caller and test as it is. With both shares at 0.5 nothing differs, byte for byte.
+- *Changed while building (task 4):* the default is `None`, and `CAMEO_SHARE` is read when it's omitted, so that the
+  `start_values` fixture can put the starting value back in one place.
 
 ### C3. Both shares fitted (`engine/recalibrate.py`, `domains/recalibration.py`; R1.4, R2.1, R2.2)
 
@@ -55,6 +57,11 @@ every answer is what it was.
 
 - `rerated(row, rating, flat, priced)`: a row's chance of a rating with the new shares. Its cameo part scales by
   `priced / CAMEO_SHARE_PRICED` when its cameo is priced, else by `flat / CAMEO_SHARE`; nothing else changes.
+- *Changed while building (task 4):* a stored round may have been scored with an older share than today's, and once the
+  first approved value lands, rounds 10 to 12 have. So the chance is worked out from the player himself, `p_start` plus
+  his kind's share of the rest, rather than scaled from the chance he was scored with, and `before` is worked out the
+  same way on today's shares. On rounds 10 to 12 it gives back all 779 stored chances exactly. A row with no chance of
+  coming on, or from before the kinds were kept, stays as it was.
 - `check_cameos` becomes two checks, `CAMEO_SHARE` and `CAMEO_SHARE_PRICED`. Each is fitted without each round or half,
   scored on the held-out rows of its kind only, and decided against its own minimum: 200 benched players of its kind
   (`MINIMUM_SAMPLE["cameos"]`, now per kind).
@@ -86,7 +93,7 @@ constants' comments say what each share means.
 |---|---|---|
 | P1 | For any chance of starting and either kind, the chance of a cameo is the kind's share × (1 − p_start), and the share alone on an official bench | R1.1 |
 | P2 | With both shares equal, every chance formed equals today's for any outlets and official lineup | R1.3 |
-| P3 | `rerated` with today's shares gives back each row's chance; a row of one kind doesn't move when only the other kind's share changes | R2.3 |
+| P3 | `rerated` with the shares a row was made with gives back its chance; it moves with its own kind's share only, and doesn't depend on the share it was made with | R2.3 |
 | P4 | The priced share fitted on rows made with a known share gives that share back, within its interval | R2.2 |
 
 ## Testing strategy
@@ -105,7 +112,18 @@ constants' comments say what each share means.
   constant, so `CAMEO_SHARE_PRICED` waits there until task 2 fits it, and `CAMEO_RATED` joins it in task 2
   (accepted by the owner on 2026-11-24). Found in task 2: AT-8's tests of the proposal
   (`test_proposal.py::test_at8_the_proposal`, `::test_at8_the_proposal_in_words`) name the retired fit's "not
-  counted" line and the cameo evidence, so they name the two shares' instead.
+  counted" line and the cameo evidence, so they name the two shares' instead (accepted by the owner on 2026-11-24).
+- **Earlier tests that change with the approved value** (found in task 4, each listed for the owner's yes):
+  - `mvp-recalibrate` AT-8 `test_at8_an_approved_change_and_its_log` pinned the calibration log's *newest* entry to
+    12 November. It finds that entry by its heading; every other assertion is as it was (the owner's yes, 2026-11-25);
+  - `mvp-collect` AT-12 names the flat share for a forward's cameo: the priced share, the same number;
+  - `mvp-recalibrate` AT-2 reads the share from the module, as its `start_values` fixture sets it, not the name
+    imported;
+  - `mvp-recalibrate` AT-9 is about the 12 November change alone, so this share stays at 0.5 in it;
+  - `mvp-x-or-y` P2 asks for an official bench's share by name, not as 0.5;
+  - `mvp-rules` AT-7 says no starter brings more as captain than the one advised. The captain comes from the five
+    starters with the highest keys (its C6), and on the calibrated share the sixth brings about a hundredth of a point
+    more on the test round. Its share stays at 0.5 in that one test. The pool itself is an open question (the report).
 - **Mutation:** `make mutate ONLY=…` on the new and changed functions in `engine/recalibrate.py`,
   `domains/recalibration.py` and `engine/outfield.py`.
 

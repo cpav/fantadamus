@@ -75,7 +75,7 @@ from fantadamus.domains.season.silver import (
     read_player_seasons,
 )
 from fantadamus.domains.sources import Confidence, describe, disagreement, of_odds, of_outlets, weaker
-from fantadamus.engine import constants, keepers, outfield
+from fantadamus.engine import keepers, outfield
 from fantadamus.engine.keepers import KeeperInputs, KeeperValue
 from fantadamus.engine.lineup import ROLE_WORDS
 from fantadamus.engine.outfield import OutfieldInputs, OutfieldValue
@@ -966,7 +966,7 @@ class Advisor:
                 officials=facts.officials,
                 players=known,
                 as_of=as_of,
-                share=constants.CAMEO_SHARE if share is None else share,
+                share=share,
             )
 
         present = available(

@@ -10,8 +10,12 @@ from typing import NamedTuple
 # Availability (R3.2 to R3.4, design C5)
 P_START_STARTER = 0.90  # an outlet lists him among the starters
 P_START_BENCH = 0.05  # an outlet lists him on the bench, or doesn't mention him
-CAMEO_SHARE = 0.5  # a flat cameo's p_cameo = 0.5 * (1 - p_start): he comes on and gets a rating (mvp-cameos)
-CAMEO_SHARE_PRICED = 0.5  # a priced cameo's (forwards, attacking midfielders): how often he comes on at all
+# How often a player who doesn't start comes on, by his kind of cameo (mvp-cameos R1): a flat one, with a
+# rating, p_cameo = share * (1 - p_start); a priced one, at all, and then rated as method A4 prices him.
+CAMEO_SHARE = 0.239  # flat: calibrated 2026-11-24 on rounds 11 and 12, see docs/calibration-log.md
+CAMEO_SHARE_PRICED = (
+    0.5  # priced (forwards, attacking midfielders): the starting value, it waits for evidence
+)
 DISPUTED_SPREAD = 0.30  # outlets at least this far apart mark him disputed
 CONTESTED_PERCENT = (31, 69)  # two of one role between these, making 100, are in a ballottaggio (the sheets'
 # defaults, 90 and 30 or 95 and 5, also make 100, and would pair every starter with every bench player)

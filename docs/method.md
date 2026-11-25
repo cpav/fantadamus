@@ -102,6 +102,11 @@ P(scores)  = 1 − e^(−E[goals])
   of the time, worth about 5.75 *(start)*.
 - So an attacker's p_cameo in §A2 is his chance of coming on times his chance of a rating once on, and his
   E_cameo is what that rating is worth. A cameo with no rating isn't a low score: his substitute comes in.
+- **How often a player who doesn't start comes on, by his kind of cameo.** A flat one, a defender's or holding
+  midfielder's, is counted with a rating: 0.239 of the time he doesn't start *(calibrated 2026-11-24 on rounds
+  11 and 12: `CAMEO_SHARE`, in the [calibration log](calibration-log.md))*. A priced one, an attacker's or
+  attacking midfielder's, is counted as coming on at all: 0.5 *(start: `CAMEO_SHARE_PRICED`)*, and only then rated
+  as above. One share can't fit both: benched attackers got a rating almost twice as often.
 - Replace these with the player's own substitute record (`bench_impact`) once there's enough of it.
 
 ## A5. Shrink and regress everything

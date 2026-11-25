@@ -36,7 +36,9 @@ def test_each_role_gets_its_kinds_share(
     assert cameo_share(role, mantra) == (0.7 if priced else 0.3)
 
 
-def test_both_shares_start_at_a_half() -> None:
+def test_both_shares_start_at_a_half(start_values: None) -> None:
+    """Their starting values, which the tests worked out by hand go back to. The flat one's approved value is
+    checked against the calibration log in tests/acceptance/cameos/test_moves.py."""
     assert (constants.CAMEO_SHARE, constants.CAMEO_SHARE_PRICED) == (0.5, 0.5)
 
 

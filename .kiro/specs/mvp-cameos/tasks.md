@@ -73,13 +73,25 @@ Status: **Approved by the owner, 2026-11-24** · From the approved [requirements
 
 - [ ] 4. The approved share, the docs and this slice's sign-off
   - Branch: `feat/cs-4-approved` · Depends on: 3 · ADRs: none
-  - [ ] 4.1 Each approved share in `engine/constants.py`, its calibration log entry, the `start_values` fixture.
+  - [x] 4.1 Each approved share in `engine/constants.py`, its calibration log entry, the `start_values` fixture.
     - _Requirements: R3.2_
-    - _Test: **AT-7** `tests/acceptance/cameos/test_moves.py::test_at7_the_log_has_the_value`_
-  - [ ] 4.2 What it moves on round 12's stored facts: the owner's lineup and the ten cards, counts and averages only.
+    - _Test: **AT-7** `tests/acceptance/cameos/test_moves.py::test_at7_the_log_has_the_value`;
+      `tests/unit/cameos/test_share.py::test_both_shares_start_at_a_half`, on the fixture_
+    - Found here: the next proposal would have been scored wrongly, because a stored round was made with the share
+      before. `rerated` works a chance out from the player himself now (the design's C4):
+      `tests/property/cameos/test_checks.py::test_p3_rerated_by_kind`, `::test_p3_nothing_to_rescale`,
+      `tests/acceptance/cameos/test_checks.py::test_at4_rounds_made_with_another_share`,
+      `::test_at4_a_part_with_nothing_to_score_is_skipped`, `::test_at4_only_the_players_it_counts` (the last two are
+      the mutation run's gaps, closed).
+    - Earlier tests that changed are listed in the design, for the owner's yes.
+  - [x] 4.2 What it moves on round 12's stored facts: the owner's lineup and the ten cards, counts and averages only.
     - _Requirements: R3.3_
     - _Test: **AT-7** `tests/acceptance/cameos/test_moves.py::test_at7_what_it_moves`_
-  - [ ] 4.3 Method §A4 and the constants' comments; no new dependency; a mutation run on the changed functions; the
+    - From a copy of the lake, at three moments before round 12's lock: the same formation, captain and eleven; 2 of 12
+      bench places change in the first, none in the others; the expected score falls by 0.35 in the first and 0.17 in
+      the others. On the ten cards no chance of starting moves, and 149 of 294 values do, by 0.05 on average; one card's
+      likeliest scorers reorder.
+  - [x] 4.3 Method §A4 and the constants' comments; no new dependency; a mutation run on the changed functions; the
     slice report.
     - _Requirements: R4.1, R4.2_
     - _Test: **AT-8** `tests/acceptance/cameos/test_docs.py::test_at8_no_new_dependency`, `::test_at8_the_method_has_both`_

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from fantadamus.engine.constants import CAMEO_SHARE
+from fantadamus.engine.constants import CAMEO_SHARE_PRICED
 from fantadamus.lake.collect_log import CollectLog
 from fantadamus.lake.duckdb_store import LakeStore
 from tests.collect_harness import HTML, ROUND_ROUTE, local_site, round_collector
@@ -52,7 +52,7 @@ async def test_at12_the_marks_decide(tmp_path: Path) -> None:
     scored = nove["value"][
         "p_scores_cameo"
     ]  # on the bench he may come on, and a forward's cameo may get a rating
-    assert nove["value"]["p_cameo"] == pytest.approx(CAMEO_SHARE * (scored + (1 - scored) * 0.6))
+    assert nove["value"]["p_cameo"] == pytest.approx(CAMEO_SHARE_PRICED * (scored + (1 - scored) * 0.6))
     assert nove["official"]["status"] == "bench"
     assert (dodici["name"], dodici["value"]["p_start"], dodici["value"]["p_cameo"]) == (
         "Alfa Dodici",

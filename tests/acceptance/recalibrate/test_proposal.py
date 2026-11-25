@@ -278,14 +278,14 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_at8_an_approved_change_and_its_log() -> None:
-    """The values the owner approved are in `engine/constants.py`, the calibration log's newest entry says
-    what changed, from what and on what evidence, as aggregates, and the approved map is still a map."""
+    """The values the owner approved are in `engine/constants.py`, the calibration log's entry for them says
+    what changed, from what and on what evidence, as aggregates, and the approved map is still a map. A later
+    change adds its entry above, so this one is found by its heading (mvp-cameos task 4)."""
     log = (ROOT / "docs" / "calibration-log.md").read_text(encoding="utf-8")
-    newest = log.split("\n## ")[1]
-    assert newest.startswith("2026-11-12: rounds 10 and 11")
+    entry = next(part for part in log.split("\n## ") if part.startswith("2026-11-12: rounds 10 and 11"))
     rows = {
         name: (old.strip(), new.strip())
-        for name, old, new in re.findall(r"^\| `([A-Z_]+)` \| ([^|]+) \| ([^|]+) \|", newest, re.MULTILINE)
+        for name, old, new in re.findall(r"^\| `([A-Z_]+)` \| ([^|]+) \| ([^|]+) \|", entry, re.MULTILINE)
     }
     assert set(rows) == {"START_MAP", "YELLOW_PRIOR"}
     assert rows["YELLOW_PRIOR"] == ("0.150", f"{constants.YELLOW_PRIOR:.3f}")
@@ -296,4 +296,4 @@ def test_at8_an_approved_change_and_its_log() -> None:
     assert (constants.START_MAP[0], constants.START_MAP[-1]) == ((0.0, 0.0), (1.0, 1.0))
     assert raws == sorted(set(raws))
     assert values == sorted(values)
-    assert "Not changed" in newest
+    assert "Not changed" in entry
