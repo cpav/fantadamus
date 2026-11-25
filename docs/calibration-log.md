@@ -4,6 +4,40 @@ Each change to a starting value in `engine/constants.py`, from a `fantadamus rec
 approved (mvp-recalibrate R8). Newest first. Aggregates only: no player, club or league is named. A change is
 undone the same way: a later proposal, approved, and an entry here.
 
+## 2026-11-24: rounds 10 to 12
+
+Approved by the owner on 2026-11-24, from the proposal on rounds 10 to 12, run from stored facts only (`mvp-cameos`).
+Round 10 has no ratings to score, so the evidence is rounds 11 and 12.
+
+| Value | Old | New | Evidence | Where it wasn't fitted |
+|---|---|---|---|---|
+| `CAMEO_SHARE` | 0.500 | 0.239 | 255 players with a flat cameo who didn't start and could have come on, 61 of whom got a rating; 90% between 0.198 and 0.286 | round 11: Brier 0.149 to 0.120, reliability gap 0.143 to 0.082; round 12: Brier 0.134 to 0.111, reliability gap 0.096 to 0.055 |
+
+Benched defenders and midfielders got a rating a quarter of the time, where the model said half. Forwards and attacking
+midfielders have a share of their own from here on (`CAMEO_SHARE_PRICED`), because one share can't fit both kinds.
+
+### What it moves
+
+On round 12's stored facts, from a copy of the lake, at the owner's last answer without an override, just before the
+lock and a second before it:
+
+- **The lineup:** the same formation, captain and eleven each time; 2 of 12 bench places change in the first, none in the
+  others. The expected score falls by 0.35 in the first and 0.17 in the others, and each threshold's chance moves by at
+  most 2 points: fewer substitutes are expected to get a rating.
+- **The cards:** of 294 players on the ten cards, no chance of starting moves, and 149 values do, by 0.05 on average and
+  0.27 at most. One card's likeliest scorers reorder.
+- **The answers' shape** stays the same.
+
+### Not changed
+
+- `CAMEO_SHARE_PRICED`: fitted at 0.648, but on 128 of the 200 players it needs, and on the rounds it wasn't fitted on it
+  makes the Brier score slightly worse: 0.106 to 0.108 and 0.133 to 0.151.
+- `CAMEO_RATED`: held at the method's 60%. Rated games can't tell it from how often an attacker comes on.
+- `START_MAP`: refitted on rounds 10 to 12, it doesn't improve where it wasn't fitted.
+- `PENALTY_RATE` and `PENALTY_CONVERSION`: 27 of the 30 penalties they need.
+- The yellow- and red-card rates move by a thousandth or less, and weren't asked for.
+- The rest waits, with the evidence each needs, as `fantadamus recalibrate` lists it.
+
 ## 2026-11-12: rounds 10 and 11
 
 Approved by the owner on 2026-11-12, from the proposal on rounds 10 and 11, run from stored facts only.

@@ -17,6 +17,7 @@ from fantadamus.domains.availability.consensus import (
     outlet_view,
 )
 from fantadamus.domains.facts import Source
+from fantadamus.engine import constants
 
 SOURCE = Source(
     source_url="https://example.org/a",
@@ -47,7 +48,9 @@ def test_p1_probabilities_bounded(outlets: list[OutletView]) -> None:
 @given(views(), official_statuses)
 def test_p2_official_lineup_wins(outlets: list[OutletView], status: OfficialStatus) -> None:
     result = combine(outlets, OfficialView(status=status, source=SOURCE))
-    expected = {"starter": (1.0, 0.0), "bench": (0.0, 0.5), "not listed": (0.0, 0.0)}[status]
+    expected = {"starter": (1.0, 0.0), "bench": (0.0, constants.CAMEO_SHARE), "not listed": (0.0, 0.0)}[
+        status
+    ]
     assert (result.p_start, result.p_cameo) == expected
     assert not result.disputed
 

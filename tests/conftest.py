@@ -109,17 +109,22 @@ def git_repo(tmp_path: Path) -> tuple[Path, Git]:
 
 @pytest.fixture(scope="module")
 def start_values() -> Iterator[None]:
-    """The values calibrated on 2026-11-12 back at their starting values (see docs/calibration-log.md), for a
-    test module that works its numbers out by hand on those: the chance of starting as the outlets' plain
-    mean, and 0.15 yellow cards per appearance. The calibrated values are checked through the tools in
-    tests/acceptance/recalibrate/test_moves.py, and against the log in test_proposal.py."""
+    """The calibrated values back at their starting values (see docs/calibration-log.md), for a test module
+    that works its numbers out by hand on those: the chance of starting as the outlets' plain mean, 0.15
+    yellow cards per appearance, and half of the players who don't start coming on. The calibrated values are
+    checked through the tools in tests/acceptance/recalibrate/test_moves.py and
+    tests/acceptance/cameos/test_moves.py, and against the log in recalibrate's test_proposal.py and cameos'
+    test_moves.py."""
     from fantadamus.domains import recalibration
     from fantadamus.domains.availability import consensus
-    from fantadamus.engine import outfield
+    from fantadamus.engine import constants, outfield
     from fantadamus.engine.recalibrate import IDENTITY
 
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(consensus, "START_MAP", IDENTITY)
         patch.setattr(recalibration, "START_MAP", IDENTITY)
         patch.setattr(outfield, "YELLOW_PRIOR", 0.15)
+        patch.setattr(constants, "CAMEO_SHARE", 0.5)
+        patch.setattr(recalibration, "CAMEO_SHARE", 0.5)
+        patch.setitem(recalibration._TODAY, "CAMEO_SHARE", 0.5)
         yield

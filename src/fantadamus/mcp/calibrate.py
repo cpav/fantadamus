@@ -60,7 +60,6 @@ from fantadamus.domains.season.gold import (
     team_season,
 )
 from fantadamus.domains.season.silver import PLAYER_SEASONS, SEASON_STATS, PlayerSeasonRow
-from fantadamus.engine import constants
 from fantadamus.engine.keepers import KeeperValue
 from fantadamus.engine.outfield import OutfieldValue, cameo_share, priors
 from fantadamus.lake.calibration_store import CalibrationStore
@@ -383,7 +382,7 @@ def _score_match(
             as_of=when,
             outlet_views=on_page,
             names=names,
-            share=constants.CAMEO_SHARE if share is None else share,
+            share=share,
         )
 
     def starts(mate: KnownPlayer) -> float:
