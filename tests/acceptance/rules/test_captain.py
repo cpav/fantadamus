@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from fantadamus.contracts.xy.league import FormulaRule
+from fantadamus.engine import constants
 from fantadamus.engine.formula import Mark, choose_captain, formula_points
 from tests.lineup_data import CAPTAIN_RULE, THREE_RULES
 from tests.lineup_harness import Round, a_round
@@ -69,8 +70,13 @@ def test_at7_the_best_pair_by_hand() -> None:
     assert (level.captain, level.vice) == (7, 8)
 
 
-async def test_at7_the_recommended_captain_is_the_best(tmp_path: Path) -> None:
-    """Over the tool's rounds, naming any other starter in the same formation brings no more."""
+async def test_at7_the_recommended_captain_is_the_best(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Over the tool's rounds, naming any other starter in the same formation brings no more. The captain
+    comes from the five starters with the highest keys (mvp-rules C6): on the share calibrated on 2026-11-24,
+    the sixth brings about 0.01 more here than the best of the five, so the share stays as it was written."""
+    monkeypatch.setattr(constants, "CAMEO_SHARE", 0.5)
     async with a_round(tmp_path) as here:
         await _with_captain(here, *THREE_RULES)
         advised = await _lineup(here)

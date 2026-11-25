@@ -11,6 +11,8 @@ from fantadamus.domains.recalibration import propose, render_proposal
 from fantadamus.engine import constants
 from tests.cameos_rows import flat, priced
 
+pytestmark = pytest.mark.usefixtures("start_values")  # worked out by hand on a share of 0.5
+
 MADE = dt.datetime(2026, 11, 24, 14, 0, tzinfo=dt.UTC)
 
 

@@ -120,6 +120,11 @@ pytest_add_cli_args_test_selection = [
     "tests/unit/fixes/test_due_rules.py",  # each rule of the cadence at its edges
     "tests/unit/collect/test_cadence.py",
     "tests/property/fixes/test_due.py",
+    "tests/unit/cameos",  # pure: each kind's share
+    "tests/property/cameos",
+    "tests/acceptance/cameos/test_fit.py",  # pure: both shares, by hand
+    "tests/acceptance/cameos/test_checks.py",  # pure: each share checked, by hand
+    "tests/acceptance/cameos/test_proposal.py",  # pure: the proposal
 ]
 pytest_add_cli_args = [
     "--timeout=30",

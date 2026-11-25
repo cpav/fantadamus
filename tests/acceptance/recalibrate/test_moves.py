@@ -36,6 +36,7 @@ async def _answers(tmp_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
 
 
 async def test_at9_what_it_moves(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(constants, "CAMEO_SHARE", 0.5)  # this change alone: the share was recalibrated later
     calibrated, calibrated_card = await _answers(tmp_path / "calibrated")
     monkeypatch.setattr(consensus, "START_MAP", IDENTITY)
     monkeypatch.setattr(outfield, "YELLOW_PRIOR", 0.15)

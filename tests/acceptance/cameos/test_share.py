@@ -26,6 +26,7 @@ PRICED = {
 
 
 async def test_at1_each_kind_by_hand(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(constants, "CAMEO_SHARE", 0.5)
     async with a_round(tmp_path) as here:
         await here.ask()
         monkeypatch.setattr(constants, "CAMEO_SHARE", 0.3)

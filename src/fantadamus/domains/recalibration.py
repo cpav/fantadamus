@@ -17,6 +17,7 @@ from fantadamus.domains.calibration import RATING, STARTING, Pair, Scored, SetRo
 from fantadamus.domains.facts import latest_by
 from fantadamus.domains.season.silver import PlayerSeasonRow, TeamSeasonRow
 from fantadamus.engine.constants import (
+    CAMEO_RATED,
     CAMEO_SHARE,
     CAMEO_SHARE_PRICED,
     MINIMUM_SAMPLE,
@@ -63,10 +64,14 @@ def _flat(rows: Iterable[SetRow]) -> list[SetRow]:
     return [row for row in _benched(rows) if row.priced_cameo is False and row.role in ("D", "C")]
 
 
-def _priced(rows: Iterable[SetRow]) -> list[SetRow]:
-    """The benched forwards and attacking midfielders whose cameo is priced, with a chance of scoring once on
-    held before kickoff (mvp-cameos C3)."""
-    return [row for row in _benched(rows) if row.priced_cameo is True and row.p_scores_cameo is not None]
+def _priced(rows: Iterable[SetRow]) -> list[tuple[SetRow, float]]:
+    """The benched forwards and attacking midfielders whose cameo is priced, each with his chance of scoring
+    once on, held before kickoff (mvp-cameos C3)."""
+    return [
+        (row, row.p_scores_cameo)
+        for row in _benched(rows)
+        if row.priced_cameo is True and row.p_scores_cameo is not None
+    ]
 
 
 def cameo_rates(rows: Sequence[SetRow]) -> Fitted:
@@ -79,11 +84,7 @@ def cameo_rates(rows: Sequence[SetRow]) -> Fitted:
         missing.append("CAMEO_SHARE: no player with a flat cameo who didn't start and could have come on")
     else:
         rates.append(share)
-    forwards = [
-        (row.p_scores_cameo, row.outcome.rated is True)
-        for row in _benched(rows)
-        if row.priced_cameo is True and row.p_scores_cameo is not None
-    ]
+    forwards = [(scoring, row.outcome.rated is True) for row, scoring in _priced(rows)]
     priced = cameo_share_priced(forwards)
     if priced is not None:
         rates.append(priced)
@@ -247,12 +248,19 @@ def check_start_map(
 
 
 def rerated(row: SetRow, rating: float, flat: float, priced: float) -> float:
-    """His chance of a rating with these shares instead of today's: his cameo's part of it scales with his
-    kind's share (mvp-cameos C4). A row written before the kinds were kept moves with neither."""
-    if row.priced_cameo is None:
+    """His chance of a rating with these shares: his chance of starting, and his kind's share of the rest
+    (mvp-cameos C4). It's worked out from him rather than scaled from the chance he was scored with, because
+    a stored round may have been scored with an older share. One with no chance of coming on stays as he was,
+    and so does a row from before the kinds were kept."""
+    if row.priced_cameo is None or rating <= row.p_start:
         return rating
-    factor = priced / CAMEO_SHARE_PRICED if row.priced_cameo else flat / CAMEO_SHARE
-    return min(max(rating + (rating - row.p_start) * (factor - 1), 0.0), 1.0)
+    if not row.priced_cameo:
+        coming_on = flat
+    elif row.p_scores_cameo is not None:
+        coming_on = priced * (row.p_scores_cameo + (1 - row.p_scores_cameo) * CAMEO_RATED)
+    else:
+        return rating
+    return min(row.p_start + (1 - row.p_start) * coming_on, 1.0)
 
 
 def _ratings(rows: Iterable[SetRow]) -> list[tuple[SetRow, float, bool]]:
@@ -283,7 +291,13 @@ def check_cameos(
             folds.append(
                 Fold(
                     held_out=label,
-                    before=scored_chance(RATING, [(rating, happened) for _, rating, happened in test]),
+                    before=scored_chance(
+                        RATING,
+                        [
+                            (rerated(row, rating, CAMEO_SHARE, CAMEO_SHARE_PRICED), happened)
+                            for row, rating, happened in test
+                        ],
+                    ),
                     after=scored_chance(
                         RATING,
                         [(rerated(row, rating, flat, share), happened) for row, rating, happened in test],

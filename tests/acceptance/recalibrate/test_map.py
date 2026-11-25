@@ -8,7 +8,8 @@ import pytest
 from fantadamus.domains.availability import consensus
 from fantadamus.domains.availability.consensus import OfficialView, combine, outlet_view
 from fantadamus.domains.cards import lineups
-from fantadamus.engine.constants import CAMEO_SHARE, START_MAP, START_MAP_WEIGHT
+from fantadamus.engine import constants
+from fantadamus.engine.constants import START_MAP, START_MAP_WEIGHT
 from fantadamus.engine.recalibrate import IDENTITY, StartMap, fit_start_map, mapped
 from tests.cards_data import KICKOFF, OUTLETS, listed, source
 
@@ -73,7 +74,7 @@ def test_at2_applied_where_the_chance_is_formed(monkeypatch: pytest.MonkeyPatch)
     present = combine(views)
     assert present.raw_p_start == pytest.approx(0.6)  # what the outlets said, for a later fit
     assert present.p_start == pytest.approx(0.45)
-    assert present.p_cameo == pytest.approx(CAMEO_SHARE * 0.55)  # from the mapped chance
+    assert present.p_cameo == pytest.approx(constants.CAMEO_SHARE * 0.55)  # from the mapped chance
     assert present.spread == 0.0
 
     # A card names the outlets that disagree against the consensus on their own scale, not the mapped one.
@@ -98,4 +99,4 @@ def test_at2_the_official_lineup_still_settles_it(monkeypatch: pytest.MonkeyPatc
     starter = combine(views, OfficialView(status="starter", source=source()))
     assert (starter.p_start, starter.raw_p_start, starter.p_cameo) == (1.0, 1.0, 0.0)
     bench = combine(views, OfficialView(status="bench", source=source()))
-    assert (bench.p_start, bench.raw_p_start, bench.p_cameo) == (0.0, 0.0, CAMEO_SHARE)
+    assert (bench.p_start, bench.raw_p_start, bench.p_cameo) == (0.0, 0.0, constants.CAMEO_SHARE)
