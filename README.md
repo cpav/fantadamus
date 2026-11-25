@@ -58,7 +58,8 @@ when the news changes a lineup (`mvp-alerts`), and storing and reading that keep
 The answers' shapes are in [docs/answer-formats.md](docs/answer-formats.md). A second player installs it from the
 [setup guide](docs/player-setup.md).
 
-**Now:** Phase 3, online and easy to install. Phase 2 was signed off on 2026-11-24
+**Now:** `mvp-next-round`, so that the schedule finds each round in time; then Phase 3, online and easy to install. Phase 2
+was signed off on 2026-11-24
 ([report](docs/reports/phase-2-report.md)), after round 12 (21 to 23 November 2026) ran end to end with the schedule
 installed and `mvp-fixes` fixed the five faults it found. The owner took the report's three decisions the same day: first
 `mvp-cameos`, a share for each kind of cameo; then Phase 3, which starts by making the gate faster and runs on the

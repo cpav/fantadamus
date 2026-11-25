@@ -1,8 +1,8 @@
 # Requirements Document: `mvp-next-round` (after Phase 2, before Phase 3)
 
-Status: **Draft, for the owner's approval** · Workflow: requirements-first · Depends on: `mvp-fixes` (signed off
-2026-11-24) · Abbreviation: `nr` · Research: the code on `main`, a copy of the owner's collection log and stored fixtures,
-and two approved pages, all read on 2026-11-25 (times and counts below, no names)
+Status: **Approved by the owner, 2026-11-25**, with all three recommendations · Workflow: requirements-first · Depends on:
+`mvp-fixes` (signed off 2026-11-24) · Abbreviation: `nr` · Research: the code on `main`, a copy of the owner's collection
+log and stored fixtures, and two approved pages, all read on 2026-11-25 (times and counts below, no names)
 
 ## Introduction
 
@@ -140,6 +140,8 @@ locked, so that the round's lineups, odds and alerts are there without my asking
   `mvp-alerts` (the window), `mvp-store` (the log is read 14 days back, further than any cadence).
 
 ## Decisions for the owner
+
+All three decided by the owner on 2026-11-25, as recommended ("Approve and merge").
 
 1. **How often does the schedule read the round page between rounds?** Recommendation: once a day, always. It's one number,
    and it also shows a moved kickoff within a day. The alternative, once a day only while no round's deadline is ahead,
