@@ -29,7 +29,7 @@ def test_cadence_table() -> None:
     assert not due("official_lineups", KICKOFF - 70 * MINUTE, KICKOFF - 60 * MINUTE, KICKOFF)
     assert due("official_lineups", KICKOFF - 75 * MINUTE, KICKOFF - 60 * MINUTE, KICKOFF)
     assert not due("official_lineups", None, KICKOFF - 60 * MINUTE, KICKOFF, confirmed=True)
-    # Fixtures: weekly, whatever the matches.
+    # Fixtures: daily, whatever the matches, so that the next round is found (mvp-next-round R1.1).
     assert due("fixtures", None, KICKOFF, None)
-    assert not due("fixtures", KICKOFF - 6 * 24 * HOUR, KICKOFF, None)
-    assert due("fixtures", KICKOFF - 7 * 24 * HOUR, KICKOFF, None)
+    assert not due("fixtures", KICKOFF - 23 * HOUR, KICKOFF, None)
+    assert due("fixtures", KICKOFF - 24 * HOUR, KICKOFF, None)
