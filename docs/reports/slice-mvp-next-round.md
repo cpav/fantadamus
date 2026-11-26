@@ -1,6 +1,6 @@
 # Slice report: `mvp-next-round`
 
-2026-11-26 · After Phase 2, before Phase 3 · **For the owner's sign-off**
+2026-11-26 · After Phase 2, before Phase 3 · **Signed off by the owner on 2026-11-26** (task 2.3)
 
 From a round's deadline until something reads the round page again, the schedule knows no next round. Only the
 fixtures' weekly cadence brought it back to that page, so after round 12 it would have looked again only after round 13
@@ -106,6 +106,8 @@ ten more in a break like November's, to some 45 a round.
 - **CI is over its time budget**: a 364 s median against 300. Making the gate faster is Phase 3's first step.
 
 ## Decisions for the owner
+
+Decided by the owner on 2026-11-26, as recommended ("Sign it off").
 
 1. **Sign off this slice?** Recommendation: yes. Every acceptance test passes. On the copy of your lake the read is due
    five days before round 13's deadline instead of after it, and no answer changed. Your checkout already runs it.

@@ -47,7 +47,7 @@ Status: **Approved by the owner, 2026-11-26** · From the approved [requirements
     - _Test: **AT-8** `tests/acceptance/next_round/test_at8_docs.py::test_at8_no_new_dependency`,
       `::test_at8_the_docs_say_daily`_
 
-- [ ] 2. The real check and this slice's sign-off
+- [x] 2. The real check and this slice's sign-off
   - Branch: `docs/nr-2-gate` · Depends on: 1 · ADRs: none
   - [x] 2.1 From here, on a copy of the owner's lake: the replay after round 12's deadline with `main`'s code and with
     task 1's, and every answer compared before and after.
@@ -61,6 +61,6 @@ Status: **Approved by the owner, 2026-11-26** · From the approved [requirements
     - _Test: `docs/reports/slice-mvp-next-round.md`, with each fault and the test that caught it_
     - Four faults, each caught: the fixtures back to a week (16 tests), 25 hours (16), 23 hours (7), and a stored round
       putting them back to weekly (AT-1, AT-2).
-  - [ ] 2.3 **Owner:** sign the slice off.
+  - [x] 2.3 **Owner:** sign the slice off (2026-11-26, "Sign it off").
     - _Requirements: all_
     - _Test: the slice report_
