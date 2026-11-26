@@ -89,6 +89,14 @@ def test_last_attempt_per_page(tmp_path: Path) -> None:
     assert log.last_attempt(START - dt.timedelta(hours=1), "statistics") is None
 
 
+def _round_page_alone(
+    store: LakeStore, base_url: str, robots: Path, log: CollectLog, at: dt.datetime
+) -> None:
+    """A read of the round page alone, as an answer makes: the round page is read daily since mvp-next-round
+    (design C2), so this keeps it from being due when the test looks at the statistics page."""
+    log.append(round_collector(store, base_url, robots, clock=ticking(at)).collect(facts=["fixtures"]))
+
+
 def test_due_reads_only_the_pages_due(tmp_path: Path) -> None:
     with local_site(_routes()) as site:
         store = LakeStore(tmp_path / "lake")
@@ -96,6 +104,7 @@ def test_due_reads_only_the_pages_due(tmp_path: Path) -> None:
         clock = ticking(START, dt.timedelta(seconds=1))
         collector = round_collector(store, site.base_url, tmp_path, statistics=True, clock=clock)
         first = collect_due(collector, log)
+        _round_page_alone(store, site.base_url, tmp_path, log, START + dt.timedelta(hours=2))
         site.requests.clear()
         day_later = round_collector(
             store, site.base_url, tmp_path, statistics=True, clock=ticking(START + dt.timedelta(hours=25))
@@ -111,6 +120,7 @@ def test_due_reads_only_the_pages_due(tmp_path: Path) -> None:
         ]
         second = collect_due(day_later, log)
         requests = [path for path, _ in site.requests]
+        _round_page_alone(store, site.base_url, tmp_path, log, START + dt.timedelta(days=2, hours=2))
         round_only = round_collector(
             store, site.base_url, tmp_path, clock=ticking(START + dt.timedelta(days=3))
         )

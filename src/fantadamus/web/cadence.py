@@ -6,7 +6,7 @@ design C7; R7.1, R7.2).
 | Probable lineups | Twice a day from 72 hours before the match; every 3 hours in the last 24 |
 | Official lineups | Every 15 minutes from 75 minutes before each kickoff until confirmed |
 | Match odds | Daily from 72 hours before the match; every 3 hours in the last 24 |
-| Fixtures | Weekly |
+| Fixtures | Daily: the round page, so the next round is found within a day (mvp-next-round R1.1) |
 | Players' season figures | Daily (mvp-roles R1.4) |
 | Penalty takers | Daily (mvp-lineup R10.3) |
 | The table | Daily (mvp-cards C1) |
@@ -52,7 +52,7 @@ SCHEDULED = (
 )
 _HOUR = dt.timedelta(hours=1)
 _ALWAYS = {
-    "fixtures": 7 * 24 * _HOUR,
+    "fixtures": 24 * _HOUR,
     "player_season": 24 * _HOUR,
     "penalty_takers": 24 * _HOUR,
     "team_season": 24 * _HOUR,

@@ -173,11 +173,13 @@ deadline is answered at once.
   | Probable lineups | Twice a day from 72 hours before the match; every 3 hours in the last 24 |
   | Official lineups | Every 15 minutes from 75 minutes before each kickoff until confirmed |
   | Match odds | Daily from 72 hours before the match; every 3 hours in the last 24 |
-  | Fixtures | Weekly |
+  | Fixtures | Daily |
 
   The table, penalty takers and players' season figures aren't scheduled: a scheduled run has no Claude to read
   their pages. They are read through `read_page` when an answer finds them past their 7-day freshness target.
   *(Amended by `mvp-lineup` R10.3, 2026-11-06: the collector reads the penalty takers daily, with a 48-hour target.)*
+  *(Amended by `mvp-next-round` R1.1, 2026-11-26: the fixtures daily instead of weekly, so that the schedule finds the next
+  round in time.)*
 
 - **R7.2** THE SYSTEM SHALL document how a player sets up their Mac to run `collect --due` every 15 minutes
   (launchd). The player installs it themselves; the collector does nothing when nothing is due.
