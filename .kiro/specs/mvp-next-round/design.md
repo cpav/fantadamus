@@ -1,7 +1,7 @@
 # Design Document: `mvp-next-round` (after Phase 2, before Phase 3)
 
-Status: **Draft, for the owner's approval** · From the approved [requirements](requirements.md) (2026-11-25, all three
-decisions as recommended)
+Status: **Approved by the owner, 2026-11-26** ("Approve and merge") · From the approved [requirements](requirements.md)
+(2026-11-25, all three decisions as recommended)
 
 ## Overview
 
