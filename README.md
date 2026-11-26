@@ -54,18 +54,18 @@ answers today:
   it did (`mvp-review`).
 
 Behind them: the starting values recalibrated on the rounds scored so far (`mvp-recalibrate`, `mvp-cameos`), a
-notification on the Mac when the news changes a lineup (`mvp-alerts`), and storing and reading that keep their speed
-all season (`mvp-store`).
+notification on the Mac when the news changes a lineup (`mvp-alerts`), storing and reading that keep their speed all
+season (`mvp-store`), and a schedule that finds each round by itself (`mvp-next-round`).
 The answers' shapes are in [docs/answer-formats.md](docs/answer-formats.md). A second player installs it from the
 [setup guide](docs/player-setup.md).
 
-**Now:** `mvp-next-round`, so that the schedule finds each round in time; then Phase 3, online and easy to install. Phase 2
-was signed off on 2026-11-24
+**Now:** Phase 3, online and easy to install. Phase 2 was signed off on 2026-11-24
 ([report](docs/reports/phase-2-report.md)), after round 12 (21 to 23 November 2026) ran end to end with the schedule
 installed and `mvp-fixes` fixed the five faults it found. The owner took the report's three decisions the same day: first
 `mvp-cameos`, a share for each kind of cameo, signed off on 2026-11-25 ([report](docs/reports/slice-mvp-cameos.md)); then
 Phase 3, which starts by making the gate faster and runs on the platform [`tech.md`](.kiro/steering/tech.md) now names, both
-from the [review before going online](docs/reports/review-before-phase-3.md).
+from the [review before going online](docs/reports/review-before-phase-3.md). In between, `mvp-next-round` made the
+schedule find each round by itself, signed off on 2026-11-26 ([report](docs/reports/slice-mvp-next-round.md)).
 
 | Phase | Builds | Status |
 |---|---|---|
